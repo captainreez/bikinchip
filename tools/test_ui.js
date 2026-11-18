@@ -26,7 +26,7 @@ const U = f => require('url').pathToFileURL(require('path').resolve(process.env.
   // tanda otomatis
   await p.evaluate(() => document.querySelector('#s02').scrollIntoView());
   const need = await p.evaluate(() => Math.min(180, Math.max(10, Math.round(document.querySelector('#s02').textContent.split(/\s+/).length / 6))));
-  await p.locator('#s02 .icd-secfoot').scrollIntoViewIfNeeded(); await p.waitForTimeout((need + 2) * 1000);
+  await p.locator('#s02 .icd-secend').scrollIntoViewIfNeeded(); await p.waitForTimeout((need + 2) * 1000);
   assert(await p.evaluate(() => ICD.store.get('progress.m04c-linux-git-make.sections.s02', false)) === true, 's02 ditandai otomatis setelah ' + need + ' detik');
   assert(await p.evaluate(() => ICD.store.get('progress.m04c-linux-git-make.sections.s01', false)) === false, 's01 (cuma lewat) tidak ditandai');
   await p.evaluate(() => document.querySelector('#s07').scrollIntoView()); await p.waitForTimeout(1800);

@@ -52,8 +52,8 @@ const assert = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) pro
   // flashcard
   await p.click('#kartu button:has-text("Tampilkan jawaban")'); await p.click('#kartu button:has-text("Baik")');
   // mark sections, bookmark, note
-  await p.click('#s01 button:has-text("Tandai selesai")'); await p.click('#s03 button:has-text("Bookmark")');
-  await p.click('#s02 summary:has-text("Catatan")'); await p.fill('#s02 textarea', 'catatan uji'); await p.waitForTimeout(700);
+  await p.click('#s01 [data-act=done]', {force:true}); await p.click('#s03 [data-act=bookmark]', {force:true});
+  await p.click('#s02 [data-act=note]', {force:true}); await p.fill('#s02 textarea', 'catatan uji'); await p.waitForTimeout(700);
   await p.click('#probe');
   await p.click('.icd-code .copy >> nth=0');
   await p.screenshot({ path: 'shots/uji-top.png' });
@@ -63,7 +63,8 @@ const assert = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) pro
   await p.reload(); await p.waitForTimeout(300);
   assert((await p.textContent('#kuis')).includes('Skor terbaik 3/3'), 'skor kuis bertahan setelah muat ulang');
   assert((await p.inputValue('#s02 textarea')) === 'catatan uji', 'catatan bertahan');
-  assert((await p.textContent('#s01 .icd-secfoot')).includes('Selesai dibaca'), 'tanda selesai bertahan');
+  assert((await p.getAttribute('#s01 [data-act=done]', 'aria-pressed')) === 'true', 'tanda selesai bertahan');
+  assert((await p.getAttribute('#s03 [data-act=bookmark]', 'aria-pressed')) === 'true', 'bookmark bertahan');
   const exp = await p.evaluate(() => JSON.parse(ICD.store.exportJSON())); assert(exp.app === 'icd' && exp.data.progress['uji-komponen'].quiz.uji.best === 3, 'ekspor JSON memuat progres');
   await p.evaluate((t) => { ICD.store.reset(); ICD.store.importJSON(t, 'gabung'); }, JSON.stringify(exp)); assert(await p.evaluate(() => ICD.store.get('progress.uji-komponen.quiz.uji.best')) === 3, 'impor JSON memulihkan progres');
   assert(errs.length === 0, 'tanpa error konsol ' + errs.join(' | '));

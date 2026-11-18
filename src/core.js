@@ -1414,29 +1414,35 @@ function shell(){
     marks[sid] = el('span', { class: 'mark', 'aria-hidden': 'true' });
     links[sid] = el('a', { href: '#' + sid, onclick: function(){ closeToc(); } }, [marks[sid], el('span', { text: title })]);
     ol.appendChild(el('li', null, [links[sid]]));
-    var done = el('button', { type: 'button', class: 'icd-btn small', onclick: function(){
+    var done = el('button', { type: 'button', class: 'icd-iconbtn', 'data-act': 'done', onclick: function(){
       var now = !store.get(base + '.sections.' + sid, false); store.set(base + '.sections.' + sid, now); paint(); emit('icd:progress');
-      say(now ? 'Bagian ditandai selesai.' : 'Tanda selesai dihapus.');
-    } });
-    var bm = el('button', { type: 'button', class: 'icd-btn small', onclick: function(){
+      say(now ? 'Section ditandai selesai.' : 'Tanda selesai dihapus.');
+    } }, [icon('M5 12.5l4.5 4.5L19 7.5')]);
+    var bm = el('button', { type: 'button', class: 'icd-iconbtn', 'data-act': 'bookmark', onclick: function(){
       store.update('bookmarks', function(a){ a = a || []; var k = a.findIndex(function(b){ return b.file === file && b.sec === sid; });
         if (k >= 0) a.splice(k, 1); else a.push({ file: file, sec: sid, title: title, at: Date.now() }); return a; });
       paint();
-    } });
-    var ta = el('textarea', { class: 'icd-input', 'aria-label': 'Catatan pribadi untuk bagian ini', placeholder: 'Tulis catatan Anda. Tersimpan otomatis di perangkat ini.' });
+    } }, [icon('M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.8L12 16.8 6.7 19.6l1.1-5.8L3.5 9.7l5.9-.8z')]);
+    var ta = el('textarea', { class: 'icd-input', id: 'note-' + sid, 'aria-label': 'Catatan pribadi untuk section ini', placeholder: 'Tulis catatan. Tersimpan otomatis di perangkat ini.' });
     ta.value = store.get('notes.' + file + '.' + sid, '');
-    var timer; ta.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(function(){ store.set('notes.' + file + '.' + sid, ta.value || undefined); }, 500); });
-    var note = el('details', { class: 'icd-note icd-sol' }, [el('summary', { text: 'Catatan saya' + (ta.value ? ' (ada isi)' : '') }), ta]);
-    s.appendChild(el('div', { class: 'icd-secfoot no-print' }, [done, bm, note]));
-    s._done = done; s._bm = bm;
+    var noteBox = el('div', { class: 'icd-notebox no-print' }, [ta]); noteBox.hidden = !ta.value;
+    var timer; ta.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(function(){ store.set('notes.' + file + '.' + sid, ta.value || undefined); paint(); }, 500); });
+    var nb = el('button', { type: 'button', class: 'icd-iconbtn', 'data-act': 'note', 'aria-controls': 'note-' + sid, onclick: function(){ noteBox.hidden = !noteBox.hidden; if (!noteBox.hidden) ta.focus(); paint(); } }, [icon('M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4')]);
+    var tools = el('div', { class: 'icd-sectools no-print', role: 'group', 'aria-label': 'Alat section' }, [done, bm, nb]);
+    s.insertBefore(tools, h ? h.nextSibling : s.firstChild); if (h) h.after(noteBox); else s.appendChild(noteBox);
+    s.appendChild(el('div', { class: 'icd-secend', 'aria-hidden': 'true' }));
+    s._done = done; s._bm = bm; s._note = nb; s._ta = ta; s._noteBox = noteBox;
   });
   function paint(){
     var p = store.get(base, {}), n = 0, bms = store.get('bookmarks', []);
     secs.forEach(function(s){
       var d = !!(p.sections && p.sections[s.id]); if (d) n++;
-      s._done.textContent = d ? '● Selesai dibaca' : '○ Tandai selesai'; s._done.setAttribute('aria-pressed', d ? 'true' : 'false');
+      var auto = !!(p.auto && p.auto[s.id]);
+      var lbD = d ? (auto ? 'Selesai (otomatis). Klik untuk membatalkan' : 'Selesai. Klik untuk membatalkan') : 'Tandai selesai';
+      s._done.setAttribute('aria-pressed', d ? 'true' : 'false'); s._done.setAttribute('aria-label', lbD); s._done.title = lbD;
       var b = bms.some(function(x){ return x.file === file && x.sec === s.id; });
-      s._bm.textContent = b ? '★ Tersimpan' : '☆ Bookmark'; s._bm.setAttribute('aria-pressed', b ? 'true' : 'false');
+      var lbB = b ? 'Hapus bookmark' : 'Bookmark section ini'; s._bm.setAttribute('aria-pressed', b ? 'true' : 'false'); s._bm.setAttribute('aria-label', lbB); s._bm.title = lbB;
+      var hasN = !!s._ta.value, lbN = hasN ? 'Catatan saya (ada isi)' : 'Tulis catatan'; s._note.setAttribute('aria-pressed', hasN ? 'true' : 'false'); s._note.setAttribute('aria-expanded', s._noteBox.hidden ? 'false' : 'true'); s._note.setAttribute('aria-label', lbN); s._note.title = lbN;
       marks[s.id].textContent = d ? '●' : '○'; marks[s.id].className = 'mark' + (d ? ' done' : '');
     });
     progBar.firstChild.style.width = (n / secs.length * 100) + '%'; progBar.setAttribute('aria-valuenow', n);
@@ -1462,7 +1468,7 @@ function shell(){
       vis[e.target.id] = e.isIntersecting && (hgt >= 0.4 * vh || hgt >= 0.6 * e.boundingClientRect.height);
     }); }, { threshold: [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
     var io3 = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) foot[e.target.parentNode.id] = true; }); });
-    secs.forEach(function(s){ io2.observe(s); var ft = q('.icd-secfoot', s); if (ft) io3.observe(ft); });
+    secs.forEach(function(s){ io2.observe(s); var ft = q('.icd-secend', s); if (ft) io3.observe(ft); });
     setInterval(function(){
       if (doc.hidden || store.get('settings.autoRead', true) === false) return;
       secs.forEach(function(s){

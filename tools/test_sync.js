@@ -10,7 +10,7 @@ const state = () => fetch(M + '/__state', { headers: { apikey: 'anon-test-key' }
   assert((await A.textContent('.icd-acct')) === 'Masuk', 'tombol Masuk tampil di topbar');
   assert(await A.locator('.icd-top .brand svg.icd-logo').count() === 1 && (await A.textContent('.icd-top .brand')) === 'bikinchip', 'brand bikinchip + logo');
   // progres lokal sebelum login
-  await A.click('#s03 .icd-secfoot button:has-text("Tandai")');
+  await A.click('#s03 [data-act=done]', {force:true});
   await A.evaluate(() => ICD.store.update('cards', a => { a = a || {}; a['m04c-linux-git-make:perm'] = { file: 'm04c-linux-git-make', ef: 2.5, n: 1, iv: 1, due: 1, seen: 1 }; return a; }));
   // login Google (redirect)
   await A.click('.icd-acct'); await A.waitForURL(/masuk\.html/); await A.click('#g-btn'); await A.waitForURL(/m04c-linux-git-make\.html$/); await A.waitForTimeout(1200);
@@ -19,12 +19,12 @@ const state = () => fetch(M + '/__state', { headers: { apikey: 'anon-test-key' }
   st = await state(); const row = st.rows['11111111-1111-1111-1111-111111111111'];
   assert(row && row.data.progress['m04c-linux-git-make'].sections.s03 === true, 'progres lokal terdorong ke akun');
   // perubahan setelah login otomatis didorong
-  await A.click('#s05 .icd-secfoot button:has-text("Tandai")'); await A.waitForTimeout(7000);
+  await A.click('#s05 [data-act=done]', {force:true}); await A.waitForTimeout(7000);
   st = await state(); assert(st.rows['11111111-1111-1111-1111-111111111111'].data.progress['m04c-linux-git-make'].sections.s05 === true, 'perubahan baru terdorong otomatis (debounce 4 s)');
   // perangkat B dengan progres lokal lain
   const B = await dev();
   await B.goto(S + 'm00-orientasi.html'); await B.waitForTimeout(300);
-  await B.click('#s01 .icd-secfoot button:has-text("Tandai")');
+  await B.click('#s01 [data-act=done]', {force:true});
   await B.evaluate(() => ICD.store.update('cards', a => { a = a || {}; a['m04c-linux-git-make:perm'] = { file: 'm04c-linux-git-make', ef: 2.6, n: 3, iv: 6, due: 9, seen: 4 }; return a; }));
   await B.goto(S + 'index.html'); await B.waitForTimeout(300);
   assert(await B.locator('#acct-card button:has-text("Masuk")').isVisible() && await B.locator('.icd-footer a[href*="github.com/captainreez/bikinchip"]').count() >= 1, 'beranda: ajakan masuk dan tautan GitHub di footer');
