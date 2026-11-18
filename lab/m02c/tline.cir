@@ -1,0 +1,14 @@
+* M02c: saluran lossless, Rs = 10, Z0 = 50, RL = 200, TD = 1 ns, step 1 V
+Vs  in 0 PULSE(0 1 0 10p 10p 1)
+Rs  in a 10
+T1  a 0 b 0 Z0=50 TD=1n
+RL  b 0 200
+.tran 10p 12n
+.control
+run
+meas tran v1 FIND v(b) AT=1.5n
+meas tran v3 FIND v(b) AT=3.5n
+meas tran v5 FIND v(b) AT=5.5n
+meas tran vend FIND v(b) AT=11.5n
+.endc
+.end

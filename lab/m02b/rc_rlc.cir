@@ -1,0 +1,20 @@
+* M02b: transien RC dan RLC, serta AC RC low-pass
+V1 in 0 PULSE(0 1 0 1p 1p 1 2) AC 1
+R1 in a 1k
+C1 a 0 1n
+V2 in2 0 PULSE(0 1 0 1p 1p 1 2)
+R2 in2 b 0.04
+L2 b c 1n
+C2 c 0 100n
+.control
+tran 1n 5u
+meas tran t50 when v(a)=0.5 rise=1
+meas tran va_tau find v(a) at=1u
+tran 0.1n 300n
+meas tran puncak max v(c)
+ac dec 10 1k 10meg
+meas ac fc when vdb(a)=-3.0103
+meas ac fase find vp(a) at=159.155k
+print fase*180/pi
+.endc
+.end

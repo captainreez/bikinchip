@@ -1,0 +1,1286 @@
+/* ICD-Core JS — disalin identik ke setiap file. Jangan diubah per file. */
+(function(){
+'use strict';
+var ICD = window.ICD = { version: '1.3.0', brand: 'bikinchip', config: /*@@CONFIG@@*/{} };
+var doc = document, root = doc.documentElement;
+
+/* ---------- util ---------- */
+function el(tag, attrs, kids){
+  var n = doc.createElement(tag), k;
+  if (attrs) for (k in attrs){
+    var v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.slice(0,2) === 'on') n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  add(n, kids);
+  return n;
+}
+function add(n, kids){
+  if (kids == null) return n;
+  if (!Array.isArray(kids)) kids = [kids];
+  kids.forEach(function(c){ if (c != null && c !== false) n.appendChild(typeof c === 'object' ? c : doc.createTextNode(String(c))); });
+  return n;
+}
+var SVGNS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs, kids){
+  var n = doc.createElementNS(SVGNS, tag), k;
+  if (attrs) for (k in attrs){ if (attrs[k] != null) { if (k === 'text') n.textContent = attrs[k]; else n.setAttribute(k, attrs[k]); } }
+  add(n, kids);
+  return n;
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function q(sel, ctx){ return (ctx || doc).querySelector(sel); }
+function qa(sel, ctx){ return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
+function target(t){ return typeof t === 'string' ? q(t) : t; }
+function clamp(x, a, b){ return x < a ? a : x > b ? b : x; }
+function ready(fn){ if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', fn); else fn(); }
+function emit(name, detail){ doc.dispatchEvent(new CustomEvent(name, { detail: detail })); }
+var uidN = 0; function uid(p){ return (p || 'icd') + '-' + (++uidN); }
+function cssVar(name){ return getComputedStyle(root).getPropertyValue(name).trim() || '#888'; }
+var reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+ICD.el = el; ICD.svg = svg; ICD.esc = esc; ICD.q = q; ICD.qa = qa; ICD.ready = ready; ICD.uid = uid; ICD.cssVar = cssVar; ICD.clamp = clamp;
+
+/* ---------- fmt: angka bersatuan ---------- */
+var PFX = [[1e12,'T'],[1e9,'G'],[1e6,'M'],[1e3,'k'],[1,''],[1e-3,'m'],[1e-6,'µ'],[1e-9,'n'],[1e-12,'p'],[1e-15,'f'],[1e-18,'a']];
+function num(v, sig){
+  if (!isFinite(v)) return isNaN(v) ? '—' : (v > 0 ? '∞' : '−∞');
+  if (v === 0) return '0';
+  var s = Number(v.toPrecision(sig || 3)), a = Math.abs(s), out;
+  if (a >= 1e6 || a < 1e-4) out = s.toExponential(Math.max(0, (sig || 3) - 1)).replace('e+', 'e').replace(/e(-?)(\d+)/, '×10^$1$2');
+  else out = String(s);
+  return out.replace('-', '−');
+}
+function si(v, unit, sig){
+  unit = unit || '';
+  if (!isFinite(v)) return num(v) + (unit ? ' ' + unit : '');
+  if (v === 0) return '0' + (unit ? ' ' + unit : '');
+  var a = Math.abs(v), i;
+  for (i = 0; i < PFX.length; i++) if (a >= PFX[i][0] * 0.9995) break;
+  if (i >= PFX.length) i = PFX.length - 1;
+  var s = Number((v / PFX[i][0]).toPrecision(sig || 3));
+  return String(s).replace('-', '−') + ' ' + PFX[i][1] + unit;
+}
+var SFX = { T:1e12, G:1e9, M:1e6, k:1e3, K:1e3, m:1e-3, u:1e-6, 'µ':1e-6, n:1e-9, p:1e-12, f:1e-15, a:1e-18 };
+function parse(str){
+  if (typeof str === 'number') return str;
+  var s = String(str).trim().replace(',', '.').replace('−', '-');
+  var m = /^([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*(meg|[TGMkKmuµnpfa])?/.exec(s);
+  if (!m) return NaN;
+  var v = parseFloat(m[1]);
+  if (m[2]) v *= (m[2] === 'meg' ? 1e6 : SFX[m[2]]);
+  return v;
+}
+ICD.fmt = { num: num, si: si, parse: parse };
+
+/* ---------- registry kurikulum ---------- */
+var PARTS = ['', 'Fondasi', 'Devais dan elektronika', 'Rangkaian digital', 'Arsitektur komputer', 'Desain front-end',
+  'Implementasi fisik', 'Analog, mixed-signal, dan memori', 'Manufaktur, keandalan, keamanan', 'Frontier dan karier'];
+var MODS = [
+['M00',1,'Orientasi',4,'','m00-orientasi|Orientasi: dari ide sampai silikon'],
+['M01',1,'Matematika untuk engineer',60,'M00','m01a-matematika-dasar|Satuan, eksponen, logaritma, desibel, trigonometri;m01b-kompleks-kalkulus|Bilangan kompleks, fasor, kalkulus, persamaan diferensial;m01c-linear-probabilitas-diskrit|Aljabar linear, probabilitas, statistik, matematika diskrit;m01d-transformasi-sinyal|Fourier, Laplace, Z, sinyal dan sistem'],
+['M02',1,'Listrik dan rangkaian',45,'M01','m02a-rangkaian-dc|Rangkaian DC: dari muatan sampai analisis nodal;m02b-transien-ac|Transien RC, RL, RLC dan analisis AC;m02c-bode-filter-tline|Bode, filter, transmission line, elektromagnetika ringkas'],
+['M03',1,'Representasi data',18,'M01','m03a-bilangan|Biner, two\'s complement, fixed-point, IEEE 754;m03b-kode-deteksi-koreksi|Gray, parity, Hamming, CRC'],
+['M04',1,'Perangkat lunak dan lingkungan kerja',50,'M03','m04a-c-pointer|C dan pointer;m04b-assembly-toolchain-os|Assembly, compile-link-load, sistem operasi;m04c-linux-git-make|Linux, shell, Git, Make, regex;m04d-python-tcl-algoritma|Python, Tcl, struktur data dan algoritma'],
+['M05',2,'Fisika semikonduktor',20,'M01 M02','m05a-pita-energi-pembawa|Pita energi, pembawa muatan, doping, drift dan difusi;m05b-pn-junction-dioda|PN junction dan dioda'],
+['M06',2,'Transistor',35,'M05','m06a-mosfet-dasar|BJT ringkas dan MOSFET dasar;m06b-mosfet-efek-lanjut|MOSFET: efek orde dua, short-channel, leakage;m06c-finfet-gaa-variasi|FinFET, GAA, CFET, FD-SOI, variasi dan PVT'],
+['M07',2,'Elektronika analog dasar',45,'M01 M02 M06','m07a-small-signal-penguat|Small-signal dan penguat satu tahap;m07b-mirror-diffpair-opamp|Current mirror, differential pair, op-amp;m07c-feedback-stabilitas-noise|Feedback, stabilitas, kompensasi, noise'],
+['M08',3,'Logika kombinasional',30,'M03','m08a-boolean-kmap|Aljabar Boolean, gerbang, K-map;m08b-mux-adder|Mux, decoder, encoder, adder;m08c-multiplier-divider-alu|Multiplier, divider, shifter, ALU'],
+['M09',3,'Logika sekuensial',25,'M08','m09a-latch-flipflop-register|Latch, flip-flop, timing, register, counter;m09b-fsm-metastability|FSM, state encoding, metastability'],
+['M10',3,'CMOS VLSI',50,'M02 M06 M08 M09','m10a-inverter-gerbang-statis|Inverter CMOS dan gerbang statis;m10b-logical-effort-daya|Logical effort, delay, sizing, daya;m10c-dinamis-interconnect|Logika dinamis, transmission gate, interconnect;m10d-layout-stdcell-scaling|Layout, design rules, standard cell, scaling'],
+['M11',4,'ISA dan RISC-V',30,'M03 M04','m11a-riscv-instruksi-assembly|RISC-V: instruksi, register, assembly;m11b-privilege-csr-trap|Privilege, CSR, interrupt, exception'],
+['M12',4,'Mikroarsitektur prosesor',50,'M09 M11','m12a-single-multi-cycle|Prosesor single-cycle dan multi-cycle;m12b-pipeline-hazard|Pipeline lima tahap dan hazard;m12c-branch-prediction|Branch prediction;m12d-superscalar-ooo|Superscalar dan out-of-order'],
+['M13',4,'Memori dan sistem',30,'M12','m13a-hierarki-cache|Hierarki memori dan cache;m13b-virtual-memory-dram-io|Virtual memory, TLB, DRAM, I/O'],
+['M14',4,'Paralelisme dan akselerator',30,'M13','m14a-multicore-koherensi-simd|Multicore, koherensi cache, SIMD;m14b-gpu-npu-akselerator|GPU, NPU, dan akselerator'],
+['M15',4,'SoC dan protokol',45,'M09 M11','m15a-uart-spi-i2c|UART, SPI, I2C;m15b-amba-tilelink-wishbone|AMBA, TileLink, Wishbone;m15c-protokol-high-speed|USB, PCIe, Ethernet, DDR, MIPI, CXL, UCIe;m15d-soc-boot-firmware|Arsitektur SoC, boot, firmware'],
+['M16',5,'HDL',40,'M04 M09','m16a-sv-dasar|SystemVerilog dasar untuk desain;m16b-semantik-simulasi|Semantik simulasi, blocking dan non-blocking;m16c-interface-lint-vhdl|Interface, package, lint, VHDL sekilas'],
+['M17',5,'Teknik desain RTL',55,'M16','m17a-handshake-fifo-arbiter|Valid/ready, FIFO, skid buffer, arbiter;m17b-pipelining-reset-clockgating|Pipelining, retiming, reset, clock gating;m17c-cdc-rdc|CDC dan RDC;m17d-datapath-spec-hls|Datapath, FSMD, spesifikasi, HLS, Chisel'],
+['M18',5,'Verifikasi fungsional',70,'M04 M16 M17','m18a-vplan-testbench-oop|Verification plan, testbench, OOP;m18b-random-coverage|Constrained-random dan coverage;m18c-sva|SystemVerilog Assertions;m18d-uvm-1|UVM bagian 1;m18e-uvm-2-cocotb-gls|UVM bagian 2, cocotb, regression, GLS'],
+['M19',5,'Formal dan platform verifikasi',25,'M17 M18','m19a-formal|Verifikasi formal;m19b-emulasi-prototyping-soc|Emulasi, prototyping, verifikasi SoC'],
+['M20',5,'FPGA',25,'M09 M16','m20a-fpga-arsitektur|Arsitektur FPGA;m20b-fpga-alur-timing|Alur desain dan timing FPGA'],
+['M21',6,'Sintesis logika',25,'M10 M16','m21a-sintesis-sdc|Sintesis logika dan SDC;m21b-liberty-karakterisasi|Liberty dan karakterisasi library'],
+['M22',6,'Static timing analysis',40,'M01 M09 M21','m22a-sta-dasar|STA dasar: path, setup, hold, slack;m22b-sta-clock-exception|STA: clock, exception, time borrowing;m22c-sta-variasi-signoff|STA: variasi, MCMM, signoff'],
+['M23',6,'Physical design',45,'M10 M21 M22','m23a-floorplan-power|Floorplan dan power planning;m23b-placement-cts|Placement dan clock tree synthesis;m23c-routing-ekstraksi|Routing dan ekstraksi parasitik;m23d-closure-eco-pdk|Timing closure, ECO, LEF/DEF, PDK'],
+['M24',6,'Signoff dan tapeout',20,'M23','m24a-verifikasi-fisik|Verifikasi fisik: DRC, LVS, antenna;m24b-signoff-tapeout|Signoff akhir dan tapeout'],
+['M25',6,'Low-power design',25,'M10 M17 M21','m25a-teknik-low-power|Teknik low-power;m25b-upf-power-aware|UPF dan verifikasi power-aware'],
+['M26',6,'DFT dan test',35,'M09 M21','m26a-fault-scan-atpg|Fault model, scan, ATPG;m26b-bist-jtag|BIST, JTAG, IJTAG;m26c-ate-yield-bringup|ATE, yield, diagnosis, bring-up'],
+['M27',7,'Desain IC analog',50,'M06 M07','m27a-gmid-bias-spice|gm/Id, biasing, simulasi SPICE;m27b-bandgap-ldo|Bandgap reference dan LDO;m27c-ota-comparator|OTA dan comparator;m27d-switchedcap-mismatch-layout|Switched-capacitor, mismatch, layout analog'],
+['M28',7,'Mixed-signal dan high-speed',55,'M01 M27','m28a-sampling-adc|Sampling dan ADC;m28b-dac-sigma-delta|DAC dan sigma-delta;m28c-pll-jitter|PLL, DLL, jitter, phase noise;m28d-serdes-io-rf-ams|SerDes, I/O, PMIC, RF, verifikasi AMS'],
+['M29',7,'Memori',30,'M10 M13','m29a-sram|SRAM;m29b-dram-flash-cam|DRAM, Flash, CAM, OTP;m29c-emerging-hbm-ecc-cim|Memori emerging, HBM, ECC, compute-in-memory'],
+['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
+['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
+['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
+];
+var TRACKS = {
+  rtl: ['RTL design', 'M00 M01a M01c M02a M03 M04 M06a M08 M09 M10a M10b M11 M12 M13 M15 M16 M17 M18a M18b M18c M20 M21 M22 M25'],
+  ver: ['Verifikasi', 'M00 M01a M01c M03 M04 M08 M09 M11 M12a M12b M13 M15 M16 M17 M18 M19'],
+  pd:  ['Physical design', 'M00 M01a M01b M01c M02 M03a M04c M04d M05 M06 M08a M09 M10 M16 M21 M22 M23 M24 M25 M26a M30'],
+  dft: ['DFT', 'M00 M01a M01c M03 M04c M04d M08 M09 M10a M10b M16 M17a M17b M17c M21 M22 M26 M29a M30b'],
+  ams: ['Analog dan mixed-signal', 'M00 M01 M02 M03a M04c M04d M05 M06 M07 M10a M10b M27 M28 M29a M30 M32a'],
+  arch:['Arsitektur', 'M00 M01a M01c M03 M04 M08 M09 M11 M12 M13 M14 M15 M16 M33b']
+};
+var reg = { parts: PARTS, modules: [], files: [], tracks: {} }, fileById = {}, modById = {};
+MODS.forEach(function(m){
+  var mod = { id: m[0], part: m[1], title: m[2], hours: m[3], pre: m[4] ? m[4].split(' ') : [], files: [] };
+  var fs = m[5].split(';');
+  fs.forEach(function(s){
+    var p = s.split('|'), f = { id: p[0], title: p[1], mod: mod.id, part: mod.part, hours: Math.round(mod.hours / fs.length * 10) / 10, idx: reg.files.length };
+    f.code = (f.id.split('-')[0]).toUpperCase().replace(/([A-E])$/, function(c){ return c.toLowerCase(); });
+    mod.files.push(f); reg.files.push(f); fileById[f.id] = f;
+  });
+  reg.modules.push(mod); modById[mod.id] = mod;
+});
+Object.keys(TRACKS).forEach(function(k){
+  var set = {};
+  TRACKS[k][1].split(' ').forEach(function(tok){
+    reg.files.forEach(function(f){ if (f.code === tok || f.mod === tok) set[f.id] = true; });
+  });
+  reg.tracks[k] = { id: k, title: TRACKS[k][0], files: set };
+});
+reg.file = function(id){ return fileById[id] || null; };
+reg.module = function(id){ return modById[id] || null; };
+ICD.reg = reg;
+/* File yang sudah dibuat, urut rilis. Halaman lama mempelajari daftar yang lebih baru lewat penyimpanan (lihat avail). */
+var BUILT_LIST = ['uji-komponen', 'm00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
+  'm02a-rangkaian-dc', 'm02b-transien-ac', 'm02c-bode-filter-tline', 'm03a-bilangan', 'm03b-kode-deteksi-koreksi', 'm04a-c-pointer', 'm04b-assembly-toolchain-os', 'm04c-linux-git-make'];
+
+/* ---------- store: localStorage dengan cadangan memori ---------- */
+var KEY = 'icd.v1', mem = null, persistent = true;
+function blank(){ return { progress: {}, cards: {}, notes: {}, bookmarks: [], exams: {}, plan: null, settings: {}, meta: {} }; }
+function normalize(o){
+  var b = blank(), k;
+  if (!o || typeof o !== 'object') return b;
+  for (k in b) if (o[k] == null || typeof o[k] !== typeof b[k] && b[k] !== null) o[k] = b[k];
+  if (!Array.isArray(o.bookmarks)) o.bookmarks = [];
+  return o;
+}
+function readLS(){
+  try { var s = window.localStorage.getItem(KEY); return normalize(s ? JSON.parse(s) : null); }
+  catch (e) { persistent = false; return null; }
+}
+function writeLS(){
+  mem.meta.schema = 1; mem.meta.core = ICD.version; mem.meta.at = Date.now();
+  if (!persistent) return;
+  try { window.localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { persistent = false; }
+}
+(function initStore(){
+  try { var t = '__icd_t'; window.localStorage.setItem(t, '1'); window.localStorage.removeItem(t); } catch (e) { persistent = false; }
+  mem = (persistent && readLS()) || blank();
+})();
+function fresh(){ if (persistent) { var f = readLS(); if (f) mem = f; } return mem; }
+function walk(o, path, make){
+  var ks = path.split('.'), i;
+  for (i = 0; i < ks.length - 1; i++){
+    if (o[ks[i]] == null || typeof o[ks[i]] !== 'object'){ if (!make) return null; o[ks[i]] = {}; }
+    o = o[ks[i]];
+  }
+  return [o, ks[ks.length - 1]];
+}
+var store = {
+  get: function(path, dflt){ var w = walk(mem, path, false); if (!w) return dflt; var v = w[0][w[1]]; return v === undefined ? dflt : v; },
+  set: function(path, val){ fresh(); var w = walk(mem, path, true); if (val === undefined) delete w[0][w[1]]; else w[0][w[1]] = val; writeLS(); emit('icd:store', { path: path }); },
+  update: function(path, fn){ fresh(); var w = walk(mem, path, true); w[0][w[1]] = fn(w[0][w[1]]); writeLS(); emit('icd:store', { path: path }); },
+  all: function(){ return mem; },
+  refresh: function(){ fresh(); return mem; },
+  persistent: function(){ return persistent; },
+  exportJSON: function(){ fresh(); return JSON.stringify({ app: 'icd', schema: 1, exported: new Date().toISOString(), data: mem }, null, 1); },
+  importJSON: function(text, mode){
+    var o = JSON.parse(text);
+    if (!o || o.app !== 'icd' || !o.data) throw new Error('Bukan berkas ekspor ICD.');
+    var d = normalize(o.data);
+    fresh();
+    mem = (mode === 'ganti') ? d : merge(mem, d);
+    writeLS(); emit('icd:store', { path: '' });
+  },
+  reset: function(){ mem = blank(); writeLS(); emit('icd:store', { path: '' }); },
+  /* gabung data akun (remote) dengan data lokal: lokal menang untuk nilai tunggal, kecuali kartu: yang lebih sering diulang menang */
+  mergeRemote: function(remote){
+    fresh(); var r = normalize(remote), loc = mem, out = merge(r, loc), k;
+    for (k in r.cards){ if (loc.cards && loc.cards[k] && (r.cards[k].seen || 0) > (loc.cards[k].seen || 0)) out.cards[k] = r.cards[k]; }
+    mem = out; writeLS(); emit('icd:store', { path: '', remote: true });
+  }
+};
+function merge(a, b){
+  if (Array.isArray(a) && Array.isArray(b)){
+    var seen = {}, out = [];
+    a.concat(b).forEach(function(x){ var k = JSON.stringify(x); if (!seen[k]){ seen[k] = 1; out.push(x); } });
+    return out;
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object'){
+    var r = {}, k;
+    for (k in a) r[k] = a[k];
+    for (k in b){
+      if (!(k in r)) r[k] = b[k];
+      else if (k === 'best') r[k] = Math.max(a[k] || 0, b[k] || 0);
+      else if (typeof a[k] === 'boolean' && typeof b[k] === 'boolean') r[k] = a[k] || b[k];
+      else r[k] = merge(a[k], b[k]);
+    }
+    return r;
+  }
+  return b === undefined ? a : b;
+}
+window.addEventListener('storage', function(e){ if (e.key === KEY){ fresh(); emit('icd:store', { path: '', remote: true }); } });
+window.addEventListener('pageshow', function(){ fresh(); emit('icd:store', { path: '', remote: true }); });
+ICD.store = store;
+
+/* ---------- avail: file mana yang sudah tersedia ---------- */
+var avail = (function(){
+  function known(){
+    var mine = BUILT_LIST, st = store.get('meta.built', null), list = mine;
+    if (st && Array.isArray(st.list) && st.list.length > mine.length) list = st.list;
+    else if (!st || !Array.isArray(st.list) || st.list.length < mine.length){ try { mem.meta.built = { list: mine.slice(), core: ICD.version }; writeLS(); } catch (e) {} }
+    var set = {}; list.concat(mine).forEach(function(id){ set[id] = 1; });
+    return { set: set, list: list };
+  }
+  var cache = null;
+  function get(){ if (!cache) cache = known(); return cache; }
+  doc.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) cache = null; });
+  return {
+    has: function(id){ return !!get().set[id]; },
+    list: function(){ return get().list.slice(); },
+    files: function(){ return reg.files.filter(function(f){ return get().set[f.id]; }); },
+    nextSoon: function(){ return reg.files.filter(function(f){ return !get().set[f.id]; })[0] || null; }
+  };
+})();
+ICD.avail = avail;
+
+/* ---------- progres ---------- */
+var PASS = 0.7;
+var progress = {
+  PASS: PASS,
+  file: function(id){ return store.get('progress.' + id, null); },
+  secDone: function(id){ var p = progress.file(id), n = 0, k; if (p && p.sections) for (k in p.sections) if (p.sections[k]) n++; return n; },
+  quizBest: function(id){
+    var p = progress.file(id), best = null, k;
+    if (p && p.quiz) for (k in p.quiz){ var z = p.quiz[k]; if (z && z.total){ var r = z.best / z.total; if (best === null || r > best) best = r; } }
+    return best;
+  },
+  fileStatus: function(id){
+    var p = progress.file(id);
+    if (!p) return 'belum';
+    var qb = progress.quizBest(id), nsec = p.nsec || 16, sd = progress.secDone(id);
+    if (qb !== null && qb >= PASS && sd >= Math.ceil(nsec * 0.8)) return 'selesai';
+    return 'berjalan';
+  },
+  fileFrac: function(id){
+    var p = progress.file(id); if (!p) return 0;
+    var st = progress.fileStatus(id); if (st === 'selesai') return 1;
+    var nsec = p.nsec || 16, qb = progress.quizBest(id) || 0;
+    return clamp(0.75 * progress.secDone(id) / nsec + 0.25 * Math.min(1, qb / PASS), 0, 0.99);
+  },
+  moduleStatus: function(mid){
+    var m = reg.module(mid), done = 0, any = false;
+    m.files.forEach(function(f){ var s = progress.fileStatus(f.id); if (s === 'selesai') done++; if (s !== 'belum') any = true; });
+    return done === m.files.length ? 'selesai' : any ? 'berjalan' : 'belum';
+  },
+  totals: function(filter){
+    var h = 0, hd = 0, n = 0, nd = 0;
+    reg.files.forEach(function(f){
+      if (filter && !filter[f.id]) return;
+      var fr = progress.fileFrac(f.id); h += f.hours; hd += f.hours * fr; n++; if (fr >= 1) nd++;
+    });
+    return { hours: h, hoursDone: hd, files: n, filesDone: nd, frac: h ? hd / h : 0 };
+  }
+};
+ICD.progress = progress;
+var STATUS_MARK = { belum: '○', berjalan: '◐', selesai: '●' };
+ICD.STATUS_MARK = STATUS_MARK;
+
+/* ---------- tema ---------- */
+var mqDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : { matches: false };
+function applyTheme(){
+  var t = store.get('settings.theme', 'auto');
+  root.setAttribute('data-theme', t === 'auto' ? (mqDark.matches ? 'dark' : 'light') : t);
+  emit('icd:theme');
+}
+applyTheme();
+if (mqDark.addEventListener) mqDark.addEventListener('change', applyTheme);
+ICD.theme = {
+  get: function(){ return store.get('settings.theme', 'auto'); },
+  set: function(t){ store.set('settings.theme', t); applyTheme(); },
+  cycle: function(){ var o = ['auto', 'light', 'dark'], t = o[(o.indexOf(ICD.theme.get()) + 1) % 3]; ICD.theme.set(t); return t; },
+  label: function(){ return { auto: 'Tema: ikut sistem', light: 'Tema: terang', dark: 'Tema: gelap' }[ICD.theme.get()]; }
+};
+
+/* ---------- a11y: pengumuman, toast, dialog ---------- */
+var live, toastEl, toastTimer;
+function say(text){
+  if (!live){ live = el('div', { class: 'icd-sr', 'aria-live': 'polite', role: 'status' }); doc.body.appendChild(live); }
+  live.textContent = ''; setTimeout(function(){ live.textContent = text; }, 30);
+}
+function toast(text){
+  if (toastEl) toastEl.remove();
+  toastEl = el('div', { class: 'icd-toast', text: text }); doc.body.appendChild(toastEl); say(text);
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ if (toastEl){ toastEl.remove(); toastEl = null; } }, 3200);
+}
+function dialog(opts){
+  var d = el('dialog', { class: 'icd-dialog', 'aria-label': opts.title });
+  add(d, [el('h3', { text: opts.title, style: 'margin-top:0' }), typeof opts.body === 'string' ? el('p', { text: opts.body }) : opts.body]);
+  var row = el('div', { class: 'icd-row', style: 'justify-content:flex-end;margin-top:12px' });
+  (opts.actions || [{ label: 'Tutup' }]).forEach(function(a){
+    row.appendChild(el('button', { class: 'icd-btn' + (a.primary ? ' primary' : ''), type: 'button', text: a.label,
+      onclick: function(){ var keep = a.run && a.run() === false; if (!keep) close(); } }));
+  });
+  d.appendChild(row);
+  function close(){ if (d.close) d.close(); d.remove(); }
+  d.addEventListener('close', function(){ d.remove(); });
+  doc.body.appendChild(d);
+  if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  return { close: close, el: d };
+}
+ICD.say = say; ICD.toast = toast; ICD.dialog = dialog;
+
+/* ---------- hl: penyorot sintaks ---------- */
+function words(s){ var o = {}; s.split(/\s+/).forEach(function(w){ if (w) o[w] = 1; }); return o; }
+var NUM = "\\b\\d[\\w.']*";
+var LANG = {
+  sv: { re: "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(\"(?:\\\\.|[^\"\\\\\\n])*\")|((?:\\d+)?'[sS]?[bodhBODH][0-9a-fA-F_xzXZ?]+|" + NUM + ")|([`$][A-Za-z_]\\w*)|([A-Za-z_]\\w*)",
+    kw: words('module endmodule input output inout parameter localparam assign always always_ff always_comb always_latch initial begin end if else case casez casex unique priority endcase for while repeat forever generate endgenerate genvar function endfunction task endtask posedge negedge or and not typedef enum struct packed union interface endinterface modport package endpackage import export class endclass extends virtual new this super rand randc constraint covergroup endgroup coverpoint cross bins property endproperty sequence endsequence assert assume cover disable iff return automatic static default program endprogram clocking endclocking fork join join_any join_none wait foreach inside dist solve before with local protected const ref final timeunit timeprecision do break continue'),
+    ty: words('logic wire reg bit int integer byte shortint longint real string time void signed unsigned') },
+  vhdl: { ci: true, re: "(--[^\\n]*)|(\"(?:[^\"\\n])*\")|(" + NUM + ")|()([A-Za-z_]\\w*)",
+    kw: words('library use entity is port in out inout end architecture of signal begin process if then elsif else case when others generic map component constant variable type subtype array to downto for loop generate function return package body wait until and or not xor nand nor rising_edge falling_edge'),
+    ty: words('std_logic std_logic_vector unsigned signed integer boolean natural positive bit') },
+  tcl: { re: "(#[^\\n]*)|(\"(?:\\\\.|[^\"\\\\\\n])*\")|(" + NUM + ")|(\\$[A-Za-z_]\\w*|-[A-Za-z_]\\w*)|([A-Za-z_]\\w*)",
+    kw: words('set proc if else elseif foreach for while return puts expr source list lappend incr global namespace unset catch string regexp file open close create_clock create_generated_clock set_input_delay set_output_delay set_false_path set_multicycle_path set_clock_groups set_clock_uncertainty set_max_delay set_min_delay get_ports get_pins get_clocks get_cells get_nets all_inputs all_outputs all_registers set_load set_driving_cell set_clock_latency set_max_transition set_max_fanout set_propagated_clock create_power_domain create_supply_net create_supply_port connect_supply_net set_isolation set_retention set_level_shifter create_power_switch add_power_state set_domain_supply_net'), ty: {} },
+  py: { re: "(#[^\\n]*)|(\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])*')|(" + NUM + ")|(@[A-Za-z_][\\w.]*)|([A-Za-z_]\\w*)",
+    kw: words('def class return if elif else for while in not and or import from as with try except finally raise pass break continue lambda yield async await is global nonlocal assert del'),
+    ty: words('None True False self int float str bool list dict tuple set range len print') },
+  c: { re: "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])+')|(" + NUM + ")|(#[ \\t]*[A-Za-z_]\\w*)|([A-Za-z_]\\w*)",
+    kw: words('if else for while do switch case default break continue return sizeof goto typedef struct union enum static const volatile extern inline register'),
+    ty: words('int char short long unsigned signed float double void uint8_t uint16_t uint32_t uint64_t int8_t int16_t int32_t int64_t size_t uintptr_t bool') },
+  asm: { re: "(#[^\\n]*)|(\"(?:\\\\.|[^\"\\\\\\n])*\")|(-?" + NUM + ")|(\\.[A-Za-z_]\\w*|[A-Za-z_]\\w*:)|([A-Za-z_]\\w*)",
+    kw: words('add addi sub and andi or ori xor xori sll slli srl srli sra srai slt slti sltu sltiu lui auipc jal jalr beq bne blt bge bltu bgeu lb lh lw lbu lhu sb sh sw ecall ebreak mret sret wfi csrrw csrrs csrrc csrrwi csrrsi csrrci csrr csrw mul mulh mulhu mulhsu div divu rem remu li la mv nop ret call tail j jr beqz bnez bgt ble bgtu bleu not neg seqz snez'),
+    ty: words('zero ra sp gp tp fp t0 t1 t2 t3 t4 t5 t6 s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 a0 a1 a2 a3 a4 a5 a6 a7 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31') },
+  spice: { ci: true, re: "(^\\*[^\\n]*|[;$][^\\n]*)|(\"[^\"\\n]*\")|(" + NUM + ")|(^\\.[A-Za-z]\\w*|\\.[A-Za-z]\\w*)|([A-Za-z_]\\w*)", flags: 'gm',
+    kw: words('dc ac tran pulse sin pwl nmos pmos'), ty: {} },
+  sh: { re: "(#[^\\n]*)|(\"(?:\\\\.|[^\"\\\\\\n])*\"|'[^'\\n]*')|(" + NUM + ")|(\\$\\{?[A-Za-z_]\\w*\\}?|--?[A-Za-z][\\w-]*)|([A-Za-z_][\\w.-]*)",
+    kw: words('if then else elif fi for do done while case esac function in export source return exit echo cd ls cat grep sed awk find mkdir rm cp mv chmod git make sudo apt pip python3 iverilog vvp verilator gtkwave yosys sby ngspice magic klayout openroad docker'), ty: {} }
+};
+LANG.verilog = LANG.sv; LANG.sdc = LANG.tcl; LANG.upf = LANG.tcl; LANG.python = LANG.py; LANG.riscv = LANG.asm; LANG.bash = LANG.sh; LANG.shell = LANG.sh;
+var LANGNAME = { sv: 'SystemVerilog', verilog: 'Verilog', vhdl: 'VHDL', tcl: 'Tcl', sdc: 'SDC', upf: 'UPF', py: 'Python', python: 'Python', c: 'C', asm: 'RISC-V asm', riscv: 'RISC-V asm', spice: 'SPICE', sh: 'shell', bash: 'shell', shell: 'shell', text: '' };
+function hl(code, lang){
+  var L = LANG[lang];
+  if (!L) return esc(code);
+  var re = new RegExp(L.re, L.flags || 'g'), out = '', last = 0, m;
+  while ((m = re.exec(code))){
+    if (m[0] === ''){ re.lastIndex++; continue; }
+    out += esc(code.slice(last, m.index)); last = re.lastIndex;
+    var t = m[0], cls = null;
+    if (m[1]) cls = 'c'; else if (m[2]) cls = 's'; else if (m[3]) cls = 'n'; else if (m[4]) cls = 'd';
+    else if (m[5]){ var w = L.ci ? t.toLowerCase() : t; cls = L.kw[w] === 1 ? 'k' : L.ty[w] === 1 ? 't' : null; }
+    out += cls ? '<span class="tk-' + cls + '">' + esc(t) + '</span>' : esc(t);
+  }
+  return out + esc(code.slice(last));
+}
+function copyText(text){
+  function fallback(){
+    var ta = el('textarea', { style: 'position:fixed;left:-999px;top:0' }); ta.value = text; doc.body.appendChild(ta); ta.select();
+    var ok = false; try { ok = doc.execCommand('copy'); } catch (e) {} ta.remove();
+    toast(ok ? 'Disalin.' : 'Gagal menyalin; pilih teks secara manual.');
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ toast('Disalin.'); }, fallback);
+  else fallback();
+}
+function enhanceCode(ctx){
+  qa('pre.icd-src', ctx).forEach(function(pre){
+    if (pre.dataset.done) return; pre.dataset.done = '1';
+    var lang = pre.dataset.lang || 'text', raw = pre.textContent.replace(/^\n/, '').replace(/\s+$/, '');
+    var lines = hl(raw, lang).split('\n'), html = '';
+    var numbered = pre.dataset.ln !== 'off' && lines.length > 3;
+    lines.forEach(function(l, i){ html += (numbered ? '<span class="ln" aria-hidden="true">' + (i + 1) + '</span>' : '') + l + '\n'; });
+    var code = el('code', { html: html });
+    pre.textContent = ''; pre.appendChild(code); pre.setAttribute('tabindex', '0');
+    var wrap = el('div', { class: 'icd-code' });
+    pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
+    wrap.appendChild(el('span', { class: 'lang', text: LANGNAME[lang] || lang }));
+    wrap.appendChild(el('button', { class: 'icd-btn small copy no-print', type: 'button', text: 'Salin', 'aria-label': 'Salin kode', onclick: function(){ copyText(raw); } }));
+  });
+}
+ICD.hl = hl; ICD.copy = copyText; ICD.enhanceCode = enhanceCode;
+
+/* ---------- layers: penjelasan tiga tingkat ---------- */
+var LEVELS = [['pemula', 'Pemula'], ['engineer', 'Engineer'], ['pakar', 'Pakar']];
+function enhanceLayers(ctx){
+  qa('.icd-layers', ctx).forEach(function(box){
+    if (box.dataset.done) return; box.dataset.done = '1';
+    var panels = {}, tabs = {}, list = el('div', { role: 'tablist', 'aria-label': 'Tingkat penjelasan' });
+    LEVELS.forEach(function(L){
+      var p = q('[data-level="' + L[0] + '"]', box); if (!p) return;
+      var pid = uid('lp'), tid = uid('lt');
+      p.id = pid; p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', tid); p.setAttribute('tabindex', '0');
+      panels[L[0]] = p;
+      tabs[L[0]] = el('button', { role: 'tab', type: 'button', id: tid, 'aria-controls': pid, text: L[1], 'data-level': L[0],
+        onclick: function(){ store.set('settings.level', L[0]); syncLayers(); },
+        onkeydown: function(e){
+          var ks = Object.keys(tabs), i = ks.indexOf(L[0]);
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){ var n = ks[(i + (e.key === 'ArrowRight' ? 1 : ks.length - 1)) % ks.length]; tabs[n].focus(); tabs[n].click(); e.preventDefault(); }
+        } });
+      list.appendChild(tabs[L[0]]);
+    });
+    box.insertBefore(list, box.firstChild);
+    box._sync = function(){
+      var want = store.get('settings.level', 'pemula'); if (!panels[want]) want = Object.keys(panels)[0];
+      Object.keys(panels).forEach(function(k){ var on = k === want; panels[k].hidden = !on; tabs[k].setAttribute('aria-selected', on ? 'true' : 'false'); tabs[k].tabIndex = on ? 0 : -1; });
+    };
+    box._sync();
+  });
+}
+function syncLayers(){ qa('.icd-layers').forEach(function(b){ if (b._sync) b._sync(); }); }
+ICD.enhanceLayers = enhanceLayers;
+
+/* ---------- gloss: glosarium dan tooltip ---------- */
+var terms = {}, tip = null, tipFor = null;
+function closeTip(){ if (tip){ tip.remove(); tip = null; if (tipFor) tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; } }
+function openTip(btn, t){
+  closeTip();
+  tip = el('div', { class: 'icd-tip', role: 'tooltip', id: uid('tip') }, [
+    el('b', { text: t.en }), t.idn ? el('i', { text: t.idn }) : null, el('div', { text: t.def }),
+    t.mod ? el('div', { class: 'icd-small icd-muted', text: 'Dibahas di ' + t.mod }) : null ]);
+  doc.body.appendChild(tip);
+  var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  var x = clamp(r.left + window.scrollX, 12 + window.scrollX, window.scrollX + root.clientWidth - tw - 12);
+  var y = r.bottom + window.scrollY + 6;
+  if (r.bottom + th + 12 > window.innerHeight && r.top > th + 12) y = r.top + window.scrollY - th - 6;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  tipFor = btn; btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-describedby', tip.id);
+}
+function enhanceTerms(ctx){
+  qa('[data-term]', ctx).forEach(function(s){
+    if (s.dataset.done) return;
+    var t = terms[s.dataset.term]; if (!t) return;
+    s.dataset.done = '1';
+    var b = el('button', { type: 'button', class: 'icd-term', 'aria-expanded': 'false', 'data-term': s.dataset.term, 'data-done': '1' });
+    while (s.firstChild) b.appendChild(s.firstChild);
+    s.parentNode.replaceChild(b, s);
+    b.addEventListener('click', function(e){ e.stopPropagation(); if (tipFor === b) closeTip(); else openTip(b, t); });
+    b.addEventListener('blur', function(){ setTimeout(function(){ if (tipFor === b) closeTip(); }, 150); });
+  });
+}
+doc.addEventListener('click', function(e){ if (tip && !tip.contains(e.target)) closeTip(); });
+doc.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeTip(); });
+ICD.gloss = {
+  add: function(list){ list.forEach(function(t){ terms[t.id] = t; }); ready(function(){ enhanceTerms(); }); },
+  get: function(id){ return terms[id]; },
+  all: function(){ return Object.keys(terms).map(function(k){ return terms[k]; }).sort(function(a, b){ return a.en.toLowerCase() < b.en.toLowerCase() ? -1 : 1; }); },
+  enhance: enhanceTerms
+};
+
+/* ---------- wave: penampil waveform ---------- */
+var KIND_VAR = { clock: '--s-clock', data: '--s-data', ctrl: '--s-ctrl', reset: '--s-reset', vdd: '--s-vdd', vss: '--s-vss', analog: '--s-analog', hi: '--s-hi', x: '--s-x', z: '--s-z', ink: '--ink', ink2: '--ink2' };
+function kcol(k){ return 'var(' + (KIND_VAR[k] || KIND_VAR.data) + ')'; }
+function toSegs(sig){
+  if (sig.segs) return sig.segs.map(function(s){ return { t0: s[0], t1: s[1], v: String(s[2]), label: s[3] }; });
+  var w = sig.wave || '', segs = [], prev = null, di = 0, i, c;
+  for (i = 0; i < w.length; i++){
+    c = w[i];
+    if (c === 'p' || c === 'n'){
+      segs.push({ t0: i, t1: i + 0.5, v: c === 'p' ? '1' : '0' }); segs.push({ t0: i + 0.5, t1: i + 1, v: c === 'p' ? '0' : '1' }); prev = null; continue;
+    }
+    if (c === '.' && prev){ prev.t1 = i + 1; continue; }
+    if (c === '.') c = '0';
+    prev = { t0: i, t1: i + 1, v: c === '=' ? '=' : c };
+    if (c === '=') prev.label = (sig.data && sig.data[di] != null) ? String(sig.data[di]) : ''; if (c === '=') di++;
+    segs.push(prev);
+  }
+  return segs;
+}
+function waveRender(tgt, spec){
+  tgt = target(tgt);
+  var host = el('div', { class: 'icd-wave' }), read = el('div', { class: 'readout', 'aria-live': 'polite' });
+  tgt.textContent = ''; tgt.appendChild(host); tgt.appendChild(read);
+  var state = { spec: spec, cursor: null }, pid = uid('hatch');
+  function valueAt(segs, t){
+    for (var i = 0; i < segs.length; i++) if (t >= segs[i].t0 && t < segs[i].t1) return segs[i].v === '=' ? (segs[i].label || '?') : segs[i].v.toUpperCase();
+    return '—';
+  }
+  function tfmt(t){ var tk = state.spec.tick || {}; return tk.dt ? si(t * tk.dt, tk.unit || 's') : num(t, 3) + ' ' + (tk.unit || 'siklus'); }
+  function draw(){
+    var sp = state.spec, sigs = sp.signals.map(function(s){ return { s: s, segs: toSegs(s) }; });
+    var T = sp.steps || 0; sigs.forEach(function(o){ o.segs.forEach(function(g){ if (g.t1 > T) T = g.t1; }); });
+    var step = sp.step || 36, rowH = 40, hi = 9, lo = 27, top = 22;
+    var lw = 16; sp.signals.forEach(function(s){ lw = Math.max(lw, s.name.length * 7.4 + 18); }); lw = Math.min(lw, 150);
+    var W = lw + T * step + 12, H = top + sigs.length * rowH + 8;
+    var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', tabindex: 0,
+      'aria-label': (sp.title || 'Waveform') + '. ' + sp.signals.length + ' sinyal, ' + T + ' langkah waktu. Gunakan panah kiri dan kanan untuk menggeser kursor.' });
+    s.appendChild(svg('defs', null, [svg('pattern', { id: pid, width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' },
+      [svg('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'var(--s-x)', 'stroke-width': 2.4 })])]));
+    var X = function(t){ return lw + t * step; }, i;
+    for (i = 0; i <= T; i++){
+      s.appendChild(svg('line', { x1: X(i), y1: top - 4, x2: X(i), y2: H - 6, stroke: 'var(--line)', 'stroke-width': 1 }));
+      if (i < T && (T <= 16 || i % 2 === 0)) s.appendChild(svg('text', { x: X(i) + 3, y: 11, 'font-size': 10, fill: 'var(--ink2)', text: i }));
+    }
+    sigs.forEach(function(o, r){
+      var y0 = top + r * rowH, kind = o.s.kind || (/(^|_)(clk|clock)/i.test(o.s.name) ? 'clock' : 'data'), col = kcol(kind);
+      var sw = kind === 'clock' ? 2.2 : kind === 'ctrl' ? 1.5 : 1.9, dash = kind === 'reset' ? '9 3' : null;
+      s.appendChild(svg('text', { x: lw - 8, y: y0 + 22, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink)', text: o.s.name }));
+      var d = '', last = null;
+      o.segs.forEach(function(g){
+        var x0 = X(g.t0), x1 = X(g.t1), v = g.v;
+        if (v === '0' || v === '1'){
+          var y = y0 + (v === '1' ? hi : lo);
+          if (last && (last.v === '0' || last.v === '1') && Math.abs(last.x - x0) < 0.01) d += ' L' + x0 + ' ' + y; else d += ' M' + x0 + ' ' + y;
+          d += ' L' + x1 + ' ' + y; last = { v: v, x: x1 };
+        } else {
+          last = { v: v, x: x1 };
+          if (v === 'x'){
+            s.appendChild(svg('rect', { x: x0, y: y0 + hi, width: x1 - x0, height: lo - hi, fill: 'url(#' + pid + ')', stroke: 'var(--s-x)', 'stroke-width': 1 }));
+          } else if (v === 'z'){
+            s.appendChild(svg('line', { x1: x0, y1: y0 + (hi + lo) / 2, x2: x1, y2: y0 + (hi + lo) / 2, stroke: 'var(--s-z)', 'stroke-width': 2, 'stroke-dasharray': '3 3' }));
+          } else {
+            var e = Math.min(5, (x1 - x0) / 2), ym = y0 + (hi + lo) / 2;
+            s.appendChild(svg('polygon', { points: [x0, ym, x0 + e, y0 + hi, x1 - e, y0 + hi, x1, ym, x1 - e, y0 + lo, x0 + e, y0 + lo].join(' '), fill: 'none', stroke: col, 'stroke-width': 1.6 }));
+            if (g.label && (x1 - x0) > g.label.length * 6.4) s.appendChild(svg('text', { x: (x0 + x1) / 2, y: ym + 4, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink)', text: g.label }));
+          }
+        }
+      });
+      if (d) s.appendChild(svg('path', { d: d.trim(), fill: 'none', stroke: col, 'stroke-width': sw, 'stroke-dasharray': dash, 'stroke-linejoin': 'round' }));
+    });
+    (sp.spans || []).forEach(function(b){
+      var r = typeof b.sig === 'number' ? b.sig : sp.signals.findIndex(function(z){ return z.name === b.sig; }); if (r < 0) return;
+      var y0 = top + r * rowH, c = kcol(b.kind === 'viol' ? 'x' : (b.kind || 'hi'));
+      s.appendChild(svg('rect', { x: X(b.t0), y: y0 + 3, width: X(b.t1) - X(b.t0), height: lo - hi + 12, fill: c, 'fill-opacity': 0.16, stroke: c, 'stroke-width': 1, 'stroke-dasharray': b.kind === 'viol' ? null : '4 2' }));
+      if (b.label) s.appendChild(svg('text', { x: b.align === 'end' ? X(b.t1) - 2 : b.align === 'start' ? X(b.t0) + 2 : (X(b.t0) + X(b.t1)) / 2, y: y0 + rowH - 2, 'text-anchor': b.align || 'middle', 'font-size': 9.5, fill: 'var(--ink)', text: b.label }));
+    });
+    (sp.marks || []).forEach(function(mk){
+      var c = kcol(mk.kind === 'viol' ? 'x' : (mk.kind || 'hi'));
+      s.appendChild(svg('line', { x1: X(mk.t), y1: 14, x2: X(mk.t), y2: H - 4, stroke: c, 'stroke-width': 1.4, 'stroke-dasharray': '5 3' }));
+      if (mk.label) s.appendChild(svg('text', { x: X(mk.t) + 3, y: H - 1, 'font-size': 10, fill: 'var(--ink)', text: mk.label }));
+    });
+    var cur = svg('line', { y1: 14, y2: H - 4, stroke: 'var(--ink)', 'stroke-width': 1, visibility: 'hidden' }); s.appendChild(cur);
+    function setCursor(t){
+      t = clamp(t, 0, T - 0.001); state.cursor = t;
+      cur.setAttribute('x1', X(t)); cur.setAttribute('x2', X(t)); cur.setAttribute('visibility', 'visible');
+      read.textContent = 't = ' + tfmt(t) + '  ·  ' + sigs.map(function(o){ return o.s.name + ' = ' + valueAt(o.segs, t); }).join('  ·  ');
+    }
+    function fromEvent(e){ var r = s.getBoundingClientRect(); setCursor(Math.round(((e.clientX - r.left) * (W / r.width) - lw) / step * 4) / 4); }
+    s.addEventListener('pointermove', function(e){ if (e.pointerType === 'mouse' || e.buttons) fromEvent(e); });
+    s.addEventListener('pointerdown', fromEvent);
+    s.addEventListener('keydown', function(e){
+      var c = state.cursor == null ? 0 : state.cursor;
+      if (e.key === 'ArrowRight') setCursor(c + 0.5); else if (e.key === 'ArrowLeft') setCursor(c - 0.5);
+      else if (e.key === 'Home') setCursor(0); else if (e.key === 'End') setCursor(T); else return;
+      e.preventDefault();
+    });
+    host.textContent = ''; host.appendChild(s);
+    if (state.cursor != null) setCursor(state.cursor); else read.textContent = 'Geser atau ketuk waveform untuk membaca nilai.';
+  }
+  draw();
+  return { update: function(sp){ state.spec = sp; draw(); }, el: tgt };
+}
+ICD.wave = { render: waveRender, toSegs: toSegs };
+
+/* ---------- plot: grafik Canvas ---------- */
+function niceTicks(a, b, n){
+  var span = b - a; if (!(span > 0)) return [a];
+  var raw = span / (n || 5), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+  var stepv = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag, t = Math.ceil(a / stepv - 1e-9) * stepv, out = [];
+  for (; t <= b + stepv * 1e-9; t += stepv) out.push(Math.abs(t) < stepv * 1e-9 ? 0 : t);
+  return out;
+}
+function plot(tgt, opts){
+  tgt = target(tgt);
+  var box = el('div', { class: 'icd-plot' }), cv = el('canvas', { tabindex: 0, role: 'img' }), legend = el('div', { class: 'legend' }), read = el('div', { class: 'readout', 'aria-live': 'polite' });
+  tgt.textContent = ''; add(box, [cv, legend]); tgt.appendChild(box); tgt.appendChild(read);
+  var st = { o: opts, cx: null, geo: null }, ctx = cv.getContext('2d');
+  function range(axis, which){
+    var a = st.o[axis] || {}, lo = a.min, hi = a.max;
+    if (lo == null || hi == null){
+      var mn = Infinity, mx = -Infinity;
+      st.o.series.forEach(function(s){ s.pts.forEach(function(p){ var v = p[which]; if (isFinite(v) && (!a.log || v > 0)){ if (v < mn) mn = v; if (v > mx) mx = v; } }); });
+      if (!isFinite(mn)){ mn = a.log ? 1 : 0; mx = a.log ? 10 : 1; }
+      if (mn === mx){ mx = mn + (Math.abs(mn) || 1); mn = a.log ? mn / 10 : mn - (Math.abs(mn) || 1); }
+      if (!a.log && which === 1){ var pad = (mx - mn) * 0.08; mn -= pad; mx += pad; }
+      if (lo == null) lo = mn; if (hi == null) hi = mx;
+    }
+    return [lo, hi];
+  }
+  function draw(){
+    var o = st.o, dpr = window.devicePixelRatio || 1, W = box.clientWidth || 320, H = o.height || 260;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    var xa = o.x || {}, ya = o.y || {}, xr = range('x', 0), yr = range('y', 1);
+    var L = 58, R = 12, T = 10, B = 40, pw = W - L - R, ph = H - T - B;
+    var fx = xa.log ? function(v){ return Math.log10(v); } : function(v){ return v; };
+    var fy = ya.log ? function(v){ return Math.log10(v); } : function(v){ return v; };
+    var x0 = fx(xr[0]), x1 = fx(xr[1]), y0 = fy(yr[0]), y1 = fy(yr[1]);
+    var X = function(v){ return L + (fx(v) - x0) / (x1 - x0) * pw; }, Y = function(v){ return T + ph - (fy(v) - y0) / (y1 - y0) * ph; };
+    var ink = cssVar('--ink'), ink2 = cssVar('--ink2'), line = cssVar('--line');
+    ctx.font = '11px ' + (cssVar('--f-mono') || 'monospace'); ctx.lineWidth = 1;
+    function ticks(lo, hi, log, n){
+      if (!log) return niceTicks(lo, hi, n);
+      var out = [], e; for (e = Math.ceil(Math.log10(lo) - 1e-9); e <= Math.floor(Math.log10(hi) + 1e-9); e++) out.push(Math.pow(10, e));
+      return out.length ? out : [lo, hi];
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ticks(xr[0], xr[1], xa.log, Math.max(3, Math.floor(pw / 80))).forEach(function(t){
+      var px = X(t); ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(px, T); ctx.lineTo(px, T + ph); ctx.stroke();
+      ctx.fillStyle = ink2; ctx.fillText(xa.plain ? num(t, 4) : si(t, '').trim(), px, T + ph + 5);
+    });
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ticks(yr[0], yr[1], ya.log, Math.max(3, Math.floor(ph / 44))).forEach(function(t){
+      var py = Y(t); ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(L, py); ctx.lineTo(L + pw, py); ctx.stroke();
+      ctx.fillStyle = ink2; ctx.fillText(ya.plain ? (ya.log ? '10^' + Math.round(Math.log10(t)) : num(t, 4)) : si(t, '').trim(), L - 6, py);
+    });
+    ctx.strokeStyle = ink2; ctx.strokeRect(L, T, pw, ph);
+    ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText((xa.label || 'x') + (xa.unit ? ' (' + xa.unit + ')' : '') + (xa.log ? ', skala log' : ''), L + pw / 2, H - 3);
+    ctx.save(); ctx.translate(12, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'middle';
+    ctx.fillText((ya.label || 'y') + (ya.unit ? ' (' + ya.unit + ')' : ''), 0, 0); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(L, T, pw, ph); ctx.clip();
+    (o.marks || []).forEach(function(m){
+      ctx.strokeStyle = cssVar(KIND_VAR[m.kind || 'hi']); ctx.setLineDash([5, 4]); ctx.beginPath();
+      if (m.x != null){ ctx.moveTo(X(m.x), T); ctx.lineTo(X(m.x), T + ph); } else { ctx.moveTo(L, Y(m.y)); ctx.lineTo(L + pw, Y(m.y)); }
+      ctx.stroke(); ctx.setLineDash([]);
+      if (m.label){ ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; if (m.x != null) ctx.fillText(m.label, X(m.x) + 4, T + 3); else ctx.fillText(m.label, L + 4, Y(m.y) + 3); }
+    });
+    var DASH = [[], [7, 4], [2, 3], [9, 3, 2, 3]];
+    o.series.forEach(function(s, i){
+      ctx.strokeStyle = cssVar(KIND_VAR[s.kind] || KIND_VAR.data); ctx.lineWidth = s.width || 2; ctx.setLineDash(s.dash || DASH[i % 4]); ctx.beginPath();
+      var pen = false;
+      s.pts.forEach(function(p){
+        if (!isFinite(p[1]) || (xa.log && p[0] <= 0) || (ya.log && p[1] <= 0)){ pen = false; return; }
+        var px = X(p[0]), py = Y(p[1]); if (pen) ctx.lineTo(px, py); else ctx.moveTo(px, py); pen = true;
+      });
+      ctx.stroke(); ctx.setLineDash([]);
+    });
+    if (st.cx != null){
+      var px = X(st.cx); ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, T); ctx.lineTo(px, T + ph); ctx.stroke();
+      o.series.forEach(function(s){ var v = interp(s.pts, st.cx); if (isFinite(v) && (!ya.log || v > 0)){ ctx.fillStyle = cssVar(KIND_VAR[s.kind] || KIND_VAR.data); ctx.beginPath(); ctx.arc(px, Y(v), 3.5, 0, 6.3); ctx.fill(); } });
+    }
+    ctx.restore();
+    st.geo = { L: L, pw: pw, x0: x0, x1: x1, log: !!xa.log, xr: xr };
+    legend.textContent = '';
+    if (o.series.length > 1 || o.series[0].label) o.series.forEach(function(s, i){
+      var sw = el('i'); sw.style.borderTopColor = cssVar(KIND_VAR[s.kind] || KIND_VAR.data); sw.style.borderTopStyle = (s.dash || DASH[i % 4]).length ? 'dashed' : 'solid';
+      legend.appendChild(el('span', null, [sw, s.label || ('kurva ' + (i + 1))]));
+    });
+    cv.setAttribute('aria-label', (o.title || 'Grafik') + ': ' + (ya.label || 'y') + ' terhadap ' + (xa.label || 'x') + '. Panah kiri dan kanan menggeser kursor baca.');
+    readout();
+  }
+  function interp(pts, x){
+    if (!pts.length || x < pts[0][0] || x > pts[pts.length - 1][0]) return NaN;
+    var lo = 0, hi = pts.length - 1;
+    while (hi - lo > 1){ var mid = (lo + hi) >> 1; if (pts[mid][0] <= x) lo = mid; else hi = mid; }
+    var a = pts[lo], b = pts[hi]; if (b[0] === a[0]) return a[1];
+    return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]);
+  }
+  function readout(){
+    var o = st.o;
+    if (st.cx == null){ read.textContent = 'Geser atau ketuk grafik untuk membaca nilai.'; return; }
+    var xa = o.x || {}, ya = o.y || {};
+    function f(v, unit, plain){ return plain ? num(v, 4) + (unit ? ' ' + unit : '') : si(v, unit); }
+    read.textContent = (xa.label || 'x') + ' = ' + f(st.cx, xa.unit, xa.plain) + '  ·  ' +
+      o.series.map(function(s, i){ var v = ya.log ? Math.pow(10, interp(s.pts.map(function(p){ return [p[0], Math.log10(p[1])]; }), st.cx)) : interp(s.pts, st.cx);
+        return (s.label || ('kurva ' + (i + 1))) + ' = ' + f(v, s.unit != null ? s.unit : ya.unit, ya.plain); }).join('  ·  ');
+  }
+  function fromPx(px){ var g = st.geo, u = clamp((px - g.L) / g.pw, 0, 1), v = g.x0 + u * (g.x1 - g.x0); return g.log ? Math.pow(10, v) : v; }
+  function onPtr(e){ var r = cv.getBoundingClientRect(); st.cx = fromPx(e.clientX - r.left); draw(); }
+  cv.addEventListener('pointerdown', onPtr);
+  cv.addEventListener('pointermove', function(e){ if (e.pointerType === 'mouse' || e.buttons) onPtr(e); });
+  cv.addEventListener('keydown', function(e){
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var g = st.geo, u = st.cx == null ? 0.5 : ((g.log ? Math.log10(st.cx) : st.cx) - g.x0) / (g.x1 - g.x0);
+    u = clamp(u + (e.key === 'ArrowRight' ? 0.02 : -0.02), 0, 1); var v = g.x0 + u * (g.x1 - g.x0);
+    st.cx = g.log ? Math.pow(10, v) : v; draw(); e.preventDefault();
+  });
+  var pending = false; function later(){ if (pending) return; pending = true; requestAnimationFrame(function(){ pending = false; if (box.isConnected) draw(); }); }
+  if (window.ResizeObserver) new ResizeObserver(later).observe(box); else window.addEventListener('resize', later);
+  doc.addEventListener('icd:theme', later);
+  draw();
+  return { set: function(o){ st.o = o; draw(); }, redraw: draw, el: tgt };
+}
+function sample(fn, a, b, n, log){
+  var pts = [], i, x; n = n || 200;
+  for (i = 0; i <= n; i++){ x = log ? a * Math.pow(b / a, i / n) : a + (b - a) * i / n; pts.push([x, fn(x)]); }
+  return pts;
+}
+ICD.plot = plot; ICD.sample = sample;
+
+/* ---------- sim: kontrol putar dengan langkah mundur ---------- */
+function simMount(tgt, cfg){
+  tgt = target(tgt);
+  var hist = [cfg.init()], i = 0, playing = false, raf = 0, lastT = 0, acc = 0, speed = 1, visible = true, max = cfg.max || 5000;
+  var bReset = btn('⏮ Reset', reset), bBack = btn('◀ Mundur', back), bPlay = btn('▶ Putar', toggle, 'primary'), bFwd = btn('Maju ▶', function(){ pause(); fwd(); });
+  var sel = el('select', { class: 'icd-select', 'aria-label': 'Kecepatan', style: 'min-height:36px', onchange: function(){ speed = parseFloat(sel.value); } },
+    [['0.5', '0.5×'], ['1', '1×'], ['2', '2×'], ['4', '4×']].map(function(o){ return el('option', { value: o[0], text: o[1], selected: o[0] === '1' }); }));
+  var lab = el('span', { class: 'step', 'aria-live': 'off' });
+  var bar = el('div', { class: 'icd-simctl no-print', role: 'group', 'aria-label': cfg.label || 'Kontrol simulasi' }, [bReset, bBack, bPlay, bFwd, sel, lab]);
+  tgt.appendChild(bar);
+  function btn(text, fn, cls){ return el('button', { type: 'button', class: 'icd-btn small ' + (cls || ''), text: text, onclick: fn }); }
+  function render(){
+    cfg.draw(hist[i], i);
+    lab.textContent = (cfg.unit || 'langkah') + ' ' + i;
+    bBack.disabled = i === 0; bReset.disabled = i === 0 && !playing;
+    bPlay.textContent = playing ? '⏸ Jeda' : '▶ Putar'; bPlay.setAttribute('aria-pressed', playing ? 'true' : 'false');
+  }
+  function fwd(){
+    if (i < hist.length - 1){ i++; render(); return true; }
+    if (hist.length >= max) return false;
+    var nx = cfg.step(hist[i], i); if (nx == null){ render(); return false; }
+    hist.push(nx); i++; render(); return true;
+  }
+  function back(){ pause(); if (i > 0){ i--; render(); } }
+  function reset(){ pause(); hist = [cfg.init()]; i = 0; render(); }
+  function loop(t){
+    if (!playing) return;
+    if (!lastT) lastT = t;
+    acc += (t - lastT) / 1000; lastT = t;
+    var per = 1 / ((cfg.fps || 2) * speed), guard = 0;
+    while (acc >= per && guard++ < 8){ acc -= per; if (!fwd()){ pause(); say('Simulasi selesai.'); return; } }
+    raf = requestAnimationFrame(loop);
+  }
+  function play(){ if (playing || !visible) return; playing = true; lastT = 0; acc = 0; render(); raf = requestAnimationFrame(loop); }
+  function pause(){ if (!playing) return; playing = false; cancelAnimationFrame(raf); render(); }
+  function toggle(){ if (playing) pause(); else play(); }
+  if (window.IntersectionObserver) new IntersectionObserver(function(es){ visible = es[es.length - 1].isIntersecting; if (!visible) pause(); }).observe(tgt);
+  doc.addEventListener('visibilitychange', function(){ if (doc.hidden) pause(); });
+  render();
+  return { reset: reset, pause: pause, play: play, step: function(){ pause(); return fwd(); }, back: back, state: function(){ return hist[i]; }, index: function(){ return i; },
+    redraw: render, playing: function(){ return playing; } };
+}
+ICD.sim = { mount: simMount, reduced: function(){ return reduceMotion.matches; } };
+
+/* ---------- guide: eksperimen terpandu (deklaratif) ---------- */
+function fileId(){ return doc.body ? (doc.body.dataset.file || 'tanpa-nama') : 'tanpa-nama'; }
+function enhanceGuides(ctx){
+  qa('.icd-guide', ctx).forEach(function(g){
+    if (g.dataset.done) return; g.dataset.done = '1';
+    var id = g.dataset.id || uid('g'), ans = parseInt(g.dataset.answer, 10), list = q('ul,ol', g), exp = q('.explain', g);
+    if (!list || !exp) return;
+    var texts = qa('li', list).map(function(li){ return li.innerHTML; }), path = 'progress.' + fileId() + '.guides.' + id;
+    var saved = store.get(path, null), box = el('div', { class: 'opts', role: 'group', 'aria-label': 'Pilih tebakan' }), res = el('div', { class: 'result' });
+    g.insertBefore(el('b', { text: 'Eksperimen terpandu: tebak dulu' }), g.firstChild);
+    list.replaceWith(box); exp.hidden = true; g.appendChild(res);
+    var btns = texts.map(function(t, i){ var b = el('button', { type: 'button', class: 'icd-opt', html: t, onclick: function(){ guess(i); } }); box.appendChild(b); return b; });
+    function guess(i){
+      store.set(path, { guess: i, ok: i === ans, shown: false, at: Date.now() }); paint(i, false);
+      say('Tebakan tersimpan. Sekarang coba di visualisasi, lalu buka penjelasan.');
+    }
+    function paint(i, shown){
+      btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
+      res.textContent = '';
+      if (!shown){
+        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+          el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
+      } else {
+        btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+          el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
+        exp.hidden = false;
+      }
+    }
+    if (saved) paint(saved.guess, !!saved.shown);
+  });
+}
+ICD.enhanceGuides = enhanceGuides;
+
+/* ---------- quiz ---------- */
+function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function quizMount(tgt, cfg){
+  tgt = target(tgt); tgt.classList.add('icd-quiz');
+  var exam = cfg.mode === 'ujian', pass = cfg.pass || PASS, file = cfg.file || fileId(), path = 'progress.' + file + '.quiz.' + cfg.id;
+  var order, idx, answers;
+  function start(subset){
+    order = (subset || cfg.questions.map(function(_, i){ return i; }));
+    if (cfg.shuffle !== false && !subset) order = shuffle(order);
+    if (cfg.take && !subset) order = order.slice(0, cfg.take);
+    order = order.map(function(qi){ var qq = cfg.questions[qi]; return { qi: qi, opts: qq.noshuffle ? qq.o.map(function(_, k){ return k; }) : shuffle(qq.o.map(function(_, k){ return k; })) }; });
+    idx = 0; answers = []; show();
+  }
+  function head(){
+    var s = store.get(path, null);
+    return el('div', { class: 'icd-row icd-small icd-muted', style: 'justify-content:space-between;margin-bottom:8px' }, [
+      el('span', { text: (cfg.title || 'Kuis') + ' · soal ' + Math.min(idx + 1, order.length) + ' dari ' + order.length }),
+      el('span', { text: s ? 'Skor terbaik ' + s.best + '/' + s.total : 'Belum pernah dikerjakan' })]);
+  }
+  function show(){
+    tgt.textContent = '';
+    if (idx >= order.length) return finish();
+    var it = order[idx], qq = cfg.questions[it.qi], opts = el('div', { class: 'opts' }), foot = el('div', { class: 'icd-row' });
+    add(tgt, [head(), el('div', { class: 'q', html: qq.q, id: uid('q') }), opts, foot]);
+    var btns = it.opts.map(function(k, pos){
+      var b = el('button', { type: 'button', class: 'icd-opt', html: '<span class="tag">' + 'ABCDEF'[pos] + '.</span>' + qq.o[k].t, onclick: function(){ choose(k); } });
+      opts.appendChild(b); return b;
+    });
+    function choose(k){
+      answers[idx] = k;
+      if (exam){ idx++; show(); return; }
+      reveal(btns, it, qq, k);
+      var nb = el('button', { type: 'button', class: 'icd-btn primary', text: idx + 1 < order.length ? 'Soal berikutnya' : 'Lihat hasil', onclick: function(){ idx++; show(); } });
+      foot.appendChild(nb); nb.focus();
+      say(qq.o[k].ok ? 'Benar.' : 'Belum tepat.');
+    }
+    var f = q('.icd-opt', tgt); if (f && idx > 0) f.focus();
+  }
+  function reveal(btns, it, qq, chosen){
+    btns.forEach(function(b, pos){
+      var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
+      if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+    });
+  }
+  function finish(){
+    var score = 0, wrong = [];
+    order.forEach(function(it, n){ if (cfg.questions[it.qi].o[answers[n]] && cfg.questions[it.qi].o[answers[n]].ok) score++; else wrong.push(it.qi); });
+    var total = order.length, full = total === (cfg.take || cfg.questions.length), ok = score / total >= pass;
+    if (full){
+      store.update(path, function(s){ s = s || { best: 0, total: total }; s.last = score; s.total = total; if (score > s.best) s.best = score; s.at = Date.now(); return s; });
+      if (exam) store.update('exams.' + cfg.id, function(a){ a = a || []; a.push({ score: score, total: total, pass: ok, at: Date.now() }); return a; });
+      emit('icd:progress');
+    }
+    add(tgt, [el('h4', { text: 'Hasil: ' + score + ' dari ' + total + ' (' + Math.round(score / total * 100) + '%)', style: 'margin-top:0', tabindex: -1 }),
+      el('p', { text: !full ? 'Putaran latihan untuk soal yang tadi salah; skor terbaik tidak diubah.' : ok ? 'Lulus. Batas lulus ' + Math.round(pass * 100) + '%.' : 'Belum lulus. Batas lulus ' + Math.round(pass * 100) + '%. Baca lagi penjelasan soal yang salah, lalu ulangi.' })]);
+    var row = el('div', { class: 'icd-row' }, [el('button', { type: 'button', class: 'icd-btn primary', text: 'Ulangi semua', onclick: function(){ start(); } })]);
+    if (wrong.length && wrong.length < cfg.questions.length) row.appendChild(el('button', { type: 'button', class: 'icd-btn', text: 'Ulangi ' + wrong.length + ' soal yang salah', onclick: function(){ start(wrong); } }));
+    tgt.appendChild(row);
+    if (exam){
+      tgt.appendChild(el('h4', { text: 'Pembahasan' }));
+      order.forEach(function(it, n){
+        var qq = cfg.questions[it.qi], opts = el('div', { class: 'opts' });
+        var btns = it.opts.map(function(k, pos){ var b = el('button', { type: 'button', class: 'icd-opt', html: '<span class="tag">' + 'ABCDEF'[pos] + '.</span>' + qq.o[k].t }); opts.appendChild(b); return b; });
+        add(tgt, [el('div', { class: 'q', html: (n + 1) + '. ' + qq.q }), opts]); reveal(btns, it, qq, answers[n]);
+      });
+    }
+    var h = q('h4', tgt); if (h) h.focus();
+  }
+  start();
+  return { restart: function(){ start(); } };
+}
+ICD.quiz = { mount: quizMount };
+
+/* ---------- cards: flashcard SM-2 sederhana ---------- */
+function today(){ var d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 864e5); }
+function sm2(c, grade){
+  var ef = c.ef || 2.5, n = c.n || 0, iv = c.iv || 0;
+  if (grade < 3){ n = 0; iv = 1; }
+  else { iv = n === 0 ? 1 : n === 1 ? 6 : Math.round(iv * ef); n++; }
+  ef = Math.max(1.3, ef + 0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
+  c.ef = Math.round(ef * 100) / 100; c.n = n; c.iv = iv; c.due = today() + iv; c.seen = (c.seen || 0) + 1;
+  return c;
+}
+var cards = {
+  sm2: sm2, today: today,
+  register: function(file, list){
+    var all = store.refresh().cards, changed = false;
+    list.forEach(function(c){
+      var k = file + ':' + c.id, o = all[k];
+      if (!o){ all[k] = { f: c.f, b: c.b, file: file }; changed = true; }
+      else if (o.f !== c.f || o.b !== c.b){ o.f = c.f; o.b = c.b; changed = true; }
+    });
+    if (changed) store.set('cards', all);
+  },
+  due: function(file){
+    var all = store.get('cards', {}), t = today(), out = [];
+    Object.keys(all).forEach(function(k){ var c = all[k]; if (file && c.file !== file) return; if (c.due == null || c.due <= t) out.push(k); });
+    out.sort(function(a, b){ return (all[a].due == null ? 1e9 : all[a].due) - (all[b].due == null ? 1e9 : all[b].due); });
+    return out;
+  },
+  count: function(file){ var all = store.get('cards', {}), n = 0; Object.keys(all).forEach(function(k){ if (!file || all[k].file === file) n++; }); return n; },
+  mount: function(tgt, opts){
+    tgt = target(tgt); tgt.classList.add('icd-flash'); opts = opts || {};
+    var queue = [], cur = null, cram = false;
+    function load(){
+      queue = cards.due(opts.file);
+      if (cram){ var all = store.get('cards', {}); queue = Object.keys(all).filter(function(k){ return !opts.file || all[k].file === opts.file; }); }
+      if (opts.limit) queue = queue.slice(0, opts.limit);
+      next();
+    }
+    function next(){
+      tgt.textContent = ''; cur = queue.shift();
+      var total = cards.count(opts.file);
+      if (!cur){
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+          total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
+        return;
+      }
+      var c = store.get('cards', {})[cur], f = reg.file(c.file);
+      var back = el('div', { class: 'face back', html: c.b, hidden: true }), row = el('div', { class: 'icd-row' });
+      var showBtn = el('button', { type: 'button', class: 'icd-btn primary', text: 'Tampilkan jawaban', onclick: function(){
+        back.hidden = false; showBtn.remove();
+        [['Lupa', 1], ['Sulit', 3], ['Baik', 4], ['Mudah', 5]].forEach(function(g){
+          row.appendChild(el('button', { type: 'button', class: 'icd-btn', text: g[0], onclick: function(){
+            if (!cram){ store.update('cards', function(all){ if (all[cur]) sm2(all[cur], g[1]); return all; }); if (g[1] < 3) queue.push(cur); emit('icd:progress'); }
+            next();
+          } }));
+        });
+        var fb = q('button', row); if (fb) fb.focus(); say('Jawaban ditampilkan.');
+      } });
+      row.appendChild(showBtn);
+      add(tgt, [el('div', { class: 'icd-small icd-muted', text: (cram ? 'Latihan bebas' : 'Jatuh tempo') + ' · sisa ' + (queue.length + 1) + (f ? ' · ' + f.code : '') }),
+        el('div', { class: 'face', html: c.f }), back, row]);
+    }
+    load();
+    return { reload: function(){ cram = false; load(); } };
+  }
+};
+ICD.cards = cards;
+
+/* ---------- calc: kalkulator engineer ---------- */
+function toBig(str, base){
+  var s = String(str).trim().replace(/_/g, '').toLowerCase(), neg = false;
+  if (s[0] === '-'){ neg = true; s = s.slice(1); }
+  if (/^0x/.test(s)){ base = 16; s = s.slice(2); } else if (/^0b/.test(s)){ base = 2; s = s.slice(2); } else if (/^0o/.test(s)){ base = 8; s = s.slice(2); }
+  if (!s) return null;
+  var digits = '0123456789abcdef', v = 0n, i, d;
+  for (i = 0; i < s.length; i++){ d = digits.indexOf(s[i]); if (d < 0 || d >= base) return null; v = v * BigInt(base) + BigInt(d); }
+  return neg ? -v : v;
+}
+function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i && (s.length - i) % n === 0) out += '_'; out += s[i]; } return out; }
+var CALCS = [
+{ id: 'basis', title: 'Basis bilangan', inputs: [
+    { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
+    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+  run: function(v){
+    var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
+    if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
+    var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
+    var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
+      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+    if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
+    return out;
+  }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+  run: function(v){ var r = parse(v.r), d = parse(v.d);
+    return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
+      ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
+  note: '20·log10 berlaku untuk tegangan atau arus pada impedansi yang sama; 10·log10 untuk daya.' },
+{ id: 'rc', title: 'Konstanta waktu RC', inputs: [{ k: 'R', label: 'R (Ω), contoh 10k', def: '10k' }, { k: 'C', label: 'C (F), contoh 100p', def: '100p' }],
+  run: function(v){ var tau = parse(v.R) * parse(v.C);
+    return [['τ = R·C', si(tau, 's')], ['Waktu ke 50% (0.693·τ)', si(0.6931 * tau, 's')], ['Rise time 10% ke 90% (2.197·τ)', si(2.197 * tau, 's')],
+      ['Mencapai 99% (4.6·τ)', si(4.605 * tau, 's')], ['Frekuensi cutoff 1/(2π·R·C)', si(1 / (2 * Math.PI * tau), 'Hz')]]; },
+  note: 'Model orde satu: satu R dan satu C ideal, sumber berupa step.' },
+{ id: 'pdyn', title: 'Daya dinamis CMOS', inputs: [{ k: 'a', label: 'Activity factor α (0 sampai 1)', def: '0.1' }, { k: 'C', label: 'Kapasitansi yang disaklar (F)', def: '1n' }, { k: 'V', label: 'VDD (V)', def: '0.9' }, { k: 'f', label: 'Frekuensi clock (Hz)', def: '1G' }],
+  run: function(v){ var a = parse(v.a), C = parse(v.C), V = parse(v.V), f = parse(v.f);
+    return [['P = α·C·VDD²·f', si(a * C * V * V * f, 'W')], ['Energi per siklus α·C·VDD²', si(a * C * V * V, 'J')], ['Jika VDD turun 10%', si(a * C * V * V * 0.81 * f, 'W') + ' (hemat 19%)']]; },
+  note: 'Hanya daya switching; short-circuit dan leakage tidak dihitung.' },
+{ id: 'slack', title: 'Slack setup dan hold', inputs: [{ k: 'T', label: 'Periode clock (ns)', def: '2' }, { k: 'cq', label: 'Clock-to-Q maks (ns)', def: '0.12' }, { k: 'lg', label: 'Delay logika maks (ns)', def: '1.5' },
+    { k: 'su', label: 'Setup time (ns)', def: '0.08' }, { k: 'cqm', label: 'Clock-to-Q min (ns)', def: '0.08' }, { k: 'lgm', label: 'Delay logika min (ns)', def: '0.05' }, { k: 'h', label: 'Hold time (ns)', def: '0.04' },
+    { k: 'sk', label: 'Skew = capture − launch (ns)', def: '0.05' }, { k: 'u', label: 'Uncertainty (ns)', def: '0.05' }],
+  run: function(v){ var p = {}, k; for (k in v) p[k] = parse(v[k]);
+    var su = (p.T + p.sk - p.u - p.su) - (p.cq + p.lg), ho = (p.cqm + p.lgm) - (p.h + p.sk + p.u);
+    return [['Slack setup', num(su, 4) + ' ns ' + (su >= 0 ? '(terpenuhi)' : '(PELANGGARAN)')], ['Slack hold', num(ho, 4) + ' ns ' + (ho >= 0 ? '(terpenuhi)' : '(PELANGGARAN)')],
+      ['Frekuensi maksimum', si(1e9 / (p.cq + p.lg + p.su - p.sk + p.u), 'Hz')]]; },
+  note: 'Setup: (T + skew − uncertainty − t_setup) − (t_cq + t_logika). Hold: (t_cq,min + t_logika,min) − (t_hold + skew + uncertainty). Satu nilai uncertainty dipakai untuk keduanya; tool signoff memisahkannya.' },
+{ id: 'mtbf', title: 'MTBF synchronizer', inputs: [{ k: 'tr', label: 'Waktu resolusi tersedia t_r (s)', def: '0.8n' }, { k: 'tau', label: 'Konstanta waktu τ (s)', def: '20p' }, { k: 'T0', label: 'Jendela T0 (s)', def: '50p' }, { k: 'fc', label: 'Frekuensi clock (Hz)', def: '500M' }, { k: 'fd', label: 'Laju perubahan data (Hz)', def: '10M' }],
+  run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
+    return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
+  note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+  run: function(v){ var fin = parse(v.fin), j = parse(v.j);
+    return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
+      ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
+  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+{ id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
+  run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
+    return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
+  note: 'Pendekatan: DPW ≈ π(d/2)²/S − π·d/√(2S). Edge exclusion, scribe line, dan model yield lain (Murphy, negative binomial) tidak dihitung.' }
+];
+function calcMount(tgt, id){
+  tgt = target(tgt);
+  var c = CALCS.filter(function(x){ return x.id === id; })[0]; if (!c) return;
+  var vals = {}, grid = el('div', { class: 'icd-grid' }), out = el('table', { class: 'icd', 'aria-live': 'polite' });
+  function run(){
+    var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    out.textContent = ''; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
+  }
+  c.inputs.forEach(function(inp){
+    vals[inp.k] = inp.def; var f;
+    if (inp.type === 'select') f = el('select', { class: 'icd-select' }, inp.opts.map(function(o){ return el('option', { value: o[0], text: o[1], selected: o[0] === inp.def }); }));
+    else f = el('input', { class: 'icd-input', type: 'text', value: inp.def, inputmode: inp.type === 'text' ? null : 'decimal', autocomplete: 'off', spellcheck: 'false' });
+    f.addEventListener('input', function(){ vals[inp.k] = f.value; run(); });
+    grid.appendChild(el('label', { class: 'icd-field' }, [el('span', { text: inp.label }), f]));
+  });
+  tgt.textContent = '';
+  add(tgt, [el('h4', { text: c.title, style: 'margin-top:0' }), grid, el('div', { class: 'icd-tablewrap', style: 'margin-top:10px' }, [out]), el('p', { class: 'icd-small icd-muted', text: c.note })]);
+  run();
+}
+ICD.calc = { list: CALCS.map(function(c){ return { id: c.id, title: c.title }; }), mount: calcMount, run: function(id, v){ return CALCS.filter(function(x){ return x.id === id; })[0].run(v); } };
+
+/* ---------- math: deteksi MathML ---------- */
+function mathCheck(){
+  try {
+    var d = el('div', { style: 'position:absolute;left:-999px;top:0' });
+    d.innerHTML = '<math xmlns="http://www.w3.org/1998/Math/MathML"><mspace height="23px" width="77px"></mspace></math>';
+    doc.body.appendChild(d); var w = d.firstChild.firstChild.getBoundingClientRect().width; d.remove();
+    if (Math.abs(w - 77) > 2) root.classList.add('no-mathml');
+  } catch (e) { root.classList.add('no-mathml'); }
+}
+ICD.math = { supported: function(){ return !root.classList.contains('no-mathml'); } };
+
+/* ---------- logo ---------- */
+ICD.logo = function(size){
+  var z = size || 22, g = svg('svg', { width: z, height: z, viewBox: '0 0 24 24', 'aria-hidden': 'true', class: 'icd-logo' });
+  [6, 10, 14, 18].forEach(function(t){
+    g.appendChild(svg('rect', { x: t - 0.9, y: 1, width: 1.8, height: 3, rx: 0.6, class: 'pin' })); g.appendChild(svg('rect', { x: t - 0.9, y: 20, width: 1.8, height: 3, rx: 0.6, class: 'pin' }));
+    g.appendChild(svg('rect', { x: 1, y: t - 0.9, width: 3, height: 1.8, rx: 0.6, class: 'pin' })); g.appendChild(svg('rect', { x: 20, y: t - 0.9, width: 3, height: 1.8, rx: 0.6, class: 'pin' }));
+  });
+  g.appendChild(svg('rect', { x: 4, y: 4, width: 16, height: 16, rx: 3, class: 'body' }));
+  g.appendChild(svg('path', { d: 'M8.5 7.5v9h4a2.6 2.6 0 0 0 0-5.2h-4', class: 'b' }));
+  g.appendChild(svg('circle', { cx: 16.6, cy: 7.4, r: 1.3, class: 'dot' }));
+  return g;
+};
+
+/* ---------- sync: akun opsional (Supabase) ---------- */
+var sync = (function(){
+  var C = ICD.config || {}, SK = 'icd.auth';
+  var enabled = !!(C.supabaseUrl && C.supabaseKey) && /^https?:$/.test(window.location.protocol);
+  var state = { busy: false, last: null, err: null }, pushTimer = null, dirty = false;
+  function ls(k, v){
+    try {
+      if (v === undefined) return JSON.parse(window.localStorage.getItem(k) || 'null');
+      if (v === null) window.localStorage.removeItem(k); else window.localStorage.setItem(k, JSON.stringify(v));
+    } catch (e) { return null; }
+    return v;
+  }
+  function sess(){ return ls(SK); }
+  function api(path, o){
+    o = o || {}; var h = { apikey: C.supabaseKey, 'Content-Type': 'application/json' }, s = sess(), k;
+    if (o.auth !== false && s && s.access_token) h.Authorization = 'Bearer ' + s.access_token;
+    if (o.headers) for (k in o.headers) h[k] = o.headers[k];
+    return fetch(C.supabaseUrl.replace(/\/$/, '') + path, { method: o.method || 'GET', headers: h, body: o.body ? JSON.stringify(o.body) : undefined, keepalive: !!o.keepalive })
+      .then(function(r){
+        if (!r.ok) return r.text().then(function(t){ var e = new Error(t || ('HTTP ' + r.status)); e.status = r.status; throw e; });
+        return r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+      });
+  }
+  function save(o, user){
+    var s = { access_token: o.access_token, refresh_token: o.refresh_token,
+      expires_at: o.expires_at ? o.expires_at * 1000 : Date.now() + (o.expires_in || 3600) * 1000, user: user || o.user || (sess() || {}).user || null };
+    if (s.user && s.user.id) s.user = { id: s.user.id, email: s.user.email || '', name: (s.user.user_metadata && (s.user.user_metadata.full_name || s.user.user_metadata.name)) || s.user.name || '' };
+    ls(SK, s); return s;
+  }
+  function valid(){
+    var s = sess(); if (!s || !s.refresh_token) return Promise.resolve(null);
+    if (s.expires_at - Date.now() > 60000) return Promise.resolve(s);
+    return api('/auth/v1/token?grant_type=refresh_token', { method: 'POST', auth: false, body: { refresh_token: s.refresh_token } })
+      .then(function(o){ return save(o); })
+      .catch(function(e){ if (e.status === 400 || e.status === 401){ ls(SK, null); emit('icd:auth'); } return null; });
+  }
+  function fromHash(){
+    var h = window.location.hash || '';
+    if (h.indexOf('error_description=') >= 0){
+      var pe = new URLSearchParams(h.slice(1)); toast('Gagal masuk: ' + pe.get('error_description'));
+      history.replaceState(null, '', window.location.pathname + window.location.search); return Promise.resolve();
+    }
+    if (h.indexOf('access_token=') < 0) return Promise.resolve();
+    var p = new URLSearchParams(h.slice(1));
+    save({ access_token: p.get('access_token'), refresh_token: p.get('refresh_token'), expires_in: +p.get('expires_in') || 3600, expires_at: +p.get('expires_at') || 0 });
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    return api('/auth/v1/user').then(function(u){ var s = sess(); save(s, u); emit('icd:auth'); toast('Masuk sebagai ' + (sess().user.email || 'pengguna') + '. Progres disinkronkan.'); });
+  }
+  function pull(){
+    var s = sess();
+    return api('/rest/v1/progress?select=data,updated_at&user_id=eq.' + encodeURIComponent(s.user.id)).then(function(rows){ return rows && rows[0] ? rows[0] : null; });
+  }
+  function push(keep){
+    var s = sess(); if (!s || !s.user) return Promise.resolve();
+    dirty = false;
+    return api('/rest/v1/progress', { method: 'POST', keepalive: keep, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: { user_id: s.user.id, data: store.all(), updated_at: new Date().toISOString() } });
+  }
+  function now(){
+    if (!enabled || state.busy) return Promise.resolve();
+    state.busy = true; emit('icd:sync');
+    return valid().then(function(s){
+      if (!s || !s.user) return null;
+      return pull().then(function(row){ if (row && row.data) store.mergeRemote(row.data); return push(false); })
+        .then(function(){ state.last = Date.now(); state.err = null; });
+    }).catch(function(e){ state.err = e.message || String(e); })
+      .then(function(){ state.busy = false; emit('icd:sync'); });
+  }
+  function schedule(){
+    if (!enabled || !sess()) return; dirty = true; clearTimeout(pushTimer);
+    pushTimer = setTimeout(function(){ if (state.busy){ schedule(); return; } now(); }, 4000);
+  }
+  doc.addEventListener('icd:store', function(e){ if (!(e.detail && e.detail.remote)) schedule(); });
+  doc.addEventListener('visibilitychange', function(){ if (doc.hidden && dirty && sess()){ clearTimeout(pushTimer); push(true).catch(function(){}); } });
+  function emailLogin(email){
+    var to = window.location.href.split('#')[0];
+    return api('/auth/v1/otp?redirect_to=' + encodeURIComponent(to), { method: 'POST', auth: false, body: { email: email, create_user: true } });
+  }
+  function oauth(provider){
+    window.location.href = C.supabaseUrl.replace(/\/$/, '') + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(window.location.href.split('#')[0]);
+  }
+  function logout(){
+    var s = sess(); ls(SK, null); emit('icd:auth');
+    if (s) api('/auth/v1/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + s.access_token }, auth: false }).catch(function(){});
+  }
+  function dialogLogin(){
+    var inp = el('input', { class: 'icd-input', type: 'email', autocomplete: 'email', placeholder: 'nama@contoh.com', 'aria-label': 'Alamat email' });
+    var msg = el('p', { class: 'icd-small', 'aria-live': 'polite' });
+    var body = el('div', null, [
+      el('p', { class: 'icd-small icd-muted', text: 'Akun bersifat opsional. Dengan akun, progres, catatan, skor kuis, dan flashcard tersinkron ke semua perangkat Anda. Tanpa akun, semuanya tetap tersimpan di browser ini.' }),
+      C.google === true ? el('button', { type: 'button', class: 'icd-btn', style: 'width:100%;margin-bottom:12px', text: 'Masuk dengan Google', onclick: function(){ oauth('google'); } }) : null,
+      el('label', { class: 'icd-field' }, ['Atau terima tautan masuk lewat email', inp]), msg]);
+    var dl = dialog({ title: 'Masuk ke ' + ICD.brand, body: body, actions: [{ label: 'Tutup' }, { label: 'Kirim tautan', primary: true, run: function(){
+      var v = inp.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ msg.textContent = 'Alamat email belum benar.'; return false; }
+      msg.textContent = 'Mengirim…';
+      emailLogin(v).then(function(){ msg.textContent = 'Tautan masuk sudah dikirim ke ' + v + '. Buka email itu di perangkat ini.'; })
+        .catch(function(e){ msg.textContent = 'Gagal mengirim: ' + (e.status === 429 ? 'terlalu sering, coba lagi sebentar lagi.' : e.message); });
+      return false;
+    } }] });
+    setTimeout(function(){ inp.focus(); }, 50);
+    return dl;
+  }
+  function dialogAccount(){
+    var s = sess(), st = state;
+    dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
+      el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
+      el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+  }
+  return {
+    enabled: function(){ return enabled; },
+    session: sess, user: function(){ var s = sess(); return s && s.user; },
+    state: function(){ return state; },
+    now: now, login: dialogLogin, account: dialogAccount, logout: logout,
+    init: function(){ if (!enabled) return; fromHash().then(now); }
+  };
+})();
+ICD.sync = sync;
+
+/* ---------- shell: kerangka halaman ---------- */
+function topbar(file, f){
+  var isIndex = file === 'index';
+  var tocBtn = (!isIndex && q('.icd-sec')) ? el('button', { type: 'button', class: 'icd-btn small icd-toc-btn', 'aria-label': 'Daftar isi', 'aria-expanded': 'false', text: '☰' }) : null;
+  var search = el('input', { type: 'search', class: 'icd-input', placeholder: 'Cari…', 'aria-label': 'Cari di seluruh materi', id: 'icd-search' });
+  var form = el('form', { role: 'search', onsubmit: function(e){
+    e.preventDefault(); var v = search.value.trim();
+    if (isIndex) emit('icd:search', { q: v }); else if (v) window.location.href = 'index.html#cari=' + encodeURIComponent(v);
+  } }, [search]);
+  if (isIndex) search.addEventListener('input', function(){ emit('icd:search', { q: search.value.trim() }); });
+  var th = el('button', { type: 'button', class: 'icd-btn small', 'aria-label': ICD.theme.label(), title: ICD.theme.label(), text: '◐',
+    onclick: function(){ ICD.theme.cycle(); th.setAttribute('aria-label', ICD.theme.label()); th.title = ICD.theme.label(); toast(ICD.theme.label()); } });
+  var acct = null;
+  if (sync.enabled()){
+    acct = el('button', { type: 'button', class: 'icd-btn small icd-acct', onclick: function(){ if (sync.user()) sync.account(); else sync.login(); } });
+    var paintAcct = function(){ var u = sync.user(), st = sync.state(); acct.textContent = u ? ((st.busy ? '⟳ ' : st.err ? '⚠ ' : '● ') + ((u.name || u.email || 'Akun').split(/[ @]/)[0])) : 'Masuk'; acct.title = u ? 'Akun dan sinkron' : 'Masuk untuk menyinkronkan progres'; };
+    paintAcct(); doc.addEventListener('icd:auth', paintAcct); doc.addEventListener('icd:sync', paintAcct);
+  }
+  var bar = el('header', { class: 'icd-top no-print' }, [tocBtn,
+    el('a', { class: 'brand', href: 'index.html', title: 'Beranda ' + ICD.brand, 'aria-label': ICD.brand + ': ke beranda' }, [ICD.logo(22), el('span', { class: 'wm' }, [el('span', { text: 'bikin' }), el('b', { text: 'chip' })])]),
+    el('span', { class: 'title', text: f ? f.code + ' · ' + f.title : (doc.title || '') }), form, th, acct]);
+  doc.body.insertBefore(bar, doc.body.firstChild);
+  doc.body.insertBefore(el('a', { class: 'icd-skip', href: '#icd-main', text: 'Lewati ke isi' }), doc.body.firstChild);
+  return tocBtn;
+}
+function shell(){
+  var file = fileId(), f = reg.file(file), main = q('main');
+  if (!main) return;
+  main.id = 'icd-main'; main.classList.add('icd-main');
+  var tocBtn = topbar(file, f), secs = qa('section.icd-sec', main);
+  var wrap = el('div', { class: 'icd-wrap' }); main.parentNode.insertBefore(wrap, main); wrap.appendChild(main);
+  if (!secs.length) return;
+  var progBar = el('div', { class: 'icd-bar no-print', role: 'progressbar', 'aria-label': 'Bagian selesai', 'aria-valuemin': 0, 'aria-valuemax': secs.length }, [el('i')]);
+  wrap.parentNode.insertBefore(progBar, wrap);
+  var toc = el('nav', { class: 'icd-toc no-print', 'aria-label': 'Daftar isi' }), ol = el('ol'); toc.appendChild(ol);
+  wrap.classList.add('has-toc'); wrap.insertBefore(toc, main);
+  var base = 'progress.' + file, links = {}, marks = {};
+  store.update(base, function(p){ p = p || {}; p.visited = Date.now(); p.nsec = secs.length; p.sections = p.sections || {}; return p; });
+  secs.forEach(function(s, i){
+    var h = q('h2', s), sid = s.id || (s.id = 's' + ('0' + (i + 1)).slice(-2)), title = h ? h.textContent : 'Bagian ' + (i + 1);
+    if (h) h.insertBefore(el('span', { class: 'n', text: s.dataset.n || (i + 1), 'aria-hidden': 'true' }), h.firstChild);
+    marks[sid] = el('span', { class: 'mark', 'aria-hidden': 'true' });
+    links[sid] = el('a', { href: '#' + sid, onclick: function(){ closeToc(); } }, [marks[sid], el('span', { text: title })]);
+    ol.appendChild(el('li', null, [links[sid]]));
+    var done = el('button', { type: 'button', class: 'icd-btn small', onclick: function(){
+      var now = !store.get(base + '.sections.' + sid, false); store.set(base + '.sections.' + sid, now); paint(); emit('icd:progress');
+      say(now ? 'Bagian ditandai selesai.' : 'Tanda selesai dihapus.');
+    } });
+    var bm = el('button', { type: 'button', class: 'icd-btn small', onclick: function(){
+      store.update('bookmarks', function(a){ a = a || []; var k = a.findIndex(function(b){ return b.file === file && b.sec === sid; });
+        if (k >= 0) a.splice(k, 1); else a.push({ file: file, sec: sid, title: title, at: Date.now() }); return a; });
+      paint();
+    } });
+    var ta = el('textarea', { class: 'icd-input', 'aria-label': 'Catatan pribadi untuk bagian ini', placeholder: 'Tulis catatan Anda. Tersimpan otomatis di perangkat ini.' });
+    ta.value = store.get('notes.' + file + '.' + sid, '');
+    var timer; ta.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(function(){ store.set('notes.' + file + '.' + sid, ta.value || undefined); }, 500); });
+    var note = el('details', { class: 'icd-note icd-sol' }, [el('summary', { text: 'Catatan saya' + (ta.value ? ' (ada isi)' : '') }), ta]);
+    s.appendChild(el('div', { class: 'icd-secfoot no-print' }, [done, bm, note]));
+    s._done = done; s._bm = bm;
+  });
+  function paint(){
+    var p = store.get(base, {}), n = 0, bms = store.get('bookmarks', []);
+    secs.forEach(function(s){
+      var d = !!(p.sections && p.sections[s.id]); if (d) n++;
+      s._done.textContent = d ? '● Selesai dibaca' : '○ Tandai selesai'; s._done.setAttribute('aria-pressed', d ? 'true' : 'false');
+      var b = bms.some(function(x){ return x.file === file && x.sec === s.id; });
+      s._bm.textContent = b ? '★ Tersimpan' : '☆ Bookmark'; s._bm.setAttribute('aria-pressed', b ? 'true' : 'false');
+      marks[s.id].textContent = d ? '●' : '○'; marks[s.id].className = 'mark' + (d ? ' done' : '');
+    });
+    progBar.firstChild.style.width = (n / secs.length * 100) + '%'; progBar.setAttribute('aria-valuenow', n);
+  }
+  paint(); doc.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) paint(); });
+  function closeToc(){ toc.classList.remove('open'); if (tocBtn) tocBtn.setAttribute('aria-expanded', 'false'); }
+  if (tocBtn) tocBtn.addEventListener('click', function(){ var o = toc.classList.toggle('open'); tocBtn.setAttribute('aria-expanded', o ? 'true' : 'false'); if (o){ var a = q('a', toc); if (a) a.focus(); } });
+  doc.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeToc(); });
+  var lastTimer;
+  function setCurrent(id){
+    Object.keys(links).forEach(function(k){ if (k === id) links[k].setAttribute('aria-current', 'true'); else links[k].removeAttribute('aria-current'); });
+    clearTimeout(lastTimer); lastTimer = setTimeout(function(){ store.set(base + '.last', id); store.set('meta.lastFile', file); }, 1200);
+  }
+  if (window.IntersectionObserver){
+    var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) setCurrent(e.target.id); }); },
+      { rootMargin: '-15% 0px -70% 0px' });
+    secs.forEach(function(s){ io.observe(s); });
+    /* tanda "dibaca" otomatis: bagian terlihat cukup lama (detik ~ panjang teks) dan ujungnya sudah tergulir */
+    var seen = {}, foot = {}, need = {}, vis = {};
+    secs.forEach(function(s){ var w = (s.textContent || '').split(/\s+/).length; need[s.id] = clamp(Math.round(w / 6), 10, 180); seen[s.id] = 0; });
+    var io2 = new IntersectionObserver(function(es){ es.forEach(function(e){
+      var hgt = e.intersectionRect.height, vh = window.innerHeight || 800;
+      vis[e.target.id] = e.isIntersecting && (hgt >= 0.4 * vh || hgt >= 0.6 * e.boundingClientRect.height);
+    }); }, { threshold: [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
+    var io3 = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) foot[e.target.parentNode.id] = true; }); });
+    secs.forEach(function(s){ io2.observe(s); var ft = q('.icd-secfoot', s); if (ft) io3.observe(ft); });
+    setInterval(function(){
+      if (doc.hidden || store.get('settings.autoRead', true) === false) return;
+      secs.forEach(function(s){
+        if (!vis[s.id]) return; seen[s.id]++;
+        if (foot[s.id] && seen[s.id] >= need[s.id] && !store.get(base + '.sections.' + s.id, false)){
+          store.set(base + '.sections.' + s.id, true); store.set(base + '.auto.' + s.id, true); paint(); emit('icd:progress');
+          toast('Bagian "' + (q('h2', s) ? q('h2', s).textContent.replace(/^\d+/, '') : s.id) + '" ditandai selesai dibaca.');
+        }
+      });
+    }, 1000);
+  }
+  var lastSec = store.get(base + '.last', null);
+  if (!window.location.hash && lastSec && lastSec !== secs[0].id && q('#' + lastSec)){
+    var lh = q('h2', q('#' + lastSec)), ban = el('div', { class: 'icd-resume no-print', role: 'status' });
+    ban.appendChild(el('span', { text: 'Terakhir dibaca: ' + (lh ? lh.textContent.replace(/^(\d+)/, '$1 · ') : lastSec) }));
+    ban.appendChild(el('a', { class: 'icd-btn small primary', href: '#' + lastSec, text: 'Lanjut ke sana', onclick: function(){ ban.remove(); } }));
+    ban.appendChild(el('button', { type: 'button', class: 'icd-btn small', 'aria-label': 'Tutup', text: '×', onclick: function(){ ban.remove(); } }));
+    main.insertBefore(ban, main.firstChild);
+  }
+  if (f){
+    var prev = reg.files[f.idx - 1], next = reg.files[f.idx + 1], nav = el('nav', { class: 'icd-nav no-print', 'aria-label': 'Navigasi modul' });
+    nav.appendChild(prev ? el('a', { href: prev.id + '.html', rel: 'prev' }, [el('small', { text: '← Sebelumnya · ' + prev.code }), prev.title]) : el('a', { href: 'index.html' }, [el('small', { text: '← Kembali' }), 'Peta kurikulum']));
+    if (next && avail.has(next.id)) nav.appendChild(el('a', { class: 'next', href: next.id + '.html', rel: 'next' }, [el('small', { text: 'Berikutnya · ' + next.code + ' →' }), next.title]));
+    else if (next) nav.appendChild(el('a', { class: 'next soon', href: 'index.html#belajar' }, [el('small', { text: 'Berikutnya · ' + next.code + ' · segera hadir' }), next.title + ' — sementara itu: ulangi flashcard dan kuis di beranda']));
+    else nav.appendChild(el('a', { class: 'next', href: 'index.html' }, [el('small', { text: 'Selesai →' }), 'Peta kurikulum']));
+    main.appendChild(nav);
+  }
+  main.appendChild(el('p', { class: 'icd-foot', text: ICD.brand + ' · ICD-Core ' + ICD.version + ' · kode MIT, materi CC BY-SA 4.0 · ' + (store.persistent() ? 'progres tersimpan di perangkat ini' : 'penyimpanan browser tidak tersedia; progres hanya bertahan selama halaman terbuka') }));
+}
+window.addEventListener('beforeprint', function(){ qa('details').forEach(function(d){ if (!d.open){ d.open = true; d.dataset.printOpened = '1'; } }); qa('.icd-layers [role=tabpanel]').forEach(function(p){ if (p.hidden){ p.hidden = false; p.dataset.printShown = '1'; } }); });
+window.addEventListener('afterprint', function(){ qa('details[data-print-opened]').forEach(function(d){ d.open = false; delete d.dataset.printOpened; }); qa('[data-print-shown]').forEach(function(p){ p.hidden = true; delete p.dataset.printShown; }); });
+
+function enhanceLinks(ctx){
+  qa('a[href]', ctx || doc).forEach(function(a){
+    if (a.closest('.icd-nav') || a.dataset.soonDone) return;
+    var m = /^([a-z0-9-]+)\.html(#.*)?$/.exec(a.getAttribute('href')); if (!m) return;
+    var f = reg.file(m[1]); a.dataset.soonDone = '1';
+    if (!f || avail.has(f.id)) return;
+    a.classList.add('icd-soon'); a.setAttribute('aria-disabled', 'true'); a.title = f.code + ' segera hadir';
+    a.appendChild(el('span', { class: 'icd-chip', text: 'segera' }));
+    a.addEventListener('click', function(e){ e.preventDefault(); toast(f.code + ' · ' + f.title + ' belum tersedia; sedang dibuat. Daftar materi yang sudah ada ada di beranda.'); });
+  });
+}
+ICD.enhance = function(ctx){ enhanceCode(ctx); enhanceLayers(ctx); enhanceGuides(ctx); enhanceTerms(ctx); enhanceLinks(ctx); };
+ready(function(){ mathCheck(); shell(); ICD.enhance(); sync.init(); emit('icd:ready'); });
+})();

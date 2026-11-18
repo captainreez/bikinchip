@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bikinchip — Ayo jadi chip designer Indonesia</title>
+<meta name="description" content="Kurikulum IC design gratis dan open source dalam Bahasa Indonesia: dari tegangan dan bilangan biner sampai tapeout, dengan visualisasi interaktif, kuis, dan lab open-source.">
+<meta property="og:title" content="bikinchip — Ayo jadi chip designer Indonesia">
+<meta property="og:description" content="Kurikulum IC design gratis dan open source dalam Bahasa Indonesia, dari nol sampai silikon.">
+<meta name="theme-color" content="#0B5C7A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='4' width='16' height='16' rx='3' fill='%230B5C7A'/%3E%3Cpath d='M8.5 7.5v9h4a2.6 2.6 0 0 0 0-5.2h-4' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='16.6' cy='7.4' r='1.3' fill='%23D7263D'/%3E%3C/svg%3E">
+<!--CORE-->
+<style>
+.subnav{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;position:sticky;top:var(--top);background:var(--bg);z-index:20}
+.subnav a{flex:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink);font-size:.88rem;background:var(--card);min-height:36px;display:inline-flex;align-items:center}
+.subnav a:hover{border-color:var(--accent)}
+section.blk{margin-top:30px}
+section.blk>h2{margin-top:0}
+.hero{margin:6px 0 10px;padding:26px 22px;border:1px solid var(--line);border-radius:14px;background:
+  radial-gradient(circle at 92% 8%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 45%),
+  repeating-linear-gradient(0deg,transparent 0 23px,color-mix(in srgb,var(--line) 55%,transparent) 23px 24px),
+  repeating-linear-gradient(90deg,transparent 0 23px,color-mix(in srgb,var(--line) 55%,transparent) 23px 24px),var(--card)}
+.hero-brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.wm.big{font-size:1.5rem;font-weight:700}
+.hero h1{font-size:clamp(1.6rem,4.6vw,2.5rem);margin:.15em 0 .35em;letter-spacing:-.01em}
+.hero .lead{font-size:1.05rem;max-width:46em;color:var(--ink)}
+.hero-stats{display:flex;flex-wrap:wrap;gap:8px 22px;list-style:none;padding:0;margin:16px 0 0;font-size:.88rem;color:var(--ink2)}
+.hero-stats b{display:block;font-family:var(--f-mono);font-size:1.25rem;color:var(--ink)}
+.hero-parts{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px}
+.hero-parts a{font-size:.8rem;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none}
+.hero-parts a:hover{border-color:var(--accent)}
+.stat{font-family:var(--f-mono);font-size:1.5rem;font-weight:600;line-height:1.2}
+.partrow{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:4px 10px;align-items:center;font-size:.88rem;margin-bottom:8px}
+.partrow .icd-meter{grid-column:1/-1}
+.partrow span:nth-child(2){text-align:right;font-family:var(--f-mono);color:var(--ink2)}
+#graphwrap{overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card);max-height:78vh}
+#graph .node{cursor:pointer}
+#graph .node rect{fill:var(--card);stroke:var(--ink2);stroke-width:1.2}
+#graph .node.berjalan rect{fill:var(--tint);stroke:var(--accent)}
+#graph .node.selesai rect{stroke:var(--ok);stroke-width:2.4}
+#graph .node.sel rect{stroke:var(--accent);stroke-width:3}
+#graph .node.up rect,#graph .node.down rect{stroke:var(--accent);stroke-dasharray:5 3;stroke-width:2}
+#graph .node.dim{opacity:.28}
+#graph .node text{fill:var(--ink);font-family:var(--f-mono)}
+#graph .node .t2{fill:var(--ink2);font-family:var(--f-text)}
+#graph .node:focus-visible rect{stroke:var(--accent);stroke-width:3}
+#graph .node:focus{outline:none}
+#graph .edge{fill:none;stroke:var(--line);stroke-width:1.4}
+#graph .edge.hot{stroke:var(--accent);stroke-width:2.2}
+#graph .colhead{fill:var(--ink2);font-size:10px;font-family:var(--f-mono)}
+.modlist h3{font-size:1rem;margin:1.2em 0 .4em}
+.modbtn{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);cursor:pointer;margin-bottom:6px}
+.modbtn.dim{opacity:.4}
+.modbtn[aria-pressed=true]{border-color:var(--accent);border-width:2px}
+.modbtn .c{font-family:var(--f-mono);font-weight:600;flex:none}
+.modbtn .h{margin-left:auto;font-family:var(--f-mono);color:var(--ink2);font-size:.82rem;flex:none}
+.filerow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.filerow:last-child{border-bottom:0}
+.filerow .m{font-family:var(--f-mono)}
+.result{display:block;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin-bottom:6px;text-decoration:none;color:var(--ink);width:100%;text-align:left;cursor:pointer;min-height:44px}
+.result:hover{border-color:var(--accent)}
+.result small{color:var(--ink2);display:block}
+.gl dt{font-weight:600;margin-top:.7em}.gl dt i{font-weight:400;color:var(--ink2)}.gl dd{margin:0 0 0 0}
+.legend-s{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--ink2);margin:8px 0}
+.bnext h3{margin:0 0 .3em}.bnext .big{font-size:1.15rem;font-weight:600;margin:.2em 0}
+.wk li{margin:.25em 0}.wk .soon{color:var(--ink2)}
+#b-avail td.c{text-align:center;font-family:var(--f-mono)}
+#b-avail .icd-meter{min-width:70px}
+@media (max-width:600px){
+#b-avail thead{display:none}
+#b-avail tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--line)}
+#b-avail td{border:0;padding:0}
+#b-avail td:first-child{grid-column:1/-1}
+#b-avail td:nth-child(2){display:flex;gap:8px;align-items:center;text-align:left}
+#b-avail td:nth-child(2)::before{content:'bagian';font-family:var(--f-text);color:var(--ink2);font-size:.8rem}
+#b-avail td:nth-child(3)::before{content:'kuis ';font-family:var(--f-text);color:var(--ink2);font-size:.8rem}
+#b-avail td:nth-child(4){grid-column:1/-1;font-size:.82rem;color:var(--ink2)}
+}
+.icd-chip.new{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sw{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+</style>
+</head>
+<body data-file="index">
+<main class="wide">
+
+<nav class="subnav no-print" aria-label="Bagian halaman">
+  <a href="#belajar">Belajar</a><a href="#dasbor">Dasbor</a><a href="#peta">Peta kurikulum</a><a href="#kartu">Flashcard</a><a href="#rencana">Rencana belajar</a>
+  <a href="#glosarium">Glosarium</a><a href="#kalkulator">Kalkulator</a><a href="#buku">Buku</a><a href="#data">Data</a><a href="#tentang">Tentang</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-in">
+    <div class="hero-brand" id="hero-logo"><span class="wm big"><span>bikin</span><b>chip</b></span></div>
+    <h1>Ayo jadi chip designer Indonesia.</h1>
+    <p class="lead">Kurikulum IC design gratis dan open source dalam Bahasa Indonesia: dari tegangan dan bilangan biner sampai tapeout. Setiap modul punya visualisasi interaktif yang bisa Anda mainkan, contoh soal, kode yang benar-benar dijalankan, kuis, dan lab dengan tool open-source.</p>
+    <div class="icd-row" id="resume"></div>
+    <ul class="hero-stats" id="hero-stats"></ul>
+  </div>
+  <div class="hero-parts" id="hero-parts" aria-label="Sembilan bagian kurikulum"></div>
+</section>
+
+<section class="blk" id="belajar">
+  <h2>Belajar sekarang</h2>
+  <p class="icd-small icd-muted" id="b-status"></p>
+  <div class="icd-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))">
+    <div class="icd-card" id="b-next"></div>
+    <div class="icd-card" id="b-week"></div>
+  </div>
+  <h3>Materi yang sudah tersedia</h3>
+  <p class="icd-small icd-muted">Urut sesuai kurikulum. Bagian modul ditandai selesai otomatis setelah dibaca sampai ujungnya (bisa dimatikan di <a href="#data">Data</a>); modul dianggap selesai bila ≥ 80% bagian terbaca dan kuis ≥ 70%.</p>
+  <div class="icd-tablewrap"><table class="icd" id="b-avail"><thead><tr><th scope="col">Modul</th><th scope="col">Bagian dibaca</th><th scope="col">Kuis terbaik</th><th scope="col">Status</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="blk" id="hasil" hidden aria-live="polite">
+  <h2>Hasil pencarian</h2>
+  <div id="hasil-list"></div>
+</section>
+
+<section class="blk" id="dasbor">
+  <h2>Dasbor progres</h2>
+  <div class="icd-grid" id="stats"></div>
+  <div class="icd-grid" style="margin-top:12px">
+    <div class="icd-card"><h3>Per bagian</h3><div id="parts"></div></div>
+    <div class="icd-card"><h3>Bookmark</h3><div id="bookmarks"></div><h3>Ujian</h3><div id="exams"></div></div>
+  </div>
+</section>
+
+<section class="blk" id="peta">
+  <h2>Peta kurikulum</h2>
+  <p class="icd-muted icd-small">Panah berarti "harus selesai dulu". Pilih sebuah modul untuk melihat file, prasyarat, dan apa yang dibukanya. Hanya ketergantungan langsung yang digambar; daftar lengkapnya ada di panel rincian.</p>
+  <div class="icd-row no-print" style="margin-bottom:10px">
+    <label class="icd-field">Jalur spesialisasi<select class="icd-select" id="track"></select></label>
+    <div class="icd-row" role="group" aria-label="Tampilan" style="align-self:flex-end">
+      <button type="button" class="icd-btn" id="v-graf">Graf</button><button type="button" class="icd-btn" id="v-daftar">Daftar</button>
+    </div>
+  </div>
+  <div class="legend-s" aria-hidden="true">
+    <span>○ belum dimulai</span><span>◐ sedang berjalan</span><span>● selesai (kuis ≥ 70% dan ≥ 80% bagian dibaca)</span><span>garis putus-putus: prasyarat dan lanjutan modul terpilih</span>
+  </div>
+  <div id="graphwrap" tabindex="0" aria-label="Graf prasyarat, bisa digulir"><svg id="graph" role="group" aria-label="Graf prasyarat antar modul"></svg></div>
+  <div id="modlist" class="modlist" hidden></div>
+  <div class="icd-card" id="detail" style="margin-top:12px" aria-live="polite"><p class="icd-muted">Pilih sebuah modul.</p></div>
+</section>
+
+<section class="blk" id="kartu">
+  <h2>Flashcard hari ini</h2>
+  <p class="icd-muted icd-small">Kartu dari semua modul yang pernah Anda buka, dijadwalkan dengan SM-2 sederhana: kartu yang dijawab benar muncul lagi setelah 1 hari, 6 hari, lalu makin jarang.</p>
+  <div id="cards"></div>
+</section>
+
+<section class="blk" id="rencana">
+  <h2>Rencana belajar mingguan</h2>
+  <div class="icd-card">
+    <div class="icd-grid">
+      <label class="icd-field">Jam belajar per minggu<input class="icd-input" id="p-hours" type="number" min="1" max="80" step="1" value="10" inputmode="numeric"></label>
+      <label class="icd-field">Jalur<select class="icd-select" id="p-track"></select></label>
+      <label class="icd-field">Tanggal mulai<input class="icd-input" id="p-start" type="date"></label>
+    </div>
+    <label class="icd-row" style="margin-top:10px"><input type="checkbox" id="p-skip" checked> Kurangi bagian yang sudah saya selesaikan</label>
+    <div class="icd-row" style="margin-top:10px"><button type="button" class="icd-btn primary" id="p-make">Buat rencana</button><span id="p-sum" class="icd-small" aria-live="polite"></span></div>
+  </div>
+  <div class="icd-tablewrap" id="p-out"></div>
+</section>
+
+<section class="blk" id="glosarium">
+  <h2>Glosarium</h2>
+  <p class="icd-muted icd-small">Glosarium awal. Setiap modul menambah istilahnya sendiri; glosarium induk lengkap dibuat di Fase D.</p>
+  <label class="icd-field" style="max-width:320px">Saring istilah<input class="icd-input" id="g-filter" type="search" autocomplete="off"></label>
+  <dl class="gl" id="g-list"></dl>
+</section>
+
+<section class="blk" id="kalkulator">
+  <h2>Kalkulator engineer</h2>
+  <p class="icd-muted icd-small">Angka boleh ditulis dengan akhiran SI: <code>10k</code>, <code>4.7n</code>, <code>100p</code>, <code>2.5G</code>, <code>1e-12</code>. Pemisah desimal memakai titik, sama seperti tool EDA.</p>
+  <div class="icd-row no-print" style="margin-bottom:10px"><label class="icd-field">Pilih kalkulator<select class="icd-select" id="c-pick"></select></label></div>
+  <div class="icd-card" id="c-box"></div>
+</section>
+
+<section class="blk" id="buku">
+  <h2>Buku rujukan per modul</h2>
+  <p class="icd-muted icd-small">Bab spesifik dicantumkan di bagian Rujukan setiap modul.</p>
+  <div class="icd-tablewrap"><table class="icd" id="b-table"><thead><tr><th scope="col">Buku atau makalah</th><th scope="col">Modul</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="blk" id="data">
+  <h2>Data dan cadangan</h2>
+  <div class="icd-card">
+    <p id="d-status"></p>
+    <label class="icd-row" style="margin:0 0 10px"><input type="checkbox" id="d-auto" checked> Tandai bagian modul selesai otomatis setelah dibaca sampai ujungnya</label>
+    <div class="icd-row">
+      <button type="button" class="icd-btn" id="d-export">Ekspor progres (JSON)</button>
+      <button type="button" class="icd-btn" id="d-import">Impor progres</button>
+      <button type="button" class="icd-btn" id="d-reset">Hapus semua progres</button>
+      <input type="file" id="d-file" accept="application/json,.json" hidden>
+    </div>
+    <p class="icd-small icd-muted" style="margin-top:10px">Progres disimpan oleh browser di perangkat ini. Sebagian browser memberi setiap file lokal ruang penyimpanan terpisah; jika dasbor ini tidak melihat progres dari modul, ekspor dari halaman modul lalu impor di sini, atau jalankan <code>python -m http.server</code> di folder ini dan buka <code>http://localhost:8000</code>.</p>
+  </div>
+</section>
+
+<section class="blk" id="tentang">
+  <h2>Tentang materi ini</h2>
+  <div class="icd-card">
+    <ul>
+      <li>Penjelasan dalam Bahasa Indonesia; istilah teknis tetap dalam Bahasa Inggris dengan padanan Indonesia saat pertama muncul.</li>
+      <li>Setiap modul punya 16 bagian yang sama: dari "kenapa ini penting" sampai rujukan, dengan kuis, flashcard, dan lab memakai tool open-source.</li>
+      <li>Warna sinyal konsisten di semua modul:</li>
+    </ul>
+    <div class="legend-s">
+      <span><i class="sw" style="border-color:var(--s-clock)"></i>clock</span><span><i class="sw" style="border-color:var(--s-data)"></i>data</span>
+      <span><i class="sw" style="border-color:var(--s-ctrl)"></i>kontrol</span><span><i class="sw" style="border-color:var(--s-reset);border-top-style:dashed"></i>reset</span>
+      <span><i class="sw" style="border-color:var(--s-vdd)"></i>VDD</span><span><i class="sw" style="border-color:var(--s-vss)"></i>VSS</span>
+      <span><i class="sw" style="border-color:var(--s-analog)"></i>analog</span><span><i class="sw" style="border-color:var(--s-hi);border-top-style:double"></i>sorotan</span>
+      <span><i class="sw" style="border-color:var(--s-x)"></i>pelanggaran / X</span><span><i class="sw" style="border-color:var(--s-z);border-top-style:dotted"></i>Z</span>
+    </div>
+        <h3>Open source</h3>
+    <p>bikinchip adalah proyek terbuka. Kode situs berlisensi MIT, dan materi (teks, gambar, kuis, lab) berlisensi Creative Commons BY-SA 4.0: boleh dipakai, diubah, dan dibagikan ulang, termasuk untuk kelas dan kampus, asalkan mencantumkan sumber dan turunannya memakai lisensi yang sama. Koreksi dan kontribusi sangat diterima <span id="about-repo">lewat repositori GitHub proyek</span>.</p>
+    <p class="icd-small">Untuk pengembang: <a href="uji-komponen.html">halaman uji komponen</a> memeriksa semua komponen bersama di browser Anda.</p>
+<p class="icd-foot" id="about-ver"></p>
+  </div>
+</section>
+
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, svg = ICD.svg, q = ICD.q, reg = ICD.reg, P = ICD.progress, store = ICD.store, MARK = ICD.STATUS_MARK;
+
+/* Daftar file tersedia kini di ICD-Core (ICD.avail); BUILT dipertahankan sebagai pembungkus. */
+var BUILT = new Proxy({}, { get: function(o, k){ return typeof k === 'string' && ICD.avail.has(k) ? 1 : undefined; } });
+
+var KW = {
+M00:'cara belajar alur chip sejarah transistor 1947 peran RTL-to-GDSII',
+M01:'eksponen logaritma desibel bilangan kompleks fasor kalkulus turunan integral persamaan diferensial aljabar linear matriks probabilitas statistik distribusi sigma Monte Carlo matematika diskrit Fourier Laplace transformasi Z konvolusi sampling trigonometri satuan SI',
+M02:'muatan tegangan arus daya resistor kapasitor induktor hukum Ohm Kirchhoff Thevenin Norton analisis nodal transien RC RL RLC respons frekuensi Bode filter transmission line medan listrik',
+M03:'biner heksadesimal two\'s complement fixed-point IEEE 754 floating point endianness kode Gray parity Hamming CRC',
+M04:'C pointer assembly compile link load sistem operasi Linux shell Git Make Python Tcl regex struktur data algoritma graf',
+M05:'pita energi elektron hole doping drift difusi PN junction dioda level Fermi',
+M06:'BJT MOSFET threshold square-law kapasitansi body effect channel-length modulation short-channel subthreshold leakage planar FinFET GAA nanosheet CFET FD-SOI variasi proses PVT corner',
+M07:'small-signal penguat common-source current mirror differential pair op-amp feedback stabilitas kompensasi phase margin noise',
+M08:'aljabar Boolean gerbang logika K-map Karnaugh mux decoder encoder adder ripple carry-lookahead prefix multiplier Booth Wallace divider shifter ALU',
+M09:'latch flip-flop setup hold clock-to-Q register counter FSM Moore Mealy state encoding metastability MTBF',
+M10:'inverter CMOS VTC noise margin logical effort delay sizing daya dinamis short-circuit leakage logika dinamis transmission gate interconnect Elmore crosstalk repeater layout design rules standard cell latch-up ESD Dennard Moore',
+M11:'ISA RISC-V instruksi register calling convention assembly privilege CSR interrupt exception x86 ARM',
+M12:'single-cycle multi-cycle pipeline hazard forwarding stall flush branch prediction bimodal gshare TAGE superscalar out-of-order register renaming Tomasulo ROB spekulasi',
+M13:'hierarki memori cache mapping replacement write policy miss virtual memory TLB page table DRAM I/O DMA',
+M14:'multicore koherensi cache MESI konsistensi memori SIMD vector GPU NPU akselerator AI systolic array co-design PPA benchmark',
+M15:'UART SPI I2C AMBA APB AHB AXI AXI-Stream ACE CHI TileLink Wishbone USB PCIe Ethernet DDR MIPI CXL UCIe SoC memory map boot firmware integrasi IP',
+M16:'Verilog SystemVerilog always_ff always_comb blocking non-blocking generate parameter interface package VHDL event queue delta cycle synthesizable lint',
+M17:'handshake valid ready FIFO skid buffer arbiter pipelining retiming reset clock gating CDC synchronizer async FIFO pointer Gray RDC datapath FSM spesifikasi mikroarsitektur HLS Chisel',
+M18:'verification plan testbench directed constrained-random OOP coverage SVA assertion UVM agent sequence scoreboard factory config_db TLM RAL cocotb regression gate-level simulation X-propagation',
+M19:'formal model checking bounded proof induksi equivalence checking SAT BDD SMT emulasi FPGA prototyping firmware',
+M20:'FPGA LUT CLB routing BRAM DSP clocking constraint timing closure toolchain',
+M21:'sintesis logika elaborasi optimasi technology mapping Liberty NLDM CCS karakterisasi physical synthesis SDC',
+M22:'static timing analysis STA timing arc path setup hold slack skew jitter uncertainty time borrowing false path multicycle clock groups OCV AOCV POCV LVF MCMM crosstalk signoff',
+M23:'physical design floorplan macro power planning PDN IR drop elektromigrasi placement clock tree synthesis CTS H-tree mesh useful skew routing ECO ekstraksi parasitik SPEF LEF DEF PDK',
+M24:'signoff tapeout DRC LVS antenna ERC density fill DFM signal integrity GDSII OASIS mask checklist',
+M25:'low-power clock gating multi-Vt multi-Vdd power gating DVFS body bias UPF power domain isolation retention level shifter power-aware',
+M26:'DFT test fault model stuck-at transition bridging cell-aware scan ATPG kompresi MBIST LBIST JTAG IJTAG ATE wafer sort yield diagnosis bring-up post-silicon',
+M27:'analog gm/Id biasing bandgap LDO OTA two-stage telescopic folded cascode comparator switched-capacitor mismatch Monte Carlo layout matching common-centroid guard ring SPICE',
+M28:'mixed-signal sampling ADC flash SAR pipeline sigma-delta DAC PLL DLL osilator jitter phase noise SerDes CTLE FFE DFE CDR eye diagram I/O ESD PMIC RF LNA mixer PA AMS Verilog-A',
+M29:'memori SRAM 6T static noise margin sense amplifier memory compiler DRAM NAND NOR Flash CAM TCAM OTP eFuse MRAM ReRAM PCM FeRAM HBM ECC compute-in-memory',
+M30:'fabrikasi wafer oksidasi litografi DUV immersion multi-patterning EUV High-NA etsa deposisi implantasi CMP FEOL MOL BEOL yield defect process node foundry fabless OPC',
+M31:'packaging wire bond flip-chip fan-out interposer 2.5D TSV 3D stacking hybrid bonding chiplet co-packaged optics termal signal integrity power integrity',
+M32:'keandalan aging BTI HCI TDDB elektromigrasi self-heating soft error ECC TMR side-channel Spectre Meltdown fault injection hardware Trojan root of trust secure boot PUF TRNG ISO 26262 kriptografi AES',
+M33:'2 nm GAA backside power delivery CFET material 2D 3D IC chiplet akselerator AI LLM RISC-V AI EDA open-source silicon photonics neuromorphic cryo-CMOS in-memory',
+M34:'karier peran tim chip design review dokumentasi tool EDA portofolio interview'
+};
+
+var GLOSS = [
+['voltage','tegangan','Beda energi potensial listrik per satuan muatan antara dua titik; satuannya volt (V).','M02'],
+['current','arus','Laju aliran muatan listrik melewati suatu penampang; satuannya ampere (A).','M02'],
+['two\'s complement','komplemen dua','Cara menyandikan bilangan bulat bertanda dalam biner; bit paling kiri berbobot negatif.','M03'],
+['threshold voltage','tegangan ambang','Tegangan gate-source saat kanal MOSFET mulai menghantar secara berarti; ditulis Vth.','M06'],
+['leakage','arus bocor','Arus yang tetap mengalir saat transistor seharusnya mati.','M06'],
+['PVT corner','sudut PVT','Kombinasi ekstrem process, voltage, dan temperature yang dipakai untuk memastikan chip bekerja di semua kondisi.','M06'],
+['FinFET','transistor sirip','Transistor dengan kanal berbentuk sirip tegak yang dibungkus gate di tiga sisi.','M06'],
+['GAA','gate-all-around','Transistor yang gate-nya membungkus kanal di semua sisi, misalnya nanosheet.','M06'],
+['latch','latch','Elemen memori yang transparan selama sinyal enable aktif (level-sensitive).','M09'],
+['flip-flop','flip-flop','Elemen memori yang menangkap data hanya pada tepi clock (edge-triggered).','M09'],
+['setup time','waktu setup','Lama data harus stabil sebelum tepi clock agar tertangkap dengan benar.','M09'],
+['hold time','waktu hold','Lama data harus tetap stabil setelah tepi clock.','M09'],
+['metastability','metastabilitas','Keadaan tak tentu sementara pada flip-flop ketika data berubah terlalu dekat dengan tepi clock.','M09'],
+['FSM','mesin keadaan hingga','Rangkaian sekuensial yang berpindah antar sejumlah keadaan terbatas berdasarkan masukan.','M09'],
+['standard cell','sel standar','Gerbang atau flip-flop siap pakai dengan tinggi seragam, bahan dasar implementasi digital.','M10'],
+['pipeline','pipeline','Pembagian pekerjaan menjadi tahap berurutan yang dipisah register agar beberapa operasi berjalan bersamaan.','M12'],
+['hazard','hazard','Pada prosesor: situasi ketika instruksi berikutnya tidak bisa langsung dijalankan dengan benar di pipeline.','M12'],
+['cache','cache','Memori kecil dan cepat yang menyimpan salinan data yang sering diakses.','M13'],
+['RTL','register-transfer level','Tingkat deskripsi hardware berupa register dan logika di antaranya, ditulis dalam HDL.','M16'],
+['handshake','jabat tangan','Protokol dua sinyal (misalnya valid dan ready) agar pengirim dan penerima sepakat kapan data berpindah.','M17'],
+['FIFO','antrean first-in first-out','Penyangga yang mengeluarkan data dalam urutan yang sama dengan urutan masuk.','M17'],
+['CDC','clock domain crossing','Perpindahan sinyal antara dua domain clock yang tidak sinkron; memerlukan synchronizer.','M17'],
+['testbench','bangku uji','Kode yang membangkitkan stimulus dan memeriksa keluaran desain saat simulasi.','M18'],
+['coverage','cakupan','Ukuran seberapa banyak kode atau skenario yang sudah teruji.','M18'],
+['UVM','Universal Verification Methodology','Pustaka dan metodologi standar berbasis SystemVerilog untuk membangun testbench.','M18'],
+['logic synthesis','sintesis logika','Penerjemahan RTL menjadi netlist gerbang dari library tertentu.','M21'],
+['netlist','netlist','Daftar komponen beserta sambungan antar pin.','M21'],
+['STA','static timing analysis','Pemeriksaan timing semua path tanpa simulasi, dengan menjumlahkan delay.','M22'],
+['slack','slack','Selisih antara waktu yang diwajibkan dan waktu tiba sinyal; negatif berarti pelanggaran.','M22'],
+['clock skew','skew clock','Selisih waktu tiba clock di dua flip-flop.','M22'],
+['floorplan','denah chip','Penataan awal area die: posisi macro, I/O, dan jalur daya.','M23'],
+['clock tree synthesis','sintesis pohon clock','Pembangunan jaringan buffer yang mengantar clock ke semua flip-flop dengan skew terkendali.','M23'],
+['IR drop','jatuh tegangan IR','Penurunan tegangan suplai akibat arus melewati resistansi jaringan daya.','M23'],
+['PDK','process design kit','Paket dari foundry berisi model devais, design rules, dan file teknologi.','M23'],
+['DRC','design rule check','Pemeriksaan layout terhadap aturan geometri proses.','M24'],
+['LVS','layout versus schematic','Pemeriksaan bahwa layout secara listrik sama dengan netlist.','M24'],
+['GDSII','GDSII','Format file layout akhir yang dikirim ke foundry.','M24'],
+['tapeout','tapeout','Penyerahan layout final ke foundry untuk dibuat mask dan diproduksi.','M24'],
+['scan chain','rantai scan','Flip-flop yang dirangkai menjadi shift register saat mode test agar keadaan internal bisa dikendalikan dan diamati.','M26'],
+['fault model','model kesalahan','Abstraksi cacat fisik, misalnya stuck-at, yang dipakai untuk membangkitkan pola test.','M26'],
+['ADC','konverter analog ke digital','Rangkaian yang mengubah tegangan analog menjadi bilangan digital.','M28'],
+['PLL','phase-locked loop','Loop umpan balik yang mengunci fase osilator ke clock referensi; dipakai untuk membangkitkan clock.','M28'],
+['SRAM','static RAM','Memori yang menyimpan bit dalam pasangan inverter silang selama ada daya.','M29'],
+['yield','rendemen','Persentase die yang berfungsi dari seluruh die yang diproduksi.','M30'],
+['process node','node proses','Nama generasi teknologi fabrikasi; pada node modern ini label pemasaran, bukan ukuran fisik.','M30']
+];
+
+var BOOKS = [
+['Harris & Harris, <i>Digital Design and Computer Architecture, RISC-V Edition</i>','M03 M08 M09 M11 M12 M16'],
+['Weste & Harris, <i>CMOS VLSI Design: A Circuits and Systems Perspective</i>','M06 M10 M25 M29'],
+['Rabaey, Chandrakasan & Nikolić, <i>Digital Integrated Circuits: A Design Perspective</i>','M10 M29'],
+['Sutherland, Sproull & Harris, <i>Logical Effort: Designing Fast CMOS Circuits</i>','M10'],
+['Patterson & Hennessy, <i>Computer Organization and Design, RISC-V Edition</i>','M11 M12 M13'],
+['Hennessy & Patterson, <i>Computer Architecture: A Quantitative Approach</i>','M12 M13 M14'],
+['Patterson & Waterman, <i>The RISC-V Reader</i>','M11'],
+['Razavi, <i>Fundamentals of Microelectronics</i>','M05 M06 M07'],
+['Sedra & Smith, <i>Microelectronic Circuits</i>','M05 M06 M07'],
+['Razavi, <i>Design of Analog CMOS Integrated Circuits</i>','M07 M27 M28'],
+['Jespers & Murmann, <i>Systematic Design of Analog CMOS Circuits</i>','M27'],
+['Pelgrom, <i>Analog-to-Digital Conversion</i>','M28'],
+['Hu, <i>Modern Semiconductor Devices for Integrated Circuits</i>','M05 M06 M30'],
+['Plummer, Deal & Griffin, <i>Silicon VLSI Technology</i>','M30'],
+['Nilsson & Riedel, <i>Electric Circuits</i>','M02'],
+['Oppenheim & Willsky, <i>Signals and Systems</i>','M01'],
+['Kernighan & Ritchie, <i>The C Programming Language</i>','M04'],
+['Bryant & O\'Hallaron, <i>Computer Systems: A Programmer\'s Perspective</i>','M04'],
+['Spear & Tumbush, <i>SystemVerilog for Verification</i>','M18'],
+['Mehta, <i>SystemVerilog Assertions and Functional Coverage</i>','M18'],
+['Seligman, Schubert & Kumar, <i>Formal Verification: An Essential Toolkit for Modern VLSI Design</i>','M19'],
+['Bhasker & Chadha, <i>Static Timing Analysis for Nanometer Designs</i>','M21 M22'],
+['Kahng, Lienig, Markov & Hu, <i>VLSI Physical Design: From Graph Partitioning to Timing Closure</i>','M23'],
+['Chadha & Bhasker, <i>An ASIC Low Power Primer</i>','M25'],
+['Bushnell & Agrawal, <i>Essentials of Electronic Testing</i>','M26'],
+['Cummings, "Nonblocking Assignments in Verilog Synthesis, Coding Styles That Kill!" (SNUG 2000)','M16'],
+['Cummings, "Simulation and Synthesis Techniques for Asynchronous FIFO Design" (SNUG 2002)','M17'],
+['Cummings, "Clock Domain Crossing (CDC) Design & Verification Techniques Using SystemVerilog" (SNUG 2008)','M17']
+];
+
+ICD.gloss.add(GLOSS.map(function(g, i){ return { id: 'g' + i, en: g[0], idn: g[1], def: g[2], mod: g[3] }; }));
+
+/* ---------- util ---------- */
+var state = { sel: null, track: '', view: null };
+function fileLink(f, label){
+  if (BUILT[f.id]) return el('a', { href: f.id + '.html', text: label || 'Buka' });
+  return el('span', { class: 'icd-chip', text: 'segera hadir' });
+}
+function pct(fr){ var v = fr * 100; return (v > 0 && v < 1 ? v.toFixed(2) : v > 0 && v < 10 ? v.toFixed(1) : String(Math.round(v))) + '%'; }
+function hrs(h){ return (Math.round(h * 10) / 10) + ' jam'; }
+function trackSet(){ return state.track ? reg.tracks[state.track].files : null; }
+function modInTrack(m){ var s = trackSet(); if (!s) return true; return m.files.some(function(f){ return s[f.id]; }); }
+
+/* ---------- dasbor ---------- */
+function renderDash(){
+  var t = P.totals(), due = ICD.cards.due().length, stats = q('#stats'); stats.textContent = '';
+  [[pct(t.frac), 'kurikulum selesai'], [(t.hoursDone > 0 && t.hoursDone < 10 ? t.hoursDone.toFixed(1) : Math.round(t.hoursDone)) + ' / ' + reg.modules.reduce(function(s, m){ return s + m.hours; }, 0), 'jam modul'],
+   [t.filesDone + ' / ' + t.files, 'file modul selesai'], [String(due), 'flashcard jatuh tempo']].forEach(function(s){
+    stats.appendChild(el('div', { class: 'icd-card' }, [el('div', { class: 'stat', text: s[0] }), el('div', { class: 'icd-muted icd-small', text: s[1] })]));
+  });
+  var parts = q('#parts'); parts.textContent = '';
+  reg.parts.forEach(function(name, i){
+    if (!i) return; var set = {}; reg.files.forEach(function(f){ if (f.part === i) set[f.id] = 1; });
+    var pt = P.totals(set), pc = Math.round(pt.frac * 100);
+    parts.appendChild(el('div', { class: 'partrow' }, [el('span', { text: i + '. ' + name }), el('span', { text: pct(pt.frac) }),
+      el('div', { class: 'icd-meter', role: 'progressbar', 'aria-label': 'Bagian ' + i, 'aria-valuenow': pc, 'aria-valuemin': 0, 'aria-valuemax': 100 }, [el('i', { style: 'width:' + (pt.frac * 100) + '%' })])]));
+  });
+  var bm = q('#bookmarks'), list = store.get('bookmarks', []); bm.textContent = '';
+  if (!list.length) bm.appendChild(el('p', { class: 'icd-muted icd-small', text: 'Belum ada bookmark. Tombol ☆ ada di akhir setiap bagian modul.' }));
+  list.slice().reverse().slice(0, 8).forEach(function(b){ var f = reg.file(b.file); bm.appendChild(el('a', { class: 'result', href: b.file + '.html#' + b.sec }, [b.title, el('small', { text: f ? f.code + ' · ' + f.title : b.file })])); });
+  var ex = q('#exams'), exams = store.get('exams', {}), ks = Object.keys(exams); ex.textContent = '';
+  if (!ks.length) ex.appendChild(el('p', { class: 'icd-muted icd-small', text: 'Belum ada ujian yang dikerjakan. Ujian per bagian dibuat di Fase D.' }));
+  ks.forEach(function(k){ var a = exams[k], last = a[a.length - 1]; ex.appendChild(el('p', { class: 'icd-small', text: k + ': ' + last.score + '/' + last.total + (last.pass ? ' (lulus)' : ' (belum lulus)') + ', ' + a.length + ' percobaan' })); });
+  var res = q('#resume'), t = nextTarget(); res.textContent = '';
+  if (t) res.appendChild(el('a', { class: 'icd-btn primary', href: t.href, text: t.verb + ': ' + t.f.code + ' ' + t.f.title }));
+  var probe = store.get('meta.probe', null);
+  q('#d-status').textContent = (store.persistent() ? 'Penyimpanan browser aktif. ' : 'Penyimpanan browser tidak tersedia; progres hanya bertahan selama halaman ini terbuka. ') +
+    (probe ? 'Tanda uji dari halaman uji komponen terbaca: progres antar file menyatu di browser ini.' : 'Belum ada tanda uji dari halaman lain. Buka halaman uji komponen, tekan "Tulis tanda uji", lalu kembali ke sini.');
+}
+
+/* ---------- target belajar berikutnya (dipakai hero dan panel) ---------- */
+function nextTarget(){
+  var lastF = store.get('meta.lastFile', null), lf = lastF && reg.file(lastF);
+  if (!lf){ var prog = store.get('progress', {}), lt = 0; Object.keys(prog).forEach(function(id){ if (reg.file(id) && prog[id].visited > lt){ lt = prog[id].visited; lf = reg.file(id); } }); }
+  if (lf && ICD.avail.has(lf.id) && P.fileStatus(lf.id) !== 'selesai'){ var ls = store.get('progress.' + lf.id + '.last', null); return { f: lf, href: lf.id + '.html' + (ls ? '#' + ls : ''), verb: 'Lanjutkan', resume: !!ls }; }
+  var fo = planFiles().filter(function(f){ return ICD.avail.has(f.id) && P.fileStatus(f.id) !== 'selesai'; })[0];
+  if (fo) return { f: fo, href: fo.id + '.html', verb: P.fileStatus(fo.id) === 'belum' ? 'Mulai' : 'Lanjutkan', resume: false };
+  return null;
+}
+
+/* ---------- hero ---------- */
+function renderHero(){
+  var lg = q('#hero-logo'); if (!lg.querySelector('svg')) lg.insertBefore(ICD.logo(44), lg.firstChild);
+  var hs = q('#hero-stats'); hs.textContent = '';
+  var hours = reg.modules.reduce(function(a, m){ return a + m.hours; }, 0);
+  [[reg.modules.length, 'modul'], [reg.parts.length - 1, 'bagian'], ['±' + (Math.round(hours / 10) * 10).toLocaleString('id-ID'), 'jam belajar'], [ICD.avail.files().length + '/' + reg.files.length, 'file sudah tersedia'], ['Rp0', 'gratis, open source']]
+    .forEach(function(x){ hs.appendChild(el('li', null, [el('b', { text: String(x[0]) }), x[1]])); });
+  var hp = q('#hero-parts'); if (!hp.childNodes.length) reg.parts.forEach(function(n, i){ if (i) hp.appendChild(el('a', { href: '#peta', text: i + '. ' + n, onclick: function(){ state.track = ''; } })); });
+  var res = q('#resume');
+  if (ICD.sync.enabled() && !ICD.sync.user() && !res.querySelector('.acct')) res.appendChild(el('button', { type: 'button', class: 'icd-btn acct', text: 'Masuk untuk sinkron antarperangkat', onclick: function(){ ICD.sync.login(); } }));
+  var repo = ICD.config && ICD.config.repo;
+  if (repo && !res.querySelector('.gh')) res.appendChild(el('a', { class: 'icd-btn gh', href: 'https://github.com/' + repo, rel: 'noopener', text: 'Kontribusi di GitHub' }));
+}
+
+/* ---------- belajar sekarang ---------- */
+function planFiles(){
+  var plan = store.get('plan', null), set = plan && plan.track ? reg.tracks[plan.track].files : null;
+  return reg.files.filter(function(f){ return !set || set[f.id]; });
+}
+function weekOf(plan){
+  if (!plan) return null;
+  var h = plan.hours || 10, start = plan.start ? new Date(plan.start + 'T00:00:00') : new Date(plan.at || Date.now());
+  var wk = Math.floor((Date.now() - start.getTime()) / (7 * 864e5)); if (wk < 0) wk = 0;
+  /* jadwal tetap dari tanggal mulai: setiap file menempati jam sesuai urutan kurikulum */
+  var cum = 0, items = [];
+  planFiles().forEach(function(f){ var a = cum, b = cum + f.hours; cum = b; if (b > wk * h + 0.01 && a < (wk + 1) * h - 0.01) items.push(f); });
+  return { n: wk + 1, items: items, start: new Date(start.getTime() + wk * 7 * 864e5), weeks: Math.ceil(cum / h) };
+}
+function renderLearn(){
+  var av = ICD.avail.files(), total = reg.files.length, soon = ICD.avail.nextSoon();
+  q('#b-status').textContent = av.length + ' dari ' + total + ' file modul sudah tersedia' + (soon ? '; berikutnya dibuat: ' + soon.code + ' · ' + soon.title + '.' : '; kurikulum lengkap.');
+  /* langkah berikutnya */
+  var nx = q('#b-next'); nx.textContent = ''; nx.classList.add('bnext');
+  var lastF = store.get('meta.lastFile', null), lf = lastF && reg.file(lastF);
+  if (!lf){ var prog = store.get('progress', {}), lt = 0; Object.keys(prog).forEach(function(id){ if (reg.file(id) && prog[id].visited > lt){ lt = prog[id].visited; lf = reg.file(id); } }); }
+  var order = planFiles(), firstOpen = order.filter(function(f){ return ICD.avail.has(f.id) && P.fileStatus(f.id) !== 'selesai'; })[0];
+  nx.appendChild(el('h3', { text: 'Langkah berikutnya' }));
+  if (lf && ICD.avail.has(lf.id) && P.fileStatus(lf.id) !== 'selesai'){
+    var ls = store.get('progress.' + lf.id + '.last', null);
+    nx.appendChild(el('p', { class: 'big', text: lf.code + ' · ' + lf.title }));
+    nx.appendChild(el('p', { class: 'icd-small icd-muted', text: P.secDone(lf.id) + ' dari ' + (store.get('progress.' + lf.id + '.nsec', 16)) + ' bagian dibaca · ' + Math.round(P.fileFrac(lf.id) * 100) + '%' }));
+    nx.appendChild(el('div', { class: 'icd-row' }, [el('a', { class: 'icd-btn primary', href: lf.id + '.html' + (ls ? '#' + ls : ''), text: ls ? 'Lanjutkan dari bagian terakhir' : 'Lanjutkan' })]));
+    if (firstOpen && firstOpen.id !== lf.id) nx.appendChild(el('p', { class: 'icd-small', style: 'margin-top:10px' }, ['Masih terbuka lebih awal di urutan: ', el('a', { href: firstOpen.id + '.html', text: firstOpen.code + ' · ' + firstOpen.title })]));
+  } else if (firstOpen){
+    nx.appendChild(el('p', { class: 'big', text: firstOpen.code + ' · ' + firstOpen.title }));
+    nx.appendChild(el('p', { class: 'icd-small icd-muted', text: hrs(firstOpen.hours) + ' · ' + (P.fileStatus(firstOpen.id) === 'belum' ? 'belum dibuka' : Math.round(P.fileFrac(firstOpen.id) * 100) + '%') }));
+    nx.appendChild(el('div', { class: 'icd-row' }, [el('a', { class: 'icd-btn primary', href: firstOpen.id + '.html', text: P.fileStatus(firstOpen.id) === 'belum' ? 'Mulai' : 'Lanjutkan' })]));
+  } else {
+    nx.appendChild(el('p', { class: 'big', text: 'Semua materi yang tersedia sudah selesai.' }));
+    nx.appendChild(el('p', { class: 'icd-small icd-muted', text: soon ? soon.code + ' sedang dibuat. Sementara itu: ulangi flashcard yang jatuh tempo, dan coba lagi kuis dengan skor terendah.' : 'Lanjut ke ujian per bagian.' }));
+    nx.appendChild(el('div', { class: 'icd-row' }, [el('a', { class: 'icd-btn primary', href: '#kartu', text: 'Flashcard (' + ICD.cards.due().length + ' jatuh tempo)' })]));
+  }
+  /* minggu ini */
+  var wkBox = q('#b-week'), plan = store.get('plan', null), w = weekOf(plan); wkBox.textContent = '';
+  wkBox.appendChild(el('h3', { text: w ? 'Minggu ke-' + w.n + ' menurut rencana' : 'Minggu ini' }));
+  if (!w){
+    wkBox.appendChild(el('p', { class: 'icd-small', text: 'Belum ada rencana. Tentukan jam per minggu dan jalur, lalu daftar materi per minggu muncul di sini.' }));
+    wkBox.appendChild(el('a', { class: 'icd-btn', href: '#rencana', text: 'Buat rencana belajar' }));
+  } else {
+    wkBox.appendChild(el('p', { class: 'icd-small icd-muted', text: 'mulai ' + fmtDate(w.start) + ' · ' + plan.hours + ' jam per minggu' + (plan.track ? ' · jalur ' + reg.tracks[plan.track].title : '') }));
+    var ul = el('ul', { class: 'wk' });
+    w.items.forEach(function(f){
+      var st = P.fileStatus(f.id);
+      ul.appendChild(el('li', { class: ICD.avail.has(f.id) ? '' : 'soon' }, [MARK[st] + ' ', ICD.avail.has(f.id) ? el('a', { href: f.id + '.html', text: f.code + ' · ' + f.title }) : el('span', { text: f.code + ' · ' + f.title + ' ' }), ICD.avail.has(f.id) ? '' : el('span', { class: 'icd-chip', text: 'segera' })]));
+    });
+    if (!w.items.length) ul.appendChild(el('li', { text: 'Rencana sudah berakhir.' }));
+    wkBox.appendChild(ul);
+    var behind = order.filter(function(f){ return ICD.avail.has(f.id) && P.fileStatus(f.id) !== 'selesai' && w.items.indexOf(f) < 0 && f.idx < (w.items[0] ? w.items[0].idx : 1e9); }).length;
+    if (behind) wkBox.appendChild(el('p', { class: 'icd-small', text: behind + ' file dari minggu-minggu sebelumnya belum selesai.' }));
+    if (w.items.some(function(f){ return !ICD.avail.has(f.id); })) wkBox.appendChild(el('p', { class: 'icd-small icd-muted', text: 'Sebagian materi minggu ini belum dibuat. Kerjakan yang tersedia dan ulangi flashcard; rencana tidak perlu diubah.' }));
+  }
+  /* tabel materi tersedia */
+  var tb = q('#b-avail tbody'); tb.textContent = '';
+  av.forEach(function(f){
+    var p = P.file(f.id), st = P.fileStatus(f.id), qb = P.quizBest(f.id), ns = (p && p.nsec) || 16, sd = P.secDone(f.id), isNew = !p || !p.visited;
+    tb.appendChild(el('tr', null, [
+      el('td', null, [el('a', { href: f.id + '.html' + (p && p.last ? '#' + p.last : ''), text: f.code + ' · ' + f.title }), isNew ? el('span', { class: 'icd-chip new', text: 'baru', style: 'margin-left:6px' }) : '']),
+      el('td', { class: 'c' }, [sd + '/' + ns, el('div', { class: 'icd-meter', role: 'progressbar', 'aria-label': 'Bagian dibaca ' + f.code, 'aria-valuenow': Math.round(sd / ns * 100), 'aria-valuemin': 0, 'aria-valuemax': 100 }, [el('i', { style: 'width:' + (sd / ns * 100) + '%' })])]),
+      el('td', { class: 'c', text: qb === null ? '—' : Math.round(qb * 100) + '%' }),
+      el('td', { text: MARK[st] + ' ' + st })]));
+  });
+}
+
+/* ---------- graf ---------- */
+var depth = {}, redEdges = [], dependents = {};
+(function prep(){
+  reg.modules.forEach(function(m){ dependents[m.id] = []; });
+  reg.modules.forEach(function(m){ var d = 0; m.pre.forEach(function(p){ d = Math.max(d, depth[p] + 1); dependents[p].push(m.id); }); depth[m.id] = d; });
+  function reach(from, to, skip){
+    var stack = reg.module(to).pre.filter(function(p){ return p !== skip; }), seen = {};
+    while (stack.length){ var x = stack.pop(); if (x === from) return true; if (seen[x]) continue; seen[x] = 1; reg.module(x).pre.forEach(function(p){ stack.push(p); }); }
+    return false;
+  }
+  reg.modules.forEach(function(m){ m.pre.forEach(function(p){ if (!reach(p, m.id, p)) redEdges.push([p, m.id]); }); });
+})();
+function ancestors(id){ var out = {}, st = reg.module(id).pre.slice(); while (st.length){ var x = st.pop(); if (out[x]) continue; out[x] = 1; reg.module(x).pre.forEach(function(p){ st.push(p); }); } return out; }
+var NW = 104, NH = 42, CG = 34, RG = 12, pos = {};
+function renderGraph(){
+  var g = q('#graph'), cols = []; g.textContent = '';
+  reg.modules.forEach(function(m){ (cols[depth[m.id]] = cols[depth[m.id]] || []).push(m); });
+  var maxRows = 0; cols.forEach(function(c){ maxRows = Math.max(maxRows, c.length); });
+  var W = 12 + cols.length * (NW + CG) - CG + 12, H = 26 + maxRows * (NH + RG) + 8;
+  g.setAttribute('width', W); g.setAttribute('height', H); g.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  cols.forEach(function(c, ci){
+    var x = 12 + ci * (NW + CG), off = 26 + (maxRows - c.length) * (NH + RG) / 2;
+    g.appendChild(svg('text', { class: 'colhead', x: x, y: 14, text: 'tahap ' + (ci + 1) }));
+    c.forEach(function(m, ri){ pos[m.id] = { x: x, y: off + ri * (NH + RG) }; });
+  });
+  var anc = state.sel ? ancestors(state.sel) : {}, dep = {};
+  if (state.sel) dependents[state.sel].forEach(function(d){ dep[d] = 1; });
+  redEdges.forEach(function(e){
+    var a = pos[e[0]], b = pos[e[1]], x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
+    var hot = state.sel && ((e[1] === state.sel) || (anc[e[1]] && anc[e[0]]) || (e[0] === state.sel));
+    g.appendChild(svg('path', { class: 'edge' + (hot ? ' hot' : ''), d: 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2 }));
+  });
+  reg.modules.forEach(function(m){
+    var p = pos[m.id], st = P.moduleStatus(m.id), cls = 'node ' + st + (m.id === state.sel ? ' sel' : anc[m.id] ? ' up' : dep[m.id] ? ' down' : '') + (modInTrack(m) ? '' : ' dim');
+    var title = m.title.length > 17 ? m.title.slice(0, 16) + '…' : m.title;
+    var n = svg('g', { class: cls, tabindex: 0, role: 'button', transform: 'translate(' + p.x + ',' + p.y + ')',
+      'aria-label': m.id + ' ' + m.title + ', ' + m.hours + ' jam, ' + st + (m.id === state.sel ? ', terpilih' : '') }, [
+      svg('rect', { width: NW, height: NH, rx: 7 }),
+      svg('text', { x: 8, y: 17, 'font-size': 12.5, 'font-weight': 600, text: m.id }),
+      svg('text', { x: NW - 8, y: 17, 'font-size': 12, 'text-anchor': 'end', text: MARK[st] }),
+      svg('text', { class: 't2', x: 8, y: 33, 'font-size': 10, text: title })]);
+    n.addEventListener('click', function(){ select(m.id); });
+    n.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); select(m.id, true); } });
+    n.dataset.mod = m.id;
+    g.appendChild(n);
+  });
+}
+function renderList(){
+  var box = q('#modlist'); box.textContent = '';
+  reg.parts.forEach(function(name, i){
+    if (!i) return; box.appendChild(el('h3', { text: 'Bagian ' + i + ': ' + name }));
+    reg.modules.filter(function(m){ return m.part === i; }).forEach(function(m){
+      var st = P.moduleStatus(m.id);
+      box.appendChild(el('button', { type: 'button', class: 'modbtn' + (modInTrack(m) ? '' : ' dim'), 'aria-pressed': m.id === state.sel ? 'true' : 'false',
+        'aria-label': m.id + ' ' + m.title + ', ' + st, onclick: function(){ select(m.id); q('#detail').scrollIntoView({ block: 'nearest' }); } },
+        [el('span', { class: 'c', text: MARK[st] + ' ' + m.id }), el('span', { text: m.title }), el('span', { class: 'h', text: m.hours + ' j' })]));
+    });
+  });
+}
+function renderDetail(){
+  var d = q('#detail'); d.textContent = '';
+  if (!state.sel){ d.appendChild(el('p', { class: 'icd-muted', text: 'Pilih sebuah modul.' })); return; }
+  var m = reg.module(state.sel), st = P.moduleStatus(m.id), anc = Object.keys(ancestors(m.id)).sort();
+  function modBtns(ids){ return ids.length ? ids.map(function(id){ return el('button', { type: 'button', class: 'icd-btn small', text: MARK[P.moduleStatus(id)] + ' ' + id, title: reg.module(id).title, onclick: function(){ select(id); } }); }) : [el('span', { class: 'icd-muted', text: 'tidak ada' })]; }
+  var tr = Object.keys(reg.tracks).filter(function(k){ return m.files.some(function(f){ return reg.tracks[k].files[f.id]; }); }).map(function(k){ return el('span', { class: 'icd-chip', text: reg.tracks[k].title }); });
+  d.appendChild(el('h3', { text: m.id + ' · ' + m.title, style: 'margin-top:0' }));
+  d.appendChild(el('p', { class: 'icd-small icd-muted', text: 'Bagian ' + m.part + ': ' + reg.parts[m.part] + ' · ' + m.hours + ' jam · ' + m.files.length + ' file · status: ' + st }));
+  var files = el('div');
+  m.files.forEach(function(f){
+    var fs = P.fileStatus(f.id), fr = Math.round(P.fileFrac(f.id) * 100), dim = trackSet() && !trackSet()[f.id];
+    files.appendChild(el('div', { class: 'filerow', style: dim ? 'opacity:.5' : null }, [el('span', { class: 'm', text: MARK[fs] + ' ' + f.code }),
+      el('span', null, [f.title, el('span', { class: 'icd-muted icd-small', text: ' · ' + hrs(f.hours) + (fr ? ' · ' + fr + '%' : '') })]), fileLink(f)]));
+  });
+  d.appendChild(files);
+  d.appendChild(el('p', { class: 'icd-small', style: 'margin:12px 0 4px', text: 'Prasyarat langsung:' })); d.appendChild(el('div', { class: 'icd-row' }, modBtns(m.pre)));
+  if (anc.length > m.pre.length){ d.appendChild(el('p', { class: 'icd-small icd-muted', style: 'margin:8px 0 0', text: 'Seluruh rantai prasyarat: ' + anc.join(', ') + '.' })); }
+  d.appendChild(el('p', { class: 'icd-small', style: 'margin:12px 0 4px', text: 'Membuka modul:' })); d.appendChild(el('div', { class: 'icd-row' }, modBtns(dependents[m.id])));
+  if (tr.length){ d.appendChild(el('p', { class: 'icd-small', style: 'margin:12px 0 4px', text: 'Termasuk jalur:' })); d.appendChild(el('div', { class: 'icd-row' }, tr)); }
+}
+function select(id, keepFocus){
+  state.sel = id; renderMap();
+  if (keepFocus){ var n = q('#graph [data-mod="' + id + '"]'); if (n) n.focus(); }
+}
+function renderMap(){ renderGraph(); renderList(); renderDetail(); }
+function setView(v){
+  state.view = v; q('#graphwrap').hidden = v !== 'graf'; q('#modlist').hidden = v !== 'daftar';
+  q('#v-graf').setAttribute('aria-pressed', v === 'graf' ? 'true' : 'false'); q('#v-daftar').setAttribute('aria-pressed', v === 'daftar' ? 'true' : 'false');
+}
+
+/* ---------- pencarian ---------- */
+var INDEX = [];
+(function buildIndex(){
+  reg.modules.forEach(function(m){
+    INDEX.push({ type: 'Modul', title: m.id + ' · ' + m.title, sub: 'Bagian ' + m.part + ': ' + reg.parts[m.part], text: (m.id + ' ' + m.title + ' ' + (KW[m.id] || '')).toLowerCase(), mod: m.id });
+    if (m.files.length > 1) m.files.forEach(function(f){ INDEX.push({ type: 'File', title: f.code + ' · ' + f.title, sub: m.title, text: (f.code + ' ' + f.title).toLowerCase(), mod: m.id, file: f.id }); });
+  });
+  GLOSS.forEach(function(g, i){ INDEX.push({ type: 'Istilah', title: g[0] + ' — ' + g[1], sub: g[2], text: (g[0] + ' ' + g[1] + ' ' + g[2]).toLowerCase(), term: 'g' + i }); });
+  ICD.calc.list.forEach(function(c){ INDEX.push({ type: 'Kalkulator', title: c.title, sub: 'Kalkulator engineer', text: ('kalkulator ' + c.title).toLowerCase(), calc: c.id }); });
+  BOOKS.forEach(function(b){ var t = b[0].replace(/<[^>]+>/g, ''); INDEX.push({ type: 'Buku', title: t, sub: 'Rujukan untuk ' + b[1].split(' ').join(', '), text: t.toLowerCase(), book: 1 }); });
+})();
+function search(query){
+  var box = q('#hasil'), list = q('#hasil-list'); list.textContent = '';
+  var toks = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!toks.length){ box.hidden = true; return; }
+  box.hidden = false;
+  var hits = INDEX.map(function(e){
+    var s = 0, tl = e.title.toLowerCase();
+    for (var i = 0; i < toks.length; i++){ if (e.text.indexOf(toks[i]) < 0) return null; s += tl.indexOf(toks[i]) >= 0 ? 3 : 1; }
+    return { e: e, s: s + (e.type === 'Modul' ? 0.5 : 0) };
+  }).filter(Boolean).sort(function(a, b){ return b.s - a.s; }).slice(0, 30);
+  if (!hits.length){ list.appendChild(el('p', { class: 'icd-muted', text: 'Tidak ada hasil untuk "' + query + '". Coba istilah Inggrisnya, misalnya "setup" atau "cache".' })); return; }
+  list.appendChild(el('p', { class: 'icd-small icd-muted', text: hits.length + ' hasil' }));
+  hits.forEach(function(h){
+    var e = h.e, kids = [el('span', { class: 'icd-chip', text: e.type }), ' ', e.title, el('small', { text: e.sub })];
+    list.appendChild(el('button', { type: 'button', class: 'result', onclick: function(){
+      if (e.file && BUILT[e.file]){ window.location.href = e.file + '.html'; return; }
+      if (e.mod){ select(e.mod); q('#peta').scrollIntoView(); q('#detail').scrollIntoView({ block: 'center' }); }
+      else if (e.term){ q('#g-filter').value = e.title.split(' — ')[0]; renderGloss(); q('#glosarium').scrollIntoView(); }
+      else if (e.calc){ q('#c-pick').value = e.calc; ICD.calc.mount('#c-box', e.calc); q('#kalkulator').scrollIntoView(); }
+      else if (e.book) q('#buku').scrollIntoView();
+    } }, kids));
+  });
+}
+document.addEventListener('icd:search', function(e){ search(e.detail.q); if (e.detail.q) window.scrollTo(0, 0); });
+
+/* ---------- rencana ---------- */
+function fmtDate(d){ return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); }
+function makePlan(save){
+  var h = ICD.clamp(parseFloat(q('#p-hours').value) || 10, 1, 80), tk = q('#p-track').value, skip = q('#p-skip').checked;
+  var start = q('#p-start').value ? new Date(q('#p-start').value + 'T00:00:00') : new Date();
+  var set = tk ? reg.tracks[tk].files : null, weeks = [], cur = { items: [], left: h }, total = 0;
+  reg.files.forEach(function(f){
+    if (set && !set[f.id]) return;
+    var need = f.hours * (skip ? 1 - P.fileFrac(f.id) : 1); if (need < 0.05) return; total += need;
+    while (need > 0.049){
+      var take = Math.min(need, cur.left); cur.items.push([f, take]); cur.left -= take; need -= take;
+      if (cur.left < 0.05){ weeks.push(cur); cur = { items: [], left: h }; }
+    }
+  });
+  if (cur.items.length) weeks.push(cur);
+  if (save) store.set('plan', { hours: h, track: tk, start: q('#p-start').value, skip: skip, at: Date.now() });
+  var out = q('#p-out'); out.textContent = '';
+  var end = new Date(start.getTime() + weeks.length * 7 * 864e5);
+  q('#p-sum').textContent = weeks.length ? Math.round(total) + ' jam tersisa · ' + weeks.length + ' minggu · selesai sekitar ' + fmtDate(end) : 'Tidak ada yang tersisa untuk jalur ini.';
+  if (!weeks.length) return;
+  var tb = el('tbody'), table = el('table', { class: 'icd' }, [el('thead', null, [el('tr', null, [el('th', { scope: 'col', text: 'Minggu' }), el('th', { scope: 'col', text: 'Mulai' }), el('th', { scope: 'col', text: 'Dipelajari' })])]), tb]);
+  var LIMIT = 12, showAll = false;
+  function rows(){
+    tb.textContent = '';
+    weeks.slice(0, showAll ? weeks.length : LIMIT).forEach(function(w, i){
+      var cell = el('td'); w.items.forEach(function(it, k){ if (k) cell.appendChild(document.createTextNode('; ')); cell.appendChild(el('span', { text: it[0].code + ' ' + it[0].title + ' (' + hrs(it[1]) + ')' + (ICD.avail.has(it[0].id) ? '' : ' · segera'), style: ICD.avail.has(it[0].id) ? null : 'color:var(--ink2)' })); });
+      tb.appendChild(el('tr', null, [el('th', { scope: 'row', text: String(i + 1) }), el('td', { text: fmtDate(new Date(start.getTime() + i * 7 * 864e5)), style: 'white-space:nowrap' }), cell]));
+    });
+  }
+  rows(); out.appendChild(table);
+  if (weeks.length > LIMIT) out.appendChild(el('button', { type: 'button', class: 'icd-btn small no-print', style: 'margin-top:8px', text: 'Tampilkan semua ' + weeks.length + ' minggu', onclick: function(e){ showAll = !showAll; rows(); e.target.textContent = showAll ? 'Ringkas menjadi ' + LIMIT + ' minggu' : 'Tampilkan semua ' + weeks.length + ' minggu'; } }));
+}
+
+/* ---------- glosarium, buku, kalkulator ---------- */
+function renderGloss(){
+  var f = q('#g-filter').value.trim().toLowerCase(), dl = q('#g-list'); dl.textContent = '';
+  var n = 0;
+  ICD.gloss.all().forEach(function(t){
+    if (f && (t.en + ' ' + t.idn + ' ' + t.def).toLowerCase().indexOf(f) < 0) return; n++;
+    dl.appendChild(el('dt', null, [t.en, ' ', el('i', { text: '· ' + t.idn }), ' ', el('span', { class: 'icd-chip', text: t.mod })])); dl.appendChild(el('dd', { text: t.def }));
+  });
+  if (!n) dl.appendChild(el('dd', { class: 'icd-muted', text: 'Tidak ada istilah yang cocok.' }));
+}
+function renderBooks(){
+  var tb = q('#b-table tbody');
+  BOOKS.forEach(function(b){ tb.appendChild(el('tr', null, [el('td', { html: b[0] }), el('td', { text: b[1].split(' ').join(', '), style: 'font-family:var(--f-mono);font-size:.82rem' })])); });
+}
+
+/* ---------- data ---------- */
+function setupData(){
+  q('#d-export').addEventListener('click', function(){
+    var blob = new Blob([store.exportJSON()], { type: 'application/json' }), a = el('a', { href: URL.createObjectURL(blob), download: 'icd-progres-' + new Date().toISOString().slice(0, 10) + '.json' });
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000); ICD.toast('Berkas ekspor dibuat.');
+  });
+  q('#d-import').addEventListener('click', function(){ q('#d-file').click(); });
+  q('#d-file').addEventListener('change', function(e){
+    var file = e.target.files[0]; if (!file) return; var rd = new FileReader();
+    rd.onload = function(){
+      function run(mode){ try { store.importJSON(String(rd.result), mode); ICD.toast('Impor berhasil.'); refresh(); } catch (err) { ICD.toast('Impor gagal: ' + err.message); } }
+      ICD.dialog({ title: 'Impor progres', body: 'Gabung menyatukan data berkas dengan data di browser ini (skor terbaik dipertahankan). Ganti menghapus data di browser ini lebih dulu.',
+        actions: [{ label: 'Batal' }, { label: 'Ganti', run: function(){ run('ganti'); } }, { label: 'Gabung', primary: true, run: function(){ run('gabung'); } }] });
+    };
+    rd.readAsText(file); e.target.value = '';
+  });
+  q('#d-reset').addEventListener('click', function(){
+    ICD.dialog({ title: 'Hapus semua progres?', body: 'Progres, catatan, bookmark, jadwal flashcard, dan rencana di browser ini akan dihapus. Ekspor dulu jika ingin menyimpan cadangan.',
+      actions: [{ label: 'Batal', primary: true }, { label: 'Hapus', run: function(){ store.reset(); ICD.theme.set('auto'); ICD.toast('Semua progres dihapus.'); refresh(); } }] });
+  });
+}
+
+/* ---------- init ---------- */
+var cardsUI;
+function refresh(){ renderDash(); renderHero(); renderLearn(); renderMap(); if (cardsUI) cardsUI.reload(); }
+ICD.ready(function(){
+  var opts = [['', 'Semua jalur']].concat(Object.keys(reg.tracks).map(function(k){ return [k, reg.tracks[k].title]; }));
+  ['#track', '#p-track'].forEach(function(s){ opts.forEach(function(o){ q(s).appendChild(el('option', { value: o[0], text: o[1] })); }); });
+  q('#track').addEventListener('change', function(e){ state.track = e.target.value; renderMap(); });
+  q('#v-graf').addEventListener('click', function(){ setView('graf'); }); q('#v-daftar').addEventListener('click', function(){ setView('daftar'); });
+  setView(window.innerWidth < 700 ? 'daftar' : 'graf');
+  renderDash(); renderHero(); renderLearn(); renderMap();
+  cardsUI = ICD.cards.mount('#cards', { limit: 30 });
+  var plan = store.get('plan', null), d = new Date();
+  q('#p-start').value = (plan && plan.start) || new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (plan){ q('#p-hours').value = plan.hours; q('#p-track').value = plan.track || ''; q('#p-skip').checked = plan.skip !== false; makePlan(false); }
+  q('#p-make').addEventListener('click', function(){ makePlan(true); renderLearn(); ICD.say('Rencana dibuat.'); });
+  q('#d-auto').checked = store.get('settings.autoRead', true) !== false;
+  q('#d-auto').addEventListener('change', function(e){ store.set('settings.autoRead', e.target.checked); ICD.toast(e.target.checked ? 'Tanda otomatis aktif.' : 'Tanda otomatis dimatikan; pakai tombol di akhir setiap bagian.'); });
+  q('#g-filter').addEventListener('input', renderGloss); renderGloss(); renderBooks();
+  ICD.calc.list.forEach(function(c){ q('#c-pick').appendChild(el('option', { value: c.id, text: c.title })); });
+  q('#c-pick').addEventListener('change', function(e){ ICD.calc.mount('#c-box', e.target.value); }); ICD.calc.mount('#c-box', ICD.calc.list[0].id);
+  setupData();
+  if (ICD.config && ICD.config.repo){ var ar = q('#about-repo'); ar.textContent = ''; ar.appendChild(document.createTextNode('lewat ')); ar.appendChild(el('a', { href: 'https://github.com/' + ICD.config.repo, text: 'github.com/' + ICD.config.repo })); }
+  q('#about-ver').textContent = 'ICD-Core ' + ICD.version + ' · skema penyimpanan icd.v1 · ' + reg.modules.length + ' modul, ' + reg.files.length + ' file modul terdaftar, ' + ICD.avail.files().length + ' sudah dibuat.';
+  function fromHash(){ var m = /^#cari=(.*)$/.exec(window.location.hash); if (m){ var v = decodeURIComponent(m[1]); var s = q('#icd-search'); if (s) s.value = v; search(v); } }
+  fromHash(); window.addEventListener('hashchange', fromHash);
+  document.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) refresh(); });
+  document.addEventListener('icd:auth', function(){ q('#resume').textContent = ''; renderDash(); renderHero(); });
+  document.addEventListener('icd:progress', function(){ renderDash(); renderLearn(); renderMap(); });
+});
+})();
+</script>
+</body>
+</html>

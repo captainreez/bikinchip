@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M01b Bilangan kompleks, fasor, kalkulus, persamaan diferensial — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+.two{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.two.v4{grid-template-columns:minmax(0,1fr) 320px}}
+</style>
+</head>
+<body data-file="m01b-kompleks-kalkulus">
+<main>
+<p class="icd-small icd-muted">Bagian 1: Fondasi · M01 bagian b dari 4 · sekitar 15 jam · prasyarat: <a href="m01a-matematika-dasar.html">M01a</a></p>
+<h1>M01b Bilangan kompleks, fasor, kalkulus, persamaan diferensial</h1>
+<p>Empat alat yang menjelaskan bagaimana tegangan di chip <em>berubah terhadap waktu</em>. Kalkulus memberi bahasa untuk laju perubahan dan penjumlahan terus-menerus. Persamaan diferensial memakai bahasa itu untuk meramalkan bentuk sinyal. Bilangan kompleks dan fasor membuat hitungan untuk sinyal sinus menjadi aljabar biasa.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<p>Setiap kali sebuah gerbang logika berpindah keadaan, keluarannya tidak melompat seketika. Ia mengisi atau mengosongkan kapasitansi lewat resistansi, dan bentuk tegangannya mengikuti sebuah persamaan diferensial. Dari situlah delay berasal, dan delay menentukan seberapa cepat chip boleh berdetak.</p>
+<ul>
+<li><strong>Timing digital.</strong> Delay gerbang dan kawat, waktu naik sinyal, dan metastability (M09) semuanya adalah solusi persamaan diferensial orde satu yang Anda pelajari di sini.</li>
+<li><strong>Integritas daya.</strong> Kawat bonding paket bersifat induktif dan pad bersifat kapasitif. Keduanya membentuk sistem orde dua yang bisa <em>berdering</em>: tegangan suplai berayun di atas dan di bawah nilai normalnya setelah lonjakan arus. Jika ayunannya terlalu besar, flip-flop salah menangkap data.</li>
+<li><strong>Desain analog.</strong> Penguat, filter, dan PLL dianalisis dengan fasor dan bilangan kompleks. Phase margin sebuah op-amp (M07c) dan stabilitas loop PLL (M28c) adalah soal letak akar persamaan orde dua.</li>
+<li><strong>Simulator.</strong> SPICE pada dasarnya adalah penyelesai persamaan diferensial numerik. Engineer yang tidak paham cara kerjanya akan bingung saat simulasi gagal konvergen atau hasilnya bergantung pada ukuran langkah waktu.</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Rangkaian nyata selalu punya R, L, dan C. Karena itu setiap perubahan sinyal mengikuti eksponensial atau sinus teredam. Mengenali kedua bentuk itu, dan tahu dari mana asalnya, adalah dasar hampir semua analisis rangkaian.</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a>: eksponen, logaritma, radian, gelombang sinus, dan desibel.</p>
+<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<ol>
+<li>Menghitung jumlah, selisih, hasil kali, dan hasil bagi <span data-term="kompleks">bilangan kompleks</span> dalam bentuk persegi maupun polar, dan berpindah antara keduanya dengan kuadran yang benar.</li>
+<li>Menurunkan turunan fungsi pangkat, eksponensial, dan sinus, memakai aturan rantai dan aturan hasil kali, serta menafsirkan turunan sebagai laju perubahan dengan satuannya.</li>
+<li>Menghitung integral tentu sebagai luas, dan memakainya untuk mencari muatan, nilai rata-rata, dan nilai RMS; termasuk menurunkan RMS sinus = <i>A</i>/√2.</li>
+<li>Menurunkan rumus Euler <i>e</i><sup><i>j</i>θ</sup> = cos θ + <i>j</i> sin θ dan memakai <span data-term="fasor">fasor</span> untuk mengubah turunan menjadi perkalian dengan <i>j</i>ω.</li>
+<li>Menyelesaikan persamaan diferensial linear orde satu dengan masukan step, dan menghitung waktu menuju persentase tertentu dari nilai akhir.</li>
+<li>Menulis persamaan karakteristik sistem orde dua, menentukan apakah responsnya kurang teredam, teredam kritis, atau lewat teredam, dan menghitung overshoot-nya.</li>
+<li>Menjelaskan metode Euler dan Runge-Kutta, galatnya, dan syarat kestabilan Euler.</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Turunan: spidometer</h3>
+<p>Odometer mobil mencatat jarak total. Spidometer menunjukkan seberapa cepat jarak itu bertambah <em>saat ini</em>. Turunan adalah spidometer bagi besaran apa pun: turunan tegangan terhadap waktu adalah seberapa cepat tegangan naik, dalam volt per detik. <em>Di mana analogi ini berhenti:</em> spidometer hanya mengukur terhadap waktu. Turunan bisa diambil terhadap besaran apa saja, misalnya laju perubahan arus transistor terhadap tegangan gate-nya, yang menjadi dasar gain penguat di M07.</p>
+<h3>Integral: odometer</h3>
+<p>Kebalikannya: jika Anda tahu kecepatan setiap saat, odometer menjumlahkannya menjadi jarak. Integral menjumlahkan sebuah laju menjadi total. Arus adalah laju aliran muatan; integral arus terhadap waktu adalah muatan total yang berpindah. <em>Di mana analogi ini berhenti:</em> odometer tidak pernah berkurang, sedangkan integral bisa negatif. Arus yang berbalik arah mengurangi muatan yang sudah terkumpul.</p>
+<h3>Persamaan diferensial orde satu: mengisi ember yang bocor</h3>
+<p>Isi ember dari keran sambil dasarnya bocor. Makin penuh ember, makin deras kebocoran, sehingga laju pengisian bersih makin kecil. Ember tidak pernah benar-benar penuh dalam waktu terbatas; ia mendekati titik seimbang dengan kurva yang melambat. Kapasitor yang diisi lewat resistor berperilaku persis seperti ini, dan kurvanya adalah eksponensial. <em>Di mana analogi ini berhenti:</em> ember nyata akhirnya penuh dalam waktu terbatas karena air bersifat butiran dan gelombang permukaan. Model matematisnya mendekati nilai akhir selamanya; engineer cukup berkata "sudah sampai" setelah sekitar lima konstanta waktu.</p>
+<h3>Orde dua: pegas dan peredam</h3>
+<p>Tekan suspensi mobil lalu lepaskan. Pegas mendorong kembali, massa melewati titik seimbang, lalu berayun. Peredam (shock absorber) menyerap energi ayunan. Peredam lemah: mobil bergoyang lama. Peredam terlalu kuat: mobil kembali sangat lambat. Ada titik pas di tengah. Rangkaian dengan induktor dan kapasitor berperilaku sama: induktansi seperti massa, kapasitansi seperti pegas, resistansi seperti peredam. <em>Di mana analogi ini berhenti:</em> pada mobil, Anda bisa melihat dan merasakan goyangannya. Pada chip, dering terjadi dalam ratusan pikodetik, dan Anda hanya bisa melihatnya lewat simulasi atau osiloskop yang sangat cepat.</p>
+<h3>Bilangan kompleks: panah, bukan titik di garis</h3>
+<p>Bilangan biasa hidup di sebuah garis: maju atau mundur. Bilangan kompleks hidup di bidang: ia punya panjang dan arah, seperti jarum jam. Mengalikan dua bilangan kompleks berarti memanjangkan dan memutar jarum. Inilah yang membuatnya cocok untuk gelombang sinus, yang pada dasarnya adalah jarum yang berputar (M01a). <em>Di mana analogi ini berhenti:</em> nama "imajiner" menyesatkan. Bilangan imajiner tidak lebih khayal daripada bilangan negatif; keduanya adalah alat hitung yang konsisten. Yang terukur di laboratorium selalu bagian real-nya.</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Bilangan kompleks dalam bentuk persegi</h3>
+<p>Persamaan <i>x</i>² = −1 tidak punya solusi di antara bilangan real. Matematikawan mendefinisikan bilangan baru yang kuadratnya −1. Ahli matematika menamainya <i>i</i>; engineer menamainya <span data-term="jimaj"><i>j</i></span>, karena huruf <i>i</i> sudah dipakai untuk arus.</p>
+<p>Sebuah bilangan kompleks ditulis <i>z</i> = <i>a</i> + <i>jb</i>, dengan <i>a</i> bagian real dan <i>b</i> bagian imajiner, keduanya bilangan real. Ia digambar sebagai titik (<i>a</i>, <i>b</i>) pada <span data-term="bidangk">bidang kompleks</span>: sumbu mendatar real, sumbu tegak imajiner.</p>
+<ul>
+<li><strong>Penjumlahan:</strong> jumlahkan bagian real dengan real, imajiner dengan imajiner. (2 + 3<i>j</i>) + (4 − <i>j</i>) = 6 + 2<i>j</i>. Secara gambar: sambung panah ujung ke pangkal.</li>
+<li><strong>Perkalian:</strong> kalikan seperti aljabar biasa, lalu ganti <i>j</i>² dengan −1. (2 + 3<i>j</i>)(4 − <i>j</i>) = 8 − 2<i>j</i> + 12<i>j</i> − 3<i>j</i>² = 8 + 10<i>j</i> + 3 = 11 + 10<i>j</i>.</li>
+<li><strong><span data-term="konjugat">Konjugat</span>:</strong> <i>z</i>* = <i>a</i> − <i>jb</i>, cerminan terhadap sumbu real. Sifat pentingnya: <i>z</i> · <i>z</i>* = <i>a</i>² + <i>b</i>², selalu real dan tidak negatif.</li>
+<li><strong>Pembagian:</strong> kalikan pembilang dan penyebut dengan konjugat penyebut agar penyebutnya real. 1/(1 + <i>j</i>) = (1 − <i>j</i>)/((1 + <i>j</i>)(1 − <i>j</i>)) = (1 − <i>j</i>)/2 = 0.5 − 0.5<i>j</i>.</li>
+</ul>
+<p>Pangkat <i>j</i> berulang setiap empat: <i>j</i>¹ = <i>j</i>, <i>j</i>² = −1, <i>j</i>³ = −<i>j</i>, <i>j</i>⁴ = 1. Akibatnya 1/<i>j</i> = −<i>j</i> (kalikan pembilang dan penyebut dengan <i>j</i>).</p>
+
+<h3>4.2 Bentuk polar</h3>
+<p>Panah yang sama bisa dinyatakan dengan panjang dan arahnya:</p>
+<div class="icd-eq"><math display="block"><mi>r</mi><mo>=</mo><mrow><mo>|</mo><mi>z</mi><mo>|</mo></mrow><mo>=</mo><msqrt><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup></mrow></msqrt><mspace width="2em"/><mi>&#x3B8;</mi><mo>=</mo><mi>arg</mi><mo>&#x2061;</mo><mi>z</mi><mo>=</mo><mi>atan2</mi><mo>(</mo><mi>b</mi><mo>,</mo><mi>a</mi><mo>)</mo></math><span class="alt">r = |z| = √(a² + b²)    θ = arg z = atan2(b, a)</span></div>
+<p>dan kembali ke bentuk persegi dengan <i>a</i> = <i>r</i> cos θ, <i>b</i> = <i>r</i> sin θ (definisi lingkaran satuan di M01a, diperbesar <i>r</i> kali). Penulisan ringkasnya <i>r</i>∠θ.</p>
+<p><strong>Mengapa atan2, bukan arctan biasa.</strong> arctan(<i>b</i>/<i>a</i>) hanya menghasilkan sudut antara −90° dan +90°, karena pembagian membuang tanda. Bilangan −3 − 3<i>j</i> dan 3 + 3<i>j</i> memberi <i>b</i>/<i>a</i> yang sama (1), padahal arahnya berlawanan: yang pertama berada di kuadran III pada −135°. Fungsi atan2(<i>b</i>, <i>a</i>) melihat tanda <i>a</i> dan <i>b</i> secara terpisah dan selalu memberi kuadran yang benar.</p>
+<p><strong>Perkalian dan pembagian jauh lebih mudah dalam bentuk polar:</strong></p>
+<div class="icd-eq"><math display="block"><msub><mi>z</mi><mn>1</mn></msub><msub><mi>z</mi><mn>2</mn></msub><mo>=</mo><msub><mi>r</mi><mn>1</mn></msub><msub><mi>r</mi><mn>2</mn></msub><mo>&#x2220;</mo><mo>(</mo><msub><mi>&#x3B8;</mi><mn>1</mn></msub><mo>+</mo><msub><mi>&#x3B8;</mi><mn>2</mn></msub><mo>)</mo><mspace width="2em"/><mfrac><msub><mi>z</mi><mn>1</mn></msub><msub><mi>z</mi><mn>2</mn></msub></mfrac><mo>=</mo><mfrac><msub><mi>r</mi><mn>1</mn></msub><msub><mi>r</mi><mn>2</mn></msub></mfrac><mo>&#x2220;</mo><mo>(</mo><msub><mi>&#x3B8;</mi><mn>1</mn></msub><mo>&#x2212;</mo><msub><mi>&#x3B8;</mi><mn>2</mn></msub><mo>)</mo></math><span class="alt">z1·z2 = r1·r2 ∠ (θ1 + θ2)    z1/z2 = (r1/r2) ∠ (θ1 − θ2)</span></div>
+<p><em>Penurunan:</em> tulis <i>z</i><sub>1</sub> = <i>r</i><sub>1</sub>(cos θ<sub>1</sub> + <i>j</i> sin θ<sub>1</sub>) dan <i>z</i><sub>2</sub> serupa, kalikan, lalu kelompokkan: bagian real menjadi <i>r</i><sub>1</sub><i>r</i><sub>2</sub>(cos θ<sub>1</sub> cos θ<sub>2</sub> − sin θ<sub>1</sub> sin θ<sub>2</sub>) = <i>r</i><sub>1</sub><i>r</i><sub>2</sub> cos(θ<sub>1</sub> + θ<sub>2</sub>), dan bagian imajiner <i>r</i><sub>1</sub><i>r</i><sub>2</sub> sin(θ<sub>1</sub> + θ<sub>2</sub>), memakai identitas penjumlahan sudut trigonometri. Bagian 4.6 memberi jalan yang lebih ringkas.</p>
+<p>Jadi mengalikan dengan <i>j</i> = 1∠90° berarti memutar 90° tanpa mengubah panjang. Itulah sebabnya <i>j</i>² = −1: dua kali putaran 90° menghadap ke arah sebaliknya.</p>
+<p><strong>Contoh dengan angka:</strong> <i>z</i><sub>1</sub> = 2 + 3<i>j</i> = 3.606∠56.31° dan <i>z</i><sub>2</sub> = 4 − <i>j</i> = 4.123∠−14.04°. Hasil kali: 3.606 × 4.123 = 14.87 pada sudut 56.31° − 14.04° = 42.27°. Periksa: |11 + 10<i>j</i>| = √221 = 14.87, dan atan2(10, 11) = 42.27°. Cocok.</p>
+
+<h3>4.3 Turunan</h3>
+<p>Kemiringan garis lurus adalah perubahan tegak dibagi perubahan mendatar. Untuk kurva, kemiringannya berbeda di setiap titik. <span data-term="turunan">Turunan</span> adalah kemiringan pada satu titik, didapat dengan memperpendek selang sampai mendekati nol:</p>
+<div class="icd-eq"><math display="block"><msup><mi>f</mi><mo>&#x2032;</mo></msup><mo>(</mo><mi>x</mi><mo>)</mo><mo>=</mo><mfrac><mrow><mi>d</mi><mi>f</mi></mrow><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><mo>=</mo><munder><mi>lim</mi><mrow><mi>h</mi><mo>&#x2192;</mo><mn>0</mn></mrow></munder><mfrac><mrow><mi>f</mi><mo>(</mo><mi>x</mi><mo>+</mo><mi>h</mi><mo>)</mo><mo>&#x2212;</mo><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo></mrow><mi>h</mi></mfrac></math><span class="alt">f'(x) = df/dx = lim(h→0) [f(x + h) − f(x)] / h</span></div>
+<p>Pecahan di dalamnya adalah kemiringan <span data-term="sekan">garis sekan</span> yang memotong kurva di dua titik berjarak <i>h</i>. Saat <i>h</i> mengecil, garis sekan berubah menjadi <span data-term="tangen">garis singgung</span>. Simbol "lim" (<span data-term="limit">limit</span>) berarti "nilai yang didekati"; kita tidak pernah benar-benar membagi dengan nol.</p>
+<p><strong>Contoh dari definisi:</strong> untuk <i>f</i>(<i>x</i>) = <i>x</i>², pecahannya adalah ((<i>x</i> + <i>h</i>)² − <i>x</i>²)/<i>h</i> = (2<i>xh</i> + <i>h</i>²)/<i>h</i> = 2<i>x</i> + <i>h</i>. Saat <i>h</i> → 0, hasilnya 2<i>x</i>. Pola yang sama untuk pangkat berapa pun memberi aturan pangkat.</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Fungsi</th><th scope="col">Turunan</th><th scope="col">Keterangan</th></tr></thead>
+<tbody>
+<tr><td>konstanta <i>c</i></td><td>0</td><td>Tidak berubah, kemiringan nol</td></tr>
+<tr><td><i>x</i><sup><i>n</i></sup></td><td><i>n</i> <i>x</i><sup><i>n</i>−1</sup></td><td>Aturan pangkat; berlaku juga untuk <i>n</i> pecahan dan negatif</td></tr>
+<tr><td><i>e</i><sup><i>ax</i></sup></td><td><i>a</i> <i>e</i><sup><i>ax</i></sup></td><td>Bagian 4.4</td></tr>
+<tr><td>ln <i>x</i></td><td>1/<i>x</i></td><td>Untuk <i>x</i> &gt; 0</td></tr>
+<tr><td>sin(ω<i>t</i>)</td><td>ω cos(ω<i>t</i>)</td><td>Sudut dalam radian</td></tr>
+<tr><td>cos(ω<i>t</i>)</td><td>−ω sin(ω<i>t</i>)</td><td>Sudut dalam radian</td></tr>
+</tbody></table></div>
+<p><strong>Aturan penggabungan:</strong></p>
+<ul>
+<li><strong>Jumlah dan kelipatan:</strong> (<i>f</i> + <i>g</i>)′ = <i>f</i>′ + <i>g</i>′ dan (<i>cf</i>)′ = <i>cf</i>′.</li>
+<li><strong><span data-term="aturanhk">Aturan hasil kali</span>:</strong> (<i>fg</i>)′ = <i>f</i>′<i>g</i> + <i>fg</i>′.</li>
+<li><strong><span data-term="rantai">Aturan rantai</span>:</strong> jika <i>y</i> = <i>f</i>(<i>u</i>) dan <i>u</i> = <i>g</i>(<i>x</i>), maka d<i>y</i>/d<i>x</i> = (d<i>y</i>/d<i>u</i>)(d<i>u</i>/d<i>x</i>). Contoh: sin(ω<i>t</i>) adalah sin(<i>u</i>) dengan <i>u</i> = ω<i>t</i>, jadi turunannya cos(<i>u</i>) · ω.</li>
+</ul>
+<p><strong>Satuan turunan</strong> adalah satuan pembilang dibagi satuan penyebut. Turunan tegangan terhadap waktu bersatuan V/s; di chip lebih enak dibaca dalam V/ns. <strong>Contoh:</strong> <i>v</i>(<i>t</i>) = 0.9 sin(2π × 500 MHz × <i>t</i>) volt. Turunannya 0.9 × 2π × 500 × 10<sup>6</sup> × cos(…) V/s. Nilai puncaknya 2.83 × 10<sup>9</sup> V/s = 2.83 V/ns. Inilah <span data-term="slew">slew rate</span> yang harus sanggup diikuti rangkaian penerimanya.</p>
+
+<h3>4.4 Bilangan e dan fungsi eksponensial</h3>
+<p>Bilangan <span data-term="enum"><i>e</i></span> ≈ 2.718 281 muncul dari pertanyaan sederhana: berapa hasil (1 + 1/<i>n</i>)<sup><i>n</i></sup> bila <i>n</i> sangat besar? Untuk <i>n</i> = 1 000 hasilnya 2.7169; makin besar <i>n</i>, makin dekat ke <i>e</i>. Yang membuatnya istimewa adalah sifat ini:</p>
+<div class="icd-eq"><math display="block"><mfrac><mi>d</mi><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><msup><mi>e</mi><mi>x</mi></msup><mo>=</mo><msup><mi>e</mi><mi>x</mi></msup><mspace width="2em"/><mfrac><mi>d</mi><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><msup><mi>e</mi><mrow><mi>a</mi><mi>x</mi></mrow></msup><mo>=</mo><mi>a</mi><mo>&#x2062;</mo><msup><mi>e</mi><mrow><mi>a</mi><mi>x</mi></mrow></msup></math><span class="alt">d/dx e^x = e^x     d/dx e^(ax) = a·e^(ax)</span></div>
+<p><i>e</i><sup><i>x</i></sup> adalah satu-satunya fungsi (selain kelipatannya) yang laju perubahannya sama dengan nilainya sendiri. Bentuk kedua didapat dari aturan rantai. Inilah alasan <i>e</i> muncul di fisika tanpa diundang: setiap proses yang laju perubahannya sebanding dengan keadaannya sekarang (kapasitor yang bocor, populasi yang tumbuh, bunga majemuk) mengikuti fungsi eksponensial berbasis <i>e</i>.</p>
+<p>Kebalikannya adalah logaritma natural: ln <i>x</i> = log<sub><i>e</i></sub> <i>x</i>. Hubungan dengan log<sub>10</sub>: ln <i>x</i> = 2.303 · log<sub>10</sub> <i>x</i>, karena ln 10 ≈ 2.303.</p>
+
+<h3>4.5 Integral</h3>
+<p><span data-term="integral">Integral</span> tentu dari <i>a</i> sampai <i>b</i> adalah luas bertanda di antara kurva dan sumbu mendatar. Ia didefinisikan sebagai batas jumlah luas persegi panjang tipis (<span data-term="riemann">jumlah Riemann</span>):</p>
+<div class="icd-eq"><math display="block"><msubsup><mo>&#x222B;</mo><mi>a</mi><mi>b</mi></msubsup><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mspace width="0.2em"/><mi>d</mi><mi>x</mi><mo>=</mo><munder><mi>lim</mi><mrow><mi>N</mi><mo>&#x2192;</mo><mi>&#x221E;</mi></mrow></munder><munderover><mo>&#x2211;</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><mi>f</mi><mo>(</mo><msub><mi>x</mi><mi>k</mi></msub><mo>)</mo><mspace width="0.2em"/><mi>&#x394;</mi><mi>x</mi><mo>,</mo><mspace width="1em"/><mi>&#x394;</mi><mi>x</mi><mo>=</mo><mfrac><mrow><mi>b</mi><mo>&#x2212;</mo><mi>a</mi></mrow><mi>N</mi></mfrac></math><span class="alt">∫ₐᵇ f(x) dx = lim(N→∞) Σ f(x_k)·Δx,  Δx = (b − a)/N</span></div>
+<p>Luas di bawah sumbu dihitung negatif. Satuan integral adalah satuan <i>f</i> dikali satuan <i>x</i>: integral arus (A) terhadap waktu (s) adalah muatan (A·s = C).</p>
+<p><strong><span data-term="ftc">Teorema dasar kalkulus</span></strong> menghubungkan integral dengan turunan. Jika <i>F</i> adalah <span data-term="antiturunan">antiturunan</span> <i>f</i>, artinya <i>F</i>′ = <i>f</i>, maka</p>
+<div class="icd-eq"><math display="block"><msubsup><mo>&#x222B;</mo><mi>a</mi><mi>b</mi></msubsup><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mspace width="0.2em"/><mi>d</mi><mi>x</mi><mo>=</mo><mi>F</mi><mo>(</mo><mi>b</mi><mo>)</mo><mo>&#x2212;</mo><mi>F</mi><mo>(</mo><mi>a</mi><mo>)</mo></math><span class="alt">∫ₐᵇ f(x) dx = F(b) − F(a)</span></div>
+<p>Alasannya intuitif: luas yang terkumpul sampai <i>x</i> bertambah dengan laju <i>f</i>(<i>x</i>) per satuan <i>x</i>, jadi turunan dari "luas sampai <i>x</i>" adalah <i>f</i>(<i>x</i>). <strong>Contoh:</strong> luas di bawah sin <i>x</i> dari 0 sampai π. Antiturunan sin adalah −cos, jadi luasnya −cos π − (−cos 0) = 1 + 1 = 2.</p>
+<p><strong>Rata-rata dan RMS.</strong> Nilai <span data-term="ratarata">rata-rata</span> sebuah sinyal selama selang <i>T</i> adalah integralnya dibagi <i>T</i>: tinggi persegi panjang yang luasnya sama. Nilai <span data-term="rms">RMS</span> adalah akar dari rata-rata kuadratnya:</p>
+<div class="icd-eq"><math display="block"><msub><mi>V</mi><mtext>rms</mtext></msub><mo>=</mo><msqrt><mrow><mfrac><mn>1</mn><mi>T</mi></mfrac><msubsup><mo>&#x222B;</mo><mn>0</mn><mi>T</mi></msubsup><mi>v</mi><msup><mrow><mo>(</mo><mi>t</mi><mo>)</mo></mrow><mn>2</mn></msup><mspace width="0.2em"/><mi>d</mi><mi>t</mi></mrow></msqrt></math><span class="alt">V_rms = √( (1/T) ∫₀ᵀ v(t)² dt )</span></div>
+<p><strong>Menurunkan RMS sinus</strong> (janji dari M01a). Untuk <i>v</i> = <i>A</i> sin θ, pakai identitas sin² θ = (1 − cos 2θ)/2. Rata-rata cos 2θ selama satu periode adalah nol, karena luas bagian positif dan negatifnya sama. Jadi rata-rata sin² θ adalah 1/2, rata-rata <i>v</i>² adalah <i>A</i>²/2, dan <i>V</i><sub>rms</sub> = <i>A</i>/√2 ≈ 0.707<i>A</i>. RMS penting karena daya rata-rata pada resistor adalah <i>V</i><sub>rms</sub>²/<i>R</i>: tegangan bolak-balik dengan RMS 1 V memanaskan resistor sama banyak dengan tegangan searah 1 V.</p>
+
+<h3>4.6 Rumus Euler dan fasor</h3>
+<p>Dengan turunan, kita bisa membuktikan salah satu persamaan terpenting di teknik elektro:</p>
+<div class="icd-eq"><math display="block"><msup><mi>e</mi><mrow><mi>j</mi><mi>&#x3B8;</mi></mrow></msup><mo>=</mo><mi>cos</mi><mo>&#x2061;</mo><mi>&#x3B8;</mi><mo>+</mo><mi>j</mi><mo>&#x2062;</mo><mi>sin</mi><mo>&#x2061;</mo><mi>&#x3B8;</mi></math><span class="alt">e^(jθ) = cos θ + j·sin θ</span></div>
+<p><em>Penurunan.</em> Definisikan <i>g</i>(θ) = <i>e</i><sup>−<i>j</i>θ</sup>(cos θ + <i>j</i> sin θ). Dengan aturan hasil kali, dan memperlakukan <i>j</i> sebagai konstanta sehingga turunan <i>e</i><sup>−<i>j</i>θ</sup> adalah −<i>j</i><i>e</i><sup>−<i>j</i>θ</sup>:</p>
+<p style="text-align:center"><i>g</i>′(θ) = <i>e</i><sup>−<i>j</i>θ</sup> [ −<i>j</i>(cos θ + <i>j</i> sin θ) + (−sin θ + <i>j</i> cos θ) ] = <i>e</i><sup>−<i>j</i>θ</sup> [ −<i>j</i> cos θ + sin θ − sin θ + <i>j</i> cos θ ] = 0.</p>
+<p>Turunan nol berarti <i>g</i> konstan, dan <i>g</i>(0) = 1 · (1 + 0) = 1. Jadi <i>e</i><sup>−<i>j</i>θ</sup>(cos θ + <i>j</i> sin θ) = 1 untuk semua θ, dan rumus Euler mengikuti. Akibatnya bentuk polar bisa ditulis <i>r</i>∠θ = <i>re</i><sup><i>j</i>θ</sup>, dan aturan perkalian polar di 4.2 tinggal aturan eksponen: <i>e</i><sup><i>j</i>θ₁</sup><i>e</i><sup><i>j</i>θ₂</sup> = <i>e</i><sup><i>j</i>(θ₁+θ₂)</sup>.</p>
+<p><strong><span data-term="fasor">Fasor</span>.</strong> Sebuah sinyal sinus <i>v</i>(<i>t</i>) = <i>A</i> cos(ω<i>t</i> + φ) bisa ditulis sebagai bagian real dari panah yang berputar:</p>
+<div class="icd-eq"><math display="block"><mi>v</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mi>Re</mi><mo>&#x2061;</mo><mo>{</mo><mi>V</mi><msup><mi>e</mi><mrow><mi>j</mi><mi>&#x3C9;</mi><mi>t</mi></mrow></msup><mo>}</mo><mo>,</mo><mspace width="1em"/><mi>V</mi><mo>=</mo><mi>A</mi><msup><mi>e</mi><mrow><mi>j</mi><mi>&#x3C6;</mi></mrow></msup><mo>=</mo><mi>A</mi><mo>&#x2220;</mo><mi>&#x3C6;</mi></math><span class="alt">v(t) = Re{ V·e^(jωt) },  V = A·e^(jφ) = A∠φ</span></div>
+<p>Bilangan kompleks <i>V</i> menyimpan amplitudo dan fase; frekuensinya disepakati sama untuk semua sinyal di rangkaian. Konvensi fasor memakai cosinus; sinus adalah cosinus yang tertinggal 90°, jadi <i>A</i> sin(ω<i>t</i>) punya fasor <i>A</i>∠−90°.</p>
+<p><strong>Kekuatan fasor: turunan menjadi perkalian.</strong> Turunan <i>Ve</i><sup><i>j</i>ω<i>t</i></sup> terhadap waktu adalah <i>j</i>ω<i>Ve</i><sup><i>j</i>ω<i>t</i></sup>. Jadi dalam dunia fasor, d/d<i>t</i> diganti perkalian dengan <i>j</i>ω, dan persamaan diferensial berubah menjadi aljabar.</p>
+<p><strong>Contoh.</strong> Filter RC (diturunkan di <a href="m02b-transien-ac.html">M02b</a>) mengikuti <i>RC</i> d<i>v</i><sub>out</sub>/d<i>t</i> + <i>v</i><sub>out</sub> = <i>v</i><sub>in</sub>. Dengan fasor: <i>j</i>ω<i>RC</i> <i>V</i><sub>out</sub> + <i>V</i><sub>out</sub> = <i>V</i><sub>in</sub>, sehingga</p>
+<div class="icd-eq"><math display="block"><mi>H</mi><mo>=</mo><mfrac><msub><mi>V</mi><mtext>out</mtext></msub><msub><mi>V</mi><mtext>in</mtext></msub></mfrac><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>j</mi><mi>&#x3C9;</mi><mi>R</mi><mi>C</mi></mrow></mfrac></math><span class="alt">H = V_out / V_in = 1 / (1 + jωRC)</span></div>
+<p>Pada ω = 1/(<i>RC</i>), <i>H</i> = 1/(1 + <i>j</i>) = 0.5 − 0.5<i>j</i> = 0.707∠−45°. Besarnya 0.707 adalah titik −3 dB dari M01a, dan sekarang Anda tahu fasenya: −45°. Dengan <i>R</i> = 1 kΩ dan <i>C</i> = 1 nF, frekuensi itu adalah <i>f</i> = 1/(2π<i>RC</i>) = 159.2 kHz.</p>
+
+<h3>4.7 Persamaan diferensial orde satu</h3>
+<p><span data-term="pd">Persamaan diferensial</span> adalah persamaan yang memuat sebuah fungsi dan turunannya. Yang paling sering muncul di chip berbentuk:</p>
+<div class="icd-eq"><math display="block"><mi>&#x3C4;</mi><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>+</mo><mi>y</mi><mo>=</mo><msub><mi>y</mi><mi>f</mi></msub></math><span class="alt">τ·dy/dt + y = y_f</span></div>
+<p>dengan τ <span data-term="tau">konstanta waktu</span> dan <i>y</i><sub><i>f</i></sub> nilai akhir yang dituju. Untuk kapasitor <i>C</i> yang diisi dari sumber <i>V</i><sub><i>S</i></sub> lewat resistor <i>R</i>: <i>y</i> adalah tegangan kapasitor, τ = <i>RC</i>, dan <i>y</i><sub><i>f</i></sub> = <i>V</i><sub><i>S</i></sub>. Persamaan ini diturunkan dari hukum rangkaian di M02b; di sini kita menyelesaikannya.</p>
+<p><strong>Penyelesaian.</strong></p>
+<ol>
+<li>Geser variabel agar nilai akhirnya nol: <i>u</i> = <i>y</i> − <i>y</i><sub><i>f</i></sub>. Karena <i>y</i><sub><i>f</i></sub> konstan, d<i>u</i>/d<i>t</i> = d<i>y</i>/d<i>t</i>, dan persamaan menjadi τ d<i>u</i>/d<i>t</i> = −<i>u</i>.</li>
+<li>Kita mencari fungsi yang turunannya sebanding dengan dirinya sendiri. Dari 4.4, itu eksponensial. Coba <i>u</i> = <i>Ke</i><sup><i>st</i></sup>: τ<i>sKe</i><sup><i>st</i></sup> = −<i>Ke</i><sup><i>st</i></sup>, jadi <i>s</i> = −1/τ.</li>
+<li><i>K</i> ditentukan dari keadaan awal: pada <i>t</i> = 0, <i>u</i>(0) = <i>K</i> = <i>y</i><sub>0</sub> − <i>y</i><sub><i>f</i></sub>.</li>
+</ol>
+<div class="icd-eq"><math display="block"><mi>y</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><msub><mi>y</mi><mi>f</mi></msub><mo>+</mo><mo>(</mo><msub><mi>y</mi><mn>0</mn></msub><mo>&#x2212;</mo><msub><mi>y</mi><mi>f</mi></msub><mo>)</mo><mo>&#x2062;</mo><msup><mi>e</mi><mrow><mo>&#x2212;</mo><mi>t</mi><mo>/</mo><mi>&#x3C4;</mi></mrow></msup></math><span class="alt">y(t) = y_f + (y_0 − y_f)·e^(−t/τ)</span></div>
+<p>Rumus ini berlaku untuk pengisian maupun pengosongan: cukup tahu nilai awal, nilai akhir, dan τ. Perhatikan τ bersatuan detik, sehingga <i>t</i>/τ tanpa satuan, sebagaimana seharusnya pangkat sebuah eksponensial.</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Waktu</th><th scope="col">Bagian perubahan yang sudah ditempuh, 1 − <i>e</i><sup>−<i>t</i>/τ</sup></th></tr></thead>
+<tbody>
+<tr><td class="c">0.693 τ</td><td>50% (karena <i>e</i><sup>−0.693</sup> = 1/2; 0.693 = ln 2)</td></tr>
+<tr><td class="c">1 τ</td><td>63.2%</td></tr>
+<tr><td class="c">2 τ</td><td>86.5%</td></tr>
+<tr><td class="c">3 τ</td><td>95.0%</td></tr>
+<tr><td class="c">4.6 τ</td><td>99% (4.6 = ln 100)</td></tr>
+<tr><td class="c">5 τ</td><td>99.3%</td></tr>
+</tbody></table></div>
+<p><strong>Waktu menuju sebuah persentase.</strong> Selesaikan rumus untuk <i>t</i>: <i>t</i> = τ · ln((<i>y</i><sub>0</sub> − <i>y</i><sub><i>f</i></sub>)/(<i>y</i> − <i>y</i><sub><i>f</i></sub>)). <span data-term="risetime">Waktu naik</span> 10% sampai 90% adalah τ(ln 10 − ln(10/9)) = τ ln 9 = 2.197τ.</p>
+
+<h3>4.8 Persamaan diferensial orde dua</h3>
+<p>Bila rangkaian memuat induktor dan kapasitor sekaligus, muncul turunan kedua. Bentuk bakunya, untuk masukan step bernilai 1:</p>
+<div class="icd-eq"><math display="block"><mfrac><mrow><msup><mi>d</mi><mn>2</mn></msup><mi>y</mi></mrow><mrow><mi>d</mi><msup><mi>t</mi><mn>2</mn></msup></mrow></mfrac><mo>+</mo><mn>2</mn><mi>&#x3B6;</mi><msub><mi>&#x3C9;</mi><mn>0</mn></msub><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>+</mo><msubsup><mi>&#x3C9;</mi><mn>0</mn><mn>2</mn></msubsup><mi>y</mi><mo>=</mo><msubsup><mi>&#x3C9;</mi><mn>0</mn><mn>2</mn></msubsup></math><span class="alt">d²y/dt² + 2ζω0·dy/dt + ω0²·y = ω0²</span></div>
+<p>Dua parameter menentukan segalanya: ω<sub>0</sub> <span data-term="omega0">frekuensi alami</span> (rad/s) dan ζ <span data-term="zeta">rasio redaman</span> (tanpa satuan). Untuk rangkaian RLC seri yang diberi step tegangan dan diukur pada kapasitornya: ω<sub>0</sub> = 1/√(<i>LC</i>) dan ζ = (<i>R</i>/2)√(<i>C</i>/<i>L</i>).</p>
+<p><strong>Persamaan karakteristik.</strong> Seperti orde satu, coba <i>u</i> = <i>Ke</i><sup><i>st</i></sup> pada bagian homogen (ruas kanan nol, setelah menggeser <i>u</i> = <i>y</i> − 1). Setiap turunan menurunkan satu faktor <i>s</i>, dan <i>e</i><sup><i>st</i></sup> bisa dicoret:</p>
+<div class="icd-eq"><math display="block"><msup><mi>s</mi><mn>2</mn></msup><mo>+</mo><mn>2</mn><mi>&#x3B6;</mi><msub><mi>&#x3C9;</mi><mn>0</mn></msub><mi>s</mi><mo>+</mo><msubsup><mi>&#x3C9;</mi><mn>0</mn><mn>2</mn></msubsup><mo>=</mo><mn>0</mn><mspace width="1em"/><mo>&#x21D2;</mo><mspace width="1em"/><mi>s</mi><mo>=</mo><mo>&#x2212;</mo><mi>&#x3B6;</mi><msub><mi>&#x3C9;</mi><mn>0</mn></msub><mo>&#xB1;</mo><msub><mi>&#x3C9;</mi><mn>0</mn></msub><msqrt><mrow><msup><mi>&#x3B6;</mi><mn>2</mn></msup><mo>&#x2212;</mo><mn>1</mn></mrow></msqrt></math><span class="alt">s² + 2ζω0·s + ω0² = 0  ⇒  s = −ζω0 ± ω0·√(ζ² − 1)</span></div>
+<p>(rumus kuadrat dari SMP). Tanda di bawah akar menentukan jenis respons:</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Kasus</th><th scope="col">Akar</th><th scope="col">Bentuk respons step</th></tr></thead>
+<tbody>
+<tr><th scope="row"><span data-term="underdamp">Kurang teredam</span>, ζ &lt; 1</th><td>Pasangan kompleks −ζω<sub>0</sub> ± <i>j</i>ω<sub><i>d</i></sub>, ω<sub><i>d</i></sub> = ω<sub>0</sub>√(1 − ζ²)</td><td>Berayun dengan selubung eksponensial; ada overshoot</td></tr>
+<tr><th scope="row">Teredam kritis, ζ = 1</th><td>Satu akar kembar −ω<sub>0</sub></td><td>Paling cepat tanpa overshoot</td></tr>
+<tr><th scope="row">Lewat teredam, ζ &gt; 1</th><td>Dua akar real negatif</td><td>Lambat, tanpa overshoot</td></tr>
+</tbody></table></div>
+<p>Pada kasus kurang teredam, akar kompleks <i>s</i> = −ζω<sub>0</sub> + <i>j</i>ω<sub><i>d</i></sub> memberi <i>e</i><sup><i>st</i></sup> = <i>e</i><sup>−ζω₀<i>t</i></sup> · <i>e</i><sup><i>j</i>ω<sub>d</sub><i>t</i></sup>. Menurut rumus Euler, faktor kedua adalah sinus dan cosinus. Inilah asal dering: bagian real akar mengatur peluruhan, bagian imajinernya mengatur frekuensi ayunan. Dengan keadaan awal <i>y</i>(0) = 0 dan <i>y</i>′(0) = 0, solusinya:</p>
+<div class="icd-eq"><math display="block"><mi>y</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mn>1</mn><mo>&#x2212;</mo><msup><mi>e</mi><mrow><mo>&#x2212;</mo><mi>&#x3B6;</mi><msub><mi>&#x3C9;</mi><mn>0</mn></msub><mi>t</mi></mrow></msup><mrow><mo>(</mo><mi>cos</mi><mo>&#x2061;</mo><msub><mi>&#x3C9;</mi><mi>d</mi></msub><mi>t</mi><mo>+</mo><mfrac><mi>&#x3B6;</mi><msqrt><mrow><mn>1</mn><mo>&#x2212;</mo><msup><mi>&#x3B6;</mi><mn>2</mn></msup></mrow></msqrt></mfrac><mi>sin</mi><mo>&#x2061;</mo><msub><mi>&#x3C9;</mi><mi>d</mi></msub><mi>t</mi><mo>)</mo></mrow></math><span class="alt">y(t) = 1 − e^(−ζω0·t)·( cos ωd·t + ζ/√(1−ζ²)·sin ωd·t )</span></div>
+<p>Puncak pertama terjadi saat <i>t</i><sub><i>p</i></sub> = π/ω<sub><i>d</i></sub>, dengan <span data-term="overshoot">overshoot</span>:</p>
+<div class="icd-eq"><math display="block"><mi>OS</mi><mo>=</mo><msup><mi>e</mi><mrow><mo>&#x2212;</mo><mi>&#x3C0;</mi><mi>&#x3B6;</mi><mo>/</mo><msqrt><mrow><mn>1</mn><mo>&#x2212;</mo><msup><mi>&#x3B6;</mi><mn>2</mn></msup></mrow></msqrt></mrow></msup></math><span class="alt">OS = e^(−πζ / √(1 − ζ²))</span></div>
+<p>Beberapa nilai: ζ = 0.1 memberi 72.9%, ζ = 0.25 memberi 44.4%, ζ = 0.5 memberi 16.3%, ζ = 0.7 memberi 4.6%.</p>
+
+<h3>4.9 Menyelesaikan secara numerik</h3>
+<p>Kebanyakan rangkaian nyata terlalu rumit untuk diselesaikan dengan rumus. Komputer menyelesaikannya selangkah demi selangkah. Gagasan paling sederhana adalah <span data-term="eulerm">metode Euler</span>: dari definisi turunan, untuk langkah <i>h</i> yang kecil, <i>y</i>(<i>t</i> + <i>h</i>) ≈ <i>y</i>(<i>t</i>) + <i>h</i> · <i>y</i>′(<i>t</i>). Jika persamaannya ditulis <i>y</i>′ = <i>f</i>(<i>t</i>, <i>y</i>):</p>
+<div class="icd-eq"><math display="block"><msub><mi>y</mi><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>y</mi><mi>k</mi></msub><mo>+</mo><mi>h</mi><mo>&#x2062;</mo><mi>f</mi><mo>(</mo><msub><mi>t</mi><mi>k</mi></msub><mo>,</mo><msub><mi>y</mi><mi>k</mi></msub><mo>)</mo></math><span class="alt">y_{k+1} = y_k + h·f(t_k, y_k)</span></div>
+<p><strong>Galat.</strong> Euler memakai kemiringan di awal langkah sepanjang langkah, padahal kemiringan berubah. Galat akhirnya sebanding dengan <i>h</i>: memperkecil langkah dua kali hanya mengurangi galat dua kali. Metode <span data-term="rk4">Runge-Kutta orde empat</span> (RK4) mengambil empat kemiringan di dalam satu langkah lalu merata-ratakannya dengan bobot 1, 2, 2, 1; galatnya sebanding dengan <i>h</i>⁴, sehingga memperkecil langkah dua kali mengurangi galat sekitar 16 kali.</p>
+<p><strong>Kestabilan Euler.</strong> Untuk persamaan orde satu, satu langkah Euler memberi <i>y</i><sub><i>k</i>+1</sub> − <i>y</i><sub><i>f</i></sub> = (1 − <i>h</i>/τ)(<i>y</i><sub><i>k</i></sub> − <i>y</i><sub><i>f</i></sub>). Selisih terhadap nilai akhir dikali (1 − <i>h</i>/τ) setiap langkah. Jika |1 − <i>h</i>/τ| &lt; 1, yaitu 0 &lt; <i>h</i> &lt; 2τ, selisihnya mengecil. Jika <i>h</i> &gt; 2τ, selisihnya membesar dan berganti tanda: solusi numerik meledak walaupun sistem aslinya tenang. Di antara τ dan 2τ, solusi berosilasi walaupun sistem aslinya tidak.</p>
+<div class="icd-box model"><b>Model buku teks lawan simulator nyata</b>Simulator rangkaian seperti SPICE tidak memakai Euler maju seperti di atas. Mereka memakai metode implisit (trapezoidal, Gear) yang tetap stabil untuk langkah besar, mengatur ukuran langkah secara otomatis berdasarkan perkiraan galat, dan menyelesaikan persamaan tak linear di setiap langkah. Gagasan dasarnya tetap sama: turunan didekati dengan selisih, dan galat bergantung pada ukuran langkah.</div>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Bilangan kompleks</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Bilangan kompleks adalah pasangan dua bilangan: bagian real dan bagian imajiner. Bayangkan sebagai panah di bidang. Menjumlah berarti menyambung panah; mengalikan berarti memanjangkan dan memutar panah. Satuan imajiner <i>j</i> adalah "putar 90°".</p></div>
+<div data-level="engineer"><p>Pakai bentuk persegi untuk menjumlah (impedansi seri, arus yang bertemu di satu simpul) dan bentuk polar untuk mengali dan membagi (gain bertingkat, pembagi tegangan). Di kode, pakai tipe kompleks bawaan (<code>complex</code> di Python, <code>std::complex</code> di C++) dan fungsi <code>atan2</code>, jangan menghitung sudut sendiri. Hafalkan: 1/<i>j</i> = −<i>j</i>, dan |1 + <i>j</i>ω/ω<sub><i>c</i></sub>| = √(1 + (ω/ω<sub><i>c</i></sub>)²).</p></div>
+<div data-level="pakar"><p>Bidang kompleks tempat akar-akar persamaan karakteristik digambar disebut bidang-<i>s</i>. Akar di setengah bidang kiri berarti sistem stabil; akar di sumbu imajiner berarti osilator; akar di setengah bidang kanan berarti sinyal tumbuh tanpa batas. Seluruh teori stabilitas penguat umpan balik (M07c) dan loop PLL (M28c) adalah soal menjaga akar tetap di kiri dengan jarak yang cukup dari sumbu imajiner. Transformasi Laplace di M01d meresmikan pemetaan ini.</p></div>
+</div>
+<h3>2. Turunan dan integral</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Turunan adalah "seberapa cepat berubah sekarang". Integral adalah "berapa total yang terkumpul". Keduanya saling membalik: turunan dari total yang terkumpul adalah laju pengumpulannya.</p></div>
+<div data-level="engineer"><p>Dua hubungan yang akan Anda pakai setiap hari: arus kapasitor <i>i</i> = <i>C</i> d<i>v</i>/d<i>t</i> dan tegangan induktor <i>v</i> = <i>L</i> d<i>i</i>/d<i>t</i> (M02). Yang kedua menjelaskan <em>ground bounce</em>: arus 1 A yang berubah dalam 1 ns melewati induktansi paket 1 nH menimbulkan tegangan 1 V. Untuk integral, ingat muatan <i>Q</i> = ∫<i>i</i> d<i>t</i> dan energi <i>E</i> = ∫<i>p</i> d<i>t</i>; daya rata-rata adalah energi per periode.</p></div>
+<div data-level="pakar"><p>Turunan numerik memperbesar noise, karena selisih dua nilai berdekatan yang masing-masing berderau dibagi bilangan kecil. Integral numerik justru meratakan noise. Karena itu pengukuran dan simulator lebih suka merumuskan ulang masalah dalam bentuk integral. Hal serupa terjadi di hardware: rangkaian penurun (differentiator) berbasis op-amp jarang dipakai karena gain-nya naik terhadap frekuensi dan mudah tidak stabil, sedangkan integrator adalah blok dasar filter switched-capacitor (M27d) dan modulator sigma-delta (M28b).</p></div>
+</div>
+<h3>3. Fasor</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Fasor adalah cara menulis gelombang sinus sebagai satu bilangan kompleks: panjangnya amplitudo, sudutnya fase. Frekuensinya tidak ditulis karena semua sinyal di rangkaian dianggap berfrekuensi sama.</p></div>
+<div data-level="engineer"><p>Dengan fasor, kapasitor menjadi impedansi 1/(<i>j</i>ω<i>C</i>) dan induktor menjadi <i>j</i>ω<i>L</i>, sehingga hukum Ohm berlaku seperti pada resistor (M02b). Respons frekuensi sebuah rangkaian adalah fungsi kompleks <i>H</i>(<i>j</i>ω); besarnya dalam dB dan sudutnya dalam derajat digambar sebagai diagram Bode. Inilah yang dihitung oleh analisis <code>.ac</code> di SPICE.</p></div>
+<div data-level="pakar"><p>Fasor hanya sah untuk sistem linear dalam keadaan tunak sinusoidal. Rangkaian transistor tidak linear, jadi analisis AC di SPICE sebenarnya melinearkan rangkaian di sekitar titik kerja DC-nya (small-signal, M07a). Untuk sinyal besar atau rangkaian yang sengaja bersaklar (mixer, rangkaian switched-capacitor), dipakai analisis harmonic balance atau periodic steady-state yang memperumum fasor ke banyak frekuensi sekaligus.</p></div>
+</div>
+<h3>4. Persamaan diferensial dan respons</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Persamaan diferensial meramalkan bentuk sinyal dari aturan "seberapa cepat ia berubah". Rangkaian dengan satu kapasitor menghasilkan kurva eksponensial yang melambat. Rangkaian dengan kapasitor dan induktor bisa berayun sebelum tenang.</p></div>
+<div data-level="engineer"><p>Untuk orde satu, cukup tiga angka: nilai awal, nilai akhir, τ. Untuk orde dua, cukup ω<sub>0</sub> dan ζ. Aturan cepat: ζ ≥ 1 tanpa overshoot; ζ ≈ 0.7 memberi overshoot sekitar 5% dan sering dipakai sebagai target desain; ζ di bawah 0.3 berarti dering yang mengganggu. Untuk masuk ke pita 2% dari nilai akhir, sistem dengan ζ sekitar 0.8 justru lebih cepat daripada teredam kritis.</p></div>
+<div data-level="pakar"><p>Sistem nyata berorde tinggi, tetapi responsnya sering didominasi dua akar yang paling dekat dengan sumbu imajiner (akar dominan), sehingga model orde dua tetap berguna. Untuk sistem umpan balik orde dua murni, phase margin dan ζ berhubungan tetap: phase margin 45° setara ζ ≈ 0.42 (overshoot sekitar 23%), dan 60° setara ζ ≈ 0.6 (sekitar 9.5%). Hubungan ini hanya pendekatan untuk loop orde lebih tinggi, tetapi menjadi alasan mengapa desainer op-amp menargetkan phase margin 60° atau lebih.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Bidang kompleks: menjumlah, mengali, membagi</h3></header>
+  <div class="stage"><div id="v1-svg" style="overflow-x:auto"></div></div>
+  <div class="params">
+    <label class="icd-field">Operasi<select class="icd-select" id="v1-op"><option value="add">z₁ + z₂</option><option value="sub">z₁ − z₂</option><option value="mul" selected>z₁ · z₂</option><option value="div">z₁ / z₂</option><option value="conj">konjugat z₁*</option><option value="j">z₁ · j</option></select></label>
+    <label class="icd-field"><span>|z₁| = <b id="v1-r1v"></b></span><input type="range" id="v1-r1" min="0.2" max="3" step="0.05" value="1.6"></label>
+    <label class="icd-field"><span>∠z₁ = <b id="v1-t1v"></b></span><input type="range" id="v1-t1" min="-180" max="180" step="5" value="30"></label>
+    <label class="icd-field"><span>|z₂| = <b id="v1-r2v"></b></span><input type="range" id="v1-r2" min="0.2" max="3" step="0.05" value="1.25"></label>
+    <label class="icd-field"><span>∠z₂ = <b id="v1-t2v"></b></span><input type="range" id="v1-t2" min="-180" max="180" step="5" value="45"></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Dihitung dengan aritmetika kompleks biasa. Sudut ditampilkan dalam derajat antara −180° dan +180° memakai atan2. Lingkaran putus-putus adalah lingkaran satuan |z| = 1.</div>
+</div>
+<div class="icd-guide" data-id="v1-kalij" data-answer="2">
+  <p>Apa yang terjadi pada sebuah bilangan kompleks bila dikalikan dengan <i>j</i>?</p>
+  <ul><li>Bagian real dan imajinernya bertukar tempat tanpa perubahan tanda</li><li>Panjangnya menjadi dua kali</li><li>Diputar 90° berlawanan arah jarum jam, panjangnya tetap</li><li>Dicerminkan terhadap sumbu real</li></ul>
+  <div class="explain"><p><i>j</i> = 1∠90°. Perkalian polar menjumlahkan sudut dan mengalikan panjang, jadi sudut bertambah 90° dan panjang dikali 1. Dalam bentuk persegi: <i>j</i>(<i>a</i> + <i>jb</i>) = −<i>b</i> + <i>ja</i>; bagiannya memang bertukar, tetapi satu tandanya berubah. Pencerminan terhadap sumbu real adalah konjugat. Pilih operasi "z₁ · j" dan putar ∠z₁ untuk melihatnya.</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Turunan sebagai kemiringan, integral sebagai luas</h3></header>
+  <div class="stage"><div id="v2-svg" style="overflow-x:auto"></div></div>
+  <div class="params">
+    <label class="icd-field">Fungsi<select class="icd-select" id="v2-f"><option value="sq">f(x) = x²</option><option value="sin" selected>f(x) = sin x</option><option value="exp">f(x) = eˣ</option><option value="dec">f(x) = e⁻ˣ</option></select></label>
+    <label class="icd-field"><span>Titik x₀ = <b id="v2-xv"></b></span><input type="range" id="v2-x" min="0" max="1" step="0.005" value="0.5"></label>
+    <label class="icd-field"><span>Jarak sekan h = <b id="v2-hv"></b></span><input type="range" id="v2-h" min="-3" max="0" step="0.05" value="-0.3"></label>
+    <label class="icd-field"><span>Jumlah persegi panjang N = <b id="v2-nv"></b></span><input type="range" id="v2-n" min="1" max="60" step="1" value="6"></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Garis oranye: sekan dari x₀ ke x₀ + h. Garis putus-putus: singgung dengan kemiringan turunan eksak. Persegi panjang memakai nilai fungsi di titik tengah tiap selang (jumlah Riemann titik tengah) dari 0 sampai x₀. Luas eksak dihitung dari antiturunan; slider h berskala logaritmik dari 0.001 sampai 1.</div>
+</div>
+<div class="icd-guide" data-id="v2-sinpi" data-answer="2">
+  <p>Berapa luas di bawah kurva <i>f</i>(<i>x</i>) = sin <i>x</i> dari 0 sampai π?</p>
+  <ul><li>0, karena sinus positif dan negatif saling menghapus</li><li>1, karena puncak sinus adalah 1</li><li>2</li><li>π</li></ul>
+  <div class="explain"><p>Dari 0 sampai π sinus seluruhnya positif, jadi tidak ada yang terhapus; penghapusan baru terjadi bila diteruskan sampai 2π. Luasnya −cos π + cos 0 = 2. Pilih sin <i>x</i>, geser x₀ sampai sekitar 3.14, lalu naikkan N: jumlah Riemann mendekati 2.000.</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Metode Euler dan RK4 pada pengisian kapasitor</h3></header>
+  <div class="stage"><div id="v3-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Langkah h = <b id="v3-hv"></b></span><input type="range" id="v3-h" min="0.05" max="2.5" step="0.05" value="0.5"></label>
+    <label class="icd-field">Metode<select class="icd-select" id="v3-m"><option value="euler">Euler</option><option value="rk4">Runge-Kutta orde 4</option></select></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model">Persamaan: τ·dv/dt = 0.8 V − v, dengan v(0) = 0 dan waktu dinyatakan dalam satuan τ. Kurva mulus adalah solusi eksak 0.8·(1 − e^(−t/τ)). Faktor penguat adalah pengali selisih terhadap nilai akhir per langkah: 1 − h/τ untuk Euler, dan 1 − x + x²/2 − x³/6 + x⁴/24 dengan x = h/τ untuk RK4. Nilai di luar −0.6 sampai 1.6 V terpotong dari grafik.</div>
+</div>
+<div class="icd-guide" data-id="v3-ledak" data-answer="2">
+  <p>Dengan metode Euler, apa yang terjadi bila langkah dibuat 2.5τ?</p>
+  <ul><li>Lebih cepat dan tetap cukup teliti</li><li>Sedikit kurang teliti, tetapi tetap menuju 0.8 V</li><li>Solusi berayun dengan ayunan yang terus membesar</li><li>Simulasi berhenti karena galat</li></ul>
+  <div class="explain"><p>Faktor penguatnya 1 − 2.5 = −1.5. Setiap langkah, selisih terhadap 0.8 V dikali −1.5: tandanya berganti dan besarnya naik 50%. Metode numerik meledak walaupun rangkaian aslinya tenang. Bandingkan dengan RK4 pada langkah yang sama: faktornya 0.65, sehingga masih stabil walaupun kasar. Coba juga h = τ untuk Euler: satu langkah langsung tepat di 0.8 V lalu diam, karena faktornya nol.</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Respons step orde dua dan letak akarnya</h3></header>
+  <div class="stage"><div class="two v4"><div id="v4-plot"></div><div id="v4-s"></div></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Rasio redaman ζ = <b id="v4-zv"></b></span><input type="range" id="v4-z" min="0.05" max="3" step="0.05" value="0.25"></label>
+    <label class="icd-field"><span>Frekuensi alami f₀ = <b id="v4-fv"></b></span><input type="range" id="v4-f" min="0.5" max="5" step="0.1" value="1.6"></label>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Dihitung dari solusi eksak ketiga kasus dengan y(0) = 0, y′(0) = 0, dan nilai akhir 1. Bidang-s di kanan berskala sama pada kedua sumbu, dalam satuan ω₀ = 2πf₀; lingkaran adalah |s| = ω₀. Waktu settling dibaca dari kurva sebagai saat terakhir respons keluar dari pita ±2%. Animasi menggambar respons seiring waktu; letak akar tidak berubah selama animasi.</div>
+</div>
+<div class="icd-guide" data-id="v4-kritis" data-answer="2">
+  <p>Berapa nilai ζ terkecil yang tidak menghasilkan overshoot sama sekali?</p>
+  <ul><li>0.5</li><li>0.7</li><li>1</li><li>2</li></ul>
+  <div class="explain"><p>Overshoot hilang tepat ketika kedua akar menjadi real, yaitu saat ζ² − 1 ≥ 0, jadi ζ ≥ 1. Pada ζ = 0.7 masih ada overshoot sekitar 4.6%. Geser ζ dari 0.9 ke 1.0 dan perhatikan dua akar kompleks bertemu di sumbu real, lalu berpisah ke kiri dan kanan saat ζ di atas 1.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+<h3>Contoh 1: aritmetika kompleks</h3>
+<p><strong>Soal.</strong> <i>z</i><sub>1</sub> = 2 + 3<i>j</i>, <i>z</i><sub>2</sub> = 4 − <i>j</i>. Hitung <i>z</i><sub>1</sub>/<i>z</i><sub>2</sub> dalam bentuk persegi dan polar, lalu periksa dengan aturan polar.</p>
+<ol>
+<li>Kalikan atas dan bawah dengan konjugat penyebut, 4 + <i>j</i>.</li>
+<li>Penyebut: (4 − <i>j</i>)(4 + <i>j</i>) = 16 + 1 = 17.</li>
+<li>Pembilang: (2 + 3<i>j</i>)(4 + <i>j</i>) = 8 + 2<i>j</i> + 12<i>j</i> + 3<i>j</i>² = 5 + 14<i>j</i>.</li>
+<li>Hasil: (5 + 14<i>j</i>)/17 = 0.294 + 0.824<i>j</i>.</li>
+<li>Polar: |hasil| = √(0.294² + 0.824²) = 0.874; sudut atan2(0.824, 0.294) = 70.35°.</li>
+<li>Periksa: |<i>z</i><sub>1</sub>|/|<i>z</i><sub>2</sub>| = 3.606/4.123 = 0.874; sudut 56.31° − (−14.04°) = 70.35°. Cocok.</li>
+</ol>
+
+<h3>Contoh 2: fasor filter RC</h3>
+<p><strong>Soal.</strong> Filter RC dengan <i>R</i> = 1 kΩ dan <i>C</i> = 1 nF diberi sinyal pada 10 kali frekuensi potongnya. Berapa besar dan fase keluarannya relatif terhadap masukan?</p>
+<ol>
+<li>Frekuensi potong ω<sub><i>c</i></sub> = 1/(<i>RC</i>) = 10<sup>6</sup> rad/s, atau <i>f</i><sub><i>c</i></sub> = 159.2 kHz.</li>
+<li>Pada ω = 10ω<sub><i>c</i></sub>: ω<i>RC</i> = 10, jadi <i>H</i> = 1/(1 + 10<i>j</i>).</li>
+<li>Besar: 1/√(1 + 100) = 1/10.05 = 0.0995. Dalam dB: 20 log<sub>10</sub>(0.0995) = −20.04 dB.</li>
+<li>Fase: sudut penyebut atan2(10, 1) = 84.29°; membagi berarti mengurangkan sudut, jadi fase <i>H</i> = −84.29°.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Satu dekade di atas frekuensi potong, filter orde satu meredam sekitar 20 dB dan fasenya mendekati −90°.</p>
+
+<h3>Contoh 3: turunan dan integral dengan satuan</h3>
+<p><strong>Soal.</strong> (a) Sinyal 0.9 sin(2π · 500 MHz · <i>t</i>) volt. Berapa laju perubahan tegangan maksimum? (b) Arus tetap 2 mA mengalir ke sebuah simpul selama 3 ns. Berapa muatan yang terkumpul?</p>
+<ol>
+<li>(a) Turunan: 0.9 · 2π · 500 × 10<sup>6</sup> · cos(…). Nilai maksimum cos adalah 1, jadi laju maksimumnya 0.9 × 3.1416 × 10<sup>9</sup> = 2.83 × 10<sup>9</sup> V/s = 2.83 V/ns, terjadi saat sinyal melewati nol.</li>
+<li>(b) <i>Q</i> = ∫<i>i</i> d<i>t</i>. Untuk arus tetap integralnya luas persegi panjang: 2 × 10<sup>−3</sup> A × 3 × 10<sup>−9</sup> s = 6 × 10<sup>−12</sup> C = 6 pC.</li>
+</ol>
+
+<h3>Contoh 4: pengisian kapasitor</h3>
+<p><strong>Soal.</strong> Sebuah simpul berkapasitansi 40 fF diisi dari 0 menuju 0.75 V lewat resistansi 2.5 kΩ. (a) Berapa tegangannya setelah 100 ps? (b) Kapan mencapai 50% dan 90%?</p>
+<ol>
+<li>τ = <i>RC</i> = 2.5 kΩ × 40 fF = 100 ps (k × f = p).</li>
+<li>(a) <i>t</i> = 100 ps = 1τ: <i>v</i> = 0.75 · (1 − <i>e</i><sup>−1</sup>) = 0.75 × 0.632 = 0.474 V.</li>
+<li>(b) 50%: <i>t</i> = τ ln 2 = 69.3 ps.</li>
+<li>90%: (<i>y</i><sub>0</sub> − <i>y</i><sub><i>f</i></sub>)/(<i>y</i> − <i>y</i><sub><i>f</i></sub>) = (0 − 0.75)/(0.675 − 0.75) = 10, jadi <i>t</i> = τ ln 10 = 230 ps.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Delay 50% sebuah gerbang yang menggerakkan beban RC kira-kira 0.69<i>RC</i>; angka ini akan muncul lagi di model delay M10.</p>
+
+<h3>Contoh 5: dering RLC</h3>
+<p><strong>Soal.</strong> Rangkaian RLC seri dengan <i>L</i> = 10 nH (induktansi kawat bonding), <i>C</i> = 1 pF, dan <i>R</i> = 50 Ω diberi step. Tentukan <i>f</i><sub>0</sub>, ζ, overshoot, dan waktu puncak.</p>
+<ol>
+<li>ω<sub>0</sub> = 1/√(<i>LC</i>) = 1/√(10<sup>−8</sup> × 10<sup>−12</sup>) = 1/10<sup>−10</sup> = 10<sup>10</sup> rad/s; <i>f</i><sub>0</sub> = 10<sup>10</sup>/(2π) = 1.59 GHz.</li>
+<li>ζ = (<i>R</i>/2)√(<i>C</i>/<i>L</i>) = 25 × √(10<sup>−4</sup>) = 25 × 0.01 = 0.25. Kurang teredam.</li>
+<li>Overshoot: exp(−π × 0.25/√(1 − 0.0625)) = exp(−0.811) = 0.444, yaitu 44.4%.</li>
+<li>ω<sub><i>d</i></sub> = 10<sup>10</sup> × √0.9375 = 9.68 × 10<sup>9</sup> rad/s; <i>t</i><sub><i>p</i></sub> = π/ω<sub><i>d</i></sub> = 324 ps.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Step 1 V di ujung kawat bonding seperti ini sempat melonjak ke 1.44 V sekitar 0.3 ns setelah perubahan. Bila itu tegangan suplai sebuah chip 0.9 V, lonjakannya bisa merusak oksida gate. Coba angka ini di visualisasi 4.</p>
+
+<h3>Contoh 6: dua langkah Euler dengan tangan</h3>
+<p><strong>Soal.</strong> τ d<i>v</i>/d<i>t</i> = 0.8 − <i>v</i>, <i>v</i>(0) = 0, τ = 1, <i>h</i> = 0.5. Hitung <i>v</i> pada <i>t</i> = 1 dengan Euler dan bandingkan dengan solusi eksak.</p>
+<ol>
+<li>Kemiringan <i>f</i>(<i>v</i>) = (0.8 − <i>v</i>)/τ.</li>
+<li>Langkah 1: <i>v</i><sub>1</sub> = 0 + 0.5 × (0.8 − 0) = 0.4.</li>
+<li>Langkah 2: <i>v</i><sub>2</sub> = 0.4 + 0.5 × (0.8 − 0.4) = 0.6.</li>
+<li>Eksak: 0.8(1 − <i>e</i><sup>−1</sup>) = 0.5057. Galat 0.094, sekitar 19%.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Euler selalu melampaui di sini, karena kemiringan di awal langkah adalah yang paling curam di sepanjang langkah itu.</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Skrip Python ini menguji setiap rumus modul secara numerik dan menyediakan dua penyelesai persamaan diferensial yang akan dipakai lagi di M02 dan M07. Seperti di M01a, ujinya adalah deretan <code>assert</code>.</p>
+<pre class="icd-src" data-lang="py">
+"""ode.py : bilangan kompleks, fasor, dan penyelesaian persamaan diferensial."""
+import cmath
+import math
+
+
+def polar(z):
+    """Bilangan kompleks ke (besar, sudut dalam derajat)."""
+    return abs(z), math.degrees(cmath.phase(z))
+
+
+def rect(r, deg):
+    """(besar, sudut dalam derajat) ke bilangan kompleks."""
+    return cmath.rect(r, math.radians(deg))
+
+
+def rc_lowpass(f, R, C):
+    """Fungsi transfer H = 1 / (1 + j*2*pi*f*R*C) filter RC orde satu."""
+    return 1 / (1 + 1j * 2 * math.pi * f * R * C)
+
+
+def euler(f, y0, t_end, h):
+    """Metode Euler: y[k+1] = y[k] + h * f(t[k], y[k])."""
+    t, y = 0.0, y0
+    for _ in range(round(t_end / h)):
+        y = y + h * f(t, y)
+        t = t + h
+    return y
+
+
+def rk4(f, y0, t_end, h):
+    """Runge-Kutta orde empat; y berupa daftar agar bisa memuat sistem."""
+    def add(a, b, s):                       # a + s*b, elemen demi elemen
+        return [ai + s * bi for ai, bi in zip(a, b)]
+    t, y = 0.0, list(y0)
+    for _ in range(round(t_end / h)):
+        k1 = f(t, y)
+        k2 = f(t + h / 2, add(y, k1, h / 2))
+        k3 = f(t + h / 2, add(y, k2, h / 2))
+        k4 = f(t + h, add(y, k3, h))
+        y = [yi + h / 6 * (a + 2 * b + 2 * c + d)
+             for yi, a, b, c, d in zip(y, k1, k2, k3, k4)]
+        t = t + h
+    return y
+
+
+def step1(t, tau, y0, yf):
+    """Solusi eksak orde satu: y = yf + (y0 - yf) * exp(-t/tau)."""
+    return yf + (y0 - yf) * math.exp(-t / tau)
+
+
+def step2(t, zeta, w0):
+    """Respons step orde dua kurang teredam (0 &lt; zeta &lt; 1), nilai akhir 1."""
+    wd = w0 * math.sqrt(1 - zeta ** 2)
+    phi = math.acos(zeta)
+    return 1 - math.exp(-zeta * w0 * t) / math.sqrt(1 - zeta ** 2) * math.sin(wd * t + phi)
+
+
+def overshoot(zeta):
+    """Overshoot puncak respons step orde dua, sebagai pecahan."""
+    return math.exp(-math.pi * zeta / math.sqrt(1 - zeta ** 2))
+
+
+def close(a, b, tol=1e-6):
+    return abs(a - b) &lt;= tol * max(1.0, abs(a), abs(b))
+
+
+if __name__ == "__main__":
+    # 1. Bilangan kompleks
+    r, deg = polar(3 + 4j)
+    assert close(r, 5) and close(deg, 53.13010235)
+    assert (3 + 4j) * (1 - 2j) == 11 - 2j
+    assert 1 / (1 + 1j) == 0.5 - 0.5j
+    assert close(abs(rect(2, 90) - 2j), 0)
+    assert close(polar(-1 + 0j)[1], 180)              # atan2 tahu kuadran
+    assert close(abs(cmath.exp(1j * math.pi) + 1), 0)  # e^(j*pi) = -1
+
+    # 2. Fasor: filter RC 1 kOhm, 1 nF pada frekuensi sudut potongnya
+    R, C = 1e3, 1e-9
+    fc = 1 / (2 * math.pi * R * C)
+    mag, ph = polar(rc_lowpass(fc, R, C))
+    assert close(mag, 1 / math.sqrt(2)) and close(ph, -45)
+
+    # 3. RMS sinus = A / sqrt(2), lewat integral numerik kuadrat sinus
+    n = 100000
+    mean_sq = sum(math.sin(2 * math.pi * (k + 0.5) / n) ** 2 for k in range(n)) / n
+    assert close(mean_sq, 0.5)
+
+    # 4. Orde satu: dv/dt = (Vs - v)/tau, v(0) = 0, Vs = 0.8 V, tau = 1
+    tau, vs = 1.0, 0.8
+    rc = lambda t, v: (vs - v) / tau
+    exact = step1(2.0, tau, 0.0, vs)
+    assert close(exact, 0.6917318)
+    e_euler = abs(euler(rc, 0.0, 2.0, 0.1) - exact)
+    e_rk4 = abs(rk4(lambda t, y: [rc(t, y[0])], [0.0], 2.0, 0.1)[0] - exact)
+    assert 1e-2 &lt; e_euler &lt; 2e-2 and e_rk4 &lt; 1e-6
+    assert abs(euler(rc, 0.0, 20.0, 2.5)) &gt; 10        # h &gt; 2*tau: meledak
+
+    # 5. Orde dua: y'' + 2*zeta*w0*y' + w0^2*y = w0^2, zeta = 0.3, w0 = 1
+    zeta, w0 = 0.3, 1.0
+    sys2 = lambda t, y: [y[1], w0 ** 2 * (1 - y[0]) - 2 * zeta * w0 * y[1]]
+    y_rk4 = rk4(sys2, [0.0, 0.0], 5.0, 0.01)[0]
+    assert close(y_rk4, step2(5.0, zeta, w0), 1e-6)
+    t_peak = math.pi / (w0 * math.sqrt(1 - zeta ** 2))
+    assert close(step2(t_peak, zeta, w0) - 1, overshoot(zeta))
+    print("Semua uji lulus.")
+
+    print(f"|3+4j| = {r:g}, sudut = {deg:.2f} derajat")
+    print(f"H(fc)  = {mag:.4f} pada {ph:.1f} derajat, fc = {fc / 1e3:.1f} kHz")
+    print(f"rata-rata sin^2 = {mean_sq:.6f}, jadi RMS = A / {1 / math.sqrt(mean_sq):.4f}")
+    print(f"v(2 tau) eksak = {exact:.6f} V")
+    print(" h      galat Euler   galat RK4")
+    for h in (0.5, 0.2, 0.1, 0.05, 0.01):
+        ge = abs(euler(rc, 0.0, 2.0, h) - exact)
+        gr = abs(rk4(lambda t, y: [rc(t, y[0])], [0.0], 2.0, h)[0] - exact)
+        print(f" {h:&lt;5}  {ge:.2e}      {gr:.2e}")
+    print(f"zeta = {zeta}: overshoot = {overshoot(zeta) * 100:.1f} %, puncak di t = {t_peak:.3f}")
+</pre>
+<ul>
+<li><strong>Baris 6 sampai 13, <code>polar</code> dan <code>rect</code>:</strong> konversi bagian 4.2. <code>cmath.phase</code> memakai atan2 sehingga kuadrannya selalu benar; sudut dikonversi ke derajat agar mudah dibaca.</li>
+<li><strong>Baris 16 sampai 18, <code>rc_lowpass</code>:</strong> rumus <i>H</i> dari bagian 4.6. Python menulis <i>j</i> sebagai akhiran <code>1j</code>, sama seperti engineer.</li>
+<li><strong>Baris 21 sampai 27, <code>euler</code>:</strong> rumus bagian 4.9 dalam tiga baris. <code>f</code> adalah fungsi yang memberi kemiringan pada waktu dan nilai tertentu.</li>
+<li><strong>Baris 30 sampai 43, <code>rk4</code>:</strong> empat kemiringan: di awal (<code>k1</code>), dua kali di tengah langkah (<code>k2</code>, <code>k3</code>), dan di akhir (<code>k4</code>), lalu rata-rata berbobot 1, 2, 2, 1 dibagi 6. Keadaan disimpan sebagai daftar agar persamaan orde dua bisa ditulis sebagai dua persamaan orde satu: posisi dan kecepatan.</li>
+<li><strong>Baris 46 sampai 60:</strong> solusi eksak bagian 4.7 dan 4.8, serta rumus overshoot, sebagai pembanding hasil numerik. <code>step2</code> memakai bentuk satu sinus dengan geseran fase φ = arccos ζ, yang setara dengan bentuk cos + sin di bagian 4.8.</li>
+<li><strong>Baris 67 sampai 105:</strong> uji. Bagian 3 menghitung rata-rata sin² dengan 100 000 titik tengah, yaitu integral numerik, dan memastikan hasilnya 0.5. Bagian 4 memastikan galat Euler sekitar 1% dan galat RK4 di bawah sepersejuta pada langkah yang sama, serta bahwa Euler meledak pada <i>h</i> = 2.5τ. Bagian 5 menyelesaikan persamaan orde dua secara numerik lalu mencocokkannya dengan rumus eksak.</li>
+<li><strong>Baris 107 sampai 116:</strong> mencetak hasil contoh soal dan tabel galat terhadap ukuran langkah.</li>
+</ul>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif di Lab, bug sengaja, dan solusi perluasan semuanya dijalankan dengan Python 3 sebelum modul ditulis. Keluaran di bagian Lab disalin apa adanya.</div>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>Miskonsepsi</b>"|<i>a</i> + <i>jb</i>| = <i>a</i> + <i>b</i>." Besar adalah panjang panah, √(<i>a</i>² + <i>b</i>²). |3 + 4<i>j</i>| = 5, bukan 7.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Sudut bilangan kompleks adalah arctan(<i>b</i>/<i>a</i>)." Hanya benar di kuadran I dan IV. Untuk −3 − 3<i>j</i>, arctan memberi 45° padahal jawabannya −135°. Pakai atan2.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Fasor memuat frekuensi." Fasor hanya memuat amplitudo dan fase. Frekuensi disepakati di luar, sama untuk semua sinyal. Menjumlahkan fasor dua sinyal berfrekuensi berbeda tidak bermakna.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Turunan sin <i>x</i> adalah cos <i>x</i>, berapa pun satuan sudutnya." Rumus itu hanya berlaku dalam radian. Jika <i>x</i> dalam derajat, turunannya (π/180) cos <i>x</i>.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Integral selalu positif karena merupakan luas." Luas di bawah sumbu dihitung negatif. Rata-rata sinus selama satu periode penuh adalah nol, padahal RMS-nya tidak.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Kapasitor penuh setelah satu konstanta waktu." Setelah 1τ baru 63%. Secara matematis nilai akhir tidak pernah dicapai; dalam praktik dianggap sampai setelah sekitar 5τ (99.3%).</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Teredam kritis selalu paling cepat menetap." Ia paling cepat <em>tanpa overshoot</em>. Bila sedikit overshoot boleh, ζ sekitar 0.7 sampai 0.8 masuk pita 2% lebih cepat.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Langkah simulasi lebih kecil selalu lebih baik." Lebih teliti sampai titik tertentu, tetapi waktu simulasi naik sebanding dan galat pembulatan menumpuk. Simulator memilih langkah secara adaptif justru karena itu.</div>
+<div class="icd-box trap"><b>Jebakan industri: "timestep too small" di SPICE</b>Pesan ini berarti simulator terus memperkecil langkah tetapi tetap tidak bisa memenuhi toleransi galat, biasanya karena rangkaian punya perubahan yang tak berhingga cepat: sumber step tanpa waktu naik, saklar ideal, atau simpul yang tidak punya jalur DC ke ground. Solusinya hampir selalu memperbaiki model, misalnya memberi waktu naik pada sumber, bukan melonggarkan toleransi.</div>
+<div class="icd-box trap"><b>Jebakan industri: mengabaikan induktansi</b>Pada frekuensi rendah, kawat dan pin terlihat seperti resistor. Pada pinggiran sinyal yang curam, induktansi beberapa nanohenry membentuk sistem orde dua dengan kapasitansi pad, dan dering yang tidak terlihat di simulasi tanpa paket muncul di silikon.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Konsep modul ini</th><th scope="col">Muncul sebagai</th><th scope="col">Di mana</th></tr></thead>
+<tbody>
+<tr><th scope="row">Persamaan diferensial numerik</th><td>Analisis transien <code>.tran</code></td><td>SPICE: ngspice, Xyce (open-source); HSPICE, Spectre, Eldo, AFS (komersial)</td></tr>
+<tr><th scope="row">Fasor</th><td>Analisis AC <code>.ac</code>, diagram Bode</td><td>SPICE; desain analog (M07, M27)</td></tr>
+<tr><th scope="row">Orde satu, τ = <i>RC</i></th><td>Delay gerbang dan kawat, model Elmore</td><td>M10, STA (M22)</td></tr>
+<tr><th scope="row">Orde dua, ζ dan ω<sub>0</sub></th><td>Dering suplai, resonansi jaringan daya, loop PLL</td><td>Power integrity (M23, M31), PLL (M28c)</td></tr>
+<tr><th scope="row">Integral, RMS</th><td>Daya rata-rata, arus RMS untuk elektromigrasi</td><td>Analisis daya (M25), keandalan (M32)</td></tr>
+<tr><th scope="row">Turunan, slew rate</th><td>Batas transisi <code>max_transition</code>, slew pada tabel Liberty</td><td>Sintesis dan STA (M21, M22)</td></tr>
+</tbody></table></div>
+<p>Untuk hitungan dan eksplorasi, engineer memakai Python dengan NumPy dan SciPy (<code>scipy.integrate.solve_ivp</code> adalah versi industri dari <code>rk4</code> di bagian 8), GNU Octave, atau MATLAB. Delay di tabel Liberty yang dipakai sintesis dan STA dihasilkan dengan menjalankan ribuan simulasi transien SPICE pada setiap sel (karakterisasi, M21b); jadi angka di laporan timing Anda pada akhirnya adalah hasil penyelesaian persamaan diferensial.</p>
+<p>Dalam alur RTL-to-GDSII, materi modul ini paling terasa di karakterisasi library, signoff timing dan daya, serta seluruh alur analog dan mixed-signal.</p>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Hitung (2 + <i>j</i>)(1 + <i>j</i>) dalam bentuk persegi dan tentukan besarnya. Periksa besarnya dengan aturan polar.</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p>2 + 2<i>j</i> + <i>j</i> + <i>j</i>² = 1 + 3<i>j</i>. Besar √10 = 3.162. Periksa: |2 + <i>j</i>| = √5 dan |1 + <i>j</i>| = √2, hasil kalinya √10. Cocok.</p></details>
+<p><strong>1.2</strong> Ubah 4∠−30° ke bentuk persegi. Sederhanakan <i>j</i>³ dan 1/<i>j</i>.</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p>4 cos(−30°) + <i>j</i> · 4 sin(−30°) = 3.464 − 2<i>j</i>. <i>j</i>³ = <i>j</i>² · <i>j</i> = −<i>j</i>. 1/<i>j</i> = <i>j</i>/<i>j</i>² = −<i>j</i>.</p></details>
+<p><strong>1.3</strong> Turunkan terhadap <i>t</i>: (a) 3<i>t</i>², (b) <i>e</i><sup>−2<i>t</i></sup>, (c) sin(5<i>t</i>), (d) <i>t</i> · <i>e</i><sup><i>t</i></sup>.</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>(a) 6<i>t</i>. (b) −2<i>e</i><sup>−2<i>t</i></sup>. (c) 5 cos(5<i>t</i>). (d) Aturan hasil kali: 1 · <i>e</i><sup><i>t</i></sup> + <i>t</i> · <i>e</i><sup><i>t</i></sup> = (1 + <i>t</i>)<i>e</i><sup><i>t</i></sup>.</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Sebuah simpul berada di 1.2 V lalu dikosongkan menuju 0.2 V dengan τ = 3 ns. Kapan tegangannya mencapai 0.6 V?</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p><i>t</i> = τ ln((<i>y</i><sub>0</sub> − <i>y</i><sub><i>f</i></sub>)/(<i>y</i> − <i>y</i><sub><i>f</i></sub>)) = 3 ns × ln((1.2 − 0.2)/(0.6 − 0.2)) = 3 ns × ln 2.5 = 3 × 0.916 = 2.75 ns.</p></details>
+<p><strong>2.2</strong> RLC seri: <i>L</i> = 5 nH, <i>C</i> = 2 pF, <i>R</i> = 10 Ω. Hitung <i>f</i><sub>0</sub>, ζ, dan overshoot. Berapa <i>R</i> agar teredam kritis?</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p><i>LC</i> = 10<sup>−20</sup>, jadi ω<sub>0</sub> = 10<sup>10</sup> rad/s dan <i>f</i><sub>0</sub> = 1.59 GHz. ζ = 5 × √(2 × 10<sup>−12</sup>/5 × 10<sup>−9</sup>) = 5 × 0.02 = 0.1. Overshoot = exp(−π × 0.1/√0.99) = 72.9%. Teredam kritis saat ζ = 1: <i>R</i> = 2√(<i>L</i>/<i>C</i>) = 2 × √2 500 = 100 Ω.</p></details>
+<p><strong>2.3</strong> Gelombang kotak bernilai 0 V dan 1 V, masing-masing separuh periode. Hitung nilai rata-rata dan RMS-nya.</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p>Rata-rata: luas satu periode adalah 1 V × <i>T</i>/2, dibagi <i>T</i> memberi 0.5 V. Kuadratnya juga 0 dan 1, jadi rata-rata kuadrat 0.5 V², dan RMS = √0.5 = 0.707 V. Perhatikan bahwa RMS bukan rata-rata; untuk sinyal yang tidak konstan RMS selalu lebih besar dari |rata-rata|.</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Tunjukkan dengan contoh mengapa arctan(<i>b</i>/<i>a</i>) gagal menentukan sudut, lalu tuliskan aturan untuk memperbaikinya bila hanya arctan yang tersedia.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>3 + 3<i>j</i> dan −3 − 3<i>j</i> sama-sama memberi <i>b</i>/<i>a</i> = 1 dan arctan 45°, padahal yang kedua di −135°. Aturan: hitung θ' = arctan(<i>b</i>/<i>a</i>). Jika <i>a</i> &gt; 0, θ = θ'. Jika <i>a</i> &lt; 0 dan <i>b</i> ≥ 0, θ = θ' + 180°. Jika <i>a</i> &lt; 0 dan <i>b</i> &lt; 0, θ = θ' − 180°. Jika <i>a</i> = 0, θ = ±90° menurut tanda <i>b</i> (dan tak terdefinisi bila <i>b</i> juga nol). Inilah isi fungsi atan2.</p></details>
+<p><strong>3.2</strong> Turunkan syarat kestabilan metode Euler untuk τ d<i>y</i>/d<i>t</i> = <i>y</i><sub><i>f</i></sub> − <i>y</i>. Jelaskan apa yang terjadi pada <i>h</i> = τ, pada τ &lt; <i>h</i> &lt; 2τ, dan pada <i>h</i> &gt; 2τ.</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Satu langkah: <i>y</i><sub><i>k</i>+1</sub> = <i>y</i><sub><i>k</i></sub> + (<i>h</i>/τ)(<i>y</i><sub><i>f</i></sub> − <i>y</i><sub><i>k</i></sub>). Kurangkan <i>y</i><sub><i>f</i></sub> dari kedua ruas: <i>e</i><sub><i>k</i>+1</sub> = (1 − <i>h</i>/τ)<i>e</i><sub><i>k</i></sub> dengan <i>e</i> = <i>y</i> − <i>y</i><sub><i>f</i></sub>. Jadi <i>e</i><sub><i>k</i></sub> = (1 − <i>h</i>/τ)<sup><i>k</i></sup><i>e</i><sub>0</sub>, yang menuju nol hanya bila |1 − <i>h</i>/τ| &lt; 1, yaitu 0 &lt; <i>h</i> &lt; 2τ. Pada <i>h</i> = τ faktornya nol: tepat di nilai akhir setelah satu langkah. Pada τ &lt; <i>h</i> &lt; 2τ faktornya negatif tetapi kecil dari 1: berayun sambil menyusut. Pada <i>h</i> &gt; 2τ: berayun dan membesar. Uji dengan visualisasi 3 pada <i>h</i> = 1, 1.5, dan 2.5.</p></details>
+<p><strong>3.3</strong> Untuk ζ = 0, apa akar persamaan karakteristik, dan seperti apa responsnya? Sebutkan satu rangkaian di chip yang memang dirancang mendekati kondisi ini, dan apa yang menjaga ayunannya tetap hidup.</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>Akar <i>s</i> = ±<i>j</i>ω<sub>0</sub>, tepat di sumbu imajiner. Bagian real nol berarti tidak ada peluruhan, jadi respons step berayun selamanya antara 0 dan 2 dengan frekuensi ω<sub>0</sub>. Secara fisik itu berarti tidak ada resistansi sama sekali. Osilator LC di dalam PLL (M28c) dirancang mendekati kondisi ini; karena induktor dan kapasitor nyata selalu punya kerugian, sepasang transistor menyediakan "resistansi negatif" yang memasok kembali energi yang hilang sehingga ayunan bertahan.</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Apa itu fasor dan mengapa berguna?"</summary>
+<p><strong>Kerangka jawaban:</strong> Bilangan kompleks yang menyimpan amplitudo dan fase sebuah sinyal sinus pada frekuensi yang disepakati. Gunanya: turunan menjadi perkalian dengan <i>j</i>ω, sehingga kapasitor dan induktor menjadi impedansi dan analisis rangkaian AC menjadi aljabar. Sebut batasnya: hanya untuk sistem linear dalam keadaan tunak.</p></details>
+<details class="icd-sol"><summary>"Berapa waktu naik 10% sampai 90% rangkaian RC, dan dari mana angkanya?"</summary>
+<p><strong>Kerangka jawaban:</strong> 2.2<i>RC</i>. Turunkan: waktu menuju pecahan <i>p</i> adalah −τ ln(1 − <i>p</i>); untuk 90% −τ ln 0.1 = 2.303τ, untuk 10% −τ ln 0.9 = 0.105τ; selisihnya τ ln 9 = 2.197τ. Tambahkan hubungan dengan bandwidth: <i>t</i><sub><i>r</i></sub> ≈ 0.35/<i>f</i><sub>−3dB</sub>, karena 2.197/(2π) ≈ 0.35.</p></details>
+<details class="icd-sol"><summary>"Bagaimana Anda tahu sebuah sistem orde dua akan berdering?"</summary>
+<p><strong>Kerangka jawaban:</strong> Tulis persamaan karakteristik, hitung ζ. ζ &lt; 1 berarti akar kompleks dan dering. Untuk RLC seri: ζ = (<i>R</i>/2)√(<i>C</i>/<i>L</i>), jadi resistansi kecil atau induktansi besar membuat dering. Sebut overshoot ζ = 0.7 sekitar 5% sebagai target umum, dan hubungan kasar dengan phase margin pada loop umpan balik.</p></details>
+<details class="icd-sol"><summary>"Mengapa simulasi transien SPICE kadang gagal dengan pesan timestep too small?"</summary>
+<p><strong>Kerangka jawaban:</strong> Simulator memilih langkah waktu secara adaptif dari perkiraan galat. Bila rangkaian punya perubahan sangat cepat atau tak kontinu, atau persamaan tak linear di suatu langkah tidak konvergen, langkah terus diperkecil sampai batas bawah. Penyebab umum: sumber tanpa waktu naik, simpul mengambang, model yang tak kontinu. Perbaikannya di model, bukan di toleransi.</p></details>
+<details class="icd-sol"><summary>"Berapa RMS sinus beramplitudo A? Turunkan."</summary>
+<p><strong>Kerangka jawaban:</strong> <i>A</i>/√2. Rata-rata sin² selama satu periode adalah 1/2, karena sin² = (1 − cos 2θ)/2 dan rata-rata cos 2θ nol. Akar dari <i>A</i>²/2 adalah <i>A</i>/√2. Bonus: untuk gelombang kotak ±<i>A</i>, RMS-nya <i>A</i>; untuk segitiga, <i>A</i>/√3.</p></details>
+<details class="icd-sol"><summary>"Metode Euler maju dan mundur, apa bedanya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Euler maju memakai kemiringan di awal langkah dan eksplisit: langsung dihitung, tetapi stabil hanya untuk langkah kecil (<i>h</i> &lt; 2τ pada contoh orde satu). Euler mundur memakai kemiringan di akhir langkah sehingga harus menyelesaikan persamaan di setiap langkah (implisit), tetapi stabil untuk langkah sebesar apa pun pada sistem yang stabil. Simulator rangkaian memakai metode implisit karena rangkaian memuat konstanta waktu yang rentangnya sangat lebar.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: menyelesaikan persamaan diferensial dengan Python</h2>
+<p><strong>Tujuan:</strong> menjalankan <code>ode.py</code>, memeriksa contoh soal secara interaktif, melihat sendiri ledakan Euler, dan memperluas penyelesai ke semua nilai ζ. Waktu: sekitar 75 menit. Tool: Python 3 saja, tanpa pustaka tambahan.</p>
+<h3>Langkah 1: siapkan berkas</h3>
+<pre class="icd-src" data-lang="sh">
+mkdir -p ~/icd/m01b &amp;&amp; cd ~/icd/m01b
+nano ode.py                # tempel kode dari bagian 8, simpan
+python3 ode.py
+</pre>
+<p>Berkas yang sama ada di folder materi: <code>lab/m01b/ode.py</code>. Keluaran yang benar:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+Semua uji lulus.
+|3+4j| = 5, sudut = 53.13 derajat
+H(fc)  = 0.7071 pada -45.0 derajat, fc = 159.2 kHz
+rata-rata sin^2 = 0.500000, jadi RMS = A / 1.4142
+v(2 tau) eksak = 0.691732 V
+ h      galat Euler   galat RK4
+ 0.5    5.83e-02      1.72e-04
+ 0.2    2.24e-02      3.41e-06
+ 0.1    1.10e-02      1.96e-07
+ 0.05   5.46e-03      1.18e-08
+ 0.01   1.08e-03      1.82e-11
+zeta = 0.3: overshoot = 37.2 %, puncak di t = 3.293
+</pre>
+<p><strong>Baca tabel galatnya.</strong> Dari <i>h</i> = 0.1 ke 0.05, galat Euler turun dari 1.10 × 10<sup>−2</sup> ke 5.46 × 10<sup>−3</sup>, kira-kira setengah: orde satu. Galat RK4 turun dari 1.96 × 10<sup>−7</sup> ke 1.18 × 10<sup>−8</sup>, kira-kira 16 kali: orde empat. Pada <i>h</i> = 0.01, RK4 sudah dekat batas ketelitian bilangan floating-point.</p>
+<h3>Langkah 2: periksa contoh soal secara interaktif</h3>
+<pre class="icd-src" data-lang="sh">
+python3 -i ode.py
+</pre>
+<p>Ketik baris demi baris dan tebak dulu hasilnya:</p>
+<pre class="icd-src" data-lang="py" data-ln="off">
+polar(-3 - 3j)                        # kuadran III
+math.degrees(math.atan(-3 / -3))      # jebakan arctan
+rect(4, -30)                          # latihan 1.2
+polar(rc_lowpass(10 * fc, R, C))      # Contoh 2
+euler(rc, 0.0, 20.0, 1.9)             # h sedikit di bawah 2*tau
+euler(rc, 0.0, 20.0, 2.1)             # h sedikit di atas 2*tau
+overshoot(0.25)                       # Contoh 5
+</pre>
+<details class="icd-sol"><summary>Hasil yang diharapkan</summary>
+<pre class="icd-src" data-lang="text" data-ln="off">
+(4.242640687119285, -135.0)
+45.0
+(3.464101615137755-1.9999999999999998j)
+(0.09950371902099892, -84.28940686250037)
+1.0510484768719999
+-1.2749939680800018
+0.4443442250884888
+</pre>
+<p>Dua hal untuk diperhatikan. Arctan memberi 45° untuk bilangan yang sebenarnya di −135°. Dan pada <i>h</i> = 1.9τ Euler belum tenang setelah 20τ (masih 1.05 V, padahal seharusnya 0.8 V), sedangkan pada 2.1τ hasilnya sudah negatif dan terus membesar. Angka −1.9999999999999998 pada <code>rect</code> adalah galat pembulatan floating-point, bukan kesalahan rumus. Keluar dengan <code>exit()</code>.</p></details>
+<h3>Langkah 3: rusak dengan sengaja</h3>
+<p>Di fungsi <code>rk4</code>, ganti <code>a + 2 * b + 2 * c + d</code> menjadi <code>a + b + c + d</code>, lalu jalankan <code>python3 ode.py</code>. Sebelum menjalankan, tebak: apakah hasilnya hanya sedikit kurang teliti, atau salah besar?</p>
+<details class="icd-sol"><summary>Hasil yang diharapkan</summary>
+<p>Program berhenti dengan <code>AssertionError</code> pada baris <code>assert 1e-2 &lt; e_euler &lt; 2e-2 and e_rk4 &lt; 1e-6</code>. Bobotnya kini berjumlah 4/6, bukan 1, sehingga setiap langkah hanya maju dua pertiga dari seharusnya: hasilnya salah besar, bukan sekadar kurang teliti. Pelajaran: tanpa uji pembanding terhadap solusi eksak, metode numerik yang salah tetap menghasilkan kurva yang "tampak masuk akal". Kembalikan setelah selesai.</p></details>
+<h3>Langkah 4: perluas ke semua ζ</h3>
+<p><code>step2</code> hanya berlaku untuk ζ &lt; 1. Tulis <code>step2_any(t, zeta, w0)</code> yang juga menangani ζ = 1 dan ζ &gt; 1 memakai rumus di bagian 4.8, lalu uji terhadap <code>rk4</code> untuk ζ = 0.3, 1, dan 2. Petunjuk untuk ζ &gt; 1: dengan akar real <i>s</i><sub>1</sub> dan <i>s</i><sub>2</sub>, solusinya 1 + (<i>s</i><sub>2</sub><i>e</i><sup><i>s</i>₁<i>t</i></sup> − <i>s</i><sub>1</sub><i>e</i><sup><i>s</i>₂<i>t</i></sup>)/(<i>s</i><sub>1</sub> − <i>s</i><sub>2</sub>). Untuk ζ = 1: 1 − <i>e</i><sup>−ω₀<i>t</i></sup>(1 + ω<sub>0</sub><i>t</i>). Periksa dulu di atas kertas bahwa keduanya bernilai 0 pada <i>t</i> = 0.</p>
+<details class="icd-sol"><summary>Solusi</summary>
+<p>Tambahkan sebelum baris <code>if __name__ == "__main__":</code>, lalu tempel uji di bagian paling bawah:</p>
+<pre class="icd-src" data-lang="py">
+def step2_any(t, zeta, w0):
+    """Respons step orde dua untuk semua zeta &gt; 0, nilai akhir 1."""
+    if abs(zeta - 1) &lt; 1e-9:                              # teredam kritis
+        return 1 - math.exp(-w0 * t) * (1 + w0 * t)
+    if zeta &gt; 1:                                          # lewat teredam
+        s1 = -w0 * (zeta - math.sqrt(zeta ** 2 - 1))
+        s2 = -w0 * (zeta + math.sqrt(zeta ** 2 - 1))
+        return 1 + (s2 * math.exp(s1 * t) - s1 * math.exp(s2 * t)) / (s1 - s2)
+    return step2(t, zeta, w0)                             # kurang teredam
+
+for z in (0.3, 1.0, 2.0):
+    f = lambda t, y: [y[1], (1 - y[0]) - 2 * z * y[1]]
+    assert close(step2_any(4.0, z, 1.0), rk4(f, [0.0, 0.0], 4.0, 0.01)[0])
+print("step2_any cocok dengan RK4 untuk zeta 0.3, 1, 2")
+</pre>
+<p>Keluaran tambahan yang benar: <code>step2_any cocok dengan RK4 untuk zeta 0.3, 1, 2</code>.</p></details>
+<h3>Refleksi</h3>
+<ul>
+<li>Anda baru saja menulis inti sebuah simulator transien: model berupa fungsi kemiringan, dan penyelesai yang melangkah maju dalam waktu.</li>
+<li>SPICE melakukan hal yang sama untuk ribuan simpul sekaligus, dengan metode implisit dan langkah adaptif. Anda akan memakainya mulai M02.</li>
+</ul>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Bilangan kompleks adalah panah: tambah dalam bentuk persegi, kali dan bagi dalam bentuk polar; sudut selalu dengan atan2.</li>
+<li>Turunan adalah laju perubahan; integral adalah total terkumpul; teorema dasar kalkulus menghubungkan keduanya.</li>
+<li><i>e</i><sup><i>x</i></sup> adalah fungsi yang turunannya dirinya sendiri; rumus Euler mengikat eksponensial kompleks dengan sinus dan cosinus.</li>
+<li>Fasor mengubah d/d<i>t</i> menjadi perkalian dengan <i>j</i>ω, sehingga analisis sinyal sinus menjadi aljabar.</li>
+<li>Orde satu: <i>y</i> = <i>y</i><sub><i>f</i></sub> + (<i>y</i><sub>0</sub> − <i>y</i><sub><i>f</i></sub>)<i>e</i><sup>−<i>t</i>/τ</sup>. Orde dua: ζ menentukan dering, akar kompleks berarti berayun.</li>
+<li>Euler sederhana tetapi bergalat orde satu dan tidak stabil untuk <i>h</i> &gt; 2τ; RK4 bergalat orde empat.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Kompleks</h4>j² = −1 · 1/j = −j<br>|a+jb| = √(a²+b²) · θ = atan2(b, a)<br>a = r cos θ · b = r sin θ<br>z·z* = |z|²<br>kali: r₁r₂∠(θ₁+θ₂) · bagi: (r₁/r₂)∠(θ₁−θ₂)</div>
+<div class="icd-card"><h4>Turunan</h4>(xⁿ)′ = n xⁿ⁻¹ · (eᵃˣ)′ = a eᵃˣ<br>(sin ωt)′ = ω cos ωt · (cos ωt)′ = −ω sin ωt<br>(ln x)′ = 1/x<br>(fg)′ = f′g + fg′ · rantai: dy/dx = dy/du · du/dx</div>
+<div class="icd-card"><h4>Integral</h4>∫ₐᵇ f dx = F(b) − F(a)<br>rata-rata = (1/T)∫ v dt<br>RMS = √((1/T)∫ v² dt)<br>sinus: RMS = A/√2 · Q = ∫ i dt</div>
+<div class="icd-card"><h4>Euler dan fasor</h4>e^(jθ) = cos θ + j sin θ<br>v = A cos(ωt+φ) ↔ V = A∠φ<br>d/dt ↔ ×jω<br>RC: H = 1/(1 + jωRC); di ω = 1/RC: 0.707∠−45°</div>
+<div class="icd-card"><h4>Orde satu</h4>y = y_f + (y₀ − y_f)e^(−t/τ)<br>t = τ ln((y₀ − y_f)/(y − y_f))<br>50%: 0.69τ · 63%: 1τ · 99%: 4.6τ<br>10–90%: 2.2τ</div>
+<div class="icd-card"><h4>Orde dua</h4>s = −ζω₀ ± ω₀√(ζ²−1)<br>RLC seri: ω₀ = 1/√(LC), ζ = (R/2)√(C/L)<br>OS = e^(−πζ/√(1−ζ²)) · t_p = π/ω_d<br>ζ: 0.25 → 44% · 0.5 → 16% · 0.7 → 5%</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>G. Strang, <i>Calculus</i>, edisi ke-3 (Wellesley-Cambridge Press; versi sebelumnya tersedia bebas di MIT OpenCourseWare), Bab 1 sampai 6: turunan, integral, eksponensial, dan logaritma dengan sudut pandang terapan.</li>
+<li>E. Kreyszig, <i>Advanced Engineering Mathematics</i>, Bab 1 dan 2 (persamaan diferensial orde satu dan orde dua linear), Bab 13 (bilangan kompleks), Bab 21 (metode numerik untuk persamaan diferensial).</li>
+<li>Nilsson &amp; Riedel, <i>Electric Circuits</i>, bab tentang respons rangkaian RC dan RL orde satu, respons rangkaian RLC, dan analisis keadaan tunak sinusoidal (fasor). Bacaan jembatan ke M02.</li>
+<li>Oppenheim &amp; Willsky, <i>Signals and Systems</i>, Bab 2 (sistem linear tak berubah waktu dan persamaan diferensial); disimpan untuk M01d.</li>
+<li>Razavi, <i>Design of Analog CMOS Integrated Circuits</i>, bab stabilitas dan kompensasi frekuensi: hubungan letak akar, phase margin, dan respons step. Untuk dibaca ulang setelah M07c.</li>
+<li>Dokumentasi <code>scipy.integrate.solve_ivp</code> (SciPy): penyelesai persamaan diferensial yang dipakai di industri, termasuk metode implisit untuk sistem kaku.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut ke <a href="m01c-linear-probabilitas-diskrit.html">M01c</a>: aljabar linear, probabilitas dan statistik, matematika diskrit.</p>
+</section>
+</main>
+
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, svg = ICD.svg, q = ICD.q, num = ICD.fmt.num, si = ICD.fmt.si;
+
+ICD.gloss.add([
+{ id: 'kompleks', en: 'complex number', idn: 'bilangan kompleks', def: 'Bilangan berbentuk a + jb dengan bagian real a dan bagian imajiner b.', mod: 'M01b' },
+{ id: 'jimaj', en: 'imaginary unit j', idn: 'satuan imajiner', def: 'Bilangan yang kuadratnya −1; engineer menulis j karena i dipakai untuk arus.', mod: 'M01b' },
+{ id: 'bidangk', en: 'complex plane', idn: 'bidang kompleks', def: 'Bidang dengan sumbu mendatar real dan sumbu tegak imajiner; tempat bilangan kompleks digambar.', mod: 'M01b' },
+{ id: 'konjugat', en: 'complex conjugate', idn: 'konjugat kompleks', def: 'Bilangan a − jb dari a + jb; hasil kali keduanya adalah |z|².', mod: 'M01b' },
+{ id: 'turunan', en: 'derivative', idn: 'turunan', def: 'Laju perubahan sesaat sebuah fungsi; kemiringan garis singgung.', mod: 'M01b' },
+{ id: 'limit', en: 'limit', idn: 'limit', def: 'Nilai yang didekati sebuah ungkapan saat variabelnya mendekati suatu nilai.', mod: 'M01b' },
+{ id: 'sekan', en: 'secant line', idn: 'garis sekan', def: 'Garis yang memotong kurva di dua titik.', mod: 'M01b' },
+{ id: 'tangen', en: 'tangent line', idn: 'garis singgung', def: 'Garis yang menyentuh kurva di satu titik dengan kemiringan sama dengan turunannya.', mod: 'M01b' },
+{ id: 'rantai', en: 'chain rule', idn: 'aturan rantai', def: 'Turunan fungsi bersusun: dy/dx = (dy/du)(du/dx).', mod: 'M01b' },
+{ id: 'aturanhk', en: 'product rule', idn: 'aturan hasil kali', def: '(fg)′ = f′g + fg′.', mod: 'M01b' },
+{ id: 'slew', en: 'slew rate', idn: 'laju perubahan tegangan', def: 'Laju maksimum perubahan tegangan sebuah sinyal, misalnya dalam V/ns.', mod: 'M01b' },
+{ id: 'enum', en: "Euler's number e", idn: 'bilangan e', def: 'Bilangan ≈ 2.71828; basis fungsi eksponensial yang turunannya sama dengan dirinya.', mod: 'M01b' },
+{ id: 'integral', en: 'integral', idn: 'integral', def: 'Luas bertanda di bawah kurva; penjumlahan terus-menerus sebuah laju.', mod: 'M01b' },
+{ id: 'riemann', en: 'Riemann sum', idn: 'jumlah Riemann', def: 'Penjumlahan luas persegi panjang tipis yang mendekati integral.', mod: 'M01b' },
+{ id: 'antiturunan', en: 'antiderivative', idn: 'antiturunan', def: 'Fungsi F yang turunannya f.', mod: 'M01b' },
+{ id: 'ftc', en: 'fundamental theorem of calculus', idn: 'teorema dasar kalkulus', def: 'Integral f dari a ke b sama dengan F(b) − F(a), dengan F antiturunan f.', mod: 'M01b' },
+{ id: 'ratarata', en: 'average value', idn: 'nilai rata-rata', def: 'Integral sinyal selama selang T dibagi T.', mod: 'M01b' },
+{ id: 'rms', en: 'RMS', idn: 'nilai efektif', def: 'Akar dari rata-rata kuadrat; untuk sinus bernilai amplitudo dibagi √2.', mod: 'M01a, M01b' },
+{ id: 'fasor', en: 'phasor', idn: 'fasor', def: 'Bilangan kompleks A∠φ yang mewakili sinyal A·cos(ωt + φ) pada frekuensi yang disepakati.', mod: 'M01b' },
+{ id: 'pd', en: 'differential equation', idn: 'persamaan diferensial', def: 'Persamaan yang memuat sebuah fungsi dan turunan-turunannya.', mod: 'M01b' },
+{ id: 'tau', en: 'time constant', idn: 'konstanta waktu', def: 'Parameter τ sistem orde satu; waktu untuk menempuh 63.2% perubahan. Untuk RC, τ = RC.', mod: 'M01b, M02' },
+{ id: 'risetime', en: 'rise time', idn: 'waktu naik', def: 'Waktu dari 10% ke 90% perubahan sebuah sinyal; untuk RC sebesar 2.2τ.', mod: 'M01b' },
+{ id: 'omega0', en: 'natural frequency', idn: 'frekuensi alami', def: 'Parameter ω0 sistem orde dua; untuk LC sebesar 1/√(LC).', mod: 'M01b' },
+{ id: 'zeta', en: 'damping ratio', idn: 'rasio redaman', def: 'Parameter ζ sistem orde dua yang menentukan seberapa cepat ayunan meluruh.', mod: 'M01b' },
+{ id: 'underdamp', en: 'underdamped', idn: 'kurang teredam', def: 'Sistem orde dua dengan ζ < 1; responsnya berayun sebelum menetap.', mod: 'M01b' },
+{ id: 'overshoot', en: 'overshoot', idn: 'lonjakan lewat', def: 'Seberapa jauh respons melewati nilai akhirnya, biasanya dalam persen.', mod: 'M01b' },
+{ id: 'eulerm', en: 'Euler method', idn: 'metode Euler', def: 'Penyelesaian numerik y_{k+1} = y_k + h·f(t_k, y_k); galat sebanding dengan langkah h.', mod: 'M01b' },
+{ id: 'rk4', en: 'Runge-Kutta (RK4)', idn: 'Runge-Kutta orde empat', def: 'Metode numerik yang merata-ratakan empat kemiringan per langkah; galat sebanding dengan h⁴.', mod: 'M01b' }
+]);
+
+function dg(rad){ return rad * 180 / Math.PI; }
+function cfmt(re, im){ var s = num(Math.abs(re) < 5e-13 ? 0 : re, 4); var b = Math.abs(im) < 5e-13 ? 0 : im; return s + (b < 0 ? ' − ' : ' + ') + 'j' + num(Math.abs(b), 4); }
+function pfmt(re, im){ return num(Math.hypot(re, im), 4) + '∠' + num(dg(Math.atan2(im, re)), 4) + '°'; }
+
+/* ---------- 1. bidang kompleks ---------- */
+function v1Draw(){
+  var op = q('#v1-op').value, r1 = +q('#v1-r1').value, t1 = +q('#v1-t1').value, r2 = +q('#v1-r2').value, t2 = +q('#v1-t2').value;
+  var a1 = r1 * Math.cos(t1 * Math.PI / 180), b1 = r1 * Math.sin(t1 * Math.PI / 180), a2 = r2 * Math.cos(t2 * Math.PI / 180), b2 = r2 * Math.sin(t2 * Math.PI / 180), ra, rb, rule = '', useZ2 = true;
+  if (op === 'add'){ ra = a1 + a2; rb = b1 + b2; rule = 'bagian real dijumlah, imajiner dijumlah'; }
+  else if (op === 'sub'){ ra = a1 - a2; rb = b1 - b2; rule = 'z₁ + (−z₂): z₂ dibalik arahnya lalu dijumlah'; }
+  else if (op === 'mul'){ ra = a1 * a2 - b1 * b2; rb = a1 * b2 + b1 * a2; rule = 'besar ' + num(r1, 3) + ' × ' + num(r2, 3) + ' = ' + num(r1 * r2, 4) + ', sudut ' + t1 + '° + ' + t2 + '° = ' + (t1 + t2) + '°' + (Math.abs(t1 + t2) > 180 ? ' (setara ' + num(dg(Math.atan2(rb, ra)), 4) + '°)' : ''); }
+  else if (op === 'div'){ var d = a2 * a2 + b2 * b2; ra = (a1 * a2 + b1 * b2) / d; rb = (b1 * a2 - a1 * b2) / d; rule = 'besar ' + num(r1, 3) + ' / ' + num(r2, 3) + ' = ' + num(r1 / r2, 4) + ', sudut ' + t1 + '° − ' + t2 + '° = ' + (t1 - t2) + '°' + (Math.abs(t1 - t2) > 180 ? ' (setara ' + num(dg(Math.atan2(rb, ra)), 4) + '°)' : ''); }
+  else if (op === 'conj'){ ra = a1; rb = -b1; useZ2 = false; rule = 'bagian imajiner berganti tanda; sudut dibalik: ' + (-t1) + '°'; }
+  else { ra = -b1; rb = a1; useZ2 = false; rule = 'j = 1∠90°: sudut ' + t1 + '° + 90° = ' + (t1 + 90) + '°, besar tetap'; }
+  var W = 360, H = 360, c = W / 2, S = 40, X = function(a){ return c + a * S; }, Y = function(b){ return c - b * S; };
+  var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Bidang kompleks; hasil ' + cfmt(ra, rb) });
+  var defs = svg('defs'); s.appendChild(defs);
+  [['a1', 'var(--s-data)'], ['a2', 'var(--s-ctrl)'], ['ar', 'var(--s-x)']].forEach(function(m){ defs.appendChild(svg('marker', { id: 'v1' + m[0], viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, [svg('path', { d: 'M0 0L10 5L0 10z', fill: m[1] })])); });
+  for (var k = -4; k <= 4; k++){ s.appendChild(svg('line', { x1: X(k), y1: 0, x2: X(k), y2: H, stroke: 'var(--line)' })); s.appendChild(svg('line', { x1: 0, y1: Y(k), x2: W, y2: Y(k), stroke: 'var(--line)' })); if (k){ s.appendChild(svg('text', { x: X(k), y: c + 13, 'text-anchor': 'middle', 'font-size': 9.5, fill: 'var(--ink2)', text: k })); s.appendChild(svg('text', { x: c + 4, y: Y(k) + 3, 'font-size': 9.5, fill: 'var(--ink2)', text: k + 'j' })); } }
+  s.appendChild(svg('line', { x1: 0, y1: c, x2: W, y2: c, stroke: 'var(--ink2)', 'stroke-width': 1.3 })); s.appendChild(svg('line', { x1: c, y1: 0, x2: c, y2: H, stroke: 'var(--ink2)', 'stroke-width': 1.3 }));
+  s.appendChild(svg('text', { x: W - 4, y: c - 6, 'text-anchor': 'end', 'font-size': 10.5, fill: 'var(--ink)', text: 'Re' })); s.appendChild(svg('text', { x: c + 6, y: 12, 'font-size': 10.5, fill: 'var(--ink)', text: 'Im' }));
+  s.appendChild(svg('circle', { cx: c, cy: c, r: S, fill: 'none', stroke: 'var(--ink2)', 'stroke-dasharray': '4 3' }));
+  function arrow(x0, y0, x1, y1, col, mk, dash, w){ s.appendChild(svg('line', { x1: X(x0), y1: Y(y0), x2: X(x1), y2: Y(y1), stroke: col, 'stroke-width': w || 2.4, 'stroke-dasharray': dash || null, 'marker-end': 'url(#v1' + mk + ')' })); }
+  function label(x, y, t, col){ var px = ICD.clamp(X(x) + (x >= 0 ? 6 : -6), 14, W - 14); s.appendChild(svg('text', { x: px, y: ICD.clamp(Y(y) + (y >= 0 ? -6 : 14), 12, H - 4), 'text-anchor': x >= 0 ? 'start' : 'end', 'font-size': 11.5, 'font-weight': 700, fill: col, text: t })); }
+  if (op === 'add'){ arrow(a1, b1, a1 + a2, b1 + b2, 'var(--s-ctrl)', 'a2', '5 3', 1.6); }
+  if (op === 'sub'){ arrow(0, 0, -a2, -b2, 'var(--s-ctrl)', 'a2', '5 3', 1.6); arrow(a1, b1, a1 - a2, b1 - b2, 'var(--s-ctrl)', 'a2', '5 3', 1.6); }
+  arrow(0, 0, a1, b1, 'var(--s-data)', 'a1'); label(a1, b1, 'z₁', 'var(--s-data)');
+  if (useZ2){ arrow(0, 0, a2, b2, 'var(--s-ctrl)', 'a2'); label(a2, b2, 'z₂', 'var(--s-ctrl)'); }
+  arrow(0, 0, ra, rb, 'var(--s-x)', 'ar', null, 2.8); label(ra, rb, 'hasil', 'var(--s-x)');
+  var host = q('#v1-svg'); host.textContent = ''; host.appendChild(s);
+  q('#v1-r1v').textContent = r1.toFixed(2); q('#v1-t1v').textContent = t1 + '°'; q('#v1-r2v').textContent = r2.toFixed(2); q('#v1-t2v').textContent = t2 + '°';
+  q('#v1-r2').disabled = !useZ2; q('#v1-t2').disabled = !useZ2;
+  q('#v1-out').textContent = 'z₁ = ' + cfmt(a1, b1) + ' = ' + pfmt(a1, b1) + (useZ2 ? '  ·  z₂ = ' + cfmt(a2, b2) + ' = ' + pfmt(a2, b2) : '') + '  ·  hasil = ' + cfmt(ra, rb) + ' = ' + pfmt(ra, rb) + '  ·  ' + rule;
+}
+
+/* ---------- 2. turunan dan integral ---------- */
+var FN = {
+  sq:  { n: 'x²', a: 0, b: 3, y0: -1, y1: 9.5, f: function(x){ return x * x; }, d: function(x){ return 2 * x; }, F: function(x){ return x * x * x / 3; }, dn: '2x', Fn: 'x³/3' },
+  sin: { n: 'sin x', a: 0, b: 2 * Math.PI, y0: -1.3, y1: 1.3, f: Math.sin, d: Math.cos, F: function(x){ return 1 - Math.cos(x); }, dn: 'cos x', Fn: '−cos x' },
+  exp: { n: 'eˣ', a: 0, b: 2.5, y0: -1, y1: 13, f: Math.exp, d: Math.exp, F: function(x){ return Math.exp(x) - 1; }, dn: 'eˣ', Fn: 'eˣ' },
+  dec: { n: 'e⁻ˣ', a: 0, b: 4, y0: -0.4, y1: 1.2, f: function(x){ return Math.exp(-x); }, d: function(x){ return -Math.exp(-x); }, F: function(x){ return 1 - Math.exp(-x); }, dn: '−e⁻ˣ', Fn: '−e⁻ˣ' }
+};
+function v2Draw(){
+  var fn = FN[q('#v2-f').value], x0 = fn.a + (fn.b - fn.a) * (+q('#v2-x').value), h = Math.pow(10, +q('#v2-h').value), N = +q('#v2-n').value;
+  var W = 690, H = 300, L = 46, R = 12, T = 10, B = 26, X = function(x){ return L + (x - fn.a) / (fn.b - fn.a) * (W - L - R); }, Y = function(y){ return T + (fn.y1 - y) / (fn.y1 - fn.y0) * (H - T - B); };
+  var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Grafik f(x) = ' + fn.n + ' dengan garis sekan, garis singgung, dan persegi panjang Riemann' });
+  var cid = 'v2clip'; s.appendChild(svg('defs', null, [svg('clipPath', { id: cid }, [svg('rect', { x: L, y: T, width: W - L - R, height: H - T - B })])]));
+  var g = svg('g', { 'clip-path': 'url(#' + cid + ')' });
+  var yt = fn.y1 - fn.y0 > 5 ? 2 : fn.y1 - fn.y0 > 2 ? 0.5 : 0.2, v;
+  for (v = Math.ceil(fn.y0 / yt) * yt; v <= fn.y1 + 1e-9; v += yt){ s.appendChild(svg('line', { x1: L, y1: Y(v), x2: W - R, y2: Y(v), stroke: Math.abs(v) < 1e-9 ? 'var(--ink2)' : 'var(--line)' })); s.appendChild(svg('text', { x: L - 5, y: Y(v) + 3, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--ink2)', text: num(v, 3) })); }
+  var xt = fn.b > 5 ? 1 : 0.5;
+  for (v = fn.a; v <= fn.b + 1e-9; v += xt){ s.appendChild(svg('line', { x1: X(v), y1: T, x2: X(v), y2: H - B, stroke: 'var(--line)' })); s.appendChild(svg('text', { x: X(v), y: H - B + 14, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink2)', text: num(v, 3) })); }
+  if (fn === FN.sin) [Math.PI, 2 * Math.PI].forEach(function(p, i){ s.appendChild(svg('text', { x: X(p), y: T + 10, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink2)', text: i ? '2π' : 'π' })); });
+  s.appendChild(g);
+  var dx = (x0 - fn.a) / N, riem = 0, k;
+  for (k = 0; k < N; k++){
+    var xm = fn.a + (k + 0.5) * dx, fy = fn.f(xm); riem += fy * dx;
+    if (dx > 0) g.appendChild(svg('rect', { x: X(fn.a + k * dx), y: Math.min(Y(fy), Y(0)), width: Math.max(0.5, X(fn.a + (k + 1) * dx) - X(fn.a + k * dx)), height: Math.abs(Y(fy) - Y(0)), fill: fy >= 0 ? 'var(--s-data)' : 'var(--s-x)', 'fill-opacity': 0.22, stroke: fy >= 0 ? 'var(--s-data)' : 'var(--s-x)', 'stroke-width': 0.8 }));
+  }
+  var d = ''; for (k = 0; k <= 300; k++){ var xx = fn.a + (fn.b - fn.a) * k / 300; d += (k ? 'L' : 'M') + X(xx).toFixed(1) + ' ' + Y(fn.f(xx)).toFixed(1); }
+  g.appendChild(svg('path', { d: d, fill: 'none', stroke: 'var(--s-analog)', 'stroke-width': 2.4 }));
+  var m = fn.d(x0), f0 = fn.f(x0), sl = (fn.f(x0 + h) - f0) / h, span = (fn.b - fn.a);
+  g.appendChild(svg('line', { x1: X(x0 - span), y1: Y(f0 - m * span), x2: X(x0 + span), y2: Y(f0 + m * span), stroke: 'var(--ink)', 'stroke-width': 1.4, 'stroke-dasharray': '6 4' }));
+  g.appendChild(svg('line', { x1: X(x0 - span), y1: Y(f0 - sl * span), x2: X(x0 + span), y2: Y(f0 + sl * span), stroke: 'var(--s-hi)', 'stroke-width': 2 }));
+  g.appendChild(svg('circle', { cx: X(x0 + h), cy: Y(fn.f(x0 + h)), r: 4, fill: 'var(--s-hi)' }));
+  g.appendChild(svg('circle', { cx: X(x0), cy: Y(f0), r: 5, fill: 'var(--ink)' }));
+  var host = q('#v2-svg'); host.textContent = ''; host.appendChild(s);
+  var exact = fn.F(x0) - fn.F(fn.a);
+  q('#v2-xv').textContent = num(x0, 4); q('#v2-hv').textContent = num(h, 3); q('#v2-nv').textContent = N;
+  q('#v2-out').textContent = 'f(x₀) = ' + num(f0, 4) + '  ·  kemiringan sekan = ' + num(sl, 5) + '  ·  turunan eksak f′ = ' + fn.dn + ' = ' + num(m, 5) + '  ·  selisih = ' + num(Math.abs(sl - m), 3) +
+    '  ·  jumlah Riemann (N = ' + N + ') = ' + num(riem, 5) + '  ·  integral eksak dari 0 sampai x₀ = ' + num(exact, 5) + '  ·  galat = ' + num(Math.abs(riem - exact), 3);
+}
+
+/* ---------- 3. Euler vs RK4 ---------- */
+var v3plot, v3ctl, VS = 0.8;
+function slope(y){ return VS - y; }
+function v3Step(y, h, m){
+  if (m === 'euler') return y + h * slope(y);
+  var k1 = slope(y), k2 = slope(y + h / 2 * k1), k3 = slope(y + h / 2 * k2), k4 = slope(y + h * k3);
+  return y + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+}
+function v3Factor(h, m){ return m === 'euler' ? 1 - h : 1 - h + h * h / 2 - h * h * h / 6 + h * h * h * h / 24; }
+function v3Draw(st){
+  var h = +q('#v3-h').value, m = q('#v3-m').value, fac = v3Factor(h, m), ex = VS * (1 - Math.exp(-st.t)), err = st.y - ex;
+  var o = { title: 'Pengisian kapasitor: numerik lawan eksak', height: 280, x: { label: 't', unit: 'τ', min: 0, max: 10, plain: true }, y: { label: 'v', unit: 'V', min: -0.6, max: 1.6, plain: true },
+    series: [{ label: 'eksak', kind: 'analog', dash: [], unit: 'V', pts: ICD.sample(function(t){ return VS * (1 - Math.exp(-t)); }, 0, 10, 200) },
+             { label: m === 'euler' ? 'Euler' : 'RK4', kind: 'data', dash: [6, 3], unit: 'V', pts: st.pts.map(function(p){ return [p[0], ICD.clamp(p[1], -50, 50)]; }) }],
+    marks: [{ y: VS, label: 'nilai akhir 0.8 V' }, { x: st.t, label: 'k = ' + st.k }] };
+  if (!v3plot) v3plot = ICD.plot('#v3-plot', o); else v3plot.set(o);
+  q('#v3-hv').textContent = h.toFixed(2) + ' τ';
+  q('#v3-out').textContent = 'langkah k = ' + st.k + '  ·  t = ' + num(st.t, 4) + ' τ  ·  v_k = ' + num(st.y, 5) + ' V  ·  eksak = ' + num(ex, 5) + ' V  ·  galat = ' + num(err, 3) + ' V  ·  faktor penguat per langkah = ' + num(fac, 4) +
+    (Math.abs(fac) < 1 ? (fac < 0 ? '  (stabil, berayun)' : '  (stabil)') : '  (TIDAK STABIL: |faktor| ≥ 1)');
+}
+function v3Init(){
+  v3ctl = ICD.sim.mount('#v3', { fps: 4, max: 400, unit: 'langkah', label: 'Kontrol langkah numerik',
+    init: function(){ return { k: 0, t: 0, y: 0, pts: [[0, 0]] }; },
+    step: function(s){ var h = +q('#v3-h').value; if (s.t + h > 10 + 1e-9) return null; var y = v3Step(s.y, h, q('#v3-m').value); return { k: s.k + 1, t: s.t + h, y: y, pts: s.pts.concat([[s.t + h, y]]) }; },
+    draw: v3Draw });
+  ['#v3-h', '#v3-m'].forEach(function(id){ q(id).addEventListener('input', function(){ v3ctl.reset(); }); });
+}
+
+/* ---------- 4. orde dua ---------- */
+var v4plot, v4ctl, NS = 240;
+function resp(t, z, w){
+  if (Math.abs(z - 1) < 1e-9) return 1 - Math.exp(-w * t) * (1 + w * t);
+  if (z > 1){ var r = Math.sqrt(z * z - 1), s1 = -w * (z - r), s2 = -w * (z + r); return 1 + (s2 * Math.exp(s1 * t) - s1 * Math.exp(s2 * t)) / (s1 - s2); }
+  var wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z / Math.sqrt(1 - z * z) * Math.sin(wd * t));
+}
+function v4Draw(st){
+  var z = +q('#v4-z').value, f0 = +q('#v4-f').value * 1e9, w = 2 * Math.PI * f0, Tend = 8 / f0, i, pts = [], all = [], tsettle = 0, peak = 0;
+  for (i = 0; i <= NS; i++){ var t = Tend * i / NS, y = resp(t, z, w); all.push([t * 1e9, y]); if (i <= st.i) pts.push([t * 1e9, y]); if (y > peak) peak = y; }
+  for (i = 1; i <= 4000; i++){ var tt = Tend * i / 4000; if (Math.abs(resp(tt, z, w) - 1) > 0.02) tsettle = tt; }
+  var o = { title: 'Respons step orde dua', height: 270, x: { label: 't', unit: 'ns', min: 0, max: Tend * 1e9, plain: true }, y: { label: 'y', min: 0, max: 2, plain: true },
+    series: [{ label: 'y(t)', kind: 'analog', dash: [], unit: '', pts: pts.length > 1 ? pts : [[0, 0], [0, 0]] }],
+    marks: [{ y: 1, label: 'nilai akhir' }, { y: 1.02, kind: 'ink2' }, { y: 0.98, kind: 'ink2' }] };
+  if (!v4plot) v4plot = ICD.plot('#v4-plot', o); else v4plot.set(o);
+  // bidang s
+  var W = 320, H = 180, sc = 44, ox = W - 30, oy = H / 2, PX = function(re){ return ox + re * sc; }, PY = function(im){ return oy - im * sc; };
+  var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Bidang-s dengan dua akar persamaan karakteristik' });
+  for (var k = -6; k <= 0; k++){ s.appendChild(svg('line', { x1: PX(k), y1: 8, x2: PX(k), y2: H - 18, stroke: 'var(--line)' })); s.appendChild(svg('text', { x: PX(k), y: H - 5, 'text-anchor': 'middle', 'font-size': 9.5, fill: 'var(--ink2)', text: k ? k + 'ω₀' : '0' })); }
+  s.appendChild(svg('line', { x1: 4, y1: oy, x2: W - 4, y2: oy, stroke: 'var(--ink2)' })); s.appendChild(svg('line', { x1: ox, y1: 6, x2: ox, y2: H - 18, stroke: 'var(--ink2)' }));
+  s.appendChild(svg('circle', { cx: ox, cy: oy, r: sc, fill: 'none', stroke: 'var(--ink2)', 'stroke-dasharray': '4 3' }));
+  s.appendChild(svg('text', { x: ox + 4, y: 14, 'font-size': 10, fill: 'var(--ink2)', text: 'Im' })); s.appendChild(svg('text', { x: 6, y: oy - 5, 'font-size': 10, fill: 'var(--ink2)', text: 'Re' }));
+  s.appendChild(svg('text', { x: 8, y: 16, 'font-size': 10, fill: 'var(--ink2)', text: 'kiri = stabil' }));
+  var roots;
+  if (z < 1 - 1e-9) roots = [[-z, Math.sqrt(1 - z * z)], [-z, -Math.sqrt(1 - z * z)]];
+  else if (z > 1 + 1e-9) roots = [[-z + Math.sqrt(z * z - 1), 0], [-z - Math.sqrt(z * z - 1), 0]];
+  else roots = [[-1, 0], [-1, 0]];
+  roots.forEach(function(r, n){ var x = PX(r[0]), y = PY(r[1]); s.appendChild(svg('path', { d: 'M' + (x - 6) + ' ' + (y - 6) + 'L' + (x + 6) + ' ' + (y + 6) + 'M' + (x + 6) + ' ' + (y - 6) + 'L' + (x - 6) + ' ' + (y + 6), stroke: 'var(--s-x)', 'stroke-width': 2.6 })); });
+  if (Math.abs(z - 1) < 1e-9) s.appendChild(svg('text', { x: PX(-1), y: oy + 18, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink)', text: 'akar kembar' }));
+  var host = q('#v4-s'); host.textContent = ''; host.appendChild(s);
+  var kind = z < 1 - 1e-9 ? 'kurang teredam' : z > 1 + 1e-9 ? 'lewat teredam' : 'teredam kritis';
+  var rs = roots.map(function(r){ return r[1] ? num(r[0], 3) + (r[1] < 0 ? ' − ' : ' + ') + 'j' + num(Math.abs(r[1]), 3) : num(r[0], 3); }).join(' dan ');
+  var extra = z < 1 - 1e-9 ? '  ·  ω_d = ' + num(w * Math.sqrt(1 - z * z), 3) + ' rad/s' + '  ·  overshoot = ' + num(Math.exp(-Math.PI * z / Math.sqrt(1 - z * z)) * 100, 3) + '% (dari kurva ' + num((peak - 1) * 100, 3) + '%)  ·  puncak di ' + si(Math.PI / (w * Math.sqrt(1 - z * z)), 's') : '  ·  tanpa overshoot';
+  q('#v4-zv').textContent = z.toFixed(2); q('#v4-fv').textContent = (f0 / 1e9).toFixed(1) + ' GHz';
+  q('#v4-out').textContent = kind + '  ·  akar s/ω₀ = ' + rs + '  ·  ω₀ = ' + num(w, 3) + ' rad/s' + extra + '  ·  masuk pita ±2% setelah ' + (tsettle >= Tend * 0.999 ? 'lebih dari ' + si(Tend, 's') : si(tsettle, 's')) + '  ·  t = ' + si(Tend * st.i / NS, 's');
+}
+var v4from0 = false;
+function v4Init(){
+  v4ctl = ICD.sim.mount('#v4', { fps: 30, max: NS + 2, unit: 'bingkai', label: 'Kontrol respons orde dua',
+    init: function(){ return { i: v4from0 ? 0 : NS }; }, step: function(s){ return s.i < NS ? { i: Math.min(NS, s.i + 2) } : null; }, draw: v4Draw });
+  var restart = function(){ v4ctl.reset(); };
+  q('#v4-z').addEventListener('input', restart); q('#v4-f').addEventListener('input', restart);
+  var bar = q('#v4 .icd-simctl');
+  bar.insertBefore(el('button', { type: 'button', class: 'icd-btn small', id: 'v4-anim', text: 'Gambar dari awal', onclick: function(){ v4from0 = true; v4ctl.reset(); v4from0 = false; v4ctl.play(); } }), q('.step', bar));
+}
+
+/* ---------- kuis ---------- */
+function quiz(){
+ICD.quiz.mount('#kuis', { id: 'm01b', title: 'Kuis M01b', questions: [
+{ q: 'Berapa hasil (1 + 2<i>j</i>)(3 − <i>j</i>)?', o: [
+  { t: '5 + 5<i>j</i>', ok: true, w: '3 − j + 6j − 2j² = 3 + 5j + 2 = 5 + 5j.' },
+  { t: '1 + 5<i>j</i>', w: 'j² diganti +1, padahal j² = −1; suku −2j² menjadi +2, bukan −2.' },
+  { t: '3 − 2<i>j</i>', w: 'Ini hanya mengalikan bagian real dengan real dan imajiner dengan imajiner; perkalian silang terlupa.' },
+  { t: '4 + <i>j</i>', w: 'Ini hasil penjumlahan, bukan perkalian.' }] },
+{ q: 'Berapa besar |−6 + 8<i>j</i>|?', o: [
+  { t: '10', ok: true, w: 'Pythagoras: √(36 + 64) = √100 = 10.' },
+  { t: '2', w: 'Ini −6 + 8. Besar adalah panjang panah, bukan jumlah bagiannya.' },
+  { t: '14', w: 'Ini 6 + 8; besar dihitung dengan Pythagoras, bukan penjumlahan.' },
+  { t: '100', w: 'Ini kuadrat besarnya; akarnya belum diambil.' }] },
+{ q: 'Berapa sudut bilangan −1 − <i>j</i>?', o: [
+  { t: '−135°', ok: true, w: 'Kuadran III, sama jauh dari kedua sumbu: atan2(−1, −1) = −135°.' },
+  { t: '45°', w: 'Ini arctan(−1/−1) = arctan(1). Pembagian membuang informasi kuadran.' },
+  { t: '−45°', w: '−45° adalah arah 1 − j, di kuadran IV.' },
+  { t: '135°', w: '135° adalah arah −1 + j, di kuadran II.' }] },
+{ q: '<i>z</i><sub>1</sub> = 2∠30° dan <i>z</i><sub>2</sub> = 4∠−50°. Berapa <i>z</i><sub>1</sub>/<i>z</i><sub>2</sub>?', o: [
+  { t: '0.5∠80°', ok: true, w: 'Besar dibagi, sudut dikurangi: 30° − (−50°) = 80°.' },
+  { t: '0.5∠−20°', w: 'Sudut dijumlahkan; untuk pembagian sudut dikurangkan.' },
+  { t: '8∠−20°', w: 'Ini hasil perkalian.' },
+  { t: '2∠80°', w: 'Besarnya seharusnya 2/4 = 0.5.' }] },
+{ q: 'Berapa turunan <i>v</i>(<i>t</i>) = 5<i>e</i><sup>−3<i>t</i></sup>?', o: [
+  { t: '−15<i>e</i><sup>−3<i>t</i></sup>', ok: true, w: 'Aturan rantai: faktor −3 dari pangkat turun ke depan, 5 × (−3) = −15.' },
+  { t: '5<i>e</i><sup>−3<i>t</i></sup>', w: 'Ini berlaku untuk eᵗ, tetapi di sini pangkatnya −3t sehingga muncul faktor −3.' },
+  { t: '15<i>e</i><sup>−3<i>t</i></sup>', w: 'Tanda minus dari pangkat terlupa; fungsi yang meluruh punya turunan negatif.' },
+  { t: '−3 · 5<i>e</i><sup>−3<i>t</i>−1</sup>', w: 'Aturan pangkat xⁿ tidak berlaku untuk eksponensial; pangkatnya tidak berkurang satu.' }] },
+{ q: 'Sinyal 0.5 sin(2π · 1 GHz · <i>t</i>) volt. Berapa laju perubahan tegangan maksimumnya?', o: [
+  { t: 'Sekitar 3.14 V/ns', ok: true, w: '0.5 × 2π × 10⁹ = 3.14 × 10⁹ V/s.' },
+  { t: '0.5 V/ns', w: 'Faktor ω = 2πf dari aturan rantai terlupa.' },
+  { t: '1 V/ns', w: 'Ini 0.5 × 2 × 1 GHz; faktor π hilang.' },
+  { t: '0 V/ns, karena sinus berayun simetris', w: 'Rata-rata turunannya nol, tetapi nilai maksimumnya tidak; ia terjadi saat sinyal melewati nol.' }] },
+{ q: 'Arus 10 µA mengalir selama 1 ns. Berapa muatan yang berpindah?', o: [
+  { t: '10 fC', ok: true, w: 'Q = I·t = 10⁻⁵ × 10⁻⁹ = 10⁻¹⁴ C = 10 fC.' },
+  { t: '10 pC', w: 'Awalan meleset seribu kali: µ × n = 10⁻¹⁵, bukan 10⁻¹².' },
+  { t: '10 µA·ns, bukan muatan', w: 'A·s adalah coulomb; µA·ns = fC.' },
+  { t: '10 nC', w: 'Meleset sejuta kali; periksa jumlah pangkat −6 + (−9).' }] },
+{ q: 'Berapa nilai RMS tegangan 2 sin(ω<i>t</i>) volt?', o: [
+  { t: '1.414 V', ok: true, w: 'RMS sinus adalah A/√2 = 2/1.414 = 1.414 V.' },
+  { t: '2 V', w: 'Itu amplitudo (nilai puncak); RMS sinus selalu lebih kecil dari puncaknya.' },
+  { t: '0 V', w: 'Itu rata-rata biasa. RMS menguadratkan dulu sehingga tidak ada yang saling menghapus.' },
+  { t: '1.273 V', w: 'Ini rata-rata nilai mutlak, 2A/π, bukan RMS.' }] },
+{ q: 'Pada filter RC, berapa fasa keluaran terhadap masukan tepat di ω = 1/(<i>RC</i>)?', o: [
+  { t: '−45°', ok: true, w: 'H = 1/(1 + j); sudut penyebut 45°, dan membagi mengurangkan sudut.' },
+  { t: '−90°', w: '−90° hanya didekati jauh di atas frekuensi potong.' },
+  { t: '0°', w: '0° berlaku jauh di bawah frekuensi potong.' },
+  { t: '+45°', w: 'Tanda terbalik; penyebut 1 + j berada di +45°, jadi hasil baginya −45°.' }] },
+{ q: 'Kapasitor diisi dari 0 menuju 1 V dengan τ = 2 ns. Berapa tegangannya pada <i>t</i> = 2 ns?', o: [
+  { t: '0.632 V', ok: true, w: 't = 1τ, 1 − e⁻¹ = 0.632.' },
+  { t: '1 V', w: 'Satu konstanta waktu belum cukup untuk penuh; secara matematis nilai akhir tak pernah tercapai.' },
+  { t: '0.5 V', w: '50% dicapai pada 0.693τ, sedikit lebih awal.' },
+  { t: '0.368 V', w: 'Ini e⁻¹, sisa yang belum ditempuh, bukan tegangan yang sudah dicapai.' }] },
+{ q: 'Mengapa solusi persamaan τ d<i>y</i>/d<i>t</i> = −<i>y</i> berbentuk eksponensial?', o: [
+  { t: 'Karena laju perubahannya sebanding dengan nilainya sendiri, dan hanya eksponensial yang bersifat begitu', ok: true, w: 'd/dt(Ke^(st)) = s·Ke^(st); pilih s = −1/τ dan persamaan terpenuhi.' },
+  { t: 'Karena semua persamaan diferensial berbentuk eksponensial', w: 'Tidak. Persamaan orde dua kurang teredam memberi sinus teredam, dan persamaan tak linear bisa memberi bentuk lain.' },
+  { t: 'Karena kapasitor menyimpan energi', w: 'Itu fakta fisik, tetapi yang menentukan bentuk solusi adalah struktur matematis persamaannya.' },
+  { t: 'Karena τ bersatuan detik', w: 'Satuan τ hanya memastikan pangkat t/τ tak bersatuan; bukan penyebab bentuk eksponensial.' }] },
+{ q: 'RLC seri dengan <i>L</i> = 1 nH, <i>C</i> = 1 pF. Berapa <i>R</i> agar teredam kritis?', o: [
+  { t: '63 Ω', ok: true, w: 'R = 2√(L/C) = 2√1000 = 63.2 Ω.' },
+  { t: '31.6 Ω', w: 'Ini √(L/C), faktor 2 terlupa; ζ = (R/2)√(C/L) = 1 memberi R = 2√(L/C).' },
+  { t: '1 kΩ', w: 'Ini L/C tanpa akar dan tanpa faktor 2.' },
+  { t: '0 Ω', w: 'R = 0 memberi ζ = 0: berayun tanpa henti, kebalikan dari teredam kritis.' }] },
+{ q: 'Sistem orde dua dengan ζ = 0.5. Kira-kira berapa overshoot-nya?', o: [
+  { t: '16%', ok: true, w: 'exp(−π · 0.5/√0.75) = exp(−1.81) = 0.163.' },
+  { t: '50%', w: 'Overshoot tidak sama dengan ζ; rumusnya eksponensial.' },
+  { t: '0%', w: 'Overshoot nol hanya untuk ζ ≥ 1.' },
+  { t: '5%', w: 'Sekitar 5% adalah overshoot untuk ζ ≈ 0.7.' }] },
+{ q: 'Metode Euler dipakai pada τ d<i>y</i>/d<i>t</i> = <i>y</i><sub><i>f</i></sub> − <i>y</i> dengan langkah <i>h</i> = 3τ. Apa yang terjadi?', o: [
+  { t: 'Solusi numerik berayun dan membesar tanpa batas', ok: true, w: 'Faktor penguat 1 − h/τ = −2; |−2| > 1, jadi tidak stabil.' },
+  { t: 'Solusi tepat setelah satu langkah', w: 'Itu terjadi pada h = τ, ketika faktornya nol.' },
+  { t: 'Solusi kurang teliti tetapi tetap menuju nilai akhir', w: 'Itu berlaku untuk h di bawah 2τ; di atasnya Euler tidak stabil.' },
+  { t: 'Tidak ada pengaruh, karena sistem aslinya stabil', w: 'Kestabilan metode numerik terpisah dari kestabilan sistem; metode bisa meledak walau sistemnya tenang.' }] }
+] });
+}
+function cards(){
+ICD.cards.register('m01b-kompleks-kalkulus', [
+{ id: 'j', f: 'j² = ? &nbsp; 1/j = ?', b: '−1 dan −j' },
+{ id: 'mag', f: 'Besar dan sudut a + jb?', b: '|z| = √(a² + b²), θ = atan2(b, a). Jangan arctan(b/a).' },
+{ id: 'polar', f: 'Aturan kali dan bagi dalam bentuk polar?', b: 'Kali: besar dikali, sudut dijumlah. Bagi: besar dibagi, sudut dikurang.' },
+{ id: 'conj', f: 'Apa itu konjugat dan sifat utamanya?', b: 'z* = a − jb; z·z* = |z|². Dipakai untuk membagi.' },
+{ id: 'deriv', f: 'Definisi turunan?', b: 'f′(x) = lim<sub>h→0</sub> [f(x + h) − f(x)]/h' },
+{ id: 'rules', f: 'Turunan xⁿ, e^(ax), sin(ωt), cos(ωt)?', b: 'n·xⁿ⁻¹ · a·e^(ax) · ω cos(ωt) · −ω sin(ωt)' },
+{ id: 'chain', f: 'Aturan rantai dan aturan hasil kali?', b: 'dy/dx = (dy/du)(du/dx). (fg)′ = f′g + fg′.' },
+{ id: 'ftc', f: 'Teorema dasar kalkulus?', b: '∫ₐᵇ f dx = F(b) − F(a), dengan F′ = f.' },
+{ id: 'rms', f: 'Definisi RMS, dan RMS sinus?', b: '√((1/T)∫v² dt). Sinus: A/√2, karena rata-rata sin² = 1/2.' },
+{ id: 'euler', f: 'Rumus Euler?', b: 'e^(jθ) = cos θ + j sin θ' },
+{ id: 'phasor', f: 'Fasor dari A cos(ωt + φ), dan d/dt menjadi?', b: 'V = A∠φ = A·e^(jφ). d/dt menjadi perkalian dengan jω.' },
+{ id: 'rcH', f: 'H filter RC, dan nilainya di ω = 1/RC?', b: 'H = 1/(1 + jωRC); 0.707∠−45° (titik −3 dB).' },
+{ id: 'first', f: 'Solusi orde satu dengan masukan step?', b: 'y(t) = y_f + (y₀ − y_f)·e^(−t/τ)' },
+{ id: 'tau', f: 'Persen ditempuh setelah 0.69τ, 1τ, 2.2τ (10–90%), 4.6τ?', b: '50% · 63.2% · waktu naik 10–90% = 2.2τ · 99%' },
+{ id: 'char', f: 'Persamaan karakteristik orde dua dan akarnya?', b: 's² + 2ζω₀s + ω₀² = 0; s = −ζω₀ ± ω₀√(ζ² − 1)' },
+{ id: 'rlc', f: 'ω₀ dan ζ untuk RLC seri?', b: 'ω₀ = 1/√(LC); ζ = (R/2)√(C/L)' },
+{ id: 'os', f: 'Rumus overshoot dan tiga nilai khasnya?', b: 'OS = e^(−πζ/√(1−ζ²)). ζ 0.25 → 44%, 0.5 → 16%, 0.7 → 5%.' },
+{ id: 'eulerstab', f: 'Syarat stabil metode Euler untuk sistem orde satu?', b: '0 < h < 2τ (faktor penguat 1 − h/τ harus berbesar di bawah 1).' }
+]);
+ICD.cards.mount('#kartu', { file: 'm01b-kompleks-kalkulus' });
+}
+
+ICD.ready(function(){
+  ['#v1-op', '#v1-r1', '#v1-t1', '#v1-r2', '#v1-t2'].forEach(function(id){ q(id).addEventListener('input', v1Draw); }); v1Draw();
+  ['#v2-f', '#v2-x', '#v2-h', '#v2-n'].forEach(function(id){ q(id).addEventListener('input', v2Draw); }); v2Draw();
+  v3Init(); v4Init();
+  quiz(); cards();
+});
+})();
+</script>
+</body>
+</html>

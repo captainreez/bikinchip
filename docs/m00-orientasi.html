@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M00 Orientasi: dari ide sampai silikon — IC Design dari Nol sampai Silikon</title>
+<!-- ICD-CORE 1.3.0 BEGIN (identik di semua file; jangan disunting per file) -->
+<style id="icd-core-css">
+/* ICD-Core CSS — disalin identik ke setiap file. Jangan diubah per file. */
+:root{
+  --bg:#F7F6F2;--card:#FFFFFF;--ink:#1F2328;--ink2:#57606A;--line:#D8D5CC;--accent:#0B5C7A;--accent-ink:#FFFFFF;
+  --tint:#E6F0F4;--ok:#176F31;--warn:#855700;--bad:#CF222E;--code-bg:#F0EEE8;
+  --s-clock:#1F6FEB;--s-data:#0F7B6C;--s-ctrl:#7A3FD1;--s-reset:#B45309;--s-vdd:#C0392B;--s-vss:#4A5568;
+  --s-analog:#B8256E;--s-hi:#946200;--s-x:#D1242F;--s-z:#8A6D1B;
+  --f-text:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --r:8px;--top:52px;--brand-red:#D7263D;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#14171C;--card:#1C2027;--ink:#E6E3DC;--ink2:#9BA3AD;--line:#2E343D;--accent:#5CC1E0;--accent-ink:#0B1A20;
+  --tint:#1D2D35;--ok:#56D364;--warn:#E3B341;--bad:#FF7B72;--code-bg:#12151A;
+  --s-clock:#6CB6FF;--s-data:#4FD1B5;--s-ctrl:#B794F6;--s-reset:#F6AD55;--s-vdd:#FF7B72;--s-vss:#A0AEC0;
+  --s-analog:#F687B3;--s-hi:#F6E05E;--s-x:#FF6B6B;--s-z:#D9B84A;
+  --brand-red:#FF6B7A;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{font-size:17px;scroll-padding-top:calc(var(--top) + 12px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-text);line-height:1.65}
+h1,h2,h3,h4{line-height:1.25;margin:1.6em 0 .5em;text-wrap:balance}
+h1{font-size:1.76rem;margin-top:.4em}h2{font-size:1.41rem}h3{font-size:1.18rem}h4{font-size:1rem}
+p,ul,ol,table,pre,figure{margin:0 0 1em}
+a{color:var(--accent);text-underline-offset:2px}
+code,kbd,samp,pre{font-family:var(--f-mono);font-size:.88em}
+:not(pre)>code{background:var(--code-bg);padding:.1em .35em;border-radius:4px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+button,input,select,textarea{font:inherit;color:inherit}
+.icd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.icd-skip{position:absolute;left:8px;top:-60px;background:var(--accent);color:var(--accent-ink);padding:8px 12px;border-radius:var(--r);z-index:50}
+.icd-skip:focus{top:8px}
+
+/* tombol dan kontrol */
+.icd-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:6px 14px;
+  border:1px solid var(--line);border-radius:var(--r);background:var(--card);cursor:pointer;text-decoration:none;color:var(--ink)}
+.icd-btn:hover{border-color:var(--accent)}
+.icd-btn[disabled]{opacity:.45;cursor:not-allowed}
+.icd-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.icd-btn.small{min-height:36px;min-width:36px;padding:2px 10px;font-size:.88rem}
+.icd-btn[aria-pressed="true"]{background:var(--tint);border-color:var(--accent)}
+.icd-input,.icd-select,textarea.icd-input{min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);max-width:100%}
+.icd-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.icd-field{display:flex;flex-direction:column;gap:2px;font-size:.88rem;color:var(--ink2);min-width:0}
+.icd-field>span b{color:var(--ink);font-family:var(--f-mono);font-weight:600}
+input[type=range]{width:100%;min-height:32px;accent-color:var(--accent)}
+.icd-chip{display:inline-block;padding:1px 8px;border:1px solid var(--line);border-radius:999px;font-size:.78rem;color:var(--ink2);white-space:nowrap}
+.icd-muted{color:var(--ink2)}.icd-small{font-size:.88rem}
+
+/* kerangka halaman */
+.icd-top{position:sticky;top:0;z-index:30;height:var(--top);display:flex;align-items:center;gap:8px;padding:0 12px;
+  background:var(--card);border-bottom:1px solid var(--line)}
+.icd-top .brand{display:inline-flex;align-items:center;gap:6px;font-weight:700;text-decoration:none;color:var(--ink);white-space:nowrap}
+.icd-logo .pin{fill:var(--ink2)}.icd-logo .body{fill:var(--accent)}.icd-logo .b{fill:none;stroke:var(--accent-ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.icd-logo .dot{fill:var(--brand-red)}
+.wm{font-family:var(--f-mono);letter-spacing:-.02em}.wm b{color:var(--accent)}
+.icd-acct{white-space:nowrap;max-width:9rem;overflow:hidden;text-overflow:ellipsis}
+.icd-top .title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2);font-size:.88rem}
+.icd-top form{display:flex;min-width:0}
+.icd-top input[type=search]{width:11rem;min-height:36px;max-width:38vw}
+.icd-bar{height:3px;background:var(--line);position:sticky;top:var(--top);z-index:29}
+.icd-bar>i{display:block;height:100%;background:var(--accent);width:0}
+.icd-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:1180px;margin:0 auto;padding:16px 14px 64px}
+.icd-main{min-width:0;max-width:68ch;width:100%;margin:0 auto}
+.icd-main.wide{max-width:none}
+.icd-toc{display:none}
+.icd-toc.open{display:block;position:fixed;inset:var(--top) 0 0 0;z-index:28;background:var(--bg);overflow:auto;padding:14px}
+.icd-toc ol{list-style:none;margin:0;padding:0}
+.icd-toc a{display:flex;gap:8px;align-items:baseline;padding:7px 8px;border-radius:6px;text-decoration:none;color:var(--ink);font-size:.88rem}
+.icd-toc a:hover{background:var(--tint)}
+.icd-toc a[aria-current="true"]{background:var(--tint);font-weight:600}
+.icd-toc .mark{font-family:var(--f-mono);color:var(--ink2);width:1.1em;flex:none}
+.icd-toc .mark.done{color:var(--ok)}
+@media(min-width:1100px){
+  .icd-wrap.has-toc{grid-template-columns:250px minmax(0,1fr)}
+  .icd-toc{display:block;position:sticky;top:calc(var(--top) + 16px);align-self:start;max-height:calc(100vh - var(--top) - 32px);overflow:auto}
+  .icd-toc-btn{display:none}
+}
+.icd-sec{border-top:1px solid var(--line);padding-top:4px;margin-top:28px}
+.icd-sec>h2{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.icd-sec>h2 .n{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);border:1px solid var(--line);border-radius:6px;padding:0 6px}
+.icd-secfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 0}
+.icd-note{flex-basis:100%}
+.icd-note textarea{width:100%;min-height:90px}
+.icd-nav{display:flex;gap:10px;justify-content:space-between;margin:36px 0 0;flex-wrap:wrap}
+.icd-nav a{flex:1 1 240px;border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;text-decoration:none;background:var(--card);color:var(--ink)}
+.icd-nav a small{display:block;color:var(--ink2)}
+.icd-nav a.next{text-align:right}
+.icd-nav a.soon{border-style:dashed;color:var(--ink2)}
+a.icd-soon{color:var(--ink2);text-decoration:underline dotted;cursor:not-allowed}
+a.icd-soon .icd-chip{margin-left:4px;font-size:.72rem}
+.icd-resume{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;margin:0 0 14px;border:1px solid var(--accent);border-radius:var(--r);background:var(--tint);font-size:.9rem}
+.icd-resume span{flex:1 1 220px}
+.icd-foot{margin-top:28px;font-size:.78rem;color:var(--ink2)}
+
+/* kartu, tabel, kotak peringatan */
+.icd-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin:0 0 1em}
+.icd-card>h3:first-child,.icd-card>h4:first-child{margin-top:0}
+.icd-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.icd-tablewrap{overflow-x:auto;margin:0 0 1em}
+table.icd{border-collapse:collapse;width:100%;font-size:.88rem}
+table.icd th,table.icd td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.icd th{color:var(--ink2);font-weight:600}
+.icd-box{border:1px solid var(--line);border-left:5px solid var(--ink2);border-radius:var(--r);padding:10px 14px;margin:0 0 1em;background:var(--card)}
+.icd-box>b:first-child{display:block;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2)}
+.icd-box.mis{border-left-color:var(--bad)}.icd-box.trap{border-left-color:var(--warn)}
+.icd-box.model{border-left-color:var(--s-ctrl)}.icd-box.verify{border-left-style:dashed;border-left-color:var(--warn)}
+.icd-box.ok{border-left-color:var(--ok)}
+details.icd-sol{border:1px dashed var(--line);border-radius:var(--r);padding:6px 12px;margin:0 0 1em}
+details.icd-sol>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;gap:8px;color:var(--accent)}
+.icd-lvl{font-family:var(--f-mono);font-size:.78rem;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--ink2)}
+.icd-meter{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.icd-meter>i{display:block;height:100%;background:var(--accent)}
+
+/* rumus */
+math{font-size:1.08em}
+.icd-eq{display:block;overflow-x:auto;padding:8px 0;margin:0 0 1em;text-align:center}
+.icd-eq .alt{display:none;font-family:var(--f-mono);font-size:.88em}
+.no-mathml .icd-eq math{display:none}.no-mathml .icd-eq .alt{display:block}
+
+/* kode */
+.icd-code{position:relative;margin:0 0 1em}
+.icd-code pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;overflow:auto;line-height:1.5;tab-size:2}
+.icd-code .lang{position:absolute;right:54px;top:6px;font-size:.72rem;color:var(--ink2);font-family:var(--f-mono)}
+.icd-code .copy{position:absolute;right:6px;top:4px}
+.icd-code .ln{display:inline-block;width:2.4em;margin-left:-.4em;padding-right:.9em;text-align:right;color:var(--ink2);opacity:.6;user-select:none}
+.tk-k{color:var(--s-ctrl);font-weight:600}.tk-c{color:var(--ink2);font-style:italic}.tk-s{color:var(--s-data)}
+.tk-n{color:var(--s-reset)}.tk-t{color:var(--s-clock)}.tk-d{color:var(--s-analog)}
+
+/* penjelasan berlapis */
+.icd-layers{border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin:0 0 1em}
+.icd-layers [role=tablist]{display:flex;border-bottom:1px solid var(--line)}
+.icd-layers [role=tab]{flex:1;min-height:44px;border:0;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--ink2)}
+.icd-layers [role=tab][aria-selected=true]{border-bottom-color:var(--accent);color:var(--ink);font-weight:600}
+.icd-layers [role=tabpanel]{padding:12px 16px 2px}
+
+/* visualisasi */
+.icd-viz{border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin:0 0 1em;overflow:hidden}
+.icd-viz>header{display:flex;gap:8px;align-items:baseline;padding:10px 14px 0;flex-wrap:wrap}
+.icd-viz>header h3,.icd-viz>header h4{margin:0;font-size:1rem}
+.icd-viz .stage{padding:10px 14px;overflow-x:auto}
+.icd-viz .params{display:grid;gap:10px 16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));padding:10px 14px;border-top:1px solid var(--line)}
+.icd-viz .readout{display:flex;flex-wrap:wrap;gap:6px 18px;padding:8px 14px;border-top:1px solid var(--line);font-family:var(--f-mono);font-size:.82rem}
+.icd-viz .readout span b{font-weight:600}
+.icd-viz .model{padding:8px 14px;border-top:1px solid var(--line);font-size:.82rem;color:var(--ink2)}
+.icd-viz svg text{font-family:var(--f-mono)}
+.icd-simctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;border-top:1px solid var(--line)}
+.icd-simctl .step{font-family:var(--f-mono);font-size:.82rem;color:var(--ink2);margin-left:auto}
+.icd-plot{position:relative;width:100%}
+.icd-plot canvas{display:block;width:100%;touch-action:pan-y}
+.icd-plot .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.78rem;font-family:var(--f-mono);padding-top:4px}
+.icd-plot .legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
+.icd-wave{overflow-x:auto}
+.icd-wave svg{display:block}
+.icd-guide{border:1px solid var(--accent);border-radius:var(--r);padding:12px 14px;margin:0 0 1em;background:var(--tint)}
+.icd-guide>b:first-child{display:block;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.icd-guide .opts{display:grid;gap:6px;margin:8px 0}
+.icd-guide .result{margin-top:8px}
+
+/* kuis dan flashcard */
+.icd-quiz{border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:14px 16px;margin:0 0 1em}
+.icd-quiz .q{font-weight:600;margin-bottom:10px}
+.icd-quiz .opts{display:grid;gap:8px;margin-bottom:10px}
+.icd-opt{display:block;width:100%;text-align:left;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);cursor:pointer}
+.icd-opt:hover:not([disabled]){border-color:var(--accent)}
+.icd-opt[disabled]{cursor:default}
+.icd-opt .why{display:block;font-size:.88rem;color:var(--ink2);margin-top:4px}
+.icd-opt.right{border-color:var(--ok);border-width:2px}.icd-opt.wrong{border-color:var(--bad);border-width:2px}
+.icd-opt .tag{font-weight:700;margin-right:6px}
+.icd-opt.right .tag{color:var(--ok)}.icd-opt.wrong .tag{color:var(--bad)}
+.icd-flash{border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:14px 16px;margin:0 0 1em}
+.icd-flash .face{min-height:110px;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:10px;border:1px dashed var(--line);border-radius:var(--r);margin:8px 0}
+.icd-flash .back{border-style:solid;background:var(--tint)}
+
+/* glosarium */
+.icd-term{border:0;background:none;padding:0;cursor:help;border-bottom:1px dotted var(--accent);color:inherit;font:inherit}
+.icd-tip{position:absolute;z-index:40;max-width:min(320px,calc(100vw - 24px));background:var(--card);border:1px solid var(--accent);border-radius:var(--r);
+  padding:10px 12px;font-size:.88rem;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.icd-tip b{display:block}.icd-tip i{color:var(--ink2)}
+dialog.icd-dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);max-width:min(520px,calc(100vw - 24px));padding:18px}
+dialog.icd-dialog::backdrop{background:rgba(0,0,0,.45)}
+.icd-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:var(--r);z-index:60;font-size:.88rem;max-width:calc(100vw - 24px)}
+
+@media(max-width:520px){
+  html{font-size:16px}
+  .icd-top .title{display:none}
+  .icd-top input[type=search]{width:100%}
+  .icd-top form{flex:1}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  :root{--bg:#fff;--card:#fff;--ink:#000;--ink2:#333;--line:#999;--tint:#fff;--code-bg:#fff}
+  .icd-top,.icd-bar,.icd-toc,.icd-nav,.icd-simctl,.icd-secfoot,.icd-code .copy,.icd-toast,.icd-skip,.no-print{display:none!important}
+  .icd-wrap{display:block;padding:0}.icd-main{max-width:none}
+  .icd-viz,.icd-card,.icd-quiz,.icd-box,pre{break-inside:avoid}
+  a{color:#000}
+}
+</style>
+<script id="icd-core-js">
+/* ICD-Core JS — disalin identik ke setiap file. Jangan diubah per file. */
+(function(){
+'use strict';
+var ICD = window.ICD = { version: '1.3.0', brand: 'bikinchip', config: {} };
+var doc = document, root = doc.documentElement;
+
+/* ---------- util ---------- */
+function el(tag, attrs, kids){
+  var n = doc.createElement(tag), k;
+  if (attrs) for (k in attrs){
+    var v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.slice(0,2) === 'on') n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  add(n, kids);
+  return n;
+}
+function add(n, kids){
+  if (kids == null) return n;
+  if (!Array.isArray(kids)) kids = [kids];
+  kids.forEach(function(c){ if (c != null && c !== false) n.appendChild(typeof c === 'object' ? c : doc.createTextNode(String(c))); });
+  return n;
+}
+var SVGNS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs, kids){
+  var n = doc.createElementNS(SVGNS, tag), k;
+  if (attrs) for (k in attrs){ if (attrs[k] != null) { if (k === 'text') n.textContent = attrs[k]; else n.setAttribute(k, attrs[k]); } }
+  add(n, kids);
+  return n;
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function q(sel, ctx){ return (ctx || doc).querySelector(sel); }
+function qa(sel, ctx){ return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
+function target(t){ return typeof t === 'string' ? q(t) : t; }
+function clamp(x, a, b){ return x < a ? a : x > b ? b : x; }
+function ready(fn){ if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', fn); else fn(); }
+function emit(name, detail){ doc.dispatchEvent(new CustomEvent(name, { detail: detail })); }
+var uidN = 0; function uid(p){ return (p || 'icd') + '-' + (++uidN); }
+function cssVar(name){ return getComputedStyle(root).getPropertyValue(name).trim() || '#888'; }
+var reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+ICD.el = el; ICD.svg = svg; ICD.esc = esc; ICD.q = q; ICD.qa = qa; ICD.ready = ready; ICD.uid = uid; ICD.cssVar = cssVar; ICD.clamp = clamp;
+
+/* ---------- fmt: angka bersatuan ---------- */
+var PFX = [[1e12,'T'],[1e9,'G'],[1e6,'M'],[1e3,'k'],[1,''],[1e-3,'m'],[1e-6,'µ'],[1e-9,'n'],[1e-12,'p'],[1e-15,'f'],[1e-18,'a']];
+function num(v, sig){
+  if (!isFinite(v)) return isNaN(v) ? '—' : (v > 0 ? '∞' : '−∞');
+  if (v === 0) return '0';
+  var s = Number(v.toPrecision(sig || 3)), a = Math.abs(s), out;
+  if (a >= 1e6 || a < 1e-4) out = s.toExponential(Math.max(0, (sig || 3) - 1)).replace('e+', 'e').replace(/e(-?)(\d+)/, '×10^$1$2');
+  else out = String(s);
+  return out.replace('-', '−');
+}
+function si(v, unit, sig){
+  unit = unit || '';
+  if (!isFinite(v)) return num(v) + (unit ? ' ' + unit : '');
+  if (v === 0) return '0' + (unit ? ' ' + unit : '');
+  var a = Math.abs(v), i;
+  for (i = 0; i < PFX.length; i++) if (a >= PFX[i][0] * 0.9995) break;
+  if (i >= PFX.length) i = PFX.length - 1;
+  var s = Number((v / PFX[i][0]).toPrecision(sig || 3));
+  return String(s).replace('-', '−') + ' ' + PFX[i][1] + unit;
+}
+var SFX = { T:1e12, G:1e9, M:1e6, k:1e3, K:1e3, m:1e-3, u:1e-6, 'µ':1e-6, n:1e-9, p:1e-12, f:1e-15, a:1e-18 };
+function parse(str){
+  if (typeof str === 'number') return str;
+  var s = String(str).trim().replace(',', '.').replace('−', '-');
+  var m = /^([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*(meg|[TGMkKmuµnpfa])?/.exec(s);
+  if (!m) return NaN;
+  var v = parseFloat(m[1]);
+  if (m[2]) v *= (m[2] === 'meg' ? 1e6 : SFX[m[2]]);
+  return v;
+}
+ICD.fmt = { num: num, si: si, parse: parse };
+
+/* ---------- registry kurikulum ---------- */
+var PARTS = ['', 'Fondasi', 'Devais dan elektronika', 'Rangkaian digital', 'Arsitektur komputer', 'Desain front-end',
+  'Implementasi fisik', 'Analog, mixed-signal, dan memori', 'Manufaktur, keandalan, keamanan', 'Frontier dan karier'];
+var MODS = [
+['M00',1,'Orientasi',4,'','m00-orientasi|Orientasi: dari ide sampai silikon'],
+['M01',1,'Matematika untuk engineer',60,'M00','m01a-matematika-dasar|Satuan, eksponen, logaritma, desibel, trigonometri;m01b-kompleks-kalkulus|Bilangan kompleks, fasor, kalkulus, persamaan diferensial;m01c-linear-probabilitas-diskrit|Aljabar linear, probabilitas, statistik, matematika diskrit;m01d-transformasi-sinyal|Fourier, Laplace, Z, sinyal dan sistem'],
+['M02',1,'Listrik dan rangkaian',45,'M01','m02a-rangkaian-dc|Rangkaian DC: dari muatan sampai analisis nodal;m02b-transien-ac|Transien RC, RL, RLC dan analisis AC;m02c-bode-filter-tline|Bode, filter, transmission line, elektromagnetika ringkas'],
+['M03',1,'Representasi data',18,'M01','m03a-bilangan|Biner, two\'s complement, fixed-point, IEEE 754;m03b-kode-deteksi-koreksi|Gray, parity, Hamming, CRC'],
+['M04',1,'Perangkat lunak dan lingkungan kerja',50,'M03','m04a-c-pointer|C dan pointer;m04b-assembly-toolchain-os|Assembly, compile-link-load, sistem operasi;m04c-linux-git-make|Linux, shell, Git, Make, regex;m04d-python-tcl-algoritma|Python, Tcl, struktur data dan algoritma'],
+['M05',2,'Fisika semikonduktor',20,'M01 M02','m05a-pita-energi-pembawa|Pita energi, pembawa muatan, doping, drift dan difusi;m05b-pn-junction-dioda|PN junction dan dioda'],
+['M06',2,'Transistor',35,'M05','m06a-mosfet-dasar|BJT ringkas dan MOSFET dasar;m06b-mosfet-efek-lanjut|MOSFET: efek orde dua, short-channel, leakage;m06c-finfet-gaa-variasi|FinFET, GAA, CFET, FD-SOI, variasi dan PVT'],
+['M07',2,'Elektronika analog dasar',45,'M01 M02 M06','m07a-small-signal-penguat|Small-signal dan penguat satu tahap;m07b-mirror-diffpair-opamp|Current mirror, differential pair, op-amp;m07c-feedback-stabilitas-noise|Feedback, stabilitas, kompensasi, noise'],
+['M08',3,'Logika kombinasional',30,'M03','m08a-boolean-kmap|Aljabar Boolean, gerbang, K-map;m08b-mux-adder|Mux, decoder, encoder, adder;m08c-multiplier-divider-alu|Multiplier, divider, shifter, ALU'],
+['M09',3,'Logika sekuensial',25,'M08','m09a-latch-flipflop-register|Latch, flip-flop, timing, register, counter;m09b-fsm-metastability|FSM, state encoding, metastability'],
+['M10',3,'CMOS VLSI',50,'M02 M06 M08 M09','m10a-inverter-gerbang-statis|Inverter CMOS dan gerbang statis;m10b-logical-effort-daya|Logical effort, delay, sizing, daya;m10c-dinamis-interconnect|Logika dinamis, transmission gate, interconnect;m10d-layout-stdcell-scaling|Layout, design rules, standard cell, scaling'],
+['M11',4,'ISA dan RISC-V',30,'M03 M04','m11a-riscv-instruksi-assembly|RISC-V: instruksi, register, assembly;m11b-privilege-csr-trap|Privilege, CSR, interrupt, exception'],
+['M12',4,'Mikroarsitektur prosesor',50,'M09 M11','m12a-single-multi-cycle|Prosesor single-cycle dan multi-cycle;m12b-pipeline-hazard|Pipeline lima tahap dan hazard;m12c-branch-prediction|Branch prediction;m12d-superscalar-ooo|Superscalar dan out-of-order'],
+['M13',4,'Memori dan sistem',30,'M12','m13a-hierarki-cache|Hierarki memori dan cache;m13b-virtual-memory-dram-io|Virtual memory, TLB, DRAM, I/O'],
+['M14',4,'Paralelisme dan akselerator',30,'M13','m14a-multicore-koherensi-simd|Multicore, koherensi cache, SIMD;m14b-gpu-npu-akselerator|GPU, NPU, dan akselerator'],
+['M15',4,'SoC dan protokol',45,'M09 M11','m15a-uart-spi-i2c|UART, SPI, I2C;m15b-amba-tilelink-wishbone|AMBA, TileLink, Wishbone;m15c-protokol-high-speed|USB, PCIe, Ethernet, DDR, MIPI, CXL, UCIe;m15d-soc-boot-firmware|Arsitektur SoC, boot, firmware'],
+['M16',5,'HDL',40,'M04 M09','m16a-sv-dasar|SystemVerilog dasar untuk desain;m16b-semantik-simulasi|Semantik simulasi, blocking dan non-blocking;m16c-interface-lint-vhdl|Interface, package, lint, VHDL sekilas'],
+['M17',5,'Teknik desain RTL',55,'M16','m17a-handshake-fifo-arbiter|Valid/ready, FIFO, skid buffer, arbiter;m17b-pipelining-reset-clockgating|Pipelining, retiming, reset, clock gating;m17c-cdc-rdc|CDC dan RDC;m17d-datapath-spec-hls|Datapath, FSMD, spesifikasi, HLS, Chisel'],
+['M18',5,'Verifikasi fungsional',70,'M04 M16 M17','m18a-vplan-testbench-oop|Verification plan, testbench, OOP;m18b-random-coverage|Constrained-random dan coverage;m18c-sva|SystemVerilog Assertions;m18d-uvm-1|UVM bagian 1;m18e-uvm-2-cocotb-gls|UVM bagian 2, cocotb, regression, GLS'],
+['M19',5,'Formal dan platform verifikasi',25,'M17 M18','m19a-formal|Verifikasi formal;m19b-emulasi-prototyping-soc|Emulasi, prototyping, verifikasi SoC'],
+['M20',5,'FPGA',25,'M09 M16','m20a-fpga-arsitektur|Arsitektur FPGA;m20b-fpga-alur-timing|Alur desain dan timing FPGA'],
+['M21',6,'Sintesis logika',25,'M10 M16','m21a-sintesis-sdc|Sintesis logika dan SDC;m21b-liberty-karakterisasi|Liberty dan karakterisasi library'],
+['M22',6,'Static timing analysis',40,'M01 M09 M21','m22a-sta-dasar|STA dasar: path, setup, hold, slack;m22b-sta-clock-exception|STA: clock, exception, time borrowing;m22c-sta-variasi-signoff|STA: variasi, MCMM, signoff'],
+['M23',6,'Physical design',45,'M10 M21 M22','m23a-floorplan-power|Floorplan dan power planning;m23b-placement-cts|Placement dan clock tree synthesis;m23c-routing-ekstraksi|Routing dan ekstraksi parasitik;m23d-closure-eco-pdk|Timing closure, ECO, LEF/DEF, PDK'],
+['M24',6,'Signoff dan tapeout',20,'M23','m24a-verifikasi-fisik|Verifikasi fisik: DRC, LVS, antenna;m24b-signoff-tapeout|Signoff akhir dan tapeout'],
+['M25',6,'Low-power design',25,'M10 M17 M21','m25a-teknik-low-power|Teknik low-power;m25b-upf-power-aware|UPF dan verifikasi power-aware'],
+['M26',6,'DFT dan test',35,'M09 M21','m26a-fault-scan-atpg|Fault model, scan, ATPG;m26b-bist-jtag|BIST, JTAG, IJTAG;m26c-ate-yield-bringup|ATE, yield, diagnosis, bring-up'],
+['M27',7,'Desain IC analog',50,'M06 M07','m27a-gmid-bias-spice|gm/Id, biasing, simulasi SPICE;m27b-bandgap-ldo|Bandgap reference dan LDO;m27c-ota-comparator|OTA dan comparator;m27d-switchedcap-mismatch-layout|Switched-capacitor, mismatch, layout analog'],
+['M28',7,'Mixed-signal dan high-speed',55,'M01 M27','m28a-sampling-adc|Sampling dan ADC;m28b-dac-sigma-delta|DAC dan sigma-delta;m28c-pll-jitter|PLL, DLL, jitter, phase noise;m28d-serdes-io-rf-ams|SerDes, I/O, PMIC, RF, verifikasi AMS'],
+['M29',7,'Memori',30,'M10 M13','m29a-sram|SRAM;m29b-dram-flash-cam|DRAM, Flash, CAM, OTP;m29c-emerging-hbm-ecc-cim|Memori emerging, HBM, ECC, compute-in-memory'],
+['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
+['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
+['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
+];
+var TRACKS = {
+  rtl: ['RTL design', 'M00 M01a M01c M02a M03 M04 M06a M08 M09 M10a M10b M11 M12 M13 M15 M16 M17 M18a M18b M18c M20 M21 M22 M25'],
+  ver: ['Verifikasi', 'M00 M01a M01c M03 M04 M08 M09 M11 M12a M12b M13 M15 M16 M17 M18 M19'],
+  pd:  ['Physical design', 'M00 M01a M01b M01c M02 M03a M04c M04d M05 M06 M08a M09 M10 M16 M21 M22 M23 M24 M25 M26a M30'],
+  dft: ['DFT', 'M00 M01a M01c M03 M04c M04d M08 M09 M10a M10b M16 M17a M17b M17c M21 M22 M26 M29a M30b'],
+  ams: ['Analog dan mixed-signal', 'M00 M01 M02 M03a M04c M04d M05 M06 M07 M10a M10b M27 M28 M29a M30 M32a'],
+  arch:['Arsitektur', 'M00 M01a M01c M03 M04 M08 M09 M11 M12 M13 M14 M15 M16 M33b']
+};
+var reg = { parts: PARTS, modules: [], files: [], tracks: {} }, fileById = {}, modById = {};
+MODS.forEach(function(m){
+  var mod = { id: m[0], part: m[1], title: m[2], hours: m[3], pre: m[4] ? m[4].split(' ') : [], files: [] };
+  var fs = m[5].split(';');
+  fs.forEach(function(s){
+    var p = s.split('|'), f = { id: p[0], title: p[1], mod: mod.id, part: mod.part, hours: Math.round(mod.hours / fs.length * 10) / 10, idx: reg.files.length };
+    f.code = (f.id.split('-')[0]).toUpperCase().replace(/([A-E])$/, function(c){ return c.toLowerCase(); });
+    mod.files.push(f); reg.files.push(f); fileById[f.id] = f;
+  });
+  reg.modules.push(mod); modById[mod.id] = mod;
+});
+Object.keys(TRACKS).forEach(function(k){
+  var set = {};
+  TRACKS[k][1].split(' ').forEach(function(tok){
+    reg.files.forEach(function(f){ if (f.code === tok || f.mod === tok) set[f.id] = true; });
+  });
+  reg.tracks[k] = { id: k, title: TRACKS[k][0], files: set };
+});
+reg.file = function(id){ return fileById[id] || null; };
+reg.module = function(id){ return modById[id] || null; };
+ICD.reg = reg;
+/* File yang sudah dibuat, urut rilis. Halaman lama mempelajari daftar yang lebih baru lewat penyimpanan (lihat avail). */
+var BUILT_LIST = ['uji-komponen', 'm00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
+  'm02a-rangkaian-dc', 'm02b-transien-ac', 'm02c-bode-filter-tline', 'm03a-bilangan', 'm03b-kode-deteksi-koreksi', 'm04a-c-pointer', 'm04b-assembly-toolchain-os', 'm04c-linux-git-make'];
+
+/* ---------- store: localStorage dengan cadangan memori ---------- */
+var KEY = 'icd.v1', mem = null, persistent = true;
+function blank(){ return { progress: {}, cards: {}, notes: {}, bookmarks: [], exams: {}, plan: null, settings: {}, meta: {} }; }
+function normalize(o){
+  var b = blank(), k;
+  if (!o || typeof o !== 'object') return b;
+  for (k in b) if (o[k] == null || typeof o[k] !== typeof b[k] && b[k] !== null) o[k] = b[k];
+  if (!Array.isArray(o.bookmarks)) o.bookmarks = [];
+  return o;
+}
+function readLS(){
+  try { var s = window.localStorage.getItem(KEY); return normalize(s ? JSON.parse(s) : null); }
+  catch (e) { persistent = false; return null; }
+}
+function writeLS(){
+  mem.meta.schema = 1; mem.meta.core = ICD.version; mem.meta.at = Date.now();
+  if (!persistent) return;
+  try { window.localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { persistent = false; }
+}
+(function initStore(){
+  try { var t = '__icd_t'; window.localStorage.setItem(t, '1'); window.localStorage.removeItem(t); } catch (e) { persistent = false; }
+  mem = (persistent && readLS()) || blank();
+})();
+function fresh(){ if (persistent) { var f = readLS(); if (f) mem = f; } return mem; }
+function walk(o, path, make){
+  var ks = path.split('.'), i;
+  for (i = 0; i < ks.length - 1; i++){
+    if (o[ks[i]] == null || typeof o[ks[i]] !== 'object'){ if (!make) return null; o[ks[i]] = {}; }
+    o = o[ks[i]];
+  }
+  return [o, ks[ks.length - 1]];
+}
+var store = {
+  get: function(path, dflt){ var w = walk(mem, path, false); if (!w) return dflt; var v = w[0][w[1]]; return v === undefined ? dflt : v; },
+  set: function(path, val){ fresh(); var w = walk(mem, path, true); if (val === undefined) delete w[0][w[1]]; else w[0][w[1]] = val; writeLS(); emit('icd:store', { path: path }); },
+  update: function(path, fn){ fresh(); var w = walk(mem, path, true); w[0][w[1]] = fn(w[0][w[1]]); writeLS(); emit('icd:store', { path: path }); },
+  all: function(){ return mem; },
+  refresh: function(){ fresh(); return mem; },
+  persistent: function(){ return persistent; },
+  exportJSON: function(){ fresh(); return JSON.stringify({ app: 'icd', schema: 1, exported: new Date().toISOString(), data: mem }, null, 1); },
+  importJSON: function(text, mode){
+    var o = JSON.parse(text);
+    if (!o || o.app !== 'icd' || !o.data) throw new Error('Bukan berkas ekspor ICD.');
+    var d = normalize(o.data);
+    fresh();
+    mem = (mode === 'ganti') ? d : merge(mem, d);
+    writeLS(); emit('icd:store', { path: '' });
+  },
+  reset: function(){ mem = blank(); writeLS(); emit('icd:store', { path: '' }); },
+  /* gabung data akun (remote) dengan data lokal: lokal menang untuk nilai tunggal, kecuali kartu: yang lebih sering diulang menang */
+  mergeRemote: function(remote){
+    fresh(); var r = normalize(remote), loc = mem, out = merge(r, loc), k;
+    for (k in r.cards){ if (loc.cards && loc.cards[k] && (r.cards[k].seen || 0) > (loc.cards[k].seen || 0)) out.cards[k] = r.cards[k]; }
+    mem = out; writeLS(); emit('icd:store', { path: '', remote: true });
+  }
+};
+function merge(a, b){
+  if (Array.isArray(a) && Array.isArray(b)){
+    var seen = {}, out = [];
+    a.concat(b).forEach(function(x){ var k = JSON.stringify(x); if (!seen[k]){ seen[k] = 1; out.push(x); } });
+    return out;
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object'){
+    var r = {}, k;
+    for (k in a) r[k] = a[k];
+    for (k in b){
+      if (!(k in r)) r[k] = b[k];
+      else if (k === 'best') r[k] = Math.max(a[k] || 0, b[k] || 0);
+      else if (typeof a[k] === 'boolean' && typeof b[k] === 'boolean') r[k] = a[k] || b[k];
+      else r[k] = merge(a[k], b[k]);
+    }
+    return r;
+  }
+  return b === undefined ? a : b;
+}
+window.addEventListener('storage', function(e){ if (e.key === KEY){ fresh(); emit('icd:store', { path: '', remote: true }); } });
+window.addEventListener('pageshow', function(){ fresh(); emit('icd:store', { path: '', remote: true }); });
+ICD.store = store;
+
+/* ---------- avail: file mana yang sudah tersedia ---------- */
+var avail = (function(){
+  function known(){
+    var mine = BUILT_LIST, st = store.get('meta.built', null), list = mine;
+    if (st && Array.isArray(st.list) && st.list.length > mine.length) list = st.list;
+    else if (!st || !Array.isArray(st.list) || st.list.length < mine.length){ try { mem.meta.built = { list: mine.slice(), core: ICD.version }; writeLS(); } catch (e) {} }
+    var set = {}; list.concat(mine).forEach(function(id){ set[id] = 1; });
+    return { set: set, list: list };
+  }
+  var cache = null;
+  function get(){ if (!cache) cache = known(); return cache; }
+  doc.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) cache = null; });
+  return {
+    has: function(id){ return !!get().set[id]; },
+    list: function(){ return get().list.slice(); },
+    files: function(){ return reg.files.filter(function(f){ return get().set[f.id]; }); },
+    nextSoon: function(){ return reg.files.filter(function(f){ return !get().set[f.id]; })[0] || null; }
+  };
+})();
+ICD.avail = avail;
+
+/* ---------- progres ---------- */
+var PASS = 0.7;
+var progress = {
+  PASS: PASS,
+  file: function(id){ return store.get('progress.' + id, null); },
+  secDone: function(id){ var p = progress.file(id), n = 0, k; if (p && p.sections) for (k in p.sections) if (p.sections[k]) n++; return n; },
+  quizBest: function(id){
+    var p = progress.file(id), best = null, k;
+    if (p && p.quiz) for (k in p.quiz){ var z = p.quiz[k]; if (z && z.total){ var r = z.best / z.total; if (best === null || r > best) best = r; } }
+    return best;
+  },
+  fileStatus: function(id){
+    var p = progress.file(id);
+    if (!p) return 'belum';
+    var qb = progress.quizBest(id), nsec = p.nsec || 16, sd = progress.secDone(id);
+    if (qb !== null && qb >= PASS && sd >= Math.ceil(nsec * 0.8)) return 'selesai';
+    return 'berjalan';
+  },
+  fileFrac: function(id){
+    var p = progress.file(id); if (!p) return 0;
+    var st = progress.fileStatus(id); if (st === 'selesai') return 1;
+    var nsec = p.nsec || 16, qb = progress.quizBest(id) || 0;
+    return clamp(0.75 * progress.secDone(id) / nsec + 0.25 * Math.min(1, qb / PASS), 0, 0.99);
+  },
+  moduleStatus: function(mid){
+    var m = reg.module(mid), done = 0, any = false;
+    m.files.forEach(function(f){ var s = progress.fileStatus(f.id); if (s === 'selesai') done++; if (s !== 'belum') any = true; });
+    return done === m.files.length ? 'selesai' : any ? 'berjalan' : 'belum';
+  },
+  totals: function(filter){
+    var h = 0, hd = 0, n = 0, nd = 0;
+    reg.files.forEach(function(f){
+      if (filter && !filter[f.id]) return;
+      var fr = progress.fileFrac(f.id); h += f.hours; hd += f.hours * fr; n++; if (fr >= 1) nd++;
+    });
+    return { hours: h, hoursDone: hd, files: n, filesDone: nd, frac: h ? hd / h : 0 };
+  }
+};
+ICD.progress = progress;
+var STATUS_MARK = { belum: '○', berjalan: '◐', selesai: '●' };
+ICD.STATUS_MARK = STATUS_MARK;
+
+/* ---------- tema ---------- */
+var mqDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : { matches: false };
+function applyTheme(){
+  var t = store.get('settings.theme', 'auto');
+  root.setAttribute('data-theme', t === 'auto' ? (mqDark.matches ? 'dark' : 'light') : t);
+  emit('icd:theme');
+}
+applyTheme();
+if (mqDark.addEventListener) mqDark.addEventListener('change', applyTheme);
+ICD.theme = {
+  get: function(){ return store.get('settings.theme', 'auto'); },
+  set: function(t){ store.set('settings.theme', t); applyTheme(); },
+  cycle: function(){ var o = ['auto', 'light', 'dark'], t = o[(o.indexOf(ICD.theme.get()) + 1) % 3]; ICD.theme.set(t); return t; },
+  label: function(){ return { auto: 'Tema: ikut sistem', light: 'Tema: terang', dark: 'Tema: gelap' }[ICD.theme.get()]; }
+};
+
+/* ---------- a11y: pengumuman, toast, dialog ---------- */
+var live, toastEl, toastTimer;
+function say(text){
+  if (!live){ live = el('div', { class: 'icd-sr', 'aria-live': 'polite', role: 'status' }); doc.body.appendChild(live); }
+  live.textContent = ''; setTimeout(function(){ live.textContent = text; }, 30);
+}
+function toast(text){
+  if (toastEl) toastEl.remove();
+  toastEl = el('div', { class: 'icd-toast', text: text }); doc.body.appendChild(toastEl); say(text);
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ if (toastEl){ toastEl.remove(); toastEl = null; } }, 3200);
+}
+function dialog(opts){
+  var d = el('dialog', { class: 'icd-dialog', 'aria-label': opts.title });
+  add(d, [el('h3', { text: opts.title, style: 'margin-top:0' }), typeof opts.body === 'string' ? el('p', { text: opts.body }) : opts.body]);
+  var row = el('div', { class: 'icd-row', style: 'justify-content:flex-end;margin-top:12px' });
+  (opts.actions || [{ label: 'Tutup' }]).forEach(function(a){
+    row.appendChild(el('button', { class: 'icd-btn' + (a.primary ? ' primary' : ''), type: 'button', text: a.label,
+      onclick: function(){ var keep = a.run && a.run() === false; if (!keep) close(); } }));
+  });
+  d.appendChild(row);
+  function close(){ if (d.close) d.close(); d.remove(); }
+  d.addEventListener('close', function(){ d.remove(); });
+  doc.body.appendChild(d);
+  if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  return { close: close, el: d };
+}
+ICD.say = say; ICD.toast = toast; ICD.dialog = dialog;
+
+/* ---------- hl: penyorot sintaks ---------- */
+function words(s){ var o = {}; s.split(/\s+/).forEach(function(w){ if (w) o[w] = 1; }); return o; }
+var NUM = "\\b\\d[\\w.']*";
+var LANG = {
+  sv: { re: "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(\"(?:\\\\.|[^\"\\\\\\n])*\")|((?:\\d+)?'[sS]?[bodhBODH][0-9a-fA-F_xzXZ?]+|" + NUM + ")|([`$][A-Za-z_]\\w*)|([A-Za-z_]\\w*)",
+    kw: words('module endmodule input output inout parameter localparam assign always always_ff always_comb always_latch initial begin end if else case casez casex unique priority endcase for while repeat forever generate endgenerate genvar function endfunction task endtask posedge negedge or and not typedef enum struct packed union interface endinterface modport package endpackage import export class endclass extends virtual new this super rand randc constraint covergroup endgroup coverpoint cross bins property endproperty sequence endsequence assert assume cover disable iff return automatic static default program endprogram clocking endclocking fork join join_any join_none wait foreach inside dist solve before with local protected const ref final timeunit timeprecision do break continue'),
+    ty: words('logic wire reg bit int integer byte shortint longint real string time void signed unsigned') },
+  vhdl: { ci: true, re: "(--[^\\n]*)|(\"(?:[^\"\\n])*\")|(" + NUM + ")|()([A-Za-z_]\\w*)",
+    kw: words('library use entity is port in out inout end architecture of signal begin process if then elsif else case when others generic map component constant variable type subtype array to downto for loop generate function return package body wait until and or not xor nand nor rising_edge falling_edge'),
+    ty: words('std_logic std_logic_vector unsigned signed integer boolean natural positive bit') },
+  tcl: { re: "(#[^\\n]*)|(\"(?:\\\\.|[^\"\\\\\\n])*\")|(" + NUM + ")|(\\$[A-Za-z_]\\w*|-[A-Za-z_]\\w*)|([A-Za-z_]\\w*)",
+    kw: words('set proc if else elseif foreach for while return puts expr source list lappend incr global namespace unset catch string regexp file open close create_clock create_generated_clock set_input_delay set_output_delay set_false_path set_multicycle_path set_clock_groups set_clock_uncertainty set_max_delay set_min_delay get_ports get_pins get_clocks get_cells get_nets all_inputs all_outputs all_registers set_load set_driving_cell set_clock_latency set_max_transition set_max_fanout set_propagated_clock create_power_domain create_supply_net create_supply_port connect_supply_net set_isolation set_retention set_level_shifter create_power_switch add_power_state set_domain_supply_net'), ty: {} },
+  py: { re: "(#[^\\n]*)|(\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])*')|(" + NUM + ")|(@[A-Za-z_][\\w.]*)|([A-Za-z_]\\w*)",
+    kw: words('def class return if elif else for while in not and or import from as with try except finally raise pass break continue lambda yield async await is global nonlocal assert del'),
+    ty: words('None True False self int float str bool list dict tuple set range len print') },
+  c: { re: "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)|(\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])+')|(" + NUM + ")|(#[ \\t]*[A-Za-z_]\\w*)|([A-Za-z_]\\w*)",
+    kw: words('if else for while do switch case default break continue return sizeof goto typedef struct union enum static const volatile extern inline register'),
+    ty: words('int char short long unsigned signed float double void uint8_t uint16_t uint32_t uint64_t int8_t int16_t int32_t int64_t size_t uintptr_t bool') },
+  asm: { re: "(#[^\\n]*)|(\"(?:\\\\.|[^\"\\\\\\n])*\")|(-?" + NUM + ")|(\\.[A-Za-z_]\\w*|[A-Za-z_]\\w*:)|([A-Za-z_]\\w*)",
+    kw: words('add addi sub and andi or ori xor xori sll slli srl srli sra srai slt slti sltu sltiu lui auipc jal jalr beq bne blt bge bltu bgeu lb lh lw lbu lhu sb sh sw ecall ebreak mret sret wfi csrrw csrrs csrrc csrrwi csrrsi csrrci csrr csrw mul mulh mulhu mulhsu div divu rem remu li la mv nop ret call tail j jr beqz bnez bgt ble bgtu bleu not neg seqz snez'),
+    ty: words('zero ra sp gp tp fp t0 t1 t2 t3 t4 t5 t6 s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 a0 a1 a2 a3 a4 a5 a6 a7 x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31') },
+  spice: { ci: true, re: "(^\\*[^\\n]*|[;$][^\\n]*)|(\"[^\"\\n]*\")|(" + NUM + ")|(^\\.[A-Za-z]\\w*|\\.[A-Za-z]\\w*)|([A-Za-z_]\\w*)", flags: 'gm',
+    kw: words('dc ac tran pulse sin pwl nmos pmos'), ty: {} },
+  sh: { re: "(#[^\\n]*)|(\"(?:\\\\.|[^\"\\\\\\n])*\"|'[^'\\n]*')|(" + NUM + ")|(\\$\\{?[A-Za-z_]\\w*\\}?|--?[A-Za-z][\\w-]*)|([A-Za-z_][\\w.-]*)",
+    kw: words('if then else elif fi for do done while case esac function in export source return exit echo cd ls cat grep sed awk find mkdir rm cp mv chmod git make sudo apt pip python3 iverilog vvp verilator gtkwave yosys sby ngspice magic klayout openroad docker'), ty: {} }
+};
+LANG.verilog = LANG.sv; LANG.sdc = LANG.tcl; LANG.upf = LANG.tcl; LANG.python = LANG.py; LANG.riscv = LANG.asm; LANG.bash = LANG.sh; LANG.shell = LANG.sh;
+var LANGNAME = { sv: 'SystemVerilog', verilog: 'Verilog', vhdl: 'VHDL', tcl: 'Tcl', sdc: 'SDC', upf: 'UPF', py: 'Python', python: 'Python', c: 'C', asm: 'RISC-V asm', riscv: 'RISC-V asm', spice: 'SPICE', sh: 'shell', bash: 'shell', shell: 'shell', text: '' };
+function hl(code, lang){
+  var L = LANG[lang];
+  if (!L) return esc(code);
+  var re = new RegExp(L.re, L.flags || 'g'), out = '', last = 0, m;
+  while ((m = re.exec(code))){
+    if (m[0] === ''){ re.lastIndex++; continue; }
+    out += esc(code.slice(last, m.index)); last = re.lastIndex;
+    var t = m[0], cls = null;
+    if (m[1]) cls = 'c'; else if (m[2]) cls = 's'; else if (m[3]) cls = 'n'; else if (m[4]) cls = 'd';
+    else if (m[5]){ var w = L.ci ? t.toLowerCase() : t; cls = L.kw[w] === 1 ? 'k' : L.ty[w] === 1 ? 't' : null; }
+    out += cls ? '<span class="tk-' + cls + '">' + esc(t) + '</span>' : esc(t);
+  }
+  return out + esc(code.slice(last));
+}
+function copyText(text){
+  function fallback(){
+    var ta = el('textarea', { style: 'position:fixed;left:-999px;top:0' }); ta.value = text; doc.body.appendChild(ta); ta.select();
+    var ok = false; try { ok = doc.execCommand('copy'); } catch (e) {} ta.remove();
+    toast(ok ? 'Disalin.' : 'Gagal menyalin; pilih teks secara manual.');
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ toast('Disalin.'); }, fallback);
+  else fallback();
+}
+function enhanceCode(ctx){
+  qa('pre.icd-src', ctx).forEach(function(pre){
+    if (pre.dataset.done) return; pre.dataset.done = '1';
+    var lang = pre.dataset.lang || 'text', raw = pre.textContent.replace(/^\n/, '').replace(/\s+$/, '');
+    var lines = hl(raw, lang).split('\n'), html = '';
+    var numbered = pre.dataset.ln !== 'off' && lines.length > 3;
+    lines.forEach(function(l, i){ html += (numbered ? '<span class="ln" aria-hidden="true">' + (i + 1) + '</span>' : '') + l + '\n'; });
+    var code = el('code', { html: html });
+    pre.textContent = ''; pre.appendChild(code); pre.setAttribute('tabindex', '0');
+    var wrap = el('div', { class: 'icd-code' });
+    pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
+    wrap.appendChild(el('span', { class: 'lang', text: LANGNAME[lang] || lang }));
+    wrap.appendChild(el('button', { class: 'icd-btn small copy no-print', type: 'button', text: 'Salin', 'aria-label': 'Salin kode', onclick: function(){ copyText(raw); } }));
+  });
+}
+ICD.hl = hl; ICD.copy = copyText; ICD.enhanceCode = enhanceCode;
+
+/* ---------- layers: penjelasan tiga tingkat ---------- */
+var LEVELS = [['pemula', 'Pemula'], ['engineer', 'Engineer'], ['pakar', 'Pakar']];
+function enhanceLayers(ctx){
+  qa('.icd-layers', ctx).forEach(function(box){
+    if (box.dataset.done) return; box.dataset.done = '1';
+    var panels = {}, tabs = {}, list = el('div', { role: 'tablist', 'aria-label': 'Tingkat penjelasan' });
+    LEVELS.forEach(function(L){
+      var p = q('[data-level="' + L[0] + '"]', box); if (!p) return;
+      var pid = uid('lp'), tid = uid('lt');
+      p.id = pid; p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', tid); p.setAttribute('tabindex', '0');
+      panels[L[0]] = p;
+      tabs[L[0]] = el('button', { role: 'tab', type: 'button', id: tid, 'aria-controls': pid, text: L[1], 'data-level': L[0],
+        onclick: function(){ store.set('settings.level', L[0]); syncLayers(); },
+        onkeydown: function(e){
+          var ks = Object.keys(tabs), i = ks.indexOf(L[0]);
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){ var n = ks[(i + (e.key === 'ArrowRight' ? 1 : ks.length - 1)) % ks.length]; tabs[n].focus(); tabs[n].click(); e.preventDefault(); }
+        } });
+      list.appendChild(tabs[L[0]]);
+    });
+    box.insertBefore(list, box.firstChild);
+    box._sync = function(){
+      var want = store.get('settings.level', 'pemula'); if (!panels[want]) want = Object.keys(panels)[0];
+      Object.keys(panels).forEach(function(k){ var on = k === want; panels[k].hidden = !on; tabs[k].setAttribute('aria-selected', on ? 'true' : 'false'); tabs[k].tabIndex = on ? 0 : -1; });
+    };
+    box._sync();
+  });
+}
+function syncLayers(){ qa('.icd-layers').forEach(function(b){ if (b._sync) b._sync(); }); }
+ICD.enhanceLayers = enhanceLayers;
+
+/* ---------- gloss: glosarium dan tooltip ---------- */
+var terms = {}, tip = null, tipFor = null;
+function closeTip(){ if (tip){ tip.remove(); tip = null; if (tipFor) tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; } }
+function openTip(btn, t){
+  closeTip();
+  tip = el('div', { class: 'icd-tip', role: 'tooltip', id: uid('tip') }, [
+    el('b', { text: t.en }), t.idn ? el('i', { text: t.idn }) : null, el('div', { text: t.def }),
+    t.mod ? el('div', { class: 'icd-small icd-muted', text: 'Dibahas di ' + t.mod }) : null ]);
+  doc.body.appendChild(tip);
+  var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  var x = clamp(r.left + window.scrollX, 12 + window.scrollX, window.scrollX + root.clientWidth - tw - 12);
+  var y = r.bottom + window.scrollY + 6;
+  if (r.bottom + th + 12 > window.innerHeight && r.top > th + 12) y = r.top + window.scrollY - th - 6;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  tipFor = btn; btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-describedby', tip.id);
+}
+function enhanceTerms(ctx){
+  qa('[data-term]', ctx).forEach(function(s){
+    if (s.dataset.done) return;
+    var t = terms[s.dataset.term]; if (!t) return;
+    s.dataset.done = '1';
+    var b = el('button', { type: 'button', class: 'icd-term', 'aria-expanded': 'false', 'data-term': s.dataset.term, 'data-done': '1' });
+    while (s.firstChild) b.appendChild(s.firstChild);
+    s.parentNode.replaceChild(b, s);
+    b.addEventListener('click', function(e){ e.stopPropagation(); if (tipFor === b) closeTip(); else openTip(b, t); });
+    b.addEventListener('blur', function(){ setTimeout(function(){ if (tipFor === b) closeTip(); }, 150); });
+  });
+}
+doc.addEventListener('click', function(e){ if (tip && !tip.contains(e.target)) closeTip(); });
+doc.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeTip(); });
+ICD.gloss = {
+  add: function(list){ list.forEach(function(t){ terms[t.id] = t; }); ready(function(){ enhanceTerms(); }); },
+  get: function(id){ return terms[id]; },
+  all: function(){ return Object.keys(terms).map(function(k){ return terms[k]; }).sort(function(a, b){ return a.en.toLowerCase() < b.en.toLowerCase() ? -1 : 1; }); },
+  enhance: enhanceTerms
+};
+
+/* ---------- wave: penampil waveform ---------- */
+var KIND_VAR = { clock: '--s-clock', data: '--s-data', ctrl: '--s-ctrl', reset: '--s-reset', vdd: '--s-vdd', vss: '--s-vss', analog: '--s-analog', hi: '--s-hi', x: '--s-x', z: '--s-z', ink: '--ink', ink2: '--ink2' };
+function kcol(k){ return 'var(' + (KIND_VAR[k] || KIND_VAR.data) + ')'; }
+function toSegs(sig){
+  if (sig.segs) return sig.segs.map(function(s){ return { t0: s[0], t1: s[1], v: String(s[2]), label: s[3] }; });
+  var w = sig.wave || '', segs = [], prev = null, di = 0, i, c;
+  for (i = 0; i < w.length; i++){
+    c = w[i];
+    if (c === 'p' || c === 'n'){
+      segs.push({ t0: i, t1: i + 0.5, v: c === 'p' ? '1' : '0' }); segs.push({ t0: i + 0.5, t1: i + 1, v: c === 'p' ? '0' : '1' }); prev = null; continue;
+    }
+    if (c === '.' && prev){ prev.t1 = i + 1; continue; }
+    if (c === '.') c = '0';
+    prev = { t0: i, t1: i + 1, v: c === '=' ? '=' : c };
+    if (c === '=') prev.label = (sig.data && sig.data[di] != null) ? String(sig.data[di]) : ''; if (c === '=') di++;
+    segs.push(prev);
+  }
+  return segs;
+}
+function waveRender(tgt, spec){
+  tgt = target(tgt);
+  var host = el('div', { class: 'icd-wave' }), read = el('div', { class: 'readout', 'aria-live': 'polite' });
+  tgt.textContent = ''; tgt.appendChild(host); tgt.appendChild(read);
+  var state = { spec: spec, cursor: null }, pid = uid('hatch');
+  function valueAt(segs, t){
+    for (var i = 0; i < segs.length; i++) if (t >= segs[i].t0 && t < segs[i].t1) return segs[i].v === '=' ? (segs[i].label || '?') : segs[i].v.toUpperCase();
+    return '—';
+  }
+  function tfmt(t){ var tk = state.spec.tick || {}; return tk.dt ? si(t * tk.dt, tk.unit || 's') : num(t, 3) + ' ' + (tk.unit || 'siklus'); }
+  function draw(){
+    var sp = state.spec, sigs = sp.signals.map(function(s){ return { s: s, segs: toSegs(s) }; });
+    var T = sp.steps || 0; sigs.forEach(function(o){ o.segs.forEach(function(g){ if (g.t1 > T) T = g.t1; }); });
+    var step = sp.step || 36, rowH = 40, hi = 9, lo = 27, top = 22;
+    var lw = 16; sp.signals.forEach(function(s){ lw = Math.max(lw, s.name.length * 7.4 + 18); }); lw = Math.min(lw, 150);
+    var W = lw + T * step + 12, H = top + sigs.length * rowH + 8;
+    var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', tabindex: 0,
+      'aria-label': (sp.title || 'Waveform') + '. ' + sp.signals.length + ' sinyal, ' + T + ' langkah waktu. Gunakan panah kiri dan kanan untuk menggeser kursor.' });
+    s.appendChild(svg('defs', null, [svg('pattern', { id: pid, width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' },
+      [svg('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'var(--s-x)', 'stroke-width': 2.4 })])]));
+    var X = function(t){ return lw + t * step; }, i;
+    for (i = 0; i <= T; i++){
+      s.appendChild(svg('line', { x1: X(i), y1: top - 4, x2: X(i), y2: H - 6, stroke: 'var(--line)', 'stroke-width': 1 }));
+      if (i < T && (T <= 16 || i % 2 === 0)) s.appendChild(svg('text', { x: X(i) + 3, y: 11, 'font-size': 10, fill: 'var(--ink2)', text: i }));
+    }
+    sigs.forEach(function(o, r){
+      var y0 = top + r * rowH, kind = o.s.kind || (/(^|_)(clk|clock)/i.test(o.s.name) ? 'clock' : 'data'), col = kcol(kind);
+      var sw = kind === 'clock' ? 2.2 : kind === 'ctrl' ? 1.5 : 1.9, dash = kind === 'reset' ? '9 3' : null;
+      s.appendChild(svg('text', { x: lw - 8, y: y0 + 22, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink)', text: o.s.name }));
+      var d = '', last = null;
+      o.segs.forEach(function(g){
+        var x0 = X(g.t0), x1 = X(g.t1), v = g.v;
+        if (v === '0' || v === '1'){
+          var y = y0 + (v === '1' ? hi : lo);
+          if (last && (last.v === '0' || last.v === '1') && Math.abs(last.x - x0) < 0.01) d += ' L' + x0 + ' ' + y; else d += ' M' + x0 + ' ' + y;
+          d += ' L' + x1 + ' ' + y; last = { v: v, x: x1 };
+        } else {
+          last = { v: v, x: x1 };
+          if (v === 'x'){
+            s.appendChild(svg('rect', { x: x0, y: y0 + hi, width: x1 - x0, height: lo - hi, fill: 'url(#' + pid + ')', stroke: 'var(--s-x)', 'stroke-width': 1 }));
+          } else if (v === 'z'){
+            s.appendChild(svg('line', { x1: x0, y1: y0 + (hi + lo) / 2, x2: x1, y2: y0 + (hi + lo) / 2, stroke: 'var(--s-z)', 'stroke-width': 2, 'stroke-dasharray': '3 3' }));
+          } else {
+            var e = Math.min(5, (x1 - x0) / 2), ym = y0 + (hi + lo) / 2;
+            s.appendChild(svg('polygon', { points: [x0, ym, x0 + e, y0 + hi, x1 - e, y0 + hi, x1, ym, x1 - e, y0 + lo, x0 + e, y0 + lo].join(' '), fill: 'none', stroke: col, 'stroke-width': 1.6 }));
+            if (g.label && (x1 - x0) > g.label.length * 6.4) s.appendChild(svg('text', { x: (x0 + x1) / 2, y: ym + 4, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink)', text: g.label }));
+          }
+        }
+      });
+      if (d) s.appendChild(svg('path', { d: d.trim(), fill: 'none', stroke: col, 'stroke-width': sw, 'stroke-dasharray': dash, 'stroke-linejoin': 'round' }));
+    });
+    (sp.spans || []).forEach(function(b){
+      var r = typeof b.sig === 'number' ? b.sig : sp.signals.findIndex(function(z){ return z.name === b.sig; }); if (r < 0) return;
+      var y0 = top + r * rowH, c = kcol(b.kind === 'viol' ? 'x' : (b.kind || 'hi'));
+      s.appendChild(svg('rect', { x: X(b.t0), y: y0 + 3, width: X(b.t1) - X(b.t0), height: lo - hi + 12, fill: c, 'fill-opacity': 0.16, stroke: c, 'stroke-width': 1, 'stroke-dasharray': b.kind === 'viol' ? null : '4 2' }));
+      if (b.label) s.appendChild(svg('text', { x: b.align === 'end' ? X(b.t1) - 2 : b.align === 'start' ? X(b.t0) + 2 : (X(b.t0) + X(b.t1)) / 2, y: y0 + rowH - 2, 'text-anchor': b.align || 'middle', 'font-size': 9.5, fill: 'var(--ink)', text: b.label }));
+    });
+    (sp.marks || []).forEach(function(mk){
+      var c = kcol(mk.kind === 'viol' ? 'x' : (mk.kind || 'hi'));
+      s.appendChild(svg('line', { x1: X(mk.t), y1: 14, x2: X(mk.t), y2: H - 4, stroke: c, 'stroke-width': 1.4, 'stroke-dasharray': '5 3' }));
+      if (mk.label) s.appendChild(svg('text', { x: X(mk.t) + 3, y: H - 1, 'font-size': 10, fill: 'var(--ink)', text: mk.label }));
+    });
+    var cur = svg('line', { y1: 14, y2: H - 4, stroke: 'var(--ink)', 'stroke-width': 1, visibility: 'hidden' }); s.appendChild(cur);
+    function setCursor(t){
+      t = clamp(t, 0, T - 0.001); state.cursor = t;
+      cur.setAttribute('x1', X(t)); cur.setAttribute('x2', X(t)); cur.setAttribute('visibility', 'visible');
+      read.textContent = 't = ' + tfmt(t) + '  ·  ' + sigs.map(function(o){ return o.s.name + ' = ' + valueAt(o.segs, t); }).join('  ·  ');
+    }
+    function fromEvent(e){ var r = s.getBoundingClientRect(); setCursor(Math.round(((e.clientX - r.left) * (W / r.width) - lw) / step * 4) / 4); }
+    s.addEventListener('pointermove', function(e){ if (e.pointerType === 'mouse' || e.buttons) fromEvent(e); });
+    s.addEventListener('pointerdown', fromEvent);
+    s.addEventListener('keydown', function(e){
+      var c = state.cursor == null ? 0 : state.cursor;
+      if (e.key === 'ArrowRight') setCursor(c + 0.5); else if (e.key === 'ArrowLeft') setCursor(c - 0.5);
+      else if (e.key === 'Home') setCursor(0); else if (e.key === 'End') setCursor(T); else return;
+      e.preventDefault();
+    });
+    host.textContent = ''; host.appendChild(s);
+    if (state.cursor != null) setCursor(state.cursor); else read.textContent = 'Geser atau ketuk waveform untuk membaca nilai.';
+  }
+  draw();
+  return { update: function(sp){ state.spec = sp; draw(); }, el: tgt };
+}
+ICD.wave = { render: waveRender, toSegs: toSegs };
+
+/* ---------- plot: grafik Canvas ---------- */
+function niceTicks(a, b, n){
+  var span = b - a; if (!(span > 0)) return [a];
+  var raw = span / (n || 5), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+  var stepv = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag, t = Math.ceil(a / stepv - 1e-9) * stepv, out = [];
+  for (; t <= b + stepv * 1e-9; t += stepv) out.push(Math.abs(t) < stepv * 1e-9 ? 0 : t);
+  return out;
+}
+function plot(tgt, opts){
+  tgt = target(tgt);
+  var box = el('div', { class: 'icd-plot' }), cv = el('canvas', { tabindex: 0, role: 'img' }), legend = el('div', { class: 'legend' }), read = el('div', { class: 'readout', 'aria-live': 'polite' });
+  tgt.textContent = ''; add(box, [cv, legend]); tgt.appendChild(box); tgt.appendChild(read);
+  var st = { o: opts, cx: null, geo: null }, ctx = cv.getContext('2d');
+  function range(axis, which){
+    var a = st.o[axis] || {}, lo = a.min, hi = a.max;
+    if (lo == null || hi == null){
+      var mn = Infinity, mx = -Infinity;
+      st.o.series.forEach(function(s){ s.pts.forEach(function(p){ var v = p[which]; if (isFinite(v) && (!a.log || v > 0)){ if (v < mn) mn = v; if (v > mx) mx = v; } }); });
+      if (!isFinite(mn)){ mn = a.log ? 1 : 0; mx = a.log ? 10 : 1; }
+      if (mn === mx){ mx = mn + (Math.abs(mn) || 1); mn = a.log ? mn / 10 : mn - (Math.abs(mn) || 1); }
+      if (!a.log && which === 1){ var pad = (mx - mn) * 0.08; mn -= pad; mx += pad; }
+      if (lo == null) lo = mn; if (hi == null) hi = mx;
+    }
+    return [lo, hi];
+  }
+  function draw(){
+    var o = st.o, dpr = window.devicePixelRatio || 1, W = box.clientWidth || 320, H = o.height || 260;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    var xa = o.x || {}, ya = o.y || {}, xr = range('x', 0), yr = range('y', 1);
+    var L = 58, R = 12, T = 10, B = 40, pw = W - L - R, ph = H - T - B;
+    var fx = xa.log ? function(v){ return Math.log10(v); } : function(v){ return v; };
+    var fy = ya.log ? function(v){ return Math.log10(v); } : function(v){ return v; };
+    var x0 = fx(xr[0]), x1 = fx(xr[1]), y0 = fy(yr[0]), y1 = fy(yr[1]);
+    var X = function(v){ return L + (fx(v) - x0) / (x1 - x0) * pw; }, Y = function(v){ return T + ph - (fy(v) - y0) / (y1 - y0) * ph; };
+    var ink = cssVar('--ink'), ink2 = cssVar('--ink2'), line = cssVar('--line');
+    ctx.font = '11px ' + (cssVar('--f-mono') || 'monospace'); ctx.lineWidth = 1;
+    function ticks(lo, hi, log, n){
+      if (!log) return niceTicks(lo, hi, n);
+      var out = [], e; for (e = Math.ceil(Math.log10(lo) - 1e-9); e <= Math.floor(Math.log10(hi) + 1e-9); e++) out.push(Math.pow(10, e));
+      return out.length ? out : [lo, hi];
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ticks(xr[0], xr[1], xa.log, Math.max(3, Math.floor(pw / 80))).forEach(function(t){
+      var px = X(t); ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(px, T); ctx.lineTo(px, T + ph); ctx.stroke();
+      ctx.fillStyle = ink2; ctx.fillText(xa.plain ? num(t, 4) : si(t, '').trim(), px, T + ph + 5);
+    });
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ticks(yr[0], yr[1], ya.log, Math.max(3, Math.floor(ph / 44))).forEach(function(t){
+      var py = Y(t); ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(L, py); ctx.lineTo(L + pw, py); ctx.stroke();
+      ctx.fillStyle = ink2; ctx.fillText(ya.plain ? (ya.log ? '10^' + Math.round(Math.log10(t)) : num(t, 4)) : si(t, '').trim(), L - 6, py);
+    });
+    ctx.strokeStyle = ink2; ctx.strokeRect(L, T, pw, ph);
+    ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText((xa.label || 'x') + (xa.unit ? ' (' + xa.unit + ')' : '') + (xa.log ? ', skala log' : ''), L + pw / 2, H - 3);
+    ctx.save(); ctx.translate(12, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'middle';
+    ctx.fillText((ya.label || 'y') + (ya.unit ? ' (' + ya.unit + ')' : ''), 0, 0); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(L, T, pw, ph); ctx.clip();
+    (o.marks || []).forEach(function(m){
+      ctx.strokeStyle = cssVar(KIND_VAR[m.kind || 'hi']); ctx.setLineDash([5, 4]); ctx.beginPath();
+      if (m.x != null){ ctx.moveTo(X(m.x), T); ctx.lineTo(X(m.x), T + ph); } else { ctx.moveTo(L, Y(m.y)); ctx.lineTo(L + pw, Y(m.y)); }
+      ctx.stroke(); ctx.setLineDash([]);
+      if (m.label){ ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; if (m.x != null) ctx.fillText(m.label, X(m.x) + 4, T + 3); else ctx.fillText(m.label, L + 4, Y(m.y) + 3); }
+    });
+    var DASH = [[], [7, 4], [2, 3], [9, 3, 2, 3]];
+    o.series.forEach(function(s, i){
+      ctx.strokeStyle = cssVar(KIND_VAR[s.kind] || KIND_VAR.data); ctx.lineWidth = s.width || 2; ctx.setLineDash(s.dash || DASH[i % 4]); ctx.beginPath();
+      var pen = false;
+      s.pts.forEach(function(p){
+        if (!isFinite(p[1]) || (xa.log && p[0] <= 0) || (ya.log && p[1] <= 0)){ pen = false; return; }
+        var px = X(p[0]), py = Y(p[1]); if (pen) ctx.lineTo(px, py); else ctx.moveTo(px, py); pen = true;
+      });
+      ctx.stroke(); ctx.setLineDash([]);
+    });
+    if (st.cx != null){
+      var px = X(st.cx); ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, T); ctx.lineTo(px, T + ph); ctx.stroke();
+      o.series.forEach(function(s){ var v = interp(s.pts, st.cx); if (isFinite(v) && (!ya.log || v > 0)){ ctx.fillStyle = cssVar(KIND_VAR[s.kind] || KIND_VAR.data); ctx.beginPath(); ctx.arc(px, Y(v), 3.5, 0, 6.3); ctx.fill(); } });
+    }
+    ctx.restore();
+    st.geo = { L: L, pw: pw, x0: x0, x1: x1, log: !!xa.log, xr: xr };
+    legend.textContent = '';
+    if (o.series.length > 1 || o.series[0].label) o.series.forEach(function(s, i){
+      var sw = el('i'); sw.style.borderTopColor = cssVar(KIND_VAR[s.kind] || KIND_VAR.data); sw.style.borderTopStyle = (s.dash || DASH[i % 4]).length ? 'dashed' : 'solid';
+      legend.appendChild(el('span', null, [sw, s.label || ('kurva ' + (i + 1))]));
+    });
+    cv.setAttribute('aria-label', (o.title || 'Grafik') + ': ' + (ya.label || 'y') + ' terhadap ' + (xa.label || 'x') + '. Panah kiri dan kanan menggeser kursor baca.');
+    readout();
+  }
+  function interp(pts, x){
+    if (!pts.length || x < pts[0][0] || x > pts[pts.length - 1][0]) return NaN;
+    var lo = 0, hi = pts.length - 1;
+    while (hi - lo > 1){ var mid = (lo + hi) >> 1; if (pts[mid][0] <= x) lo = mid; else hi = mid; }
+    var a = pts[lo], b = pts[hi]; if (b[0] === a[0]) return a[1];
+    return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]);
+  }
+  function readout(){
+    var o = st.o;
+    if (st.cx == null){ read.textContent = 'Geser atau ketuk grafik untuk membaca nilai.'; return; }
+    var xa = o.x || {}, ya = o.y || {};
+    function f(v, unit, plain){ return plain ? num(v, 4) + (unit ? ' ' + unit : '') : si(v, unit); }
+    read.textContent = (xa.label || 'x') + ' = ' + f(st.cx, xa.unit, xa.plain) + '  ·  ' +
+      o.series.map(function(s, i){ var v = ya.log ? Math.pow(10, interp(s.pts.map(function(p){ return [p[0], Math.log10(p[1])]; }), st.cx)) : interp(s.pts, st.cx);
+        return (s.label || ('kurva ' + (i + 1))) + ' = ' + f(v, s.unit != null ? s.unit : ya.unit, ya.plain); }).join('  ·  ');
+  }
+  function fromPx(px){ var g = st.geo, u = clamp((px - g.L) / g.pw, 0, 1), v = g.x0 + u * (g.x1 - g.x0); return g.log ? Math.pow(10, v) : v; }
+  function onPtr(e){ var r = cv.getBoundingClientRect(); st.cx = fromPx(e.clientX - r.left); draw(); }
+  cv.addEventListener('pointerdown', onPtr);
+  cv.addEventListener('pointermove', function(e){ if (e.pointerType === 'mouse' || e.buttons) onPtr(e); });
+  cv.addEventListener('keydown', function(e){
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var g = st.geo, u = st.cx == null ? 0.5 : ((g.log ? Math.log10(st.cx) : st.cx) - g.x0) / (g.x1 - g.x0);
+    u = clamp(u + (e.key === 'ArrowRight' ? 0.02 : -0.02), 0, 1); var v = g.x0 + u * (g.x1 - g.x0);
+    st.cx = g.log ? Math.pow(10, v) : v; draw(); e.preventDefault();
+  });
+  var pending = false; function later(){ if (pending) return; pending = true; requestAnimationFrame(function(){ pending = false; if (box.isConnected) draw(); }); }
+  if (window.ResizeObserver) new ResizeObserver(later).observe(box); else window.addEventListener('resize', later);
+  doc.addEventListener('icd:theme', later);
+  draw();
+  return { set: function(o){ st.o = o; draw(); }, redraw: draw, el: tgt };
+}
+function sample(fn, a, b, n, log){
+  var pts = [], i, x; n = n || 200;
+  for (i = 0; i <= n; i++){ x = log ? a * Math.pow(b / a, i / n) : a + (b - a) * i / n; pts.push([x, fn(x)]); }
+  return pts;
+}
+ICD.plot = plot; ICD.sample = sample;
+
+/* ---------- sim: kontrol putar dengan langkah mundur ---------- */
+function simMount(tgt, cfg){
+  tgt = target(tgt);
+  var hist = [cfg.init()], i = 0, playing = false, raf = 0, lastT = 0, acc = 0, speed = 1, visible = true, max = cfg.max || 5000;
+  var bReset = btn('⏮ Reset', reset), bBack = btn('◀ Mundur', back), bPlay = btn('▶ Putar', toggle, 'primary'), bFwd = btn('Maju ▶', function(){ pause(); fwd(); });
+  var sel = el('select', { class: 'icd-select', 'aria-label': 'Kecepatan', style: 'min-height:36px', onchange: function(){ speed = parseFloat(sel.value); } },
+    [['0.5', '0.5×'], ['1', '1×'], ['2', '2×'], ['4', '4×']].map(function(o){ return el('option', { value: o[0], text: o[1], selected: o[0] === '1' }); }));
+  var lab = el('span', { class: 'step', 'aria-live': 'off' });
+  var bar = el('div', { class: 'icd-simctl no-print', role: 'group', 'aria-label': cfg.label || 'Kontrol simulasi' }, [bReset, bBack, bPlay, bFwd, sel, lab]);
+  tgt.appendChild(bar);
+  function btn(text, fn, cls){ return el('button', { type: 'button', class: 'icd-btn small ' + (cls || ''), text: text, onclick: fn }); }
+  function render(){
+    cfg.draw(hist[i], i);
+    lab.textContent = (cfg.unit || 'langkah') + ' ' + i;
+    bBack.disabled = i === 0; bReset.disabled = i === 0 && !playing;
+    bPlay.textContent = playing ? '⏸ Jeda' : '▶ Putar'; bPlay.setAttribute('aria-pressed', playing ? 'true' : 'false');
+  }
+  function fwd(){
+    if (i < hist.length - 1){ i++; render(); return true; }
+    if (hist.length >= max) return false;
+    var nx = cfg.step(hist[i], i); if (nx == null){ render(); return false; }
+    hist.push(nx); i++; render(); return true;
+  }
+  function back(){ pause(); if (i > 0){ i--; render(); } }
+  function reset(){ pause(); hist = [cfg.init()]; i = 0; render(); }
+  function loop(t){
+    if (!playing) return;
+    if (!lastT) lastT = t;
+    acc += (t - lastT) / 1000; lastT = t;
+    var per = 1 / ((cfg.fps || 2) * speed), guard = 0;
+    while (acc >= per && guard++ < 8){ acc -= per; if (!fwd()){ pause(); say('Simulasi selesai.'); return; } }
+    raf = requestAnimationFrame(loop);
+  }
+  function play(){ if (playing || !visible) return; playing = true; lastT = 0; acc = 0; render(); raf = requestAnimationFrame(loop); }
+  function pause(){ if (!playing) return; playing = false; cancelAnimationFrame(raf); render(); }
+  function toggle(){ if (playing) pause(); else play(); }
+  if (window.IntersectionObserver) new IntersectionObserver(function(es){ visible = es[es.length - 1].isIntersecting; if (!visible) pause(); }).observe(tgt);
+  doc.addEventListener('visibilitychange', function(){ if (doc.hidden) pause(); });
+  render();
+  return { reset: reset, pause: pause, play: play, step: function(){ pause(); return fwd(); }, back: back, state: function(){ return hist[i]; }, index: function(){ return i; },
+    redraw: render, playing: function(){ return playing; } };
+}
+ICD.sim = { mount: simMount, reduced: function(){ return reduceMotion.matches; } };
+
+/* ---------- guide: eksperimen terpandu (deklaratif) ---------- */
+function fileId(){ return doc.body ? (doc.body.dataset.file || 'tanpa-nama') : 'tanpa-nama'; }
+function enhanceGuides(ctx){
+  qa('.icd-guide', ctx).forEach(function(g){
+    if (g.dataset.done) return; g.dataset.done = '1';
+    var id = g.dataset.id || uid('g'), ans = parseInt(g.dataset.answer, 10), list = q('ul,ol', g), exp = q('.explain', g);
+    if (!list || !exp) return;
+    var texts = qa('li', list).map(function(li){ return li.innerHTML; }), path = 'progress.' + fileId() + '.guides.' + id;
+    var saved = store.get(path, null), box = el('div', { class: 'opts', role: 'group', 'aria-label': 'Pilih tebakan' }), res = el('div', { class: 'result' });
+    g.insertBefore(el('b', { text: 'Eksperimen terpandu: tebak dulu' }), g.firstChild);
+    list.replaceWith(box); exp.hidden = true; g.appendChild(res);
+    var btns = texts.map(function(t, i){ var b = el('button', { type: 'button', class: 'icd-opt', html: t, onclick: function(){ guess(i); } }); box.appendChild(b); return b; });
+    function guess(i){
+      store.set(path, { guess: i, ok: i === ans, shown: false, at: Date.now() }); paint(i, false);
+      say('Tebakan tersimpan. Sekarang coba di visualisasi, lalu buka penjelasan.');
+    }
+    function paint(i, shown){
+      btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
+      res.textContent = '';
+      if (!shown){
+        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+          el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
+      } else {
+        btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+          el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
+        exp.hidden = false;
+      }
+    }
+    if (saved) paint(saved.guess, !!saved.shown);
+  });
+}
+ICD.enhanceGuides = enhanceGuides;
+
+/* ---------- quiz ---------- */
+function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function quizMount(tgt, cfg){
+  tgt = target(tgt); tgt.classList.add('icd-quiz');
+  var exam = cfg.mode === 'ujian', pass = cfg.pass || PASS, file = cfg.file || fileId(), path = 'progress.' + file + '.quiz.' + cfg.id;
+  var order, idx, answers;
+  function start(subset){
+    order = (subset || cfg.questions.map(function(_, i){ return i; }));
+    if (cfg.shuffle !== false && !subset) order = shuffle(order);
+    if (cfg.take && !subset) order = order.slice(0, cfg.take);
+    order = order.map(function(qi){ var qq = cfg.questions[qi]; return { qi: qi, opts: qq.noshuffle ? qq.o.map(function(_, k){ return k; }) : shuffle(qq.o.map(function(_, k){ return k; })) }; });
+    idx = 0; answers = []; show();
+  }
+  function head(){
+    var s = store.get(path, null);
+    return el('div', { class: 'icd-row icd-small icd-muted', style: 'justify-content:space-between;margin-bottom:8px' }, [
+      el('span', { text: (cfg.title || 'Kuis') + ' · soal ' + Math.min(idx + 1, order.length) + ' dari ' + order.length }),
+      el('span', { text: s ? 'Skor terbaik ' + s.best + '/' + s.total : 'Belum pernah dikerjakan' })]);
+  }
+  function show(){
+    tgt.textContent = '';
+    if (idx >= order.length) return finish();
+    var it = order[idx], qq = cfg.questions[it.qi], opts = el('div', { class: 'opts' }), foot = el('div', { class: 'icd-row' });
+    add(tgt, [head(), el('div', { class: 'q', html: qq.q, id: uid('q') }), opts, foot]);
+    var btns = it.opts.map(function(k, pos){
+      var b = el('button', { type: 'button', class: 'icd-opt', html: '<span class="tag">' + 'ABCDEF'[pos] + '.</span>' + qq.o[k].t, onclick: function(){ choose(k); } });
+      opts.appendChild(b); return b;
+    });
+    function choose(k){
+      answers[idx] = k;
+      if (exam){ idx++; show(); return; }
+      reveal(btns, it, qq, k);
+      var nb = el('button', { type: 'button', class: 'icd-btn primary', text: idx + 1 < order.length ? 'Soal berikutnya' : 'Lihat hasil', onclick: function(){ idx++; show(); } });
+      foot.appendChild(nb); nb.focus();
+      say(qq.o[k].ok ? 'Benar.' : 'Belum tepat.');
+    }
+    var f = q('.icd-opt', tgt); if (f && idx > 0) f.focus();
+  }
+  function reveal(btns, it, qq, chosen){
+    btns.forEach(function(b, pos){
+      var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
+      if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+    });
+  }
+  function finish(){
+    var score = 0, wrong = [];
+    order.forEach(function(it, n){ if (cfg.questions[it.qi].o[answers[n]] && cfg.questions[it.qi].o[answers[n]].ok) score++; else wrong.push(it.qi); });
+    var total = order.length, full = total === (cfg.take || cfg.questions.length), ok = score / total >= pass;
+    if (full){
+      store.update(path, function(s){ s = s || { best: 0, total: total }; s.last = score; s.total = total; if (score > s.best) s.best = score; s.at = Date.now(); return s; });
+      if (exam) store.update('exams.' + cfg.id, function(a){ a = a || []; a.push({ score: score, total: total, pass: ok, at: Date.now() }); return a; });
+      emit('icd:progress');
+    }
+    add(tgt, [el('h4', { text: 'Hasil: ' + score + ' dari ' + total + ' (' + Math.round(score / total * 100) + '%)', style: 'margin-top:0', tabindex: -1 }),
+      el('p', { text: !full ? 'Putaran latihan untuk soal yang tadi salah; skor terbaik tidak diubah.' : ok ? 'Lulus. Batas lulus ' + Math.round(pass * 100) + '%.' : 'Belum lulus. Batas lulus ' + Math.round(pass * 100) + '%. Baca lagi penjelasan soal yang salah, lalu ulangi.' })]);
+    var row = el('div', { class: 'icd-row' }, [el('button', { type: 'button', class: 'icd-btn primary', text: 'Ulangi semua', onclick: function(){ start(); } })]);
+    if (wrong.length && wrong.length < cfg.questions.length) row.appendChild(el('button', { type: 'button', class: 'icd-btn', text: 'Ulangi ' + wrong.length + ' soal yang salah', onclick: function(){ start(wrong); } }));
+    tgt.appendChild(row);
+    if (exam){
+      tgt.appendChild(el('h4', { text: 'Pembahasan' }));
+      order.forEach(function(it, n){
+        var qq = cfg.questions[it.qi], opts = el('div', { class: 'opts' });
+        var btns = it.opts.map(function(k, pos){ var b = el('button', { type: 'button', class: 'icd-opt', html: '<span class="tag">' + 'ABCDEF'[pos] + '.</span>' + qq.o[k].t }); opts.appendChild(b); return b; });
+        add(tgt, [el('div', { class: 'q', html: (n + 1) + '. ' + qq.q }), opts]); reveal(btns, it, qq, answers[n]);
+      });
+    }
+    var h = q('h4', tgt); if (h) h.focus();
+  }
+  start();
+  return { restart: function(){ start(); } };
+}
+ICD.quiz = { mount: quizMount };
+
+/* ---------- cards: flashcard SM-2 sederhana ---------- */
+function today(){ var d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 864e5); }
+function sm2(c, grade){
+  var ef = c.ef || 2.5, n = c.n || 0, iv = c.iv || 0;
+  if (grade < 3){ n = 0; iv = 1; }
+  else { iv = n === 0 ? 1 : n === 1 ? 6 : Math.round(iv * ef); n++; }
+  ef = Math.max(1.3, ef + 0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
+  c.ef = Math.round(ef * 100) / 100; c.n = n; c.iv = iv; c.due = today() + iv; c.seen = (c.seen || 0) + 1;
+  return c;
+}
+var cards = {
+  sm2: sm2, today: today,
+  register: function(file, list){
+    var all = store.refresh().cards, changed = false;
+    list.forEach(function(c){
+      var k = file + ':' + c.id, o = all[k];
+      if (!o){ all[k] = { f: c.f, b: c.b, file: file }; changed = true; }
+      else if (o.f !== c.f || o.b !== c.b){ o.f = c.f; o.b = c.b; changed = true; }
+    });
+    if (changed) store.set('cards', all);
+  },
+  due: function(file){
+    var all = store.get('cards', {}), t = today(), out = [];
+    Object.keys(all).forEach(function(k){ var c = all[k]; if (file && c.file !== file) return; if (c.due == null || c.due <= t) out.push(k); });
+    out.sort(function(a, b){ return (all[a].due == null ? 1e9 : all[a].due) - (all[b].due == null ? 1e9 : all[b].due); });
+    return out;
+  },
+  count: function(file){ var all = store.get('cards', {}), n = 0; Object.keys(all).forEach(function(k){ if (!file || all[k].file === file) n++; }); return n; },
+  mount: function(tgt, opts){
+    tgt = target(tgt); tgt.classList.add('icd-flash'); opts = opts || {};
+    var queue = [], cur = null, cram = false;
+    function load(){
+      queue = cards.due(opts.file);
+      if (cram){ var all = store.get('cards', {}); queue = Object.keys(all).filter(function(k){ return !opts.file || all[k].file === opts.file; }); }
+      if (opts.limit) queue = queue.slice(0, opts.limit);
+      next();
+    }
+    function next(){
+      tgt.textContent = ''; cur = queue.shift();
+      var total = cards.count(opts.file);
+      if (!cur){
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+          total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
+        return;
+      }
+      var c = store.get('cards', {})[cur], f = reg.file(c.file);
+      var back = el('div', { class: 'face back', html: c.b, hidden: true }), row = el('div', { class: 'icd-row' });
+      var showBtn = el('button', { type: 'button', class: 'icd-btn primary', text: 'Tampilkan jawaban', onclick: function(){
+        back.hidden = false; showBtn.remove();
+        [['Lupa', 1], ['Sulit', 3], ['Baik', 4], ['Mudah', 5]].forEach(function(g){
+          row.appendChild(el('button', { type: 'button', class: 'icd-btn', text: g[0], onclick: function(){
+            if (!cram){ store.update('cards', function(all){ if (all[cur]) sm2(all[cur], g[1]); return all; }); if (g[1] < 3) queue.push(cur); emit('icd:progress'); }
+            next();
+          } }));
+        });
+        var fb = q('button', row); if (fb) fb.focus(); say('Jawaban ditampilkan.');
+      } });
+      row.appendChild(showBtn);
+      add(tgt, [el('div', { class: 'icd-small icd-muted', text: (cram ? 'Latihan bebas' : 'Jatuh tempo') + ' · sisa ' + (queue.length + 1) + (f ? ' · ' + f.code : '') }),
+        el('div', { class: 'face', html: c.f }), back, row]);
+    }
+    load();
+    return { reload: function(){ cram = false; load(); } };
+  }
+};
+ICD.cards = cards;
+
+/* ---------- calc: kalkulator engineer ---------- */
+function toBig(str, base){
+  var s = String(str).trim().replace(/_/g, '').toLowerCase(), neg = false;
+  if (s[0] === '-'){ neg = true; s = s.slice(1); }
+  if (/^0x/.test(s)){ base = 16; s = s.slice(2); } else if (/^0b/.test(s)){ base = 2; s = s.slice(2); } else if (/^0o/.test(s)){ base = 8; s = s.slice(2); }
+  if (!s) return null;
+  var digits = '0123456789abcdef', v = 0n, i, d;
+  for (i = 0; i < s.length; i++){ d = digits.indexOf(s[i]); if (d < 0 || d >= base) return null; v = v * BigInt(base) + BigInt(d); }
+  return neg ? -v : v;
+}
+function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i && (s.length - i) % n === 0) out += '_'; out += s[i]; } return out; }
+var CALCS = [
+{ id: 'basis', title: 'Basis bilangan', inputs: [
+    { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
+    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+  run: function(v){
+    var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
+    if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
+    var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
+    var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
+      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+    if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
+    return out;
+  }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+  run: function(v){ var r = parse(v.r), d = parse(v.d);
+    return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
+      ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
+  note: '20·log10 berlaku untuk tegangan atau arus pada impedansi yang sama; 10·log10 untuk daya.' },
+{ id: 'rc', title: 'Konstanta waktu RC', inputs: [{ k: 'R', label: 'R (Ω), contoh 10k', def: '10k' }, { k: 'C', label: 'C (F), contoh 100p', def: '100p' }],
+  run: function(v){ var tau = parse(v.R) * parse(v.C);
+    return [['τ = R·C', si(tau, 's')], ['Waktu ke 50% (0.693·τ)', si(0.6931 * tau, 's')], ['Rise time 10% ke 90% (2.197·τ)', si(2.197 * tau, 's')],
+      ['Mencapai 99% (4.6·τ)', si(4.605 * tau, 's')], ['Frekuensi cutoff 1/(2π·R·C)', si(1 / (2 * Math.PI * tau), 'Hz')]]; },
+  note: 'Model orde satu: satu R dan satu C ideal, sumber berupa step.' },
+{ id: 'pdyn', title: 'Daya dinamis CMOS', inputs: [{ k: 'a', label: 'Activity factor α (0 sampai 1)', def: '0.1' }, { k: 'C', label: 'Kapasitansi yang disaklar (F)', def: '1n' }, { k: 'V', label: 'VDD (V)', def: '0.9' }, { k: 'f', label: 'Frekuensi clock (Hz)', def: '1G' }],
+  run: function(v){ var a = parse(v.a), C = parse(v.C), V = parse(v.V), f = parse(v.f);
+    return [['P = α·C·VDD²·f', si(a * C * V * V * f, 'W')], ['Energi per siklus α·C·VDD²', si(a * C * V * V, 'J')], ['Jika VDD turun 10%', si(a * C * V * V * 0.81 * f, 'W') + ' (hemat 19%)']]; },
+  note: 'Hanya daya switching; short-circuit dan leakage tidak dihitung.' },
+{ id: 'slack', title: 'Slack setup dan hold', inputs: [{ k: 'T', label: 'Periode clock (ns)', def: '2' }, { k: 'cq', label: 'Clock-to-Q maks (ns)', def: '0.12' }, { k: 'lg', label: 'Delay logika maks (ns)', def: '1.5' },
+    { k: 'su', label: 'Setup time (ns)', def: '0.08' }, { k: 'cqm', label: 'Clock-to-Q min (ns)', def: '0.08' }, { k: 'lgm', label: 'Delay logika min (ns)', def: '0.05' }, { k: 'h', label: 'Hold time (ns)', def: '0.04' },
+    { k: 'sk', label: 'Skew = capture − launch (ns)', def: '0.05' }, { k: 'u', label: 'Uncertainty (ns)', def: '0.05' }],
+  run: function(v){ var p = {}, k; for (k in v) p[k] = parse(v[k]);
+    var su = (p.T + p.sk - p.u - p.su) - (p.cq + p.lg), ho = (p.cqm + p.lgm) - (p.h + p.sk + p.u);
+    return [['Slack setup', num(su, 4) + ' ns ' + (su >= 0 ? '(terpenuhi)' : '(PELANGGARAN)')], ['Slack hold', num(ho, 4) + ' ns ' + (ho >= 0 ? '(terpenuhi)' : '(PELANGGARAN)')],
+      ['Frekuensi maksimum', si(1e9 / (p.cq + p.lg + p.su - p.sk + p.u), 'Hz')]]; },
+  note: 'Setup: (T + skew − uncertainty − t_setup) − (t_cq + t_logika). Hold: (t_cq,min + t_logika,min) − (t_hold + skew + uncertainty). Satu nilai uncertainty dipakai untuk keduanya; tool signoff memisahkannya.' },
+{ id: 'mtbf', title: 'MTBF synchronizer', inputs: [{ k: 'tr', label: 'Waktu resolusi tersedia t_r (s)', def: '0.8n' }, { k: 'tau', label: 'Konstanta waktu τ (s)', def: '20p' }, { k: 'T0', label: 'Jendela T0 (s)', def: '50p' }, { k: 'fc', label: 'Frekuensi clock (Hz)', def: '500M' }, { k: 'fd', label: 'Laju perubahan data (Hz)', def: '10M' }],
+  run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
+    return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
+  note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+  run: function(v){ var fin = parse(v.fin), j = parse(v.j);
+    return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
+      ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
+  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+{ id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
+  run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
+    return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
+  note: 'Pendekatan: DPW ≈ π(d/2)²/S − π·d/√(2S). Edge exclusion, scribe line, dan model yield lain (Murphy, negative binomial) tidak dihitung.' }
+];
+function calcMount(tgt, id){
+  tgt = target(tgt);
+  var c = CALCS.filter(function(x){ return x.id === id; })[0]; if (!c) return;
+  var vals = {}, grid = el('div', { class: 'icd-grid' }), out = el('table', { class: 'icd', 'aria-live': 'polite' });
+  function run(){
+    var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    out.textContent = ''; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
+  }
+  c.inputs.forEach(function(inp){
+    vals[inp.k] = inp.def; var f;
+    if (inp.type === 'select') f = el('select', { class: 'icd-select' }, inp.opts.map(function(o){ return el('option', { value: o[0], text: o[1], selected: o[0] === inp.def }); }));
+    else f = el('input', { class: 'icd-input', type: 'text', value: inp.def, inputmode: inp.type === 'text' ? null : 'decimal', autocomplete: 'off', spellcheck: 'false' });
+    f.addEventListener('input', function(){ vals[inp.k] = f.value; run(); });
+    grid.appendChild(el('label', { class: 'icd-field' }, [el('span', { text: inp.label }), f]));
+  });
+  tgt.textContent = '';
+  add(tgt, [el('h4', { text: c.title, style: 'margin-top:0' }), grid, el('div', { class: 'icd-tablewrap', style: 'margin-top:10px' }, [out]), el('p', { class: 'icd-small icd-muted', text: c.note })]);
+  run();
+}
+ICD.calc = { list: CALCS.map(function(c){ return { id: c.id, title: c.title }; }), mount: calcMount, run: function(id, v){ return CALCS.filter(function(x){ return x.id === id; })[0].run(v); } };
+
+/* ---------- math: deteksi MathML ---------- */
+function mathCheck(){
+  try {
+    var d = el('div', { style: 'position:absolute;left:-999px;top:0' });
+    d.innerHTML = '<math xmlns="http://www.w3.org/1998/Math/MathML"><mspace height="23px" width="77px"></mspace></math>';
+    doc.body.appendChild(d); var w = d.firstChild.firstChild.getBoundingClientRect().width; d.remove();
+    if (Math.abs(w - 77) > 2) root.classList.add('no-mathml');
+  } catch (e) { root.classList.add('no-mathml'); }
+}
+ICD.math = { supported: function(){ return !root.classList.contains('no-mathml'); } };
+
+/* ---------- logo ---------- */
+ICD.logo = function(size){
+  var z = size || 22, g = svg('svg', { width: z, height: z, viewBox: '0 0 24 24', 'aria-hidden': 'true', class: 'icd-logo' });
+  [6, 10, 14, 18].forEach(function(t){
+    g.appendChild(svg('rect', { x: t - 0.9, y: 1, width: 1.8, height: 3, rx: 0.6, class: 'pin' })); g.appendChild(svg('rect', { x: t - 0.9, y: 20, width: 1.8, height: 3, rx: 0.6, class: 'pin' }));
+    g.appendChild(svg('rect', { x: 1, y: t - 0.9, width: 3, height: 1.8, rx: 0.6, class: 'pin' })); g.appendChild(svg('rect', { x: 20, y: t - 0.9, width: 3, height: 1.8, rx: 0.6, class: 'pin' }));
+  });
+  g.appendChild(svg('rect', { x: 4, y: 4, width: 16, height: 16, rx: 3, class: 'body' }));
+  g.appendChild(svg('path', { d: 'M8.5 7.5v9h4a2.6 2.6 0 0 0 0-5.2h-4', class: 'b' }));
+  g.appendChild(svg('circle', { cx: 16.6, cy: 7.4, r: 1.3, class: 'dot' }));
+  return g;
+};
+
+/* ---------- sync: akun opsional (Supabase) ---------- */
+var sync = (function(){
+  var C = ICD.config || {}, SK = 'icd.auth';
+  var enabled = !!(C.supabaseUrl && C.supabaseKey) && /^https?:$/.test(window.location.protocol);
+  var state = { busy: false, last: null, err: null }, pushTimer = null, dirty = false;
+  function ls(k, v){
+    try {
+      if (v === undefined) return JSON.parse(window.localStorage.getItem(k) || 'null');
+      if (v === null) window.localStorage.removeItem(k); else window.localStorage.setItem(k, JSON.stringify(v));
+    } catch (e) { return null; }
+    return v;
+  }
+  function sess(){ return ls(SK); }
+  function api(path, o){
+    o = o || {}; var h = { apikey: C.supabaseKey, 'Content-Type': 'application/json' }, s = sess(), k;
+    if (o.auth !== false && s && s.access_token) h.Authorization = 'Bearer ' + s.access_token;
+    if (o.headers) for (k in o.headers) h[k] = o.headers[k];
+    return fetch(C.supabaseUrl.replace(/\/$/, '') + path, { method: o.method || 'GET', headers: h, body: o.body ? JSON.stringify(o.body) : undefined, keepalive: !!o.keepalive })
+      .then(function(r){
+        if (!r.ok) return r.text().then(function(t){ var e = new Error(t || ('HTTP ' + r.status)); e.status = r.status; throw e; });
+        return r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+      });
+  }
+  function save(o, user){
+    var s = { access_token: o.access_token, refresh_token: o.refresh_token,
+      expires_at: o.expires_at ? o.expires_at * 1000 : Date.now() + (o.expires_in || 3600) * 1000, user: user || o.user || (sess() || {}).user || null };
+    if (s.user && s.user.id) s.user = { id: s.user.id, email: s.user.email || '', name: (s.user.user_metadata && (s.user.user_metadata.full_name || s.user.user_metadata.name)) || s.user.name || '' };
+    ls(SK, s); return s;
+  }
+  function valid(){
+    var s = sess(); if (!s || !s.refresh_token) return Promise.resolve(null);
+    if (s.expires_at - Date.now() > 60000) return Promise.resolve(s);
+    return api('/auth/v1/token?grant_type=refresh_token', { method: 'POST', auth: false, body: { refresh_token: s.refresh_token } })
+      .then(function(o){ return save(o); })
+      .catch(function(e){ if (e.status === 400 || e.status === 401){ ls(SK, null); emit('icd:auth'); } return null; });
+  }
+  function fromHash(){
+    var h = window.location.hash || '';
+    if (h.indexOf('error_description=') >= 0){
+      var pe = new URLSearchParams(h.slice(1)); toast('Gagal masuk: ' + pe.get('error_description'));
+      history.replaceState(null, '', window.location.pathname + window.location.search); return Promise.resolve();
+    }
+    if (h.indexOf('access_token=') < 0) return Promise.resolve();
+    var p = new URLSearchParams(h.slice(1));
+    save({ access_token: p.get('access_token'), refresh_token: p.get('refresh_token'), expires_in: +p.get('expires_in') || 3600, expires_at: +p.get('expires_at') || 0 });
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    return api('/auth/v1/user').then(function(u){ var s = sess(); save(s, u); emit('icd:auth'); toast('Masuk sebagai ' + (sess().user.email || 'pengguna') + '. Progres disinkronkan.'); });
+  }
+  function pull(){
+    var s = sess();
+    return api('/rest/v1/progress?select=data,updated_at&user_id=eq.' + encodeURIComponent(s.user.id)).then(function(rows){ return rows && rows[0] ? rows[0] : null; });
+  }
+  function push(keep){
+    var s = sess(); if (!s || !s.user) return Promise.resolve();
+    dirty = false;
+    return api('/rest/v1/progress', { method: 'POST', keepalive: keep, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: { user_id: s.user.id, data: store.all(), updated_at: new Date().toISOString() } });
+  }
+  function now(){
+    if (!enabled || state.busy) return Promise.resolve();
+    state.busy = true; emit('icd:sync');
+    return valid().then(function(s){
+      if (!s || !s.user) return null;
+      return pull().then(function(row){ if (row && row.data) store.mergeRemote(row.data); return push(false); })
+        .then(function(){ state.last = Date.now(); state.err = null; });
+    }).catch(function(e){ state.err = e.message || String(e); })
+      .then(function(){ state.busy = false; emit('icd:sync'); });
+  }
+  function schedule(){
+    if (!enabled || !sess()) return; dirty = true; clearTimeout(pushTimer);
+    pushTimer = setTimeout(function(){ if (state.busy){ schedule(); return; } now(); }, 4000);
+  }
+  doc.addEventListener('icd:store', function(e){ if (!(e.detail && e.detail.remote)) schedule(); });
+  doc.addEventListener('visibilitychange', function(){ if (doc.hidden && dirty && sess()){ clearTimeout(pushTimer); push(true).catch(function(){}); } });
+  function emailLogin(email){
+    var to = window.location.href.split('#')[0];
+    return api('/auth/v1/otp?redirect_to=' + encodeURIComponent(to), { method: 'POST', auth: false, body: { email: email, create_user: true } });
+  }
+  function oauth(provider){
+    window.location.href = C.supabaseUrl.replace(/\/$/, '') + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(window.location.href.split('#')[0]);
+  }
+  function logout(){
+    var s = sess(); ls(SK, null); emit('icd:auth');
+    if (s) api('/auth/v1/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + s.access_token }, auth: false }).catch(function(){});
+  }
+  function dialogLogin(){
+    var inp = el('input', { class: 'icd-input', type: 'email', autocomplete: 'email', placeholder: 'nama@contoh.com', 'aria-label': 'Alamat email' });
+    var msg = el('p', { class: 'icd-small', 'aria-live': 'polite' });
+    var body = el('div', null, [
+      el('p', { class: 'icd-small icd-muted', text: 'Akun bersifat opsional. Dengan akun, progres, catatan, skor kuis, dan flashcard tersinkron ke semua perangkat Anda. Tanpa akun, semuanya tetap tersimpan di browser ini.' }),
+      C.google === true ? el('button', { type: 'button', class: 'icd-btn', style: 'width:100%;margin-bottom:12px', text: 'Masuk dengan Google', onclick: function(){ oauth('google'); } }) : null,
+      el('label', { class: 'icd-field' }, ['Atau terima tautan masuk lewat email', inp]), msg]);
+    var dl = dialog({ title: 'Masuk ke ' + ICD.brand, body: body, actions: [{ label: 'Tutup' }, { label: 'Kirim tautan', primary: true, run: function(){
+      var v = inp.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ msg.textContent = 'Alamat email belum benar.'; return false; }
+      msg.textContent = 'Mengirim…';
+      emailLogin(v).then(function(){ msg.textContent = 'Tautan masuk sudah dikirim ke ' + v + '. Buka email itu di perangkat ini.'; })
+        .catch(function(e){ msg.textContent = 'Gagal mengirim: ' + (e.status === 429 ? 'terlalu sering, coba lagi sebentar lagi.' : e.message); });
+      return false;
+    } }] });
+    setTimeout(function(){ inp.focus(); }, 50);
+    return dl;
+  }
+  function dialogAccount(){
+    var s = sess(), st = state;
+    dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
+      el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
+      el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+  }
+  return {
+    enabled: function(){ return enabled; },
+    session: sess, user: function(){ var s = sess(); return s && s.user; },
+    state: function(){ return state; },
+    now: now, login: dialogLogin, account: dialogAccount, logout: logout,
+    init: function(){ if (!enabled) return; fromHash().then(now); }
+  };
+})();
+ICD.sync = sync;
+
+/* ---------- shell: kerangka halaman ---------- */
+function topbar(file, f){
+  var isIndex = file === 'index';
+  var tocBtn = (!isIndex && q('.icd-sec')) ? el('button', { type: 'button', class: 'icd-btn small icd-toc-btn', 'aria-label': 'Daftar isi', 'aria-expanded': 'false', text: '☰' }) : null;
+  var search = el('input', { type: 'search', class: 'icd-input', placeholder: 'Cari…', 'aria-label': 'Cari di seluruh materi', id: 'icd-search' });
+  var form = el('form', { role: 'search', onsubmit: function(e){
+    e.preventDefault(); var v = search.value.trim();
+    if (isIndex) emit('icd:search', { q: v }); else if (v) window.location.href = 'index.html#cari=' + encodeURIComponent(v);
+  } }, [search]);
+  if (isIndex) search.addEventListener('input', function(){ emit('icd:search', { q: search.value.trim() }); });
+  var th = el('button', { type: 'button', class: 'icd-btn small', 'aria-label': ICD.theme.label(), title: ICD.theme.label(), text: '◐',
+    onclick: function(){ ICD.theme.cycle(); th.setAttribute('aria-label', ICD.theme.label()); th.title = ICD.theme.label(); toast(ICD.theme.label()); } });
+  var acct = null;
+  if (sync.enabled()){
+    acct = el('button', { type: 'button', class: 'icd-btn small icd-acct', onclick: function(){ if (sync.user()) sync.account(); else sync.login(); } });
+    var paintAcct = function(){ var u = sync.user(), st = sync.state(); acct.textContent = u ? ((st.busy ? '⟳ ' : st.err ? '⚠ ' : '● ') + ((u.name || u.email || 'Akun').split(/[ @]/)[0])) : 'Masuk'; acct.title = u ? 'Akun dan sinkron' : 'Masuk untuk menyinkronkan progres'; };
+    paintAcct(); doc.addEventListener('icd:auth', paintAcct); doc.addEventListener('icd:sync', paintAcct);
+  }
+  var bar = el('header', { class: 'icd-top no-print' }, [tocBtn,
+    el('a', { class: 'brand', href: 'index.html', title: 'Beranda ' + ICD.brand, 'aria-label': ICD.brand + ': ke beranda' }, [ICD.logo(22), el('span', { class: 'wm' }, [el('span', { text: 'bikin' }), el('b', { text: 'chip' })])]),
+    el('span', { class: 'title', text: f ? f.code + ' · ' + f.title : (doc.title || '') }), form, th, acct]);
+  doc.body.insertBefore(bar, doc.body.firstChild);
+  doc.body.insertBefore(el('a', { class: 'icd-skip', href: '#icd-main', text: 'Lewati ke isi' }), doc.body.firstChild);
+  return tocBtn;
+}
+function shell(){
+  var file = fileId(), f = reg.file(file), main = q('main');
+  if (!main) return;
+  main.id = 'icd-main'; main.classList.add('icd-main');
+  var tocBtn = topbar(file, f), secs = qa('section.icd-sec', main);
+  var wrap = el('div', { class: 'icd-wrap' }); main.parentNode.insertBefore(wrap, main); wrap.appendChild(main);
+  if (!secs.length) return;
+  var progBar = el('div', { class: 'icd-bar no-print', role: 'progressbar', 'aria-label': 'Bagian selesai', 'aria-valuemin': 0, 'aria-valuemax': secs.length }, [el('i')]);
+  wrap.parentNode.insertBefore(progBar, wrap);
+  var toc = el('nav', { class: 'icd-toc no-print', 'aria-label': 'Daftar isi' }), ol = el('ol'); toc.appendChild(ol);
+  wrap.classList.add('has-toc'); wrap.insertBefore(toc, main);
+  var base = 'progress.' + file, links = {}, marks = {};
+  store.update(base, function(p){ p = p || {}; p.visited = Date.now(); p.nsec = secs.length; p.sections = p.sections || {}; return p; });
+  secs.forEach(function(s, i){
+    var h = q('h2', s), sid = s.id || (s.id = 's' + ('0' + (i + 1)).slice(-2)), title = h ? h.textContent : 'Bagian ' + (i + 1);
+    if (h) h.insertBefore(el('span', { class: 'n', text: s.dataset.n || (i + 1), 'aria-hidden': 'true' }), h.firstChild);
+    marks[sid] = el('span', { class: 'mark', 'aria-hidden': 'true' });
+    links[sid] = el('a', { href: '#' + sid, onclick: function(){ closeToc(); } }, [marks[sid], el('span', { text: title })]);
+    ol.appendChild(el('li', null, [links[sid]]));
+    var done = el('button', { type: 'button', class: 'icd-btn small', onclick: function(){
+      var now = !store.get(base + '.sections.' + sid, false); store.set(base + '.sections.' + sid, now); paint(); emit('icd:progress');
+      say(now ? 'Bagian ditandai selesai.' : 'Tanda selesai dihapus.');
+    } });
+    var bm = el('button', { type: 'button', class: 'icd-btn small', onclick: function(){
+      store.update('bookmarks', function(a){ a = a || []; var k = a.findIndex(function(b){ return b.file === file && b.sec === sid; });
+        if (k >= 0) a.splice(k, 1); else a.push({ file: file, sec: sid, title: title, at: Date.now() }); return a; });
+      paint();
+    } });
+    var ta = el('textarea', { class: 'icd-input', 'aria-label': 'Catatan pribadi untuk bagian ini', placeholder: 'Tulis catatan Anda. Tersimpan otomatis di perangkat ini.' });
+    ta.value = store.get('notes.' + file + '.' + sid, '');
+    var timer; ta.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(function(){ store.set('notes.' + file + '.' + sid, ta.value || undefined); }, 500); });
+    var note = el('details', { class: 'icd-note icd-sol' }, [el('summary', { text: 'Catatan saya' + (ta.value ? ' (ada isi)' : '') }), ta]);
+    s.appendChild(el('div', { class: 'icd-secfoot no-print' }, [done, bm, note]));
+    s._done = done; s._bm = bm;
+  });
+  function paint(){
+    var p = store.get(base, {}), n = 0, bms = store.get('bookmarks', []);
+    secs.forEach(function(s){
+      var d = !!(p.sections && p.sections[s.id]); if (d) n++;
+      s._done.textContent = d ? '● Selesai dibaca' : '○ Tandai selesai'; s._done.setAttribute('aria-pressed', d ? 'true' : 'false');
+      var b = bms.some(function(x){ return x.file === file && x.sec === s.id; });
+      s._bm.textContent = b ? '★ Tersimpan' : '☆ Bookmark'; s._bm.setAttribute('aria-pressed', b ? 'true' : 'false');
+      marks[s.id].textContent = d ? '●' : '○'; marks[s.id].className = 'mark' + (d ? ' done' : '');
+    });
+    progBar.firstChild.style.width = (n / secs.length * 100) + '%'; progBar.setAttribute('aria-valuenow', n);
+  }
+  paint(); doc.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) paint(); });
+  function closeToc(){ toc.classList.remove('open'); if (tocBtn) tocBtn.setAttribute('aria-expanded', 'false'); }
+  if (tocBtn) tocBtn.addEventListener('click', function(){ var o = toc.classList.toggle('open'); tocBtn.setAttribute('aria-expanded', o ? 'true' : 'false'); if (o){ var a = q('a', toc); if (a) a.focus(); } });
+  doc.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeToc(); });
+  var lastTimer;
+  function setCurrent(id){
+    Object.keys(links).forEach(function(k){ if (k === id) links[k].setAttribute('aria-current', 'true'); else links[k].removeAttribute('aria-current'); });
+    clearTimeout(lastTimer); lastTimer = setTimeout(function(){ store.set(base + '.last', id); store.set('meta.lastFile', file); }, 1200);
+  }
+  if (window.IntersectionObserver){
+    var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) setCurrent(e.target.id); }); },
+      { rootMargin: '-15% 0px -70% 0px' });
+    secs.forEach(function(s){ io.observe(s); });
+    /* tanda "dibaca" otomatis: bagian terlihat cukup lama (detik ~ panjang teks) dan ujungnya sudah tergulir */
+    var seen = {}, foot = {}, need = {}, vis = {};
+    secs.forEach(function(s){ var w = (s.textContent || '').split(/\s+/).length; need[s.id] = clamp(Math.round(w / 6), 10, 180); seen[s.id] = 0; });
+    var io2 = new IntersectionObserver(function(es){ es.forEach(function(e){
+      var hgt = e.intersectionRect.height, vh = window.innerHeight || 800;
+      vis[e.target.id] = e.isIntersecting && (hgt >= 0.4 * vh || hgt >= 0.6 * e.boundingClientRect.height);
+    }); }, { threshold: [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1] });
+    var io3 = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) foot[e.target.parentNode.id] = true; }); });
+    secs.forEach(function(s){ io2.observe(s); var ft = q('.icd-secfoot', s); if (ft) io3.observe(ft); });
+    setInterval(function(){
+      if (doc.hidden || store.get('settings.autoRead', true) === false) return;
+      secs.forEach(function(s){
+        if (!vis[s.id]) return; seen[s.id]++;
+        if (foot[s.id] && seen[s.id] >= need[s.id] && !store.get(base + '.sections.' + s.id, false)){
+          store.set(base + '.sections.' + s.id, true); store.set(base + '.auto.' + s.id, true); paint(); emit('icd:progress');
+          toast('Bagian "' + (q('h2', s) ? q('h2', s).textContent.replace(/^\d+/, '') : s.id) + '" ditandai selesai dibaca.');
+        }
+      });
+    }, 1000);
+  }
+  var lastSec = store.get(base + '.last', null);
+  if (!window.location.hash && lastSec && lastSec !== secs[0].id && q('#' + lastSec)){
+    var lh = q('h2', q('#' + lastSec)), ban = el('div', { class: 'icd-resume no-print', role: 'status' });
+    ban.appendChild(el('span', { text: 'Terakhir dibaca: ' + (lh ? lh.textContent.replace(/^(\d+)/, '$1 · ') : lastSec) }));
+    ban.appendChild(el('a', { class: 'icd-btn small primary', href: '#' + lastSec, text: 'Lanjut ke sana', onclick: function(){ ban.remove(); } }));
+    ban.appendChild(el('button', { type: 'button', class: 'icd-btn small', 'aria-label': 'Tutup', text: '×', onclick: function(){ ban.remove(); } }));
+    main.insertBefore(ban, main.firstChild);
+  }
+  if (f){
+    var prev = reg.files[f.idx - 1], next = reg.files[f.idx + 1], nav = el('nav', { class: 'icd-nav no-print', 'aria-label': 'Navigasi modul' });
+    nav.appendChild(prev ? el('a', { href: prev.id + '.html', rel: 'prev' }, [el('small', { text: '← Sebelumnya · ' + prev.code }), prev.title]) : el('a', { href: 'index.html' }, [el('small', { text: '← Kembali' }), 'Peta kurikulum']));
+    if (next && avail.has(next.id)) nav.appendChild(el('a', { class: 'next', href: next.id + '.html', rel: 'next' }, [el('small', { text: 'Berikutnya · ' + next.code + ' →' }), next.title]));
+    else if (next) nav.appendChild(el('a', { class: 'next soon', href: 'index.html#belajar' }, [el('small', { text: 'Berikutnya · ' + next.code + ' · segera hadir' }), next.title + ' — sementara itu: ulangi flashcard dan kuis di beranda']));
+    else nav.appendChild(el('a', { class: 'next', href: 'index.html' }, [el('small', { text: 'Selesai →' }), 'Peta kurikulum']));
+    main.appendChild(nav);
+  }
+  main.appendChild(el('p', { class: 'icd-foot', text: ICD.brand + ' · ICD-Core ' + ICD.version + ' · kode MIT, materi CC BY-SA 4.0 · ' + (store.persistent() ? 'progres tersimpan di perangkat ini' : 'penyimpanan browser tidak tersedia; progres hanya bertahan selama halaman terbuka') }));
+}
+window.addEventListener('beforeprint', function(){ qa('details').forEach(function(d){ if (!d.open){ d.open = true; d.dataset.printOpened = '1'; } }); qa('.icd-layers [role=tabpanel]').forEach(function(p){ if (p.hidden){ p.hidden = false; p.dataset.printShown = '1'; } }); });
+window.addEventListener('afterprint', function(){ qa('details[data-print-opened]').forEach(function(d){ d.open = false; delete d.dataset.printOpened; }); qa('[data-print-shown]').forEach(function(p){ p.hidden = true; delete p.dataset.printShown; }); });
+
+function enhanceLinks(ctx){
+  qa('a[href]', ctx || doc).forEach(function(a){
+    if (a.closest('.icd-nav') || a.dataset.soonDone) return;
+    var m = /^([a-z0-9-]+)\.html(#.*)?$/.exec(a.getAttribute('href')); if (!m) return;
+    var f = reg.file(m[1]); a.dataset.soonDone = '1';
+    if (!f || avail.has(f.id)) return;
+    a.classList.add('icd-soon'); a.setAttribute('aria-disabled', 'true'); a.title = f.code + ' segera hadir';
+    a.appendChild(el('span', { class: 'icd-chip', text: 'segera' }));
+    a.addEventListener('click', function(e){ e.preventDefault(); toast(f.code + ' · ' + f.title + ' belum tersedia; sedang dibuat. Daftar materi yang sudah ada ada di beranda.'); });
+  });
+}
+ICD.enhance = function(ctx){ enhanceCode(ctx); enhanceLayers(ctx); enhanceGuides(ctx); enhanceTerms(ctx); enhanceLinks(ctx); };
+ready(function(){ mathCheck(); shell(); ICD.enhance(); sync.init(); emit('icd:ready'); });
+})();
+</script>
+<!-- ICD-CORE END -->
+<style>
+.flow{list-style:none;margin:0;padding:0;display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+.flow button{width:100%;min-height:52px;text-align:left;padding:6px 8px;border:1px solid var(--line);border-left-width:5px;border-radius:var(--r);background:var(--bg);cursor:pointer;font-size:.82rem;line-height:1.25}
+.flow button b{font-family:var(--f-mono);margin-right:4px}
+.flow button.fe{border-left-color:var(--s-ctrl)}.flow button.im{border-left-color:var(--s-data)}.flow button.mf{border-left-color:var(--s-reset)}
+.flow button[aria-pressed=true]{background:var(--tint);border-color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.flow button.past{opacity:.6}
+.kv{display:grid;grid-template-columns:minmax(90px,auto) minmax(0,1fr);gap:4px 12px;font-size:.9rem;margin:0}
+.kv dt{color:var(--ink2)}.kv dd{margin:0}
+.tl .dot{cursor:pointer}.tl .dot circle{stroke:var(--card);stroke-width:2}
+.tl .dot.sel circle{stroke:var(--ink);stroke-width:2.5}
+.tl .dot.off{opacity:.15}
+.tl .dot:focus{outline:none}.tl .dot:focus-visible circle{stroke:var(--accent);stroke-width:3}
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}
+.cheat h4{margin:0 0 .3em}
+</style>
+</head>
+<body data-file="m00-orientasi">
+<main>
+<p class="icd-small icd-muted">Bagian 1: Fondasi · M00 · sekitar 4 jam · tanpa prasyarat</p>
+<h1>M00 Orientasi: dari ide sampai silikon</h1>
+<p>Modul ini adalah peta. Anda belum perlu memahami detail apa pun; tujuannya agar setiap modul berikutnya punya tempat yang jelas di kepala Anda. Setelah selesai, Anda tahu apa itu chip, siapa saja yang membuatnya, lewat tahap apa, dan bagaimana memakai materi ini selama berbulan-bulan ke depan.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<p>Sebuah chip modern berisi miliaran <span data-term="transistor">transistor</span> dan dikerjakan oleh ratusan orang dengan keahlian yang sangat berbeda. Tidak ada satu orang pun yang menguasai semuanya secara mendalam. Yang membedakan engineer yang efektif adalah ia tahu <em>di mana pekerjaannya berada dalam alur</em>: dari siapa ia menerima masukan, kepada siapa ia menyerahkan keluaran, dan kesalahan apa yang akan menjalar ke tahap berikutnya.</p>
+<p>Akibat salah di dunia chip berbeda dari perangkat lunak. Perangkat lunak bisa ditambal lewat pembaruan. Chip yang sudah dicetak tidak bisa.</p>
+<ul>
+<li><strong>Uang.</strong> Pada 1994 ditemukan kesalahan pada tabel pembagian floating-point prosesor Intel Pentium (dikenal sebagai bug FDIV). Intel akhirnya mengganti prosesor pelanggan dan mencatat beban sekitar 475 juta dolar AS.</li>
+<li><strong>Waktu.</strong> Memperbaiki chip berarti mengulang fabrikasi (disebut <em>respin</em>), yang memakan waktu berminggu-minggu sampai berbulan-bulan sebelum silikon baru tiba di lab.</li>
+<li><strong>Kesempatan.</strong> Produk yang terlambat satu generasi sering kehilangan pasarnya sama sekali.</li>
+</ul>
+<p>Karena itu industri chip menghabiskan sebagian besar usahanya untuk <em>memeriksa</em>, bukan menulis desain. Anda akan melihat pola ini berulang di hampir setiap modul: verifikasi, analisis timing, pemeriksaan aturan layout, dan test semuanya ada untuk menangkap kesalahan sebelum menjadi silikon.</p>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Dalam pekerjaan chip, pertanyaan pertama untuk setiap tugas adalah: "ini tahap apa, masukannya dari mana, dan siapa yang memakai hasilnya?"</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> tidak ada. Cukup matematika SMP: perkalian, pembagian, dan pangkat sepuluh.</p>
+<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<ol>
+<li>Menjelaskan dengan kalimat sendiri apa itu <span data-term="ic">integrated circuit</span>, transistor, <span data-term="wafer">wafer</span>, dan <span data-term="die">die</span>.</li>
+<li>Menyebutkan tujuh tingkat abstraksi dari sistem sampai devais, beserta satuan kerjanya.</li>
+<li>Mengurutkan minimal 12 tahap alur dari spesifikasi sampai silikon, dan menyebut masukan, keluaran, serta format file utama setiap tahap.</li>
+<li>Menghitung periode penggandaan dari dua titik data jumlah transistor, dan memperkirakan jumlah die per wafer.</li>
+<li>Menjelaskan mengapa nama node seperti "3 nm" adalah label, bukan ukuran fisik.</li>
+<li>Mencocokkan enam peran utama di tim chip dengan tahap alur yang mereka kerjakan.</li>
+<li>Menjalankan simulasi Verilog pertama Anda dengan tool open-source dan membaca hasilnya.</li>
+</ol>
+<h3>Cara memakai materi ini</h3>
+<ul>
+<li><strong>Setiap modul punya 16 bagian yang sama</strong>, urutannya seperti halaman ini. Anda selalu tahu di mana mencari intuisi, rumus, latihan, atau lab.</li>
+<li><strong>Penjelasan berlapis.</strong> Konsep inti punya tiga tingkat: Pemula, Engineer, Pakar. Pada putaran pertama baca tingkat Pemula saja. Kembali ke tingkat berikutnya setelah menyelesaikan beberapa modul lanjutan.</li>
+<li><strong>Tebak dulu.</strong> Setiap visualisasi punya eksperimen terpandu. Menebak sebelum mencoba terasa lambat, tetapi di situlah pemahaman terbentuk.</li>
+<li><strong>Tandai dan catat.</strong> Tombol di akhir setiap bagian menandai bagian selesai, menyimpan bookmark, dan membuka catatan pribadi. Sebuah file dianggap selesai bila kuisnya mencapai 70% dan sedikitnya 80% bagian sudah ditandai.</li>
+<li><strong>Flashcard lima menit sehari.</strong> Buka antrean di <a href="index.html#kartu">halaman utama</a> sebelum mulai belajar. Kartu yang Anda ingat akan muncul makin jarang.</li>
+<li><strong>Lab bukan pilihan.</strong> Membaca tentang simulasi tidak sama dengan menjalankannya. Sisihkan sekitar sepertiga waktu belajar untuk lab.</li>
+</ul>
+<div class="icd-box model"><b>Konvensi angka</b>Semua angka memakai titik sebagai pemisah desimal (1.5 berarti satu setengah), sama seperti tool EDA dan bahasa pemrograman. Awalan satuan: k = 10<sup>3</sup>, M = 10<sup>6</sup>, G = 10<sup>9</sup>, m = 10<sup>−3</sup>, µ = 10<sup>−6</sup>, n = 10<sup>−9</sup>, p = 10<sup>−12</sup>. Ini dibahas tuntas di M01.</div>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Analogi: membangun kota di atas sebutir beras</h3>
+<p>Bayangkan Anda diminta membangun sebuah kota lengkap: gedung, jalan, saluran listrik, dan aturan lalu lintas.</p>
+<ul>
+<li><strong>Wali kota</strong> menentukan kebutuhan: berapa penduduk, berapa anggaran, kapan harus selesai. Ini <em>spesifikasi</em>.</li>
+<li><strong>Perencana kota</strong> membagi wilayah: kawasan industri, perumahan, jalan arteri. Ini <em>arsitektur</em>.</li>
+<li><strong>Arsitek bangunan</strong> menggambar tiap gedung: ruangan apa, pintunya di mana. Ini <em>desain RTL</em>.</li>
+<li><strong>Inspektur</strong> memeriksa gambar sebelum ada yang dibangun: apakah semua pintu bisa dibuka, apakah ada ruangan tanpa jalan keluar. Ini <em>verifikasi</em>.</li>
+<li><strong>Kontraktor</strong> menerjemahkan gambar menjadi daftar bata dan balok yang tersedia di toko. Ini <em>sintesis</em>.</li>
+<li><strong>Insinyur sipil</strong> menaruh setiap bata di tanah dan menarik setiap kabel, sambil memastikan listrik sampai ke semua rumah dan tidak ada jalan macet. Ini <em>physical design</em>.</li>
+<li><strong>Pabrik</strong> mencetak seluruh kota sekaligus, lapis demi lapis. Ini <em>fabrikasi</em>.</li>
+</ul>
+<p>Kota itu lalu diperkecil sampai muat di kuku jari, dan "bata"-nya adalah transistor: saklar kecil yang bisa dinyalakan dan dimatikan dengan listrik.</p>
+<h3>Di mana analogi ini berhenti berlaku</h3>
+<ul>
+<li><strong>Tidak ada renovasi.</strong> Gedung bisa dibongkar sebagian. Chip dicetak sekali; kesalahan satu kabel berarti mencetak ulang semuanya.</li>
+<li><strong>Skalanya tidak terbayangkan.</strong> Kota terbesar punya jutaan bangunan. Chip besar punya puluhan miliar transistor, dan semuanya harus benar.</li>
+<li><strong>Anda tidak pernah melihatnya.</strong> Detail chip lebih kecil dari panjang gelombang cahaya tampak. Semua pekerjaan dilakukan lewat model di komputer, dan Anda harus percaya pada model itu.</li>
+<li><strong>Semua bergerak serentak.</strong> Di kota, orang bergerak sendiri-sendiri. Di chip digital, miliaran saklar berganti keadaan mengikuti satu ketukan bersama (clock) miliaran kali per detik. Terlambat sepersekian nanodetik saja berarti gagal.</li>
+<li><strong>Pemeriksaan harus dirancang sejak awal.</strong> Anda tidak bisa masuk ke dalam chip untuk memeriksa. Jalur pemeriksaan (test) harus ikut dibangun di dalam desain.</li>
+</ul>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+<h3>Benda-bendanya</h3>
+<p>Sebuah <span data-term="ic">integrated circuit</span> (IC, rangkaian terpadu, sehari-hari disebut chip) adalah rangkaian elektronik yang seluruh komponennya dibuat bersama di permukaan sekeping semikonduktor, hampir selalu silikon. Komponen utamanya adalah <span data-term="transistor">transistor</span>. Untuk saat ini anggap transistor sebagai saklar: tegangan pada satu kakinya menentukan apakah arus boleh lewat di antara dua kaki lainnya. Cara kerjanya dibahas di <a href="m06a-mosfet-dasar.html">M06</a>.</p>
+<p>Chip tidak dibuat satu per satu. Pabrik (<span data-term="fab">fab</span>) memproses piringan silikon tipis yang disebut <span data-term="wafer">wafer</span>, umumnya berdiameter 300 mm, dan mencetak ratusan chip yang sama di atasnya. Satu potongan chip di wafer disebut <span data-term="die">die</span>. Die yang lulus test lalu dikemas dalam <span data-term="package">package</span> agar bisa disolder ke papan rangkaian.</p>
+
+<h3>Tujuh tingkat abstraksi</h3>
+<p>Tidak ada yang bisa memikirkan miliaran transistor sekaligus. Cara industri mengatasinya adalah <span data-term="abstraksi">abstraksi</span>: di setiap tingkat, Anda hanya memikirkan satu jenis benda dan mengabaikan apa yang ada di bawahnya.</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Tingkat</th><th scope="col">Benda yang dipikirkan</th><th scope="col">Contoh pertanyaan</th><th scope="col">Dibahas di</th></tr></thead>
+<tbody>
+<tr><th scope="row">Sistem</th><td>Chip, memori, perangkat lunak</td><td>Berapa lama baterai bertahan?</td><td>M14, M15</td></tr>
+<tr><th scope="row">Arsitektur</th><td>Prosesor, cache, bus</td><td>Berapa instruksi selesai per detik?</td><td>M11 sampai M14</td></tr>
+<tr><th scope="row">RTL</th><td>Register dan logika di antaranya</td><td>Apa isi register ini pada siklus berikutnya?</td><td>M16, M17</td></tr>
+<tr><th scope="row">Gerbang</th><td>AND, OR, flip-flop</td><td>Berapa delay dari masukan ke keluaran?</td><td>M08, M09, M21</td></tr>
+<tr><th scope="row">Transistor</th><td>Saklar dan kapasitansi</td><td>Berapa arus saat menyala?</td><td>M06, M07, M10</td></tr>
+<tr><th scope="row">Layout</th><td>Bentuk geometri tiap lapisan</td><td>Apakah dua kawat ini terlalu dekat?</td><td>M10, M23, M24</td></tr>
+<tr><th scope="row">Devais dan proses</th><td>Atom, doping, lapisan material</td><td>Bagaimana kanal ini terbentuk?</td><td>M05, M30</td></tr>
+</tbody></table></div>
+<p>Keterampilan inti seorang IC design engineer adalah berpindah naik-turun di tangga ini: menulis di tingkat RTL sambil membayangkan gerbang dan kawat yang akan dihasilkannya.</p>
+
+<h3>Tiga besaran yang selalu ditawar: PPA</h3>
+<p>Hampir setiap keputusan desain adalah tawar-menawar antara tiga hal, disingkat <span data-term="ppa">PPA</span>:</p>
+<ul>
+<li><strong>Performance</strong> (kinerja): seberapa cepat, biasanya frekuensi clock dalam hertz atau pekerjaan per detik.</li>
+<li><strong>Power</strong> (daya): energi per detik, dalam watt. Menentukan umur baterai dan panas.</li>
+<li><strong>Area</strong> (luas): luas die dalam mm². Menentukan biaya, karena wafer berharga tetap dan makin kecil die makin banyak yang didapat.</li>
+</ul>
+
+<h3>Hukum Moore sebagai rumus</h3>
+<p>Pada 1965 Gordon Moore mengamati bahwa jumlah komponen per chip berlipat dua secara teratur; pada 1975 ia merevisi lajunya menjadi kira-kira setiap dua tahun. Ini bukan hukum alam, melainkan pengamatan ekonomi yang kemudian menjadi target industri. Pertumbuhan "berlipat dua setiap <i>T</i> tahun" ditulis:</p>
+<div class="icd-eq"><math display="block"><mi>N</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><msub><mi>N</mi><mn>0</mn></msub><mo>&#x22C5;</mo><msup><mn>2</mn><mrow><mo>(</mo><mi>t</mi><mo>&#x2212;</mo><msub><mi>t</mi><mn>0</mn></msub><mo>)</mo><mo>/</mo><mi>T</mi></mrow></msup></math><span class="alt">N(t) = N0 · 2^((t − t0)/T)</span></div>
+<p>dengan <i>N</i><sub>0</sub> jumlah transistor pada tahun awal <i>t</i><sub>0</sub>, dan <i>T</i> periode penggandaan dalam tahun. <strong>Penurunan:</strong> setelah satu periode <i>T</i> jumlahnya menjadi 2<i>N</i><sub>0</sub>; setelah dua periode 4<i>N</i><sub>0</sub> = 2²<i>N</i><sub>0</sub>; setelah <i>k</i> periode 2<sup><i>k</i></sup><i>N</i><sub>0</sub>. Banyaknya periode yang sudah lewat adalah <i>k</i> = (<i>t</i> − <i>t</i><sub>0</sub>)/<i>T</i>, sehingga didapat rumus di atas.</p>
+<p>Untuk mencari <i>T</i> dari dua titik data, bagi kedua ruas dengan <i>N</i><sub>0</sub> lalu ambil logaritma basis 2 (logaritma dibahas di M01; untuk sekarang, log<sub>2</sub> menjawab "2 pangkat berapa?"):</p>
+<div class="icd-eq"><math display="block"><mi>T</mi><mo>=</mo><mfrac><mrow><mi>t</mi><mo>&#x2212;</mo><msub><mi>t</mi><mn>0</mn></msub></mrow><mrow><msub><mi>log</mi><mn>2</mn></msub><mo>&#x2061;</mo><mo>(</mo><mi>N</mi><mo>/</mo><msub><mi>N</mi><mn>0</mn></msub><mo>)</mo></mrow></mfrac></math><span class="alt">T = (t − t0) / log2(N / N0)</span></div>
+<p><strong>Contoh dengan angka nyata.</strong> Intel 4004 (1971) berisi 2 300 transistor. Apple M1 (2020) berisi sekitar 16 miliar. Rasio <i>N</i>/<i>N</i><sub>0</sub> = 16 × 10<sup>9</sup> / 2 300 ≈ 6.96 × 10<sup>6</sup>. Karena 2<sup>22.7</sup> ≈ 6.96 × 10<sup>6</sup>, maka log<sub>2</sub> ≈ 22.7 dan <i>T</i> = 49 tahun / 22.7 ≈ 2.16 tahun. Selama hampir setengah abad lajunya memang dekat dengan "dua tahun".</p>
+
+<h3>Die per wafer</h3>
+<p>Biaya sebuah chip sangat ditentukan oleh berapa die yang muat di satu wafer. Pendekatan yang umum dipakai:</p>
+<div class="icd-eq"><math display="block"><mi>DPW</mi><mo>&#x2248;</mo><mfrac><mrow><mi>&#x3C0;</mi><msup><mrow><mo>(</mo><mi>d</mi><mo>/</mo><mn>2</mn><mo>)</mo></mrow><mn>2</mn></msup></mrow><mi>S</mi></mfrac><mo>&#x2212;</mo><mfrac><mrow><mi>&#x3C0;</mi><mi>d</mi></mrow><msqrt><mrow><mn>2</mn><mi>S</mi></mrow></msqrt></mfrac></math><span class="alt">DPW ≈ π(d/2)² / S − π·d / √(2S)</span></div>
+<p>dengan <i>d</i> diameter wafer dan <i>S</i> luas satu die. Suku pertama adalah luas wafer dibagi luas die. Suku kedua mengurangi die yang terpotong di tepi lingkaran. <strong>Contoh:</strong> wafer 300 mm, die 10 mm × 10 mm (<i>S</i> = 100 mm²). Suku pertama: π × 150² / 100 = 706.9. Suku kedua: π × 300 / √200 = 66.6. Hasil: sekitar 640 die. Rumus ini mengabaikan garis potong antar die dan zona tepi yang tidak dipakai, jadi angka nyata sedikit lebih kecil.</p>
+
+<h3>Nama node adalah label</h3>
+<div class="icd-box model"><b>Model buku teks lawan kenyataan modern</b>Dulu nama <span data-term="node">process node</span> memang menyatakan ukuran: pada proses "10 µm" tahun 1971, panjang gate transistor kira-kira 10 µm. Sejak sekitar akhir 1990-an hubungan itu mengendur, dan pada node modern nama seperti "5 nm", "3 nm", "N2", atau "18A" adalah <strong>label generasi untuk pemasaran</strong>. Tidak ada bagian transistor yang berukuran 2 nm pada node "2 nm". Jarak antar gate (gate pitch) pada node terdepan masih berkisar beberapa puluh nanometer, dan jarak antar kawat logam terkecil sekitar dua puluhan nanometer; angka persisnya berbeda antar pabrik dan dibahas di M30. Untuk membandingkan dua proses, lihat kerapatan transistor (juta transistor per mm²), bukan namanya.</div>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<p>Empat konsep inti modul ini, masing-masing dalam tiga tingkat. Baca tingkat Pemula dulu.</p>
+<h3>1. Transistor sebagai saklar</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Transistor adalah keran listrik. Ada tiga kaki: satu kaki pengendali (gate) dan dua kaki yang dilewati arus (source dan drain). Tegangan di gate membuka atau menutup keran. Keran terbuka berarti 1, tertutup berarti 0. Dengan menggabungkan banyak keran, kita bisa menghitung apa saja.</p></div>
+<div data-level="engineer"><p>Chip digital memakai dua jenis transistor yang saling melengkapi, NMOS dan PMOS; gabungannya disebut CMOS. NMOS menghantar saat gate tinggi, PMOS saat gate rendah. Dalam gerbang CMOS, saat keluaran sudah stabil selalu ada satu jaringan yang putus, sehingga hampir tidak ada arus yang mengalir terus-menerus. Daya terutama terpakai saat berpindah keadaan. Inilah alasan CMOS mendominasi sejak 1980-an.</p></div>
+<div data-level="pakar"><p>"Saklar" adalah penyederhanaan yang makin tidak akurat. Transistor nyata tidak pernah benar-benar mati: ada arus subthreshold yang turun secara eksponensial terhadap tegangan gate, dengan kemiringan yang dibatasi fisika sekitar 60 mV per dekade pada suhu ruang untuk MOSFET konvensional. Batas ini mencegah tegangan suplai turun terus, dan menjadi akar berakhirnya Dennard scaling. Perubahan bentuk transistor dari planar ke FinFET lalu gate-all-around pada dasarnya adalah upaya menjaga kendali gate atas kanal agar kemiringan itu tetap dekat batasnya.</p></div>
+</div>
+<h3>2. Abstraksi</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Saat menyetir, Anda memikirkan setir dan pedal, bukan piston. Abstraksi adalah kesepakatan tentang apa yang boleh diabaikan. Engineer RTL memikirkan register, bukan elektron.</p></div>
+<div data-level="engineer"><p>Setiap tingkat abstraksi punya model, bahasa, dan tool sendiri. Peralihan antar tingkat dilakukan tool: sintesis mengubah RTL menjadi gerbang, place-and-route mengubah gerbang menjadi layout. Setiap peralihan harus dibuktikan tidak mengubah fungsi (equivalence checking) dan tidak melanggar timing (STA).</p></div>
+<div data-level="pakar"><p>Abstraksi selalu bocor, dan kebocorannya makin besar di node maju. Delay kawat kini sering melebihi delay gerbang, sehingga sintesis tanpa informasi fisik memberi hasil yang menyesatkan; karena itu muncul physical synthesis. Efek tingkat devais seperti variasi lokal, aging, dan self-heating harus dimodelkan sampai ke tingkat timing (misalnya lewat LVF). Sebagian besar keahlian senior adalah mengetahui kapan sebuah abstraksi masih bisa dipercaya.</p></div>
+</div>
+<h3>3. Alur desain</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Membuat chip itu seperti lari estafet. Setiap pelari (tahap) menerima tongkat (file) dari pelari sebelumnya, mengerjakan bagiannya, lalu menyerahkannya. Jika satu pelari menjatuhkan tongkat, semua yang di belakangnya harus mengulang.</p></div>
+<div data-level="engineer"><p>Alur digital standar disebut RTL-to-GDSII: dari kode RTL sampai file layout GDSII yang dikirim ke pabrik. Alurnya tidak lurus. Jika timing gagal setelah routing, Anda kembali ke placement, ke sintesis, atau bahkan mengubah RTL. Putaran seperti ini disebut iterasi, dan mengurangi jumlahnya adalah tujuan utama metodologi.</p></div>
+<div data-level="pakar"><p>Pada proyek nyata front-end dan back-end berjalan bersamaan. Tim fisik memulai floorplan dengan netlist yang belum final, dan RTL "dibekukan" bertahap. Setelah itu perubahan hanya boleh berupa ECO: perubahan kecil langsung di netlist atau layout. Menjelang tapeout, ECO bahkan dibatasi pada lapisan logam saja dengan memakai sel cadangan, agar mask lapisan bawah tidak perlu dibuat ulang.</p></div>
+</div>
+<h3>4. Hukum Moore dan nama node</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Setiap sekitar dua tahun, pabrik berhasil memuat kira-kira dua kali lebih banyak transistor di luas yang sama. Karena itu ponsel hari ini jauh lebih kuat daripada komputer besar puluhan tahun lalu. Nama seperti "3 nm" hanyalah nama generasi, seperti nama model mobil.</p></div>
+<div data-level="engineer"><p>Dulu mengecilkan transistor memberi tiga keuntungan sekaligus: lebih cepat, lebih hemat daya, lebih murah. Aturan penskalaan yang menjelaskan ini dirumuskan Robert Dennard pada 1974. Sejak pertengahan 2000-an tegangan suplai tidak bisa turun secepat ukuran, sehingga kerapatan daya naik. Akibatnya frekuensi clock berhenti naik pesat, dan industri beralih ke banyak core serta akselerator khusus.</p></div>
+<div data-level="pakar"><p>Kenaikan kerapatan kini makin bergantung pada kecerdikan desain bersama proses (design-technology co-optimization): tinggi standard cell dipangkas, kontak ditaruh di atas gate aktif, dan jaringan daya dipindah ke sisi belakang wafer. Biaya per transistor tidak lagi turun dengan pasti di setiap node, sehingga sebagian sistem memilih memecah chip menjadi chiplet dengan proses berbeda. Status terkini dibahas di M33.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="vflow">
+  <header><h3>1. Peta alur dari spesifikasi sampai silikon</h3></header>
+  <div class="stage">
+    <p class="icd-small icd-muted" style="margin:0 0 8px">Ketuk sebuah tahap, atau tekan Putar untuk mengikuti perjalanan sebuah desain. Warna tepi: <span style="border-left:5px solid var(--s-ctrl);padding-left:5px">front-end</span> &nbsp;<span style="border-left:5px solid var(--s-data);padding-left:5px">implementasi</span> &nbsp;<span style="border-left:5px solid var(--s-reset);padding-left:5px">manufaktur dan test</span></p>
+    <ol class="flow" id="flow-list"></ol>
+    <div class="icd-card" id="flow-detail" style="margin:12px 0 0" aria-live="polite"></div>
+  </div>
+  <div class="params"><label class="icd-field"><span>Pengali biaya per fase = <b id="flow-kv"></b></span><input type="range" id="flow-k" min="2" max="20" step="1" value="10"></label></div>
+  <div class="readout" id="flow-out" aria-live="polite"></div>
+  <div class="model">Isi tahap adalah alur digital standar yang disederhanakan menjadi garis lurus; alur nyata berulang-ulang dan sebagian tahap berjalan bersamaan. Biaya bug adalah model ilustratif pengali<sup>fase</sup> dengan lima fase (desain, implementasi, setelah tapeout, silikon di lab, di tangan pelanggan). Pengalinya Anda tentukan sendiri; ini bukan data industri.</div>
+</div>
+<div class="icd-guide" data-id="flow-biaya" data-answer="2">
+  <p>Dengan pengali 10 per fase, bug yang baru ketahuan saat chip sudah di lab (fase ke-3 setelah desain) kira-kira berapa kali lebih mahal daripada jika tertangkap saat verifikasi RTL?</p>
+  <ul><li>30 kali</li><li>100 kali</li><li>1 000 kali</li><li>10 000 kali</li></ul>
+  <div class="explain"><p>Model ini mengalikan biaya dengan 10 setiap kali melewati satu fase, jadi tiga fase berarti 10 × 10 × 10 = 10<sup>3</sup> = 1 000 kali. Pertumbuhannya eksponensial, bukan penjumlahan (yang akan memberi 30). Angka 10 hanyalah ilustrasi, tetapi bentuk kurvanya menjelaskan mengapa industri rela menghabiskan lebih banyak orang untuk verifikasi daripada untuk desain.</p></div>
+</div>
+
+<div class="icd-viz" id="vtl">
+  <header><h3>2. Garis waktu: dari transistor 1947 sampai sekarang</h3></header>
+  <div class="stage"><div id="tl-svg" class="tl" style="overflow-x:auto"></div>
+    <div class="icd-card" id="tl-detail" style="margin:10px 0 0" aria-live="polite"></div></div>
+  <div class="params" id="tl-filters" role="group" aria-label="Saring kategori"></div>
+  <div class="readout" id="tl-out"></div>
+  <div class="model">Posisi mendatar sebanding dengan tahun. Tahun yang dipakai adalah tahun demonstrasi, publikasi, atau produksi pertama yang paling sering dirujuk; beberapa peristiwa punya tanggal berbeda tergantung definisinya. Entri 2025 diverifikasi lewat pencarian web per November 2026.</div>
+</div>
+<div class="icd-guide" data-id="tl-jarak" data-answer="1">
+  <p>Berapa tahun jarak antara transistor pertama (1947) dan mikroprosesor komersial pertama, Intel 4004?</p>
+  <ul><li>Sekitar 10 tahun</li><li>Sekitar 25 tahun</li><li>Sekitar 40 tahun</li><li>Sekitar 50 tahun</li></ul>
+  <div class="explain"><p>Intel 4004 keluar pada 1971, jadi 24 tahun setelah 1947. Di antaranya ada tiga lompatan yang semuanya diperlukan: IC (1958), proses planar (1959), dan MOSFET (1960). Pilih ketiganya di garis waktu dan perhatikan betapa rapat jaraknya.</p></div>
+</div>
+
+<div class="icd-viz" id="vsc">
+  <header><h3>3. Penjelajah skala: dari wafer sampai atom</h3></header>
+  <div class="stage"><div id="sc-svg" style="overflow-x:auto"></div></div>
+  <div class="params">
+    <label class="icd-field">Benda besar<select class="icd-select" id="sc-b"></select></label>
+    <label class="icd-field">Benda kecil<select class="icd-select" id="sc-a"></select></label>
+    <label class="icd-field"><span>Gate pitch yang diandaikan = <b id="sc-pv"></b></span><input type="range" id="sc-p" min="20" max="100" step="1" value="48"></label>
+  </div>
+  <div class="readout" id="sc-out" aria-live="polite"></div>
+  <div class="model">Sumbu atas berskala logaritmik: setiap garis tegak berarti sepuluh kali lebih kecil. Ukuran benda adalah nilai khas yang dibulatkan (tebal rambut manusia, misalnya, bervariasi kira-kira 20 sampai 180 µm). Gate pitch node terdepan berada di kisaran beberapa puluh nanometer; nilai 48 nm adalah andaian yang bisa Anda ubah, bukan angka resmi sebuah pabrik.</div>
+</div>
+<div class="icd-guide" data-id="sc-rambut" data-answer="2">
+  <p>Jika jarak antar gate transistor 48 nm, kira-kira berapa transistor bisa berjajar selebar sehelai rambut (70 µm)?</p>
+  <ul><li>Sekitar 15</li><li>Sekitar 150</li><li>Sekitar 1 500</li><li>Sekitar 15 000</li></ul>
+  <div class="explain"><p>70 µm = 70 000 nm. Dibagi 48 nm menghasilkan sekitar 1 460. Itu baru satu baris; pada luas penampang rambut, jumlahnya berorde jutaan. Pilih "rambut manusia" dan "gate pitch" di visualisasi, lalu geser nilai gate pitch untuk melihat betapa sensitif hasilnya.</p></div>
+</div>
+
+<div class="icd-viz" id="vmo">
+  <header><h3>4. Hukum Moore: cocokkan model dengan data</h3></header>
+  <div class="stage"><div id="mo-plot"></div></div>
+  <div class="params"><label class="icd-field"><span>Periode penggandaan T = <b id="mo-tv"></b></span><input type="range" id="mo-t" min="1" max="3.5" step="0.05" value="1.5"></label></div>
+  <div class="readout" id="mo-out" aria-live="polite"></div>
+  <div class="model">Model: N(t) = 2 300 × 2<sup>(t − 1971)/T</sup>, berangkat dari Intel 4004. Data adalah jumlah transistor yang diumumkan pembuatnya untuk 13 prosesor (Intel 1971 sampai 2008, Apple 2020 sampai 2023). Catatan: chip Apple adalah SoC yang juga memuat GPU dan memori cache besar, jadi tidak sepenuhnya sebanding dengan CPU lama. Galat dihitung sebagai akar rata-rata kuadrat selisih log<sub>10</sub>.</div>
+</div>
+<div class="icd-guide" data-id="mo-fit" data-answer="1">
+  <p>Periode penggandaan berapa yang paling cocok dengan data 1971 sampai 2023?</p>
+  <ul><li>Sekitar 1 tahun</li><li>Sekitar 2 tahun</li><li>Sekitar 3 tahun</li><li>Tidak ada yang cocok; datanya tidak eksponensial</li></ul>
+  <div class="explain"><p>Geser T sampai galat paling kecil: hasilnya dekat 2 tahun. Dengan T = 1 tahun (rumusan awal Moore pada 1965) model meleset puluhan juta kali di 2023. Pada sumbu logaritmik, pertumbuhan eksponensial tampak sebagai garis lurus, dan data memang mengikuti garis lurus selama lima dekade.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+<h3>Contoh 1: periode penggandaan</h3>
+<p><strong>Soal.</strong> Intel 80386 (1985) berisi 275 000 transistor. Intel Pentium (1993) berisi 3.1 juta. Berapa periode penggandaan pada rentang itu?</p>
+<ol>
+<li>Selisih waktu: 1993 − 1985 = 8 tahun.</li>
+<li>Rasio: 3 100 000 / 275 000 = 11.27.</li>
+<li>Cari log<sub>2</sub>(11.27). Karena 2³ = 8 dan 2⁴ = 16, jawabannya di antara 3 dan 4. Dengan kalkulator: log<sub>2</sub>(11.27) = log<sub>10</sub>(11.27) / log<sub>10</sub>(2) = 1.052 / 0.301 = 3.49.</li>
+<li><i>T</i> = 8 / 3.49 = 2.29 tahun.</li>
+</ol>
+<p><strong>Periksa.</strong> 3.49 penggandaan dari 275 000: 275 000 × 2<sup>3.49</sup> = 275 000 × 11.2 ≈ 3.1 juta. Cocok.</p>
+
+<h3>Contoh 2: die per wafer dan biaya</h3>
+<p><strong>Soal.</strong> Wafer 300 mm seharga 10 000 dolar AS (angka andaian untuk latihan). Die berukuran 8 mm × 8 mm. Jika 85% die lulus test, berapa biaya silikon per die baik?</p>
+<ol>
+<li>Luas die: <i>S</i> = 64 mm².</li>
+<li>Suku pertama: π × 150² / 64 = 70 686 / 64 = 1 104.5.</li>
+<li>Suku kedua: π × 300 / √128 = 942.5 / 11.31 = 83.3.</li>
+<li>Die kotor: 1 104.5 − 83.3 ≈ 1 021.</li>
+<li>Die baik: 1 021 × 0.85 ≈ 868.</li>
+<li>Biaya per die baik: 10 000 / 868 ≈ 11.5 dolar.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Bandingkan dengan die 10 mm × 10 mm di bagian 4 (640 die kotor): menambah sisi 25% mengurangi jumlah die hampir 40%. Biaya tumbuh lebih cepat daripada luas, apalagi die besar juga lebih mungkin terkena cacat. Biaya ini belum termasuk packaging, test, dan biaya desain.</p>
+
+<h3>Contoh 3: memperkirakan jumlah transistor</h3>
+<p><strong>Soal.</strong> Sebuah proses punya kerapatan 100 juta transistor per mm². Berapa transistor pada die 8 mm × 8 mm jika 70% luasnya terisi logika serapat itu?</p>
+<ol>
+<li>Luas terisi: 64 mm² × 0.7 = 44.8 mm².</li>
+<li>Jumlah: 44.8 × 100 × 10<sup>6</sup> = 4.48 × 10<sup>9</sup>, sekitar 4.5 miliar transistor.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Kerapatan yang diiklankan adalah nilai puncak untuk sel paling rapat. Chip nyata memuat memori, blok analog, I/O, dan ruang kosong untuk kawat, sehingga kerapatan rata-ratanya lebih rendah.</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode pertama Anda</h2>
+<p>Anda belum belajar bahasa deskripsi hardware (<span data-term="hdl">HDL</span>); itu tugas M16. Kode di bawah hanya untuk merasakan bentuk pekerjaannya: satu file desain, satu file penguji. Baca penjelasannya, lalu jalankan di bagian Lab.</p>
+<h3>Desain: gerbang AND</h3>
+<pre class="icd-src" data-lang="sv">
+// and2.sv : gerbang AND dua masukan
+module and2 (
+  input  logic a,
+  input  logic b,
+  output logic y
+);
+  assign y = a &amp; b;
+endmodule
+</pre>
+<ul>
+<li><strong>Baris 2 dan 8:</strong> <code>module</code> sampai <code>endmodule</code> membungkus satu blok hardware bernama <code>and2</code>, seperti satu komponen di papan rangkaian.</li>
+<li><strong>Baris 3 sampai 5:</strong> daftar kaki komponen. Dua masukan dan satu keluaran, masing-masing selebar satu bit.</li>
+<li><strong>Baris 7:</strong> <code>assign</code> menyatakan hubungan yang berlaku terus-menerus: <code>y</code> selalu sama dengan <code>a</code> AND <code>b</code>. Ini bukan perintah yang dijalankan sekali; ini kawat dan gerbang.</li>
+</ul>
+<p>Kode ini <em>synthesizable</em>: tool sintesis bisa mengubahnya menjadi satu gerbang AND dari library.</p>
+<h3>Penguji: testbench</h3>
+<pre class="icd-src" data-lang="sv">
+// tb_and2.sv : testbench yang memeriksa dirinya sendiri
+`timescale 1ns/1ps
+module tb_and2;
+  logic a, b;
+  logic y;
+  int   errors = 0;
+
+  and2 dut (.a(a), .b(b), .y(y));
+
+  initial begin
+    $dumpfile("and2.vcd");
+    $dumpvars(0, tb_and2);
+    for (int i = 0; i &lt; 4; i++) begin
+      {a, b} = i[1:0];
+      #10;
+      if (y !== (a &amp; b)) begin
+        errors++;
+        $display("GAGAL a=%b b=%b y=%b", a, b, y);
+      end else begin
+        $display("ok    a=%b b=%b y=%b", a, b, y);
+      end
+    end
+    if (errors == 0) $display("LULUS: semua 4 kombinasi benar");
+    else             $display("GAGAL: %0d kesalahan", errors);
+    $finish;
+  end
+endmodule
+</pre>
+<ul>
+<li><strong>Baris 2:</strong> menetapkan satuan waktu simulasi: 1 ns, dengan ketelitian 1 ps.</li>
+<li><strong>Baris 8:</strong> memasang desain di dalam testbench dan menyambung kakinya. Nama <code>dut</code> berarti <em>design under test</em>.</li>
+<li><strong>Baris 11 dan 12:</strong> merekam semua sinyal ke file <code>and2.vcd</code> agar bisa dilihat sebagai waveform.</li>
+<li><strong>Baris 13 sampai 15:</strong> mencoba keempat kombinasi masukan (00, 01, 10, 11), dan menunggu 10 ns setiap kali agar keluaran sempat berubah.</li>
+<li><strong>Baris 16 sampai 21:</strong> membandingkan keluaran dengan jawaban yang benar. Testbench yang memutuskan sendiri lulus atau gagal disebut <em>self-checking</em>; Anda tidak perlu memelototi waveform.</li>
+<li><strong>Baris 23 sampai 25:</strong> mencetak kesimpulan lalu mengakhiri simulasi.</li>
+</ul>
+<p>Testbench <em>tidak</em> synthesizable: <code>#10</code>, <code>$display</code>, dan <code>initial</code> hanya bermakna di simulator. Membedakan kode yang menjadi hardware dari kode yang hanya menguji adalah salah satu kebiasaan pertama yang harus terbentuk.</p>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Kedua file ini dijalankan dengan Icarus Verilog 12.0 sebelum modul ini ditulis. Keluaran yang diharapkan ada di bagian Lab.</div>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Chip 3 nm punya transistor berukuran 3 nm." Tidak. Nama node adalah label generasi. Ukuran fisik terkecil yang bermakna, seperti gate pitch, masih puluhan nanometer.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Menulis HDL sama seperti memprogram." Program dijalankan baris demi baris. HDL mendeskripsikan hardware yang semuanya aktif bersamaan. Orang yang membawa kebiasaan pemrograman ke RTL menghasilkan rangkaian yang lambat, boros, atau salah.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Kalau simulasi lulus, chip pasti bekerja." Simulasi hanya memeriksa skenario yang Anda tulis, pada model yang mengabaikan delay kawat nyata, variasi pabrik, dan cacat produksi. Karena itu ada STA, verifikasi fisik, dan test.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Hukum Moore sudah mati" atau "Hukum Moore berlaku selamanya." Keduanya terlalu sederhana. Kerapatan masih naik, tetapi lebih lambat, lebih mahal, dan tanpa bonus kecepatan serta daya yang dulu datang otomatis.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"IC design berarti menggambar transistor." Itu hanya benar untuk desain analog dan sel dasar. Sebagian besar engineer digital bekerja dengan kode, skrip, dan laporan, dan jarang menyentuh transistor satu per satu.</div>
+<div class="icd-box trap"><b>Jebakan industri</b>Menganggap tahap Anda selesai saat file diserahkan. Penerima sering menemukan masalah yang akarnya ada di tahap Anda: constraint timing yang keliru dari tim RTL baru terasa saat physical design. Engineer yang baik ikut memeriksa apakah keluarannya benar-benar bisa dipakai tahap berikutnya.</div>
+<div class="icd-box trap"><b>Jebakan industri</b>Mengoptimalkan satu sisi PPA tanpa melihat dua lainnya. Blok yang 5% lebih cepat tetapi 30% lebih boros daya jarang merupakan kemenangan.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<h3>Siapa mengerjakan apa</h3>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Peran</th><th scope="col">Pekerjaan utama</th><th scope="col">Modul inti</th></tr></thead>
+<tbody>
+<tr><th scope="row">Architect</th><td>Menentukan apa yang dibangun dan pembagian bloknya; memodelkan kinerja</td><td>M11 sampai M15</td></tr>
+<tr><th scope="row">RTL design engineer</th><td>Menulis RTL, memenuhi target PPA, menulis constraint</td><td>M16, M17, M21, M22</td></tr>
+<tr><th scope="row">Design verification (DV) engineer</th><td>Membuktikan RTL sesuai spesifikasi lewat simulasi dan formal</td><td>M18, M19</td></tr>
+<tr><th scope="row">Physical design engineer</th><td>Mengubah netlist menjadi layout yang memenuhi timing, daya, dan aturan pabrik</td><td>M21 sampai M25</td></tr>
+<tr><th scope="row">DFT engineer</th><td>Menyisipkan struktur test dan membangkitkan pola test</td><td>M26</td></tr>
+<tr><th scope="row">Analog / mixed-signal designer</th><td>Merancang PLL, ADC, I/O, regulator pada tingkat transistor dan layout</td><td>M07, M27, M28</td></tr>
+</tbody></table></div>
+<p>Ada pula peran lain yang akan Anda temui: STA engineer, CAD/methodology engineer, validation engineer (post-silicon), product/test engineer, dan firmware engineer. Profil lengkap tiap peran ada di <a href="m34-karier-praktik.html">M34</a>.</p>
+<h3>Model bisnis</h3>
+<ul>
+<li><strong><span data-term="fabless">Fabless</span>:</strong> merancang chip tetapi tidak punya pabrik. Fabrikasi diserahkan ke foundry.</li>
+<li><strong><span data-term="foundry">Foundry</span>:</strong> memproduksi chip rancangan pihak lain.</li>
+<li><strong>IDM</strong> (integrated device manufacturer): merancang sekaligus memproduksi sendiri.</li>
+<li><strong>Vendor <span data-term="ip">IP</span>:</strong> menjual blok desain siap pakai, misalnya inti prosesor atau antarmuka USB.</li>
+<li><strong>Vendor <span data-term="eda">EDA</span>:</strong> membuat perangkat lunak untuk merancang chip. Tiga yang terbesar adalah Synopsys, Cadence, dan Siemens EDA. Semua lab di materi ini memakai tool open-source yang setara secara konsep.</li>
+</ul>
+<h3>Format file yang akan sering Anda dengar</h3>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Format</th><th scope="col">Isi</th><th scope="col">Muncul di tahap</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>.v</code> <code>.sv</code> <code>.vhd</code></th><td>Kode RTL atau netlist gerbang</td><td>Desain RTL, sintesis</td></tr>
+<tr><th scope="row"><code>.vcd</code> <code>.fst</code></th><td>Rekaman waveform hasil simulasi</td><td>Verifikasi</td></tr>
+<tr><th scope="row"><code>.lib</code> (Liberty)</th><td>Delay, daya, dan fungsi setiap sel library</td><td>Sintesis, STA</td></tr>
+<tr><th scope="row"><code>.sdc</code></th><td>Constraint timing: clock, delay masukan dan keluaran, pengecualian</td><td>Sintesis sampai signoff</td></tr>
+<tr><th scope="row"><code>.lef</code></th><td>Bentuk luar dan letak pin setiap sel; aturan lapisan</td><td>Physical design</td></tr>
+<tr><th scope="row"><code>.def</code></th><td>Posisi setiap sel dan jalur setiap kawat dalam desain</td><td>Physical design</td></tr>
+<tr><th scope="row"><code>.spef</code></th><td>Resistansi dan kapasitansi parasitik kawat</td><td>Ekstraksi, STA</td></tr>
+<tr><th scope="row"><code>.upf</code></th><td>Maksud desain daya: domain, isolasi, retensi</td><td>Low-power</td></tr>
+<tr><th scope="row"><code>.gds</code> <code>.oas</code></th><td>Layout akhir: poligon di setiap lapisan</td><td>Verifikasi fisik, tapeout</td></tr>
+</tbody></table></div>
+<p>Modul ini berada di depan seluruh alur. Peta di bagian 6 adalah versi ringkas dari apa yang dibahas mendalam di Bagian 5 dan 6 kurikulum.</p>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Mengingat</h3>
+<p><strong>1.1</strong> Urutkan tahap berikut dari yang paling awal: routing, sintesis logika, tapeout, desain RTL, placement, verifikasi fungsional, floorplan.</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p>Desain RTL → verifikasi fungsional → sintesis logika → floorplan → placement → routing → tapeout. Verifikasi fungsional sebenarnya berjalan terus bersamaan dengan desain RTL; ia ditaruh setelahnya karena butuh RTL untuk diuji. Clock tree synthesis, yang tidak disebut di soal, berada di antara placement dan routing.</p></details>
+<p><strong>1.2</strong> Sebutkan kepanjangan PPA dan satuan yang lazim untuk masing-masing.</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p>Performance (hertz untuk frekuensi clock, atau pekerjaan per detik), Power (watt), Area (mm² untuk die, atau µm² untuk blok dan sel).</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Sebuah chip pada 2010 berisi 1 miliar transistor. Dengan periode penggandaan 2 tahun, berapa jumlahnya pada 2020? Bagaimana jika periodenya 3 tahun?</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p>Rentang 10 tahun. Dengan <i>T</i> = 2: 10/2 = 5 penggandaan, 2⁵ = 32, jadi 32 miliar. Dengan <i>T</i> = 3: 10/3 = 3.33 penggandaan, 2<sup>3.33</sup> ≈ 10.1, jadi sekitar 10 miliar. Selisih satu tahun pada periode penggandaan menghasilkan selisih tiga kali lipat setelah satu dekade.</p></details>
+<p><strong>2.2</strong> Hitung die kotor per wafer 300 mm untuk die 5 mm × 5 mm dan untuk die 20 mm × 20 mm. Berapa perbandingan jumlahnya, dan mengapa bukan 16?</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>Die 25 mm²: 70 686/25 − 942.5/√50 = 2 827.4 − 133.3 ≈ 2 694. Die 400 mm²: 70 686/400 − 942.5/√800 = 176.7 − 33.3 ≈ 143. Perbandingan 2 694 / 143 ≈ 18.8, lebih besar dari perbandingan luas (16), karena die besar kehilangan proporsi lebih banyak di tepi lingkaran wafer. Anda bisa memeriksa hasilnya dengan kalkulator "Die per wafer dan yield" di <a href="index.html#kalkulator">halaman utama</a>.</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Tim Anda menemukan bug fungsi pada dua saat berbeda: (a) saat verifikasi RTL, (b) setelah silikon pertama tiba di lab. Untuk masing-masing, tahap alur mana saja yang harus diulang? Pakai peta di bagian 6.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>(a) Hanya perbaikan RTL dan menjalankan ulang regression verifikasi. Jika sintesis percobaan sudah berjalan, ia diulang, tetapi itu otomatis. (b) Perbaikan RTL atau ECO di netlist, verifikasi ulang, lalu seluruh rantai implementasi untuk bagian yang berubah: timing, verifikasi fisik, tapeout baru (minimal sebagian mask), fabrikasi, wafer test, packaging, final test, dan bring-up lagi. Selain itu harus dicari mengapa verifikasi tidak menangkapnya, dan rencana verifikasi diperbaiki. Dalam praktik, tim berusaha membatasi perbaikan pada lapisan logam agar mask lapisan bawah dan wafer setengah jadi masih bisa dipakai.</p></details>
+<p><strong>3.2</strong> Dua foundry sama-sama menamai prosesnya "3 nm". Rancang tiga pengukuran yang akan Anda minta untuk membandingkannya secara adil, dan jelaskan mengapa nama saja tidak cukup.</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Contoh jawaban yang baik: (1) kerapatan transistor atau kerapatan sel untuk library yang setara, dalam juta transistor per mm²; (2) kinerja dan daya pada rangkaian acuan yang sama, misalnya frekuensi ring oscillator atau inti prosesor yang sama pada tegangan dan suhu yang sama; (3) ukuran fisik kunci: contacted gate pitch, minimum metal pitch, dan tinggi sel. Tambahan yang relevan: yield atau kerapatan defect, serta biaya wafer. Nama tidak cukup karena tidak ada standar yang mengikat nama node ke ukuran fisik tertentu; setiap pabrik bebas memilih labelnya.</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Dua belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<p>Pertanyaan pembuka seperti ini muncul di hampir semua interview tingkat awal. Pewawancara menilai apakah Anda punya gambaran utuh, bukan hafalan.</p>
+<details class="icd-sol"><summary>"Jelaskan alur desain ASIC dari RTL sampai GDSII."</summary>
+<p><strong>Kerangka jawaban:</strong> (1) Sebut tahap berurutan: RTL, verifikasi, sintesis, DFT, floorplan, placement, CTS, routing, ekstraksi dan STA, verifikasi fisik, tapeout. (2) Untuk setiap tahap sebut satu masukan dan satu keluaran. (3) Tegaskan bahwa alurnya berulang, dan sebut dua pemeriksaan yang menjaga kebenaran di sepanjang alur: equivalence checking untuk fungsi dan STA untuk timing. (4) Perdalam di tahap yang Anda lamar. Hindari sekadar membaca daftar tanpa menyebut apa yang berpindah tangan.</p></details>
+<details class="icd-sol"><summary>"Apa beda front-end dan back-end?"</summary>
+<p><strong>Kerangka jawaban:</strong> Front-end mengurus <em>apa</em> yang dilakukan chip: spesifikasi, RTL, verifikasi fungsional, sampai netlist hasil sintesis. Back-end mengurus <em>bagaimana ia diwujudkan secara fisik</em>: floorplan sampai GDSII, termasuk timing dan aturan pabrik. Batasnya kira-kira di netlist. Sebut bahwa batas ini makin kabur karena sintesis kini memakai informasi fisik.</p></details>
+<details class="icd-sol"><summary>"Mengapa verifikasi memakan porsi usaha yang begitu besar?"</summary>
+<p><strong>Kerangka jawaban:</strong> (1) Biaya kesalahan setelah tapeout sangat tinggi dan tidak bisa ditambal. (2) Ruang keadaan desain tumbuh eksponensial terhadap jumlah bit penyimpan, sehingga tidak mungkin dicoba semuanya. (3) Karena itu dipakai gabungan teknik: constrained-random, coverage, assertion, formal, emulasi. Beri satu contoh bug terkenal, misalnya Pentium FDIV.</p></details>
+<details class="icd-sol"><summary>"Apa arti '5 nm' pada sebuah proses?"</summary>
+<p><strong>Kerangka jawaban:</strong> Itu nama generasi, bukan ukuran fisik. Jelaskan singkat sejarahnya (dulu sama dengan panjang gate), lalu sebut ukuran yang benar-benar bermakna: gate pitch, metal pitch, tinggi sel, kerapatan transistor. Pewawancara mencari kandidat yang tidak tertipu label pemasaran.</p></details>
+<details class="icd-sol"><summary>"Ceritakan tawar-menawar PPA yang pernah Anda hadapi."</summary>
+<p><strong>Kerangka jawaban:</strong> Untuk pemula, pakai proyek kuliah atau capstone. Struktur: situasi dan target, pilihan yang tersedia, angka sebelum dan sesudah, keputusan, dan apa yang dikorbankan. Contoh: menambah satu tahap pipeline menaikkan frekuensi maksimum tetapi menambah register (area dan daya) serta latency satu siklus.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: simulasi pertama</h2>
+<p><strong>Tujuan:</strong> memasang simulator, menjalankan kode di bagian 8, lalu sengaja merusaknya untuk melihat testbench menangkap kesalahan. Waktu: 45 sampai 60 menit, sebagian besar untuk pemasangan.</p>
+<h3>Langkah 1: siapkan lingkungan</h3>
+<p>Tool chip hidup di Linux. Di Windows, cara termudah adalah WSL2 (Windows Subsystem for Linux), yang menjalankan Ubuntu di dalam Windows.</p>
+<pre class="icd-src" data-lang="sh">
+# Windows: buka PowerShell sebagai Administrator, lalu
+wsl --install
+# Nyalakan ulang komputer, buka aplikasi "Ubuntu", buat nama pengguna dan kata sandi.
+</pre>
+<p>Di dalam Ubuntu (asli maupun WSL2):</p>
+<pre class="icd-src" data-lang="sh">
+sudo apt update
+sudo apt install -y iverilog gtkwave
+iverilog -V | head -1      # harus mencetak nomor versi
+</pre>
+<p>Di macOS dengan Homebrew: <code>brew install icarus-verilog</code>. Penampil waveform untuk macOS dibahas di halaman penyiapan lab.</p>
+<div class="icd-box verify"><b>Catatan pengujian</b>Lab ini diuji dengan Icarus Verilog 12.0 dari paket Ubuntu. Bagian simulasi (langkah 2, 3, dan 5) dijalankan dan keluarannya disalin apa adanya. GTKWave (langkah 4) adalah aplikasi grafis dan belum diuji di lingkungan penulisan; di WSL2 ia membutuhkan Windows 11 atau Windows 10 yang mendukung aplikasi grafis Linux.</div>
+<h3>Langkah 2: tulis kedua file</h3>
+<pre class="icd-src" data-lang="sh">
+mkdir -p ~/icd/m00 &amp;&amp; cd ~/icd/m00
+nano and2.sv        # tempel kode desain dari bagian 8, simpan dengan Ctrl+O, keluar Ctrl+X
+nano tb_and2.sv     # tempel kode testbench
+</pre>
+<h3>Langkah 3: kompilasi dan jalankan</h3>
+<pre class="icd-src" data-lang="sh">
+iverilog -g2012 -o sim and2.sv tb_and2.sv
+vvp sim
+</pre>
+<p><code>iverilog</code> mengompilasi kedua file menjadi berkas <code>sim</code>; opsi <code>-g2012</code> mengaktifkan SystemVerilog. <code>vvp</code> menjalankannya. Keluaran yang benar:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+VCD info: dumpfile and2.vcd opened for output.
+ok    a=0 b=0 y=0
+ok    a=0 b=1 y=0
+ok    a=1 b=0 y=0
+ok    a=1 b=1 y=1
+LULUS: semua 4 kombinasi benar
+tb_and2.sv:25: $finish called at 40000 (1ps)
+</pre>
+<p>Baris terakhir berarti simulasi berakhir pada 40 000 ps = 40 ns: empat kombinasi, masing-masing 10 ns.</p>
+<h3>Langkah 4: lihat waveform</h3>
+<pre class="icd-src" data-lang="sh">
+gtkwave and2.vcd
+</pre>
+<p>Di panel kiri pilih <code>tb_and2</code>, lalu seret <code>a</code>, <code>b</code>, dan <code>y</code> ke area sinyal. Tekan tombol Zoom Fit. Pastikan <code>y</code> hanya tinggi pada 30 sampai 40 ns, saat <code>a</code> dan <code>b</code> sama-sama 1.</p>
+<h3>Langkah 5: rusak dengan sengaja</h3>
+<p>Di <code>and2.sv</code>, ganti <code>a &amp; b</code> menjadi <code>a | b</code> (OR), lalu kompilasi dan jalankan lagi. Sebelum menjalankan, tebak: berapa kombinasi yang akan gagal?</p>
+<details class="icd-sol"><summary>Hasil yang diharapkan</summary>
+<pre class="icd-src" data-lang="text" data-ln="off">
+ok    a=0 b=0 y=0
+GAGAL a=0 b=1 y=1
+GAGAL a=1 b=0 y=1
+ok    a=1 b=1 y=1
+GAGAL: 2 kesalahan
+</pre>
+<p>AND dan OR hanya berbeda saat tepat satu masukan bernilai 1, jadi dua dari empat kombinasi gagal. Kembalikan ke <code>&amp;</code> setelah selesai.</p></details>
+<h3>Refleksi</h3>
+<ul>
+<li>Anda baru saja menjalankan dua tahap pertama alur: desain RTL dan verifikasi fungsional, lengkap dengan satu bug yang tertangkap.</li>
+<li>Seandainya testbench hanya mencoba kombinasi 00 dan 11, bug OR tadi akan lolos. Kelengkapan pengujian (coverage) adalah topik besar di M18.</li>
+</ul>
+<p><strong>Tanpa pemasangan:</strong> bila Anda belum bisa memasang tool, lanjutkan dulu ke modul berikutnya. Lab simulasi baru menjadi wajib di M08.</p>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Chip adalah miliaran transistor (saklar) yang dibuat bersama di atas silikon; dicetak per wafer, dipotong menjadi die, lalu dikemas.</li>
+<li>Kerumitan dijinakkan dengan abstraksi bertingkat: sistem, arsitektur, RTL, gerbang, transistor, layout, devais.</li>
+<li>Alur digital berjalan dari spesifikasi sampai silikon, dengan pemeriksaan di setiap perpindahan, dan berulang bila pemeriksaan gagal.</li>
+<li>Kesalahan makin mahal makin lambat ditemukan; karena itu sebagian besar usaha adalah memeriksa.</li>
+<li>Jumlah transistor berlipat dua kira-kira setiap dua tahun selama lima dekade; nama node kini hanya label.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Alur</h4>Spesifikasi → arsitektur → RTL → verifikasi → sintesis → DFT → floorplan → placement → CTS → routing → ekstraksi + STA → DRC/LVS → tapeout → fabrikasi → wafer test → packaging → final test → bring-up</div>
+<div class="icd-card"><h4>Abstraksi</h4>Sistem › arsitektur › RTL › gerbang › transistor › layout › devais</div>
+<div class="icd-card"><h4>Rumus</h4>N(t) = N₀·2^((t−t₀)/T)<br>T = (t−t₀) / log₂(N/N₀)<br>DPW ≈ π(d/2)²/S − πd/√(2S)</div>
+<div class="icd-card"><h4>PPA</h4>Performance (Hz) · Power (W) · Area (mm²). Selalu ditawar bertiga.</div>
+<div class="icd-card"><h4>File kunci</h4>.sv RTL · .vcd waveform · .lib sel · .sdc constraint · .lef/.def fisik · .spef parasitik · .gds layout</div>
+<div class="icd-card"><h4>Perintah lab</h4><code>iverilog -g2012 -o sim a.sv tb.sv</code><br><code>vvp sim</code><br><code>gtkwave x.vcd</code></div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>Harris &amp; Harris, <i>Digital Design and Computer Architecture, RISC-V Edition</i>, Bab 1 ("From Zero to One"): pengantar abstraksi dan disiplin digital. Bacaan pendamping terbaik untuk modul ini.</li>
+<li>Weste &amp; Harris, <i>CMOS VLSI Design</i>, edisi ke-4, Bab 1 ("Introduction"): gambaran lengkap dari transistor sampai layout dan alur desain dalam satu bab.</li>
+<li>Rabaey, Chandrakasan &amp; Nikolić, <i>Digital Integrated Circuits</i>, edisi ke-2, Bab 1: metrik kualitas desain (biaya, kinerja, daya).</li>
+<li>Patterson &amp; Hennessy, <i>Computer Organization and Design, RISC-V Edition</i>, Bab 1: abstraksi komputer, biaya chip, dan rumus die per wafer.</li>
+<li>G. E. Moore, "Cramming More Components onto Integrated Circuits," <i>Electronics</i>, 1965: makalah asli, hanya empat halaman dan mudah dibaca.</li>
+<li>R. H. Dennard dkk., "Design of Ion-Implanted MOSFET's with Very Small Physical Dimensions," <i>IEEE Journal of Solid-State Circuits</i>, 1974: asal aturan penskalaan. Simpan untuk setelah M06.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut ke <a href="m01a-matematika-dasar.html">M01a</a>: satuan, eksponen, logaritma, desibel, dan trigonometri.</p>
+</section>
+</main>
+
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, svg = ICD.svg, q = ICD.q, num = ICD.fmt.num, si = ICD.fmt.si;
+
+ICD.gloss.add([
+{ id: 'ic', en: 'integrated circuit (IC)', idn: 'rangkaian terpadu', def: 'Rangkaian elektronik yang seluruh komponennya dibuat bersama pada sekeping semikonduktor; sehari-hari disebut chip.', mod: 'M00' },
+{ id: 'transistor', en: 'transistor', idn: 'transistor', def: 'Devais semikonduktor berkaki tiga yang bekerja sebagai saklar atau penguat; bata penyusun semua chip.', mod: 'M00, M06' },
+{ id: 'wafer', en: 'wafer', idn: 'wafer', def: 'Piringan silikon tipis tempat ratusan chip dibuat sekaligus; diameter umum 300 mm.', mod: 'M00, M30' },
+{ id: 'die', en: 'die', idn: 'die', def: 'Satu potongan chip pada wafer, sebelum dikemas.', mod: 'M00' },
+{ id: 'package', en: 'package', idn: 'kemasan', def: 'Pembungkus die yang melindunginya dan menyediakan sambungan listrik ke papan rangkaian.', mod: 'M00, M31' },
+{ id: 'fab', en: 'fab', idn: 'pabrik fabrikasi', def: 'Pabrik pembuat chip; singkatan dari fabrication plant.', mod: 'M00, M30' },
+{ id: 'foundry', en: 'foundry', idn: 'foundry', def: 'Perusahaan yang memproduksi chip rancangan pihak lain.', mod: 'M00, M30' },
+{ id: 'fabless', en: 'fabless', idn: 'tanpa pabrik', def: 'Perusahaan yang merancang chip tetapi menyerahkan fabrikasinya ke foundry.', mod: 'M00' },
+{ id: 'eda', en: 'EDA', idn: 'electronic design automation', def: 'Perangkat lunak untuk merancang, memverifikasi, dan mengimplementasikan chip.', mod: 'M00' },
+{ id: 'hdl', en: 'HDL', idn: 'bahasa deskripsi hardware', def: 'Bahasa untuk mendeskripsikan rangkaian digital, misalnya SystemVerilog dan VHDL.', mod: 'M00, M16' },
+{ id: 'ip', en: 'IP core', idn: 'blok IP', def: 'Blok desain siap pakai yang dilisensikan, misalnya inti prosesor atau antarmuka USB.', mod: 'M00, M15' },
+{ id: 'ppa', en: 'PPA', idn: 'performance, power, area', def: 'Tiga besaran yang selalu ditawar dalam desain chip: kinerja, daya, dan luas.', mod: 'M00' },
+{ id: 'abstraksi', en: 'abstraction', idn: 'abstraksi', def: 'Menyembunyikan detail tingkat bawah agar bisa berpikir pada satu tingkat saja.', mod: 'M00' },
+{ id: 'node', en: 'process node', idn: 'node proses', def: 'Nama generasi teknologi fabrikasi; pada node modern ini label pemasaran, bukan ukuran fisik.', mod: 'M00, M30' }
+]);
+
+/* ---------------- 1. alur ---------------- */
+var ST = [
+['fe','Spesifikasi','Menetapkan apa yang harus dilakukan chip dan target PPA-nya.','Kebutuhan produk dan pasar','Dokumen spesifikasi: fitur, antarmuka, target kinerja, daya, luas','Dokumen, tabel register','—','—','Architect, product manager','M34',0],
+['fe','Arsitektur','Membagi sistem menjadi blok, memilih antarmuka, dan memodelkan kinerja sebelum ada RTL.','Spesifikasi','Diagram blok, model kinerja, spesifikasi mikroarsitektur','Model C/C++/Python, dokumen','gem5, Spike','Model internal perusahaan','Architect','M11 sampai M15',0],
+['fe','Desain RTL','Menulis perilaku tiap blok sebagai register dan logika dalam HDL.','Spesifikasi mikroarsitektur','Kode RTL yang lulus lint','.sv, .v, .vhd','Verilator (lint), Verible','Lint dan CDC dari Synopsys, Cadence, Siemens EDA','RTL design engineer','M16, M17',0],
+['fe','Verifikasi fungsional','Membuktikan RTL berperilaku sesuai spesifikasi lewat simulasi dan formal.','RTL, verification plan','Regression lulus, laporan coverage, daftar bug tertutup','Testbench .sv, waveform .vcd/.fst, basis data coverage','Icarus Verilog, Verilator, cocotb, GTKWave, SymbiYosys','Synopsys VCS, Cadence Xcelium, Siemens Questa','DV engineer','M18, M19',0],
+['im','Sintesis logika','Menerjemahkan RTL menjadi netlist gerbang dari library sel, sambil memenuhi constraint timing.','RTL, library .lib, constraint .sdc','Netlist gerbang, laporan timing dan luas awal','Netlist .v, .sdc, .lib','Yosys dengan ABC','Synopsys Design Compiler / Fusion Compiler, Cadence Genus','Synthesis / implementation engineer','M21',1],
+['im','Penyisipan DFT','Menambah struktur test (scan chain, BIST) agar chip bisa diuji di pabrik.','Netlist','Netlist dengan scan, pola test','Netlist .v, pola STIL/WGL','Fault','Siemens Tessent, Synopsys TestMAX, Cadence Modus','DFT engineer','M26',1],
+['im','Floorplan dan power planning','Menentukan ukuran die, letak macro dan I/O, serta jaringan daya.','Netlist, LEF, file teknologi','Denah dengan macro terpasang dan jaringan daya','LEF, DEF','OpenROAD','Cadence Innovus, Synopsys IC Compiler II / Fusion Compiler, Siemens Aprisa','Physical design engineer','M23',1],
+['im','Placement','Menaruh setiap standard cell di barisnya sambil meminimalkan panjang kawat dan kemacetan.','Floorplan, netlist','Posisi sah untuk semua sel','DEF','OpenROAD','Tool place-and-route yang sama','Physical design engineer','M23',1],
+['im','Clock tree synthesis','Membangun jaringan buffer yang mengantar clock ke semua flip-flop dengan skew terkendali.','Desain yang sudah ditempatkan','Pohon clock, laporan skew dan latency','DEF, netlist diperbarui','OpenROAD (TritonCTS)','Tool place-and-route yang sama','Physical design engineer','M23',1],
+['im','Routing','Menarik semua kawat di lapisan logam tanpa melanggar aturan pabrik.','Desain dengan pohon clock','Layout dengan semua net tersambung','DEF','OpenROAD (FastRoute, TritonRoute)','Tool place-and-route yang sama','Physical design engineer','M23',1],
+['im','Ekstraksi dan STA signoff','Menghitung R dan C kawat nyata, lalu memeriksa timing di semua corner.','Layout ter-routing, .lib semua corner, .sdc','Laporan timing bersih (tanpa slack negatif)','SPEF, laporan timing, SDF','OpenRCX, OpenSTA','Synopsys StarRC + PrimeTime, Cadence Quantus + Tempus','STA engineer','M22',1],
+['im','Verifikasi fisik','Memeriksa layout terhadap aturan pabrik (DRC) dan terhadap netlist (LVS).','Layout GDSII, rule deck dari PDK','Laporan DRC dan LVS bersih','GDSII / OASIS, rule deck','Magic, KLayout, Netgen','Siemens Calibre, Synopsys IC Validator, Cadence Pegasus','Physical verification engineer','M24',1],
+['im','Tapeout','Menyerahkan layout final ke foundry. Setelah titik ini perubahan berarti mask baru.','Layout yang lulus semua signoff','File yang diterima foundry','GDSII / OASIS','KLayout (pemeriksaan akhir)','—','Seluruh tim, dipimpin project lead','M24',2],
+['mf','Fabrikasi','Foundry membuat mask lalu memproses wafer lapis demi lapis selama berminggu-minggu sampai berbulan-bulan.','GDSII / OASIS','Wafer berisi ratusan die','Wafer','—','—','Foundry','M30',3],
+['mf','Wafer test','Menguji setiap die di wafer dengan jarum probe dan menandai yang gagal.','Wafer, pola test','Peta wafer: die baik dan buruk','Pola test, wafer map','—','Automatic test equipment (ATE)','Test / product engineer','M26',3],
+['mf','Packaging','Memotong wafer, lalu mengemas die yang baik.','Die baik','Chip terkemas','—','—','—','Rumah perakitan (OSAT)','M31',3],
+['mf','Final test','Menguji chip terkemas pada berbagai suhu dan tegangan sebelum dikirim.','Chip terkemas, program test','Chip lulus yang siap dijual','Program test','—','ATE','Test / product engineer','M26',3],
+['mf','Bring-up dan validasi','Menyalakan silikon pertama di lab, menjalankan perangkat lunak nyata, dan mencari bug yang lolos.','Chip, papan evaluasi, firmware','Laporan validasi, daftar perbaikan untuk revisi berikutnya','Log, tangkapan osiloskop','OpenOCD, GDB','Debugger dan penganalisis logika','Validation engineer, firmware engineer','M26',3]
+];
+var PHASE = ['desain','implementasi','setelah tapeout','silikon di lab'];
+var flowBtns = [], flowCtl;
+function flowDraw(s){
+  var i = s.i, t = ST[i], k = parseInt(q('#flow-k').value, 10), d = q('#flow-detail');
+  flowBtns.forEach(function(b, n){ b.setAttribute('aria-pressed', n === i ? 'true' : 'false'); b.classList.toggle('past', n < i); });
+  d.textContent = '';
+  d.appendChild(el('h4', { text: (i + 1) + '. ' + t[1], style: 'margin:0 0 .3em' }));
+  d.appendChild(el('p', { text: t[2], style: 'margin-bottom:.6em' }));
+  var dl = el('dl', { class: 'kv' });
+  [['Masukan', t[3]], ['Keluaran', t[4]], ['Format file', t[5]], ['Tool open-source', t[6]], ['Tool komersial', t[7]], ['Peran', t[8]], ['Dibahas di', t[9]]].forEach(function(r){ dl.appendChild(el('dt', { text: r[0] })); dl.appendChild(el('dd', { text: r[1] })); });
+  d.appendChild(dl);
+  q('#flow-kv').textContent = k + '×';
+  q('#flow-out').textContent = 'Tahap ' + (i + 1) + ' dari ' + ST.length + '  ·  fase: ' + PHASE[t[10]] + '  ·  biaya relatif bug yang baru ketahuan di sini = ' + k + '^' + t[10] + ' = ' + num(Math.pow(k, t[10]), 6) + '×  ·  di tangan pelanggan = ' + num(Math.pow(k, 4), 6) + '×';
+}
+function flowInit(){
+  var list = q('#flow-list');
+  ST.forEach(function(t, i){
+    var b = el('button', { type: 'button', class: t[0], 'aria-pressed': 'false', onclick: function(){ flowCtl.reset(); for (var n = 0; n < i; n++) flowCtl.step(); } }, [el('b', { text: (i + 1) }), t[1]]);
+    flowBtns.push(b); list.appendChild(el('li', null, [b]));
+  });
+  flowCtl = ICD.sim.mount('#vflow', { fps: 0.6, unit: 'langkah', label: 'Kontrol perjalanan alur',
+    init: function(){ return { i: 0 }; }, step: function(s){ return s.i < ST.length - 1 ? { i: s.i + 1 } : null; }, draw: flowDraw });
+  q('#flow-k').addEventListener('input', function(){ flowCtl.redraw(); });
+}
+
+/* ---------------- 2. garis waktu ---------------- */
+var CATS = [['dev', 'Devais', 'data'], ['pro', 'Proses', 'reset'], ['des', 'Desain dan EDA', 'ctrl'], ['ars', 'Arsitektur dan bisnis', 'clock']];
+var EV = [
+[1947,'dev','Transistor pertama','Bardeen dan Brattain di Bell Labs mendemonstrasikan transistor titik-kontak; Shockley menyusul dengan transistor junction. Tabung vakum mulai tergantikan.'],
+[1958,'dev','Integrated circuit pertama','Jack Kilby di Texas Instruments membuat beberapa komponen pada satu keping germanium.'],
+[1959,'pro','Proses planar','Jean Hoerni di Fairchild menemukan proses planar; Robert Noyce memakainya untuk IC silikon monolitik dengan sambungan logam di permukaan. Inilah cara chip dibuat sampai sekarang.'],
+[1960,'dev','MOSFET','Atalla dan Kahng di Bell Labs mendemonstrasikan MOSFET, jenis transistor yang kelak mengisi hampir semua chip.'],
+[1963,'dev','CMOS','Wanlass dan Sah di Fairchild memperkenalkan pasangan NMOS dan PMOS yang hampir tidak memakai daya saat diam.'],
+[1965,'ars','Pengamatan Moore','Gordon Moore mengamati jumlah komponen per chip berlipat dua secara teratur; pada 1975 ia merevisi lajunya menjadi sekitar dua tahun.'],
+[1971,'ars','Intel 4004','Mikroprosesor komersial pertama: 2 300 transistor pada proses 10 µm.'],
+[1974,'dev','Dennard scaling','Robert Dennard dkk. merumuskan aturan penskalaan: transistor yang dikecilkan menjadi lebih cepat dan lebih hemat dengan kerapatan daya tetap.'],
+[1980,'des','Mead dan Conway','Buku "Introduction to VLSI Systems" memisahkan desain dari fabrikasi lewat aturan desain sederhana, membuka desain chip bagi universitas.'],
+[1984,'des','Verilog','Bahasa Verilog diciptakan di Gateway Design Automation; kelak menjadi standar IEEE 1364 pada 1995.'],
+[1985,'des','FPGA pertama','Xilinx XC2064: chip yang logikanya bisa diprogram ulang setelah dibuat.'],
+[1987,'ars','Foundry murni','TSMC berdiri dengan model hanya memproduksi rancangan pihak lain, memungkinkan lahirnya perusahaan fabless. Pada tahun yang sama VHDL menjadi standar IEEE 1076.'],
+[1990,'ars','ARM didirikan','Model bisnis lisensi IP prosesor: merancang inti, tidak menjual chip.'],
+[2005,'des','SystemVerilog','IEEE 1800 menggabungkan desain dan verifikasi dalam satu bahasa.'],
+[2007,'pro','High-k metal gate','Intel memakai dielektrik high-k dan gate logam pada proses 45 nm untuk menekan arus bocor gate.'],
+[2010,'ars','RISC-V','Arsitektur instruksi terbuka dimulai di UC Berkeley.'],
+[2011,'dev','FinFET','Intel mengumumkan transistor Tri-Gate pada proses 22 nm; produk pertamanya keluar 2012. Pada tahun yang sama Accellera merilis UVM 1.0 untuk verifikasi.'],
+[2019,'pro','EUV produksi massal','Litografi extreme ultraviolet (panjang gelombang 13.5 nm) masuk produksi volume pada 2018 sampai 2019.'],
+[2020,'des','PDK terbuka','SkyWater dan Google merilis PDK open-source SKY130; siapa pun bisa merancang chip sampai layout tanpa perjanjian kerahasiaan.'],
+[2022,'dev','Gate-all-around','Samsung memulai produksi proses 3 nm dengan transistor GAA. Pada tahun yang sama Tiny Tapeout mulai memungkinkan pemula mengirim desain kecil ke pabrik.'],
+[2025,'dev','GAA meluas, backside power','Status per November 2026 (produksi massal): TSMC memulai produksi volume N2 dengan transistor nanosheet pada kuartal 4 2025; Intel memproduksi 18A yang menggabungkan GAA dengan penyaluran daya dari sisi belakang wafer, dengan produk pertama beredar awal 2026. Litografi High-NA EUV sudah terpasang di beberapa pabrik tetapi belum menjadi alat produksi utama.']
+];
+var tlState = { on: { dev: 1, pro: 1, des: 1, ars: 1 } }, tlCtl, tlDots = [];
+function tlVisible(){ return EV.map(function(e, i){ return i; }).filter(function(i){ return tlState.on[EV[i][1]]; }); }
+function tlDraw(s){
+  var vis = tlVisible(), idx = vis.length ? vis[Math.min(s.i, vis.length - 1)] : -1, d = q('#tl-detail');
+  tlDots.forEach(function(g, i){ g.classList.toggle('sel', i === idx); g.classList.toggle('off', !tlState.on[EV[i][1]]); g.setAttribute('aria-pressed', i === idx ? 'true' : 'false'); });
+  d.textContent = '';
+  if (idx < 0){ d.appendChild(el('p', { class: 'icd-muted', text: 'Semua kategori dimatikan.' })); q('#tl-out').textContent = ''; return; }
+  var e = EV[idx], cat = CATS.filter(function(c){ return c[0] === e[1]; })[0];
+  d.appendChild(el('h4', { text: e[0] + ' · ' + e[2], style: 'margin:0 0 .3em' })); d.appendChild(el('p', { text: e[3], style: 'margin:0' }));
+  q('#tl-out').textContent = cat[1] + '  ·  ' + (e[0] - 1947) + ' tahun setelah transistor pertama  ·  ' + (2026 - e[0]) + ' tahun sebelum 2026  ·  peristiwa ' + (vis.indexOf(idx) + 1) + ' dari ' + vis.length;
+}
+function tlInit(){
+  var W = 690, H = 176, L = 14, R = 16, y0 = 14, lane = 34, X = function(y){ return L + (y - 1944) / (2030 - 1944) * (W - L - R); };
+  var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'group', 'aria-label': 'Garis waktu 1947 sampai 2025' });
+  for (var y = 1950; y <= 2030; y += 10){ s.appendChild(svg('line', { x1: X(y), y1: y0 - 8, x2: X(y), y2: H - 22, stroke: 'var(--line)' })); s.appendChild(svg('text', { x: X(y), y: H - 6, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink2)', text: y })); }
+  CATS.forEach(function(c, r){ s.appendChild(svg('line', { x1: L, y1: y0 + r * lane + 12, x2: W - R, y2: y0 + r * lane + 12, stroke: 'var(--line)' })); });
+  EV.forEach(function(e, i){
+    var r = CATS.findIndex(function(c){ return c[0] === e[1]; }), col = 'var(--s-' + CATS[r][2] + ')';
+    var g = svg('g', { class: 'dot', tabindex: 0, role: 'button', 'aria-label': e[0] + ', ' + e[2], transform: 'translate(' + X(e[0]) + ',' + (y0 + r * lane + 12) + ')' }, [svg('circle', { r: 7, fill: col }), svg('circle', { r: 16, fill: 'transparent', stroke: 'none' })]);
+    function go(){ var vis = tlVisible(), k = vis.indexOf(i); if (k < 0) return; tlCtl.reset(); for (var n = 0; n < k; n++) tlCtl.step(); }
+    g.addEventListener('click', go); g.addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); go(); g.focus(); } });
+    tlDots.push(g); s.appendChild(g);
+  });
+  q('#tl-svg').appendChild(s);
+  var f = q('#tl-filters');
+  CATS.forEach(function(c){
+    var cb = el('input', { type: 'checkbox', checked: true }); cb.checked = true;
+    cb.addEventListener('change', function(){ tlState.on[c[0]] = cb.checked ? 1 : 0; tlCtl.reset(); });
+    f.appendChild(el('label', { class: 'icd-row', style: 'min-height:44px' }, [cb, el('span', { style: 'display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--s-' + c[2] + ')' }), c[1]]));
+  });
+  tlCtl = ICD.sim.mount('#vtl', { fps: 0.5, unit: 'langkah', label: 'Kontrol garis waktu',
+    init: function(){ return { i: 0 }; }, step: function(s){ return s.i < tlVisible().length - 1 ? { i: s.i + 1 } : null; }, draw: tlDraw });
+}
+
+/* ---------------- 3. skala ---------------- */
+var OBJ = [
+['wafer','Wafer 300 mm',0.3],['die','Die 10 mm',0.01],['rambut','Rambut manusia',70e-6],['f4004','Proses Intel 4004 (10 µm)',10e-6],
+['darah','Sel darah merah',7e-6],['cahaya','Cahaya hijau (550 nm)',550e-9],['duv','Litografi DUV (193 nm)',193e-9],['virus','Virus (~100 nm)',100e-9],
+['pitch','Gate pitch (andaian)',48e-9],['euv','Litografi EUV (13.5 nm)',13.5e-9],['kisi','Kisi kristal silikon (0.54 nm)',0.543e-9],['atom','Atom silikon',0.22e-9]];
+function scSize(o){ return o[0] === 'pitch' ? parseFloat(q('#sc-p').value) * 1e-9 : o[2]; }
+function scDraw(){
+  var W = 690, L = 18, R = 18, X = function(m){ return L + (Math.log10(m) + 10) / 10 * (W - L - R); };
+  var A = OBJ[q('#sc-a').selectedIndex], B = OBJ[q('#sc-b').selectedIndex], a = scSize(A), b = scSize(B);
+  if (a > b){ var t = A; A = B; B = t; t = a; a = b; b = t; }
+  var s = svg('svg', { width: W, height: 270, viewBox: '0 0 ' + W + ' 270', role: 'img', 'aria-label': 'Penggaris logaritmik dari 0.1 nanometer sampai 1 meter dengan ' + OBJ.length + ' benda' });
+  var names = ['0.1 nm', '1 nm', '10 nm', '100 nm', '1 µm', '10 µm', '100 µm', '1 mm', '1 cm', '10 cm', '1 m'];
+  for (var e = -10; e <= 0; e++){ var x = X(Math.pow(10, e)); s.appendChild(svg('line', { x1: x, y1: 20, x2: x, y2: 152, stroke: 'var(--line)' })); s.appendChild(svg('text', { x: x, y: 13, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink2)', text: names[e + 10] })); }
+  s.appendChild(svg('rect', { x: X(a), y: 22, width: Math.max(1, X(b) - X(a)), height: 128, fill: 'var(--s-hi)', 'fill-opacity': 0.14 }));
+  OBJ.slice().sort(function(u, v){ return scSize(u) - scSize(v); }).forEach(function(o, i){
+    var x = X(scSize(o)), hot = o === A || o === B, y = 34 + (i % 6) * 22, right = x > W - 200;
+    s.appendChild(svg('line', { x1: x, y1: 22, x2: x, y2: y, stroke: hot ? 'var(--s-hi)' : 'var(--ink2)', 'stroke-width': hot ? 2 : 1 }));
+    s.appendChild(svg('circle', { cx: x, cy: y, r: hot ? 5 : 3.5, fill: hot ? 'var(--s-hi)' : 'var(--s-data)' }));
+    s.appendChild(svg('text', { x: x + (right ? -8 : 8), y: y + 4, 'text-anchor': right ? 'end' : 'start', 'font-size': 10.5, 'font-weight': hot ? 700 : 400, fill: 'var(--ink)', text: o[1] }));
+  });
+  var ratio = b / a, bw = W - L - R;
+  s.appendChild(svg('text', { x: L, y: 180, 'font-size': 11, fill: 'var(--ink2)', text: 'Skala linear: batang penuh = ' + B[1] }));
+  s.appendChild(svg('rect', { x: L, y: 190, width: bw, height: 34, fill: 'none', stroke: 'var(--s-data)', 'stroke-width': 1.6 }));
+  if (ratio <= 260){ for (var k = 1; k < ratio; k++) s.appendChild(svg('line', { x1: L + bw * k / ratio, y1: 190, x2: L + bw * k / ratio, y2: 224, stroke: 'var(--s-hi)', 'stroke-width': 1 })); s.appendChild(svg('text', { x: L, y: 244, 'font-size': 11, fill: 'var(--ink)', text: 'Setiap ruas = satu ' + A[1] })); }
+  else s.appendChild(svg('text', { x: L, y: 244, 'font-size': 11, fill: 'var(--ink)', text: 'Satu ' + A[1] + ' hanya selebar ' + num(bw / ratio, 2) + ' piksel di batang ini: terlalu kecil untuk digambar.' }));
+  var host = q('#sc-svg'); host.textContent = ''; host.appendChild(s);
+  q('#sc-pv').textContent = q('#sc-p').value + ' nm';
+  q('#sc-out').textContent = B[1] + ' = ' + si(b, 'm') + '  ·  ' + A[1] + ' = ' + si(a, 'm') + '  ·  berjajar: ' + num(ratio, 3) + ' buah  ·  per luas persegi: ' + num(ratio * ratio, 3) + ' buah  ·  selisih ' + num(Math.log10(ratio), 2) + ' orde besaran';
+}
+function scInit(){
+  OBJ.forEach(function(o){ q('#sc-a').appendChild(el('option', { text: o[1] })); q('#sc-b').appendChild(el('option', { text: o[1] })); });
+  q('#sc-b').selectedIndex = 2; q('#sc-a').selectedIndex = 8;
+  ['#sc-a', '#sc-b', '#sc-p'].forEach(function(id){ q(id).addEventListener('input', scDraw); });
+  scDraw();
+}
+
+/* ---------------- 4. Moore ---------------- */
+var CPU = [[1971,2300,'Intel 4004'],[1978,29000,'8086'],[1982,134000,'80286'],[1985,275000,'80386'],[1989,1.2e6,'80486'],[1993,3.1e6,'Pentium'],[1997,7.5e6,'Pentium II'],[2000,42e6,'Pentium 4'],[2006,291e6,'Core 2 Duo'],[2008,731e6,'Core i7 (Nehalem)'],[2020,16e9,'Apple M1'],[2021,57e9,'Apple M1 Max'],[2023,134e9,'Apple M2 Ultra']];
+var moPlot;
+function moDraw(){
+  var T = parseFloat(q('#mo-t').value), f = function(y){ return 2300 * Math.pow(2, (y - 1971) / T); }, err = 0;
+  CPU.forEach(function(c){ var d = Math.log10(f(c[0])) - Math.log10(c[1]); err += d * d; }); err = Math.sqrt(err / CPU.length);
+  var o = { title: 'Jumlah transistor per chip', height: 300, x: { label: 'tahun', min: 1970, max: 2026, plain: true }, y: { label: 'transistor', log: true, min: 1e3, max: 1e13, plain: true },
+    series: [{ label: 'data 13 prosesor', kind: 'data', dash: [], unit: '', pts: CPU.map(function(c){ return [c[0], c[1]]; }) }, { label: 'model T = ' + T.toFixed(2) + ' tahun', kind: 'hi', dash: [7, 4], unit: '', pts: ICD.sample(f, 1971, 2026, 110) }] };
+  if (!moPlot) moPlot = ICD.plot('#mo-plot', o); else moPlot.set(o);
+  q('#mo-tv').textContent = T.toFixed(2) + ' tahun';
+  q('#mo-out').textContent = 'Prediksi model untuk 2023: ' + num(f(2023), 3) + ' (data: 1.34×10^11)  ·  galat RMS = ' + num(err, 3) + ' dekade, artinya meleset rata-rata ' + num(Math.pow(10, err), 3) + ' kali';
+}
+
+/* ---------------- kuis ---------------- */
+function quiz(){
+ICD.quiz.mount('#kuis', { id: 'm00', title: 'Kuis M00', questions: [
+{ q: 'Apa yang paling tepat menggambarkan sebuah <i>die</i>?', o: [
+  { t: 'Satu potongan chip pada wafer sebelum dikemas', ok: true, w: 'Wafer memuat ratusan die; setelah diuji, die dipotong dan dikemas.' },
+  { t: 'Piringan silikon tempat chip dicetak', w: 'Piringan itu disebut wafer. Die adalah satu chip di antara ratusan chip di atas wafer.' },
+  { t: 'Chip yang sudah dikemas dan siap disolder', w: 'Itu chip terkemas (packaged chip). Die adalah silikon telanjangnya.' },
+  { t: 'Cetakan pola yang dipakai saat litografi', w: 'Cetakan pola litografi disebut mask atau reticle; ia dibuat dari file layout setelah tapeout.' }] },
+{ q: 'Tahap mana yang mengubah RTL menjadi netlist gerbang?', o: [
+  { t: 'Sintesis logika', ok: true, w: 'Sintesis memetakan RTL ke sel dari library dengan memperhatikan constraint.' },
+  { t: 'Placement', w: 'Placement menaruh sel yang sudah ada di netlist ke posisi fisik.' },
+  { t: 'Verifikasi fungsional', w: 'Verifikasi memeriksa RTL; ia tidak mengubah bentuknya.' },
+  { t: 'Routing', w: 'Routing menarik kawat antar sel yang sudah ditempatkan.' }] },
+{ q: 'Urutan mana yang benar?', o: [
+  { t: 'Floorplan → placement → clock tree synthesis → routing', ok: true, w: 'Denah dulu, lalu sel ditempatkan, clock dibangun, baru semua kawat ditarik.' },
+  { t: 'Placement → floorplan → routing → clock tree synthesis', w: 'Floorplan harus mendahului placement, dan clock tree dibangun sebelum routing sinyal.' },
+  { t: 'Routing → placement → floorplan → clock tree synthesis', w: 'Kawat tidak bisa ditarik sebelum sel punya posisi.' },
+  { t: 'Clock tree synthesis → floorplan → placement → routing', w: 'Pohon clock butuh posisi flip-flop, jadi harus setelah placement.' }] },
+{ q: 'File berakhiran <code>.gds</code> berisi apa?', o: [
+  { t: 'Layout akhir: poligon di setiap lapisan', ok: true, w: 'GDSII adalah format layout yang dikirim ke foundry saat tapeout.' },
+  { t: 'Delay dan daya setiap sel library', w: 'Delay dan daya sel disimpan dalam format Liberty (.lib), yang dipakai sintesis dan STA.' },
+  { t: 'Constraint timing', w: 'Constraint timing ditulis dalam SDC (.sdc): definisi clock, delay masukan dan keluaran.' },
+  { t: 'Rekaman waveform simulasi', w: 'Waveform simulasi disimpan sebagai VCD atau FST dan dibuka dengan penampil seperti GTKWave.' }] },
+{ q: 'Chip A berisi 1 juta transistor. Dengan periode penggandaan 2 tahun, berapa jumlahnya 8 tahun kemudian?', o: [
+  { t: '16 juta', ok: true, w: '8/2 = 4 penggandaan; 2⁴ = 16.' },
+  { t: '8 juta', w: 'Ini hasil 1 juta × 2 × 4 (pertumbuhan linear). Penggandaan berulang berarti pangkat: 2⁴.' },
+  { t: '4 juta', w: 'Itu jumlah penggandaan dikali 1 juta, bukan 2 pangkat jumlah penggandaan.' },
+  { t: '256 juta', w: 'Itu 2⁸, yang berlaku jika berlipat dua setiap tahun.' }] },
+{ q: 'Apa arti "3 nm" pada nama sebuah proses fabrikasi modern?', o: [
+  { t: 'Label generasi; tidak ada ukuran fisik transistor yang 3 nm', ok: true, w: 'Nama node modern adalah label pemasaran. Bandingkan proses lewat kerapatan dan ukuran fisik seperti gate pitch.' },
+  { t: 'Panjang gate transistor adalah 3 nm', w: 'Ini benar puluhan tahun lalu, tetapi tidak lagi sejak nama node lepas dari ukuran fisik.' },
+  { t: 'Jarak antar transistor adalah 3 nm', w: 'Gate pitch pada node terdepan masih puluhan nanometer.' },
+  { t: 'Panjang gelombang cahaya litografi adalah 3 nm', w: 'EUV memakai 13.5 nm dan DUV 193 nm; tidak terkait nama node.' }] },
+{ q: 'Mengapa kesalahan desain chip jauh lebih mahal daripada bug perangkat lunak?', o: [
+  { t: 'Chip yang sudah dibuat tidak bisa ditambal; perbaikan berarti fabrikasi ulang', ok: true, w: 'Respin memakan mask baru, waktu berminggu-minggu sampai berbulan-bulan, dan bisa berarti penarikan produk.' },
+  { t: 'Karena engineer chip digaji lebih tinggi', w: 'Biaya utama adalah mask, waktu fabrikasi, dan pasar yang hilang, bukan gaji.' },
+  { t: 'Karena HDL lebih sulit daripada bahasa pemrograman', w: 'Tingkat kesulitan bahasa tidak menjelaskan biayanya; sifat fisik yang tidak bisa diubah itulah penyebabnya.' },
+  { t: 'Karena simulasi chip tidak mungkin dilakukan', w: 'Simulasi justru dilakukan besar-besaran; masalahnya ia tidak bisa mencakup semua kemungkinan.' }] },
+{ q: 'Perusahaan yang merancang chip tetapi tidak punya pabrik disebut apa?', o: [
+  { t: 'Fabless', ok: true, w: 'Fabless menyerahkan produksi ke foundry.' },
+  { t: 'Foundry', w: 'Foundry justru yang punya pabrik dan memproduksi rancangan pihak lain.' },
+  { t: 'IDM', w: 'IDM (integrated device manufacturer) merancang sekaligus memproduksi di pabriknya sendiri.' },
+  { t: 'Vendor EDA', w: 'Vendor EDA membuat perangkat lunak desain, bukan chip.' }] },
+{ q: 'Pada tingkat abstraksi RTL, benda apa yang dipikirkan engineer?', o: [
+  { t: 'Register dan logika di antaranya', ok: true, w: 'RTL berarti register-transfer level: data berpindah antar register melewati logika pada setiap siklus clock.' },
+  { t: 'Poligon di lapisan logam', w: 'Poligon dan lapisan logam adalah urusan tingkat layout, jauh di bawah RTL.' },
+  { t: 'Arus dan tegangan tiap transistor', w: 'Itu tingkat transistor (rangkaian).' },
+  { t: 'Jumlah instruksi per detik', w: 'Instruksi per detik adalah ukuran kinerja di tingkat arsitektur, di atas RTL.' }] },
+{ q: 'Wafer 300 mm, die 100 mm². Rumus pendekatan memberi sekitar 640 die, padahal luas wafer dibagi luas die adalah 707. Dari mana selisihnya?', o: [
+  { t: 'Die persegi di tepi lingkaran wafer terpotong dan terbuang', ok: true, w: 'Suku kedua rumus, πd/√(2S), memperkirakan die yang hilang di tepi.' },
+  { t: 'Sebagian die gagal test', w: 'Die yang gagal test dihitung lewat yield, secara terpisah setelah jumlah die kotor diketahui.' },
+  { t: 'Wafer sebenarnya lebih kecil dari 300 mm', w: 'Diameter 300 mm adalah nominal; selisihnya murni geometri persegi dalam lingkaran.' },
+  { t: 'Sebagian wafer dipakai untuk packaging', w: 'Packaging dilakukan setelah die dipotong, tidak memakai luas wafer.' }] },
+{ q: 'Dalam testbench di bagian 8, apa fungsi <code>$dumpvars</code>?', o: [
+  { t: 'Merekam nilai sinyal ke file agar bisa dilihat sebagai waveform', ok: true, w: 'Bersama $dumpfile, ia menghasilkan file VCD yang dibuka dengan GTKWave.' },
+  { t: 'Mencetak teks ke layar', w: 'Mencetak teks adalah tugas $display; $dumpvars tidak menulis apa pun ke layar.' },
+  { t: 'Mengakhiri simulasi', w: 'Mengakhiri simulasi adalah tugas $finish, di akhir blok initial.' },
+  { t: 'Menghubungkan desain ke testbench', w: 'Itu dilakukan oleh instansiasi: and2 dut (...).' }] },
+{ q: 'Mana pernyataan tentang kode di bagian 8 yang benar?', o: [
+  { t: 'Modul and2 synthesizable; testbench tidak', ok: true, w: 'Delay #10, $display, dan blok initial hanya bermakna di simulator.' },
+  { t: 'Keduanya akan menjadi hardware di chip', w: 'Testbench hanya hidup di simulator dan tidak pernah difabrikasi.' },
+  { t: 'Keduanya tidak synthesizable', w: 'assign y = a &amp; b adalah deskripsi gerbang AND yang sah untuk sintesis.' },
+  { t: 'Testbench synthesizable; modul and2 tidak', w: 'Terbalik: and2 berisi assign yang menjadi gerbang, sedangkan testbench memakai delay dan $display yang hanya dipahami simulator.' }] }
+] });
+}
+
+function cards(){
+ICD.cards.register('m00-orientasi', [
+{ id: 'ic', f: 'Apa itu integrated circuit?', b: 'Rangkaian elektronik yang seluruh komponennya dibuat bersama pada sekeping semikonduktor (hampir selalu silikon).' },
+{ id: 'waferdie', f: 'Beda wafer, die, dan chip terkemas?', b: '<b>Wafer</b>: piringan silikon berisi ratusan chip. <b>Die</b>: satu potongan chip. <b>Chip terkemas</b>: die di dalam package.' },
+{ id: 'abst', f: 'Tujuh tingkat abstraksi, dari atas?', b: 'Sistem › arsitektur › RTL › gerbang › transistor › layout › devais' },
+{ id: 'ppa', f: 'Kepanjangan PPA?', b: 'Performance, Power, Area: kinerja, daya, luas.' },
+{ id: 'flowfe', f: 'Empat tahap front-end?', b: 'Spesifikasi, arsitektur, desain RTL, verifikasi fungsional.' },
+{ id: 'flowpd', f: 'Urutan tahap physical design?', b: 'Floorplan → placement → clock tree synthesis → routing → ekstraksi dan STA → verifikasi fisik.' },
+{ id: 'synth', f: 'Apa masukan dan keluaran sintesis logika?', b: 'Masukan: RTL, library .lib, constraint .sdc. Keluaran: netlist gerbang.' },
+{ id: 'tapeout', f: 'Apa itu tapeout?', b: 'Penyerahan layout final (GDSII/OASIS) ke foundry. Setelah itu perubahan berarti mask baru.' },
+{ id: 'moore', f: 'Rumus pertumbuhan berlipat dua setiap T tahun?', b: 'N(t) = N₀ · 2^((t − t₀)/T)' },
+{ id: 'node', f: 'Apa arti nama node seperti "3 nm"?', b: 'Label generasi untuk pemasaran, bukan ukuran fisik. Bandingkan lewat kerapatan dan gate pitch.' },
+{ id: 'fabless', f: 'Fabless, foundry, IDM?', b: '<b>Fabless</b>: merancang saja. <b>Foundry</b>: memproduksi rancangan pihak lain. <b>IDM</b>: keduanya.' },
+{ id: 'dut', f: 'Apa itu DUT dan testbench?', b: '<b>DUT</b>: design under test, desain yang diuji. <b>Testbench</b>: kode yang memberi stimulus dan memeriksa keluarannya; tidak disintesis.' },
+{ id: 'gds', f: 'Format file layout akhir?', b: 'GDSII (.gds) atau OASIS (.oas).' },
+{ id: 'why', f: 'Mengapa verifikasi memakan porsi usaha terbesar?', b: 'Chip tidak bisa ditambal setelah dibuat, dan biaya kesalahan naik tajam di setiap fase berikutnya.' }
+]);
+ICD.cards.mount('#kartu', { file: 'm00-orientasi' });
+}
+
+ICD.ready(function(){
+  flowInit(); tlInit(); scInit();
+  q('#mo-t').addEventListener('input', moDraw); moDraw();
+  quiz(); cards();
+});
+})();
+</script>
+</body>
+</html>

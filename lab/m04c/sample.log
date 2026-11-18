@@ -1,0 +1,12 @@
+[10:00:01] INFO (SYN-001): memulai sintesis modul alu
+[10:00:03] WARNING (SYN-123): sinyal 'carry' tidak digerakkan
+[10:00:04] WARNING (SYN-123): sinyal 'flag_z' tidak digerakkan
+[10:00:09] WARNING (LNT-042): latch terinferensi pada 'sel'
+[10:00:12] INFO (OPT-007): area = 1520.5 um2
+[10:00:15] ERROR (TIM-501): slack = -0.12 ns pada jalur a->b
+[10:00:16] WARNING (SYN-123): sinyal 'ovf' tidak digerakkan
+[10:00:20] ERROR (TIM-501): slack = -0.31 ns pada jalur c->d
+[10:00:21] INFO (TIM-100): slack = 0.45 ns pada jalur e->f
+[10:00:25] WARNING (LNT-042): latch terinferensi pada 'mode'
+[10:00:30] ERROR (DRC-210): lebar logam 0.04 um < minimum 0.05 um
+[10:00:31] INFO (OPT-007): area = 1498.0 um2

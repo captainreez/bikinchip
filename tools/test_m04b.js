@@ -1,0 +1,117 @@
+const { chromium } = require(process.env.PLAYWRIGHT || 'playwright'); const fs = require('fs');
+const assert = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
+const F = 'm04b-assembly-toolchain-os';
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.CHROME || undefined });
+  const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage(); const errs = [];
+  p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  await p.goto(require('url').pathToFileURL(require('path').resolve(process.env.SITE || 'docs')).href + '/' + F + '.html'); await p.waitForTimeout(300);
+  const set = async (id, v) => { await p.fill(id, String(v)); await p.dispatchEvent(id, 'input'); };
+  const sel = async (id, v) => { await p.selectOption(id, String(v)); };
+  const out = async id => p.textContent(id);
+  const fwd = async (v, n) => { for (let i = 0; i < n; i++) await p.click('#' + v + ' button:has-text("Maju")'); };
+  const s = await p.evaluate(() => { const txt = pre => [...pre.querySelectorAll('code')].map(c => { const k = c.cloneNode(true); k.querySelectorAll('.ln').forEach(x => x.remove()); return k.textContent; }).join('');
+    return { secs: document.querySelectorAll('section.icd-sec').length, viz: document.querySelectorAll('.icd-viz').length, guides: document.querySelectorAll('.icd-guide').length,
+    rawTerms: [...document.querySelectorAll('span[data-term]')].map(x => x.dataset.term).filter(t => !ICD.gloss.has || !ICD.gloss.has(t)),
+    layers: document.querySelectorAll('.icd-layers').length, nav: [...document.querySelectorAll('.icd-nav a')].map(a => a.getAttribute('href')),
+    links: [...document.querySelectorAll('main a[href*=".html"]')].map(a => a.getAttribute('href').split('#')[0]).filter(h => h !== 'index.html' && !ICD.reg.file(h.replace('.html', ''))),
+    code: [...document.querySelectorAll('#s08 pre')].map(txt), lab: [...document.querySelectorAll('#s14 pre')].map(txt) }; });
+  console.log(JSON.stringify({ secs: s.secs, viz: s.viz, guides: s.guides, layers: s.layers, nav: s.nav, labn: s.lab.length, raw: s.rawTerms, links: s.links }));
+  assert(s.secs === 16 && s.viz === 4 && s.guides === 4 && s.layers === 3, '16 bagian, 4 visualisasi, 4 eksperimen, 3 konsep berlapis');
+  assert(s.rawTerms.length === 0 && s.links.length === 0, 'istilah dan tautan sah');
+  const ck = async (id, ...subs) => { const t = await out(id); const bad = subs.filter(x => x instanceof RegExp ? !x.test(t) : !t.includes(x)); return { t, bad }; };
+  const A = async (name, id, ...subs) => { const r = await ck(id, ...subs); if (r.bad.length) console.log('      ', r.t); assert(r.bad.length === 0, name + (r.bad.length ? ' GAGAL: ' + r.bad.join(' | ') : '')); };
+  const click = async s => p.click(s);
+  const rd = f => fs.readFileSync('lab/m04b/' + f, 'utf8').trim();
+  assert(['sumloop.s', 'asmtest.c', 'emu.py', 'hello.s', 'start.s', 'util.s', 'util_dup.s', 'link.py', 'proc.c', 'sched.py', 'vm.py'].every((f, i) => s.code[i] && s.code[i].trim() === rd(f)), 'sebelas file kode identik dengan lab/m04b');
+  const tx = async id => (await p.textContent(id)).replace(/\s+/g, ' ').trim();
+  const M = '−';
+  // v1
+  await p.locator('#v1').scrollIntoViewIfNeeded(); await p.waitForTimeout(300);
+  assert(await p.locator('#v1-lst .ins').count() === 7 && await p.locator('#v1-reg .cell').count() === 7, 'v1: 7 instruksi, 7 sel register');
+  await A('v1: siap', '#v1-out', 'sum_to(10): siap', 'berikutnya [0] xor eax, eax', 'rax = 99 (sembarang)', 'total instruksi nanti = 34 (3n + 4 = 34)');
+  await fwd('v1', 2); await A('v1: langkah 2', '#v1-out', 'langkah 2 dari 34', '[1] test rdi, rdi', 'rax = 0', 'rdi = 10', 'ZF = 0 SF = 0', 'berikutnya [2] jle 6');
+  await (await p.$('#v1')).screenshot({ path: 'shots/m04b-v1.png' });
+  await fwd('v1', 32); await A('v1: sum_to(10) selesai', '#v1-out', 'selesai: sum_to(10) = 55 setelah 34 instruksi (3n + 4 = 34)', 'rsp = 0x7FFFE008');
+  await set('#v1-n', 3); await A('v1: n = 3 reset', '#v1-out', 'sum_to(3): siap', 'total instruksi nanti = 13');
+  await fwd('v1', 13); await A('v1: sum_to(3)', '#v1-out', 'selesai: sum_to(3) = 6 setelah 13 instruksi (3n + 4 = 13)');
+  await set('#v1-n', 0); await fwd('v1', 4); await A('v1: sum_to(0)', '#v1-out', 'selesai: sum_to(0) = 0 setelah 4 instruksi', 'n ≤ 0: jle langsung melompat');
+  await set('#v1-n', -3); await fwd('v1', 2); await A('v1: n negatif, SF', '#v1-out', 'langkah 2 dari 4', 'ZF = 0 SF = 1', 'berikutnya [2] jle 6');
+  await fwd('v1', 2); await A('v1: sum_to(-3) = 0', '#v1-out', 'selesai: sum_to(-3) = 0 setelah 4 instruksi');
+  await sel('#v1-fn', 'fact_it'); await set('#v1-n', 5); assert(await p.locator('#v1-lst .ins').count() === 8, 'v1: fact_it 8 instruksi');
+  await fwd('v1', 3); await A('v1: fact_it jle tak melompat', '#v1-out', 'langkah 3 dari 20', '[2] jle 7', 'rax = 1', 'rdi = 5', 'ZF = 0 SF = 0', 'berikutnya [3] imul rax, rdi');
+  await fwd('v1', 17); await A('v1: fact_it(5)', '#v1-out', 'selesai: fact_it(5) = 120 setelah 20 instruksi (4n = 20)');
+  await set('#v1-n', 12); await fwd('v1', 48); await A('v1: fact_it(12)', '#v1-out', 'selesai: fact_it(12) = 479001600 setelah 48 instruksi (4n = 48)');
+  await set('#v1-n', 1); await fwd('v1', 4); await A('v1: fact_it(1)', '#v1-out', 'selesai: fact_it(1) = 1 setelah 4 instruksi', 'n ≤ 1');
+  await sel('#v1-fn', 'sum_to'); await set('#v1-n', 10);
+  // v2
+  await p.locator('#v2').scrollIntoViewIfNeeded(); await p.waitForTimeout(300);
+  await A('v2: tahap 0', '#v2-out', 'tahap 0: start.o 24 B, util.o 7 B');
+  await fwd('v2', 1); await A('v2: tata letak', '#v2-out', 'tahap 1 tata letak: start.o @0x401000, util.o @0x401020', 'padding perataan 8 B');
+  assert(await p.locator('#v2-map .blk').count() === 3 && await p.locator('#v2-map .blk.pad').count() === 1, 'v2: 3 blok, 1 padding');
+  await fwd('v2', 1); await A('v2: simbol', '#v2-out', 'add_mul (U di start.o) ditemukan satu kali di util.o = 0x401020');
+  await fwd('v2', 1); await A('v2: relokasi', '#v2-out', 'rel32 = S ' + M + ' (alamat call + 5) = 0x401020 ' + M + ' (0x40100A + 5) = 0x00000011 → byte e8 11 00 00 00');
+  await fwd('v2', 1); await A('v2: hasil', '#v2-out', 'tahap 4 hasil: titik masuk _start = 0x401000', 'add_mul(4, 5) = (4 + 5) × 4 = 36', 'kode keluar 36');
+  await (await p.$('#v2')).screenshot({ path: 'shots/m04b-v2.png' });
+  assert(await p.locator('#v2-tab tbody tr').count() === 2, 'v2: 2 baris tabel');
+  await sel('#v2-al', '1'); await fwd('v2', 3); await A('v2: perataan 1', '#v2-out', 'start.o @0x401000, util.o @0x401018', 'padding perataan 0 B', '= 0x00000009 → byte e8 09 00 00 00');
+  await sel('#v2-al', '16'); await sel('#v2-ord', 'us'); await fwd('v2', 1); await A('v2: urutan terbalik', '#v2-out', 'util.o @0x401000, start.o @0x401007', 'padding perataan 0 B');
+  await fwd('v2', 2); await A('v2: rel32 negatif', '#v2-out', '0x401000 ' + M + ' (0x401011 + 5) = 0xFFFFFFEA → byte e8 ea ff ff ff');
+  await fwd('v2', 1); await A('v2: titik masuk bergeser', '#v2-out', 'titik masuk _start = 0x401007');
+  await sel('#v2-ord', 'su'); await sel('#v2-base', '400000'); await fwd('v2', 3); await A('v2: dasar 0x400000', '#v2-out', 'start.o @0x400000, util.o @0x400020', '(0x40000A + 5) = 0x00000011');
+  await sel('#v2-base', '401000'); await sel('#v2-sc', 'undef'); await fwd('v2', 2); await A('v2: undefined', '#v2-out', 'tahap 2 GAGAL: start.o: in function `_start\': (.text+0xb): undefined reference to `add_mul\'');
+  await fwd('v2', 2); await A('v2: berhenti', '#v2-out', 'tahap 3 tidak dijalankan', 'tahap 4: tidak ada eksekutabel');
+  assert(await p.locator('#v2-map .blk').count() === 1, 'v2: undef hanya start.o');
+  await sel('#v2-sc', 'dup'); await fwd('v2', 1); await A('v2: dup tata letak', '#v2-out', 'util_dup.o @0x401027');
+  await fwd('v2', 1); await A('v2: multiple definition', '#v2-out', 'multiple definition of `add_mul\'; util.o:(.text+0x0): first defined here');
+  await sel('#v2-sc', 'ok');
+  // v3
+  await p.locator('#v3').scrollIntoViewIfNeeded(); await p.waitForTimeout(300);
+  await A('v3: siap RR', '#v3-out', 'RR q=3: siap', 'burst 8, 4, 9, 5 (jumlah 26)', 'irisan yang akan dijalankan: 10');
+  await fwd('v3', 4); await A('v3: irisan 4', '#v3-out', 't = 12', 'irisan 4 dari 10: P4 jalan 3 satuan (sisa 2)');
+  await fwd('v3', 6); await A('v3: RR q=3 selesai', '#v3-out', 'selesai: rata-rata tunggu 15,00', 'rata-rata turnaround 21,50', 'pindah konteks 9', 'total 26', 'efisiensi CPU 100,0%');
+  assert(await p.locator('#v3-gantt .seg:not(.cs)').count() === 10 && await p.locator('#v3-gantt .seg.cs').count() === 0, 'v3: 10 irisan, tanpa context switch');
+  const tab = await p.$$eval('#v3-tab tbody tr', rs => rs.map(r => [...r.children].map(c => c.textContent.trim()).join(' ')));
+  assert(tab.join('|') === 'P1 8 23 23 15|P2 4 16 16 12|P3 9 26 26 17|P4 5 21 21 16', 'v3: tabel ' + tab.join('|'));
+  await (await p.$('#v3')).screenshot({ path: 'shots/m04b-v3.png' });
+  await set('#v3-cs', 1); await fwd('v3', 10); await A('v3: c = 1', '#v3-out', 'RR q=3 c=1', 'rata-rata tunggu 22,25', 'rata-rata turnaround 28,75', 'total 35', 'efisiensi CPU 74,3%');
+  assert(await p.locator('#v3-gantt .seg.cs').count() === 9, 'v3: 9 context switch');
+  await set('#v3-cs', 0); await sel('#v3-al', 'FCFS'); await fwd('v3', 4); await A('v3: FCFS', '#v3-out', 'FCFS · selesai: rata-rata tunggu 10,25', 'rata-rata turnaround 16,75', 'pindah konteks 3');
+  await sel('#v3-al', 'SJF'); await fwd('v3', 1); await A('v3: SJF mulai P2', '#v3-out', 'P2 jalan 4 satuan (sisa 0)');
+  await fwd('v3', 3); await A('v3: SJF', '#v3-out', 'selesai: rata-rata tunggu 7,50', 'rata-rata turnaround 14,00');
+  await sel('#v3-al', 'RR'); await set('#v3-q', 1); await fwd('v3', 26); await A('v3: RR q = 1', '#v3-out', 'rata-rata tunggu 14,25', 'rata-rata turnaround 20,75', 'pindah konteks 24');
+  await set('#v3-q', 8); await fwd('v3', 5); await A('v3: RR q = 8', '#v3-out', 'rata-rata tunggu 11,25', 'rata-rata turnaround 17,75', 'pindah konteks 4');
+  await set('#v3-q', 9); await fwd('v3', 4); await A('v3: RR q = 9 sama dengan FCFS', '#v3-out', 'rata-rata tunggu 10,25', 'rata-rata turnaround 16,75', 'pindah konteks 3');
+  await set('#v3-q', 3);
+  // v4
+  await p.locator('#v4').scrollIntoViewIfNeeded(); await p.waitForTimeout(300);
+  await A('v4: tahap 0', '#v4-out', 'VA = 0x2ABC (0010 1010 1011 1100)', 'VPN = 2', 'offset = 0xABC', 'akses: tulis (w)');
+  assert(await p.locator('#v4-bits .cell').count() === 16 && await p.locator('#v4-bits .cell.fa').count() === 4 && await p.locator('#v4-pt tbody tr').count() === 16, 'v4: 16 bit, 4 VPN, 16 baris');
+  await fwd('v4', 3); await A('v4: 0x2ABC w', '#v4-out', 'PTE[2]: hadir = 1, izin = rw-, frame = 1', 'izin diminta w: diizinkan', 'hasil: PA = 1 × 4096 + 0xABC = 0x1ABC');
+  const pab = await p.$$eval('#v4-pab .cell span:last-child', c => c.map(x => x.textContent).join(''));
+  assert(pab === '001101010111100', 'v4: bit PA ' + pab); assert(await p.locator('#v4-pab .cell.on').count() === 3 && await p.locator('#v4-pt th.hl').count() === 1, 'v4: 3 bit frame, 1 baris sorot');
+  await (await p.$('#v4')).screenshot({ path: 'shots/m04b-v4.png' });
+  const prs = async (v, ...subs) => { await sel('#v4-pre', v); await fwd('v4', 3); await A('v4: ' + v, '#v4-out', ...subs); };
+  await prs('0123|r', 'PTE[0]: hadir = 1, izin = r-x', 'diizinkan', 'PA = 2 × 4096 + 0x123 = 0x2123');
+  await prs('0123|w', 'ditolak (izin PTE r-x)', 'PROTECTION FAULT: akses w ditolak oleh izin r-x pada VPN 0');
+  await prs('0010|x', 'PA = 2 × 4096 + 0x010 = 0x2010');
+  await prs('1004|r', 'PTE[1]: hadir = 1, izin = r--, frame = 5', 'PA = 5 × 4096 + 0x004 = 0x5004');
+  await prs('2000|x', 'PROTECTION FAULT: akses x ditolak oleh izin rw- pada VPN 2');
+  await prs('3000|r', 'PTE[3]: hadir = 0 (tak ada pemetaan)', 'izin tidak diperiksa: halaman tak hadir', 'PAGE FAULT pada VPN 3', 'SIGSEGV');
+  await prs('D7FF|w', 'PAGE FAULT pada VPN 13 (halaman penjaga: stack overflow terdeteksi)');
+  await sel('#v4-g', '0'); await fwd('v4', 3); await A('v4: tanpa penjaga', '#v4-out', 'PA = 7 × 4096 + 0x7FF = 0x77FF (tanpa penjaga: menimpa frame 7 diam-diam)');
+  await sel('#v4-g', '1');
+  await prs('EFFF|w', 'PA = 3 × 4096 + 0xFFF = 0x3FFF');
+  await prs('FFF0|w', 'PA = 4 × 4096 + 0xFF0 = 0x4FF0');
+  await p.fill('#v4-va', '4000'); await p.dispatchEvent('#v4-va', 'input'); await sel('#v4-acc', 'r'); await fwd('v4', 3); await A('v4: ketik 4000 r', '#v4-out', 'VA = 0x4000', 'PA = 6 × 4096 + 0x000 = 0x6000');
+  // kuis dan kartu
+  const qz = await p.evaluate(() => { let n = 0, bad = []; return new Promise(res => { function go() { const q = document.querySelector('#kuis .q'); if (!q) return res({ n, bad });
+      const bs = [...document.querySelectorAll('#kuis .icd-opt')]; bs[0].click(); const whys = document.querySelectorAll('#kuis .why'); const right = document.querySelectorAll('#kuis .icd-opt.right').length;
+      if (whys.length !== bs.length || bs.length !== 4 || right !== 1 || [...whys].some(w => w.textContent.trim().length < 25)) bad.push(n + 1); n++; const nb = document.querySelector('#kuis .icd-btn.primary'); nb.click(); setTimeout(go, 10); } go(); }); });
+  assert(qz.n === 14 && qz.bad.length === 0, 'kuis: 14 soal sah ' + JSON.stringify(qz.bad));
+  const kc = await p.evaluate(() => ICD.cards.count('m04b-assembly-toolchain-os')); assert(kc === 18, 'flashcard 18: ' + kc);
+  assert(errs.length === 0, 'tanpa error konsol ' + errs.join('|'));
+  const mo = await (await b.newContext({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })).newPage();
+  await mo.goto(require('url').pathToFileURL(require('path').resolve(process.env.SITE || 'docs')).href + '/' + F + '.html'); for (const v of ['v1', 'v2', 'v3', 'v4']) await (await mo.$('#' + v)).screenshot({ path: 'shots/m04b-m-' + v + '.png' });
+  await b.close();
+})().catch(e => { console.error('CRASH', e.message.split('\n')[0]); process.exit(1); });

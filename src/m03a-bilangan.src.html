@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M03a Bilangan: biner, two's complement, fixed-point, IEEE 754 — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+.duo{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.duo>div{min-width:0}
+.sch{max-width:100%;height:auto}
+.sch text{font-family:var(--f-mono)}
+.bits{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.bits button{min-width:32px;min-height:44px;font:600 1.05rem var(--f-mono);border:1px solid var(--line);background:var(--bg2,transparent);color:inherit;border-radius:6px;cursor:pointer;padding:0 4px}
+.bits button[aria-pressed="true"]{background:var(--s-data);color:#fff;border-color:var(--s-data)}
+.bits button[aria-pressed="true"] .lab{color:inherit;opacity:.85}
+.bits button.fs[aria-pressed="true"]{background:var(--s-hi);color:#000;border-color:var(--s-hi)}
+.bits button.fe[aria-pressed="true"]{background:var(--s-ctrl);border-color:var(--s-ctrl)}
+.bits .lab{font:.72rem var(--f-mono);color:var(--ink2);display:block;line-height:1}
+.fa{display:grid;grid-template-columns:auto repeat(var(--n),minmax(26px,1fr));gap:2px;font:.9rem var(--f-mono);align-items:center;overflow-x:auto}
+.fa div{text-align:center;padding:2px 0}
+.fa .h{color:var(--ink2);font-size:.75rem}
+.fa .on{background:var(--s-data);color:#fff;border-radius:4px}
+.fa .cy{color:var(--s-hi);font-weight:700}
+.fa .rl{text-align:left;color:var(--ink2);padding-right:6px;white-space:nowrap}
+</style>
+</head>
+<body data-file="m03a-bilangan">
+<main>
+<p class="icd-small icd-muted">Bagian 1: Fondasi · M03 bagian a dari 2 · sekitar 10 jam · prasyarat: <a href="m01a-matematika-dasar.html">M01a</a> (eksponen, logaritma, desibel), <a href="m02a-rangkaian-dc.html">M02a</a> (hanya untuk motivasi: tegangan sebagai bit)</p>
+<h1>M03a Bilangan: biner, two's complement, fixed-point, IEEE 754</h1>
+<p>Chip tidak mengenal bilangan, hanya tegangan tinggi dan rendah. Semua yang disebut bilangan, huruf, gambar, atau suara adalah kesepakatan tentang cara membaca deretan bit. Modul ini membahas kesepakatan yang paling penting untuk desainer: bilangan bulat tak bertanda dan bertanda (two's complement), bilangan pecahan dengan titik tetap (fixed-point), dan bilangan titik mengambang IEEE 754. Anda akan membangun sendiri penjumlah dengan flag carry dan overflow di Verilog dan memeriksanya untuk semua 65 536 pasangan masukan, serta kodek IEEE 754 di Python yang dicocokkan dengan pustaka standar.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<ul>
+<li><strong>Setiap bus, register, dan ALU adalah keputusan representasi.</strong> Lebar 8, 16, atau 32 bit menentukan luas, delay, dan daya. Memilih lebar terlalu kecil menimbulkan overflow; terlalu besar memboroskan silikon.</li>
+<li><strong>Dua jenis bug paling licik di perangkat keras adalah luapan dan tanda.</strong> Hasil yang benar sebagai bilangan tak bertanda bisa salah sebagai bilangan bertanda; Verilog menambah kerumitan karena aturan lebar dan tanda ekspresinya (M16).</li>
+<li><strong>Pemrosesan sinyal dan AI hidup di fixed-point dan float kecil.</strong> Filter, ADC, dan akselerator memakai fixed-point; akselerator AI memakai bfloat16, FP8, dan format lebih kecil. Memahami kuantisasi dan pembulatan adalah syarat merancangnya (M14, M28).</li>
+<li><strong>Instruksi prosesor menyandikan bilangan.</strong> RISC-V memakai two's complement untuk bilangan bertanda dan IEEE 754 untuk floating-point; flag dan instruksi pembanding mengikuti aturan modul ini (M11).</li>
+<li><strong>Verifikasi bertumpu pada model referensi numerik.</strong> Testbench yang membandingkan keluaran hardware dengan model perangkat lunak harus tahu persis cara pembulatan dan saturasi diterapkan (M18).</li>
+<li><strong>Floating-point tidak sama dengan bilangan real.</strong> Penjumlahan tidak asosiatif, 0.1 tidak bisa disimpan persis, dan bilangan bulat besar kehilangan ketepatan. Ini bukan bug perangkat keras, melainkan konsekuensi format.</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Deretan bit tidak punya arti tanpa aturan tafsir. Two's complement membuat satu penjumlah melayani bilangan tak bertanda dan bertanda; yang berbeda hanya cara membaca flag carry dan overflow. Fixed-point adalah bilangan bulat dengan titik yang dibayangkan; floating-point menyimpan tanda, eksponen, dan signifikan, dengan jarak antar-bilangan yang tumbuh seiring besarnya nilai.</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a> (pangkat dua, logaritma basis 2, notasi ilmiah). Pengetahuan rangkaian tidak diperlukan selain gagasan bahwa sebuah kawat bernilai 0 atau 1.</p>
+<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<ol>
+<li>Mengubah bilangan antara desimal, biner, dan <span data-term="heks">heksadesimal</span>, dan menyebut rentang bilangan <i>n</i> bit.</li>
+<li>Membaca satu pola bit sebagai tak bertanda, sign-magnitude, one's complement, dan <span data-term="twoscomp">two's complement</span>, serta menegasikan dan memperluas tanda.</li>
+<li>Menjumlah dan mengurangi dengan benar, dan membedakan flag <span data-term="carry">carry</span> dan <span data-term="ovf">overflow</span> untuk tafsir tak bertanda dan bertanda.</li>
+<li>Menjelaskan geseran aritmetika dan logika, dan ukuran hasil perkalian.</li>
+<li>Merancang format <span data-term="fixedpoint">fixed-point</span> Q<i>i</i>.<i>f</i>, menghitung resolusi, rentang, galat kuantisasi, dan memilih antara bungkus (wrap) dan saturasi.</li>
+<li>Menguraikan dan menyandikan bilangan <span data-term="ieee754">IEEE 754</span>: tanda, eksponen terbias, signifikan, bilangan subnormal, nol, tak hingga, NaN.</li>
+<li>Menghitung <span data-term="ulp">ulp</span> dan galat relatif sebuah format, dan menjelaskan mengapa penjumlahan float tidak asosiatif.</li>
+<li>Menulis dan memverifikasi penjumlah Verilog dengan flag, dan menjelaskan urutan byte (<span data-term="endian">endianness</span>).</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Bit: lampu tulis</h3>
+<p>Sebuah bit adalah satu lampu yang menyala atau mati. Delapan lampu berjajar bisa menunjukkan 256 pola berbeda. Pola itu sendiri tidak berarti apa-apa; arti muncul dari kesepakatan: "ini bilangan bulat tak bertanda", "ini huruf", "ini warna piksel". <em>Di mana analogi ini berhenti:</em> lampu fisik punya status ketiga (rusak, redup). Di chip, tegangan di antara dua level adalah keadaan terlarang yang bisa mengacaukan logika (M09 membahas metastabilitas), dan perancang menjaganya jauh dari tepi desain.</p>
+<h3>Two's complement: odometer yang mundur</h3>
+<p>Odometer mobil 3 digit menunjukkan 000. Putar mundur satu langkah: ia menunjukkan 999. Jika kita sepakat bahwa 999 berarti −1, 998 berarti −2, dan seterusnya, maka penjumlahan melingkar yang sama (999 + 1 = 000) otomatis benar. Two's complement melakukan persis itu dengan basis dua: separuh atas pola dibaca sebagai negatif. <em>Di mana analogi ini berhenti:</em> odometer tidak memberi tahu bila ia melewati batas; perangkat keras punya flag overflow untuk itu, dan melupakannya adalah bug klasik.</p>
+<h3>Fixed-point: uang dalam sen</h3>
+<p>Toko yang menyimpan harga dalam sen (bilangan bulat) dan hanya menampilkannya dengan titik dua digit dari belakang sedang memakai fixed-point: titiknya tidak disimpan, hanya diingat. Penjumlahan harga aman; perkalian dua harga menghasilkan sen-kuadrat yang harus dibagi 100. <em>Di mana analogi ini berhenti:</em> toko biasanya membulatkan ke sen terdekat dan tidak khawatir luapan; di hardware, setiap bit adalah luas, dan perancang harus memutuskan jumlah bit pecahan, cara pembulatan, dan apa yang terjadi bila hasil terlalu besar.</p>
+<h3>Floating-point: notasi ilmiah dalam bit</h3>
+<p>Ilmuwan menulis 6.02 × 10²³ supaya angka sangat besar dan sangat kecil punya jumlah digit penting yang sama. Floating-point melakukannya dengan basis dua: sedikit bit untuk angka penting (signifikan), sedikit bit untuk pangkat dua. Di dekat 1 ia sangat rapat; di dekat 10<sup>30</sup> ia sangat jarang, tetapi galat <em>relatif</em>nya sama. <em>Di mana analogi ini berhenti:</em> hanya bilangan yang bisa ditulis sebagai (pecahan 24 bit) × 2<sup>pangkat</sup> yang tersimpan persis; 0.1 tidak, sebagaimana 1/3 tidak punya penulisan desimal berhingga.</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Notasi posisional, basis, dan satuan</h3>
+<p>Bilangan <i>d</i><sub><i>n</i>−1</sub>…<i>d</i><sub>1</sub><i>d</i><sub>0</sub> dalam basis <i>b</i> bernilai Σ <i>d</i><sub><i>k</i></sub><i>b</i><sup><i>k</i></sup>. Biner (<i>b</i> = 2) memakai bit 0 dan 1; bit paling kanan (<i>d</i><sub>0</sub>) adalah LSB (least significant bit), paling kiri adalah MSB. Delapan bit membentuk satu <span data-term="byte">byte</span>. Heksadesimal (basis 16) adalah singkatan biner: satu digit heks = empat bit (nibble), sehingga 0xB5 = 1011 0101.</p>
+<p><strong>Konversi.</strong> Biner ke desimal: jumlahkan pangkat dua yang bit-nya 1. Desimal ke biner: bagi berulang dengan 2 dan catat sisa dari belakang ke depan, atau kurangi pangkat dua terbesar yang muat. Contoh: 1000 = 512 + 256 + 128 + 64 + 32 + 8 = 11 1110 1000<sub>2</sub> = 0x3E8. Daftar pangkat dua yang layak dihafal sampai 2<sup>16</sup>: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536.</p>
+<p><strong>Satuan.</strong> Awalan SI memakai pangkat sepuluh (1 kB = 1000 byte, 1 MB = 10<sup>6</sup> byte); awalan biner memakai pangkat dua (1 KiB = 1024 byte, 1 MiB = 2<sup>20</sup> byte). Datasheet memori sering memakai kapasitas biner tetapi menulis "KB" dan "MB" secara kacau; periksa selalu. Laju data memakai pangkat sepuluh dan bit (1 Gbps = 10<sup>9</sup> bit per detik), sedangkan memori memakai byte; selisih faktor 8 sering mengacaukan perkiraan bandwidth.</p>
+
+<h3>4.2 Bilangan bulat tak bertanda</h3>
+<p>Dengan <i>n</i> bit, bilangan tak bertanda mencakup 0 sampai 2<sup><i>n</i></sup> − 1: 8 bit memberi 0–255, 16 bit 0–65 535, 32 bit 0–4 294 967 295. Jumlah dua bilangan <i>n</i> bit bisa membutuhkan <i>n</i> + 1 bit; bila bit ekstra itu dibuang, hasil menjadi (<i>a</i> + <i>b</i>) mod 2<sup><i>n</i></sup>, yaitu <em>membungkus</em> (wrap-around). Bit ekstra itulah flag <span data-term="carry">carry</span>. 255 + 1 pada 8 bit memberi 0 dengan carry 1.</p>
+
+<h3>4.3 Bilangan bertanda: empat cara membaca pola yang sama</h3>
+<p>Untuk menyatakan bilangan negatif ada tiga kesepakatan klasik. Ambil pola 8 bit 0xB5 = 1011 0101 sebagai contoh:</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Kesepakatan</th><th scope="col">Aturan</th><th scope="col" class="c">0xB5 dibaca</th><th scope="col">Rentang 8 bit</th></tr></thead>
+<tbody>
+<tr><th scope="row">Tak bertanda</th><td>Semua bit berbobot positif</td><td class="c">181</td><td>0 … 255</td></tr>
+<tr><th scope="row">Sign-magnitude</th><td>MSB tanda, sisanya besar</td><td class="c">−53</td><td>−127 … +127 (dua nol)</td></tr>
+<tr><th scope="row">One's complement</th><td>Negatif = semua bit dibalik</td><td class="c">−74</td><td>−127 … +127 (dua nol)</td></tr>
+<tr><th scope="row"><span data-term="twoscomp">Two's complement</span></th><td>MSB berbobot −2<sup><i>n</i>−1</sup></td><td class="c">−75</td><td>−128 … +127 (satu nol)</td></tr>
+</tbody></table></div>
+<p>Hampir seluruh hardware modern memakai two's complement. Nilainya, untuk pola dengan bit <i>b</i><sub><i>n</i>−1</sub>…<i>b</i><sub>0</sub>:</p>
+<div class="icd-eq"><math display="block"><mi>v</mi><mo>=</mo><mo>&#x2212;</mo><msub><mi>b</mi><mrow><mi>n</mi><mo>&#x2212;</mo><mn>1</mn></mrow></msub><msup><mn>2</mn><mrow><mi>n</mi><mo>&#x2212;</mo><mn>1</mn></mrow></msup><mo>+</mo><munderover><mo>&#x2211;</mo><mrow><mi>k</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>n</mi><mo>&#x2212;</mo><mn>2</mn></mrow></munderover><msub><mi>b</mi><mi>k</mi></msub><msup><mn>2</mn><mi>k</mi></msup></math><span class="alt">v = −b_(n−1)·2^(n−1) + Σ_(k=0..n−2) b_k·2^k</span></div>
+<p>Rentangnya −2<sup><i>n</i>−1</sup> sampai 2<sup><i>n</i>−1</sup> − 1: tidak simetris, karena nol memakai satu pola dari sisi nonnegatif. Untuk 0xB5: −128 + 32 + 16 + 4 + 1 = −75. Beberapa fakta yang bisa dibuktikan dari rumus:</p>
+<ul>
+<li><strong>Negasi:</strong> −<i>x</i> = ~<i>x</i> + 1 (balik semua bit lalu tambah satu). Bukti: <i>x</i> + ~<i>x</i> = 2<sup><i>n</i></sup> − 1 (semua bit satu), maka −<i>x</i> = ~<i>x</i> + 1 (mod 2<sup><i>n</i></sup>). Contoh: −37 → 37 = 0010 0101 → balik 1101 1010 → +1 = 1101 1011 = 0xDB.</li>
+<li><strong>Pengecualian:</strong> negasi −2<sup><i>n</i>−1</sup> menghasilkan dirinya sendiri (−128 → balik 0111 1111 + 1 = 1000 0000). Tidak ada +128 di 8 bit.</li>
+<li><strong>Perluasan tanda (sign extension):</strong> untuk melebarkan dari <i>n</i> ke <i>m</i> &gt; <i>n</i> bit, salin MSB ke bit-bit baru. 0xF0 (−16) menjadi 0xFFF0 di 16 bit; 0x70 (+112) menjadi 0x0070. Perluasan nol (zero extension) dipakai untuk bilangan tak bertanda.</li>
+<li><strong>Offset biner (bias):</strong> nilai = pola − <i>B</i>. Dipakai pada eksponen IEEE 754 dan banyak keluaran ADC; ia mengurutkan pola sama dengan nilai, sehingga pembanding sederhana cukup.</li>
+</ul>
+
+<h3>4.4 Penjumlahan, pengurangan, flag, dan saturasi</h3>
+<p>Penjumlah biner bekerja dari LSB ke MSB dengan <em>full adder</em> per bit: jumlah <i>s</i> = <i>a</i> ⊕ <i>b</i> ⊕ <i>c</i><sub>in</sub> dan carry keluar <i>c</i><sub>out</sub> = <i>ab</i> + <i>c</i><sub>in</sub>(<i>a</i> ⊕ <i>b</i>). Rantai <i>n</i> full adder (ripple-carry) menghasilkan <i>n</i> bit hasil dan satu carry keluar; delay-nya sebanding <i>n</i> karena carry harus merambat. Penjumlah yang lebih cepat (carry-lookahead, prefix) dibahas di M08b.</p>
+<p><strong>Dua flag, dua tafsir.</strong> Perangkat keras yang sama menjumlah tanpa tahu tafsirnya; yang menentukan hasil benar atau tidak adalah flag mana yang Anda baca:</p>
+<ul>
+<li><span data-term="carry">Carry</span> (<i>C</i>) = carry keluar dari bit paling atas. Untuk bilangan <strong>tak bertanda</strong>, <i>C</i> = 1 pada penjumlahan berarti hasil tidak muat (luapan tak bertanda).</li>
+<li><span data-term="ovf">Overflow</span> (<i>V</i>) = hasil bertanda salah. Terjadi bila dua operand bertanda sama dan hasil bertanda berbeda; ekuivalen dengan carry masuk ke MSB berbeda dari carry keluar MSB. Untuk bilangan <strong>bertanda</strong>, <i>V</i> = 1 berarti hasil tidak muat.</li>
+</ul>
+<p>Contoh 8 bit: 100 + 100 = 200 → pola 0xC8: tanpa carry; dibaca tak bertanda 200 benar, dibaca bertanda −56 <em>salah</em> (<i>V</i> = 1). −128 + (−128): 0x80 + 0x80 = 0x100 → pola 0x00, <i>C</i> = 1 dan <i>V</i> = 1. 0xFF + 0x01 = 0x100: <i>C</i> = 1 tetapi <i>V</i> = 0; bertanda: −1 + 1 = 0 benar, tak bertanda: 255 + 1 = 256 tidak muat.</p>
+<p><strong>Pengurangan</strong> <i>a</i> − <i>b</i> = <i>a</i> + ~<i>b</i> + 1: balik <i>b</i> dan masukkan carry awal 1. Satu penjumlah melayani keduanya. Pada pengurangan carry bermakna terbalik: <i>C</i> = 1 berarti <em>tidak ada pinjaman</em> (<i>a</i> ≥ <i>b</i> tak bertanda). Pembanding diturunkan dari flag: tak bertanda <i>a</i> &lt; <i>b</i> bila <i>C</i> = 0; bertanda <i>a</i> &lt; <i>b</i> bila <i>N</i> ⊕ <i>V</i> = 1, dengan <i>N</i> = MSB hasil. Inilah dasar instruksi cabang prosesor (M11).</p>
+<p><strong>Saturasi.</strong> Pada pemrosesan sinyal, hasil yang melebihi rentang lebih baik <em>ditempel</em> ke nilai maksimum atau minimum (saturasi) daripada membungkus: sinyal audio yang diperkeras menjadi terpotong, bukan berubah tanda dan menghasilkan bunyi letupan. Saturasi: bila terjadi overflow, keluarkan 0111…1 bila operand positif, atau 1000…0 bila negatif. Biayanya sedikit logika tambahan setelah penjumlah.</p>
+
+<h3>4.5 Geseran dan perkalian</h3>
+<p>Geser kiri <i>k</i> bit mengalikan dengan 2<sup><i>k</i></sup> (selama tidak meluap). Geser kanan membagi dengan 2<sup><i>k</i></sup>, tetapi ada dua versi: <em>logika</em> mengisi bit atas dengan 0 (benar untuk tak bertanda); <em>aritmetika</em> menyalin MSB (benar untuk bertanda). Geser aritmetika membulatkan ke arah −∞: −7 &gt;&gt; 1 = −4, sedangkan pembagian bilangan bulat C memotong ke arah nol dan memberi −7/2 = −3. Selisih ini adalah sumber bug yang sering ketika hardware menggantikan pembagian dengan geseran.</p>
+<p>Perkalian dua bilangan <i>n</i> bit menghasilkan hingga 2<i>n</i> bit. Perkalian tak bertanda dan bertanda menghasilkan 2<i>n</i> bit yang <em>berbeda</em> dari 2<i>n</i> bit ke atas; hanya <i>n</i> bit rendah yang sama. Karena itu set instruksi menyediakan perkalian berbeda (M11), dan pustaka hardware punya <code>signed</code> versus tak bertanda. Pengali berukuran <i>n</i> × <i>n</i> berkembang sekitar <i>n</i><sup>2</sup> luasnya, sedangkan penjumlah tumbuh sebanding <i>n</i>: salah satu alasan lebar bit sangat memengaruhi luas dan daya.</p>
+
+<h3>4.6 Fixed-point</h3>
+<p>Fixed-point menyimpan bilangan <i>x</i> sebagai bilangan bulat <i>r</i> dengan skala tetap: <i>x</i> ≈ <i>r</i>/2<sup><i>f</i></sup>. Notasi Q<i>i</i>.<i>f</i> (di sini <i>i</i> menghitung bit tanda): <i>i</i> bit bagian bulat termasuk tanda, <i>f</i> bit pecahan, lebar total <i>i</i> + <i>f</i>. Q1.15 pada 16 bit mencakup [−1, 1 − 2<sup>−15</sup>] dengan resolusi (1 LSB) 2<sup>−15</sup> = 3.05 × 10<sup>−5</sup>; ini format yang umum untuk sampel audio dan koefisien filter.</p>
+<ul>
+<li><strong>Kuantisasi.</strong> <i>r</i> = bulatkan(<i>x</i> · 2<sup><i>f</i></sup>). Pembulatan ke terdekat membuat galat dalam ±½ LSB dan hampir tanpa bias; pemotongan (truncation, floor) membuat galat dalam (−1, 0] LSB dengan bias rata-rata −½ LSB, yang menumpuk pada akumulasi. Contoh Q1.15: 0.1 → 3277 (0x0CCD), nilai 0.10000610, galat +6.1 × 10<sup>−6</sup>.</li>
+<li><strong>Penjumlahan:</strong> format sama, tinggal penjumlah bulat; hasil bisa memerlukan satu bit lebih (bit pengaman, guard bit).</li>
+<li><strong>Perkalian:</strong> Q<i>i</i><sub>1</sub>.<i>f</i><sub>1</sub> × Q<i>i</i><sub>2</sub>.<i>f</i><sub>2</sub> memberi Q(<i>i</i><sub>1</sub>+<i>i</i><sub>2</sub>).(<i>f</i><sub>1</sub>+<i>f</i><sub>2</sub>). Untuk kembali ke Q1.15, geser kanan 15 bit dengan pembulatan (tambah setengah LSB dulu) dan saturasi. Kasus khusus: (−1) × (−1) = +1 tidak muat di Q1.15 (maksimum 0.99997), sehingga hasilnya harus ditempel ke 0x7FFF; banyak bug DSP berawal di sini.</li>
+<li><strong>Bungkus atau saturasi:</strong> bungkus lebih murah tetapi galatnya besar (+1.0 menjadi −1.0); saturasi menambah logika tetapi galatnya kecil. Pilih saturasi untuk sinyal, bungkus untuk penghitung modular.</li>
+</ul>
+<p><strong>SQNR.</strong> Galat kuantisasi rata-rata terdistribusi seragam di ±½ LSB dengan varians LSB²/12. Untuk sinus skala penuh pada kuantisasi <i>N</i> bit, rasio sinyal terhadap noise kuantisasi:</p>
+<div class="icd-eq"><math display="block"><mi>SQNR</mi><mo>&#x2248;</mo><mn>6.02</mn><mi>N</mi><mo>+</mo><mn>1.76</mn><mtext> dB</mtext></math><span class="alt">SQNR ≈ 6.02·N + 1.76 dB</span></div>
+<p>Tiap bit tambahan memberi sekitar 6 dB. 16 bit memberi sekitar 98 dB, itulah dasar angka 96 dB pada audio CD. Dalam praktik SQNR nyata lebih rendah karena sinyal tidak selalu skala penuh (M28).</p>
+
+<h3>4.7 Floating-point IEEE 754</h3>
+<p>Format titik mengambang memecah <i>w</i> bit menjadi tanda <i>s</i> (1 bit), eksponen terbias <i>e</i> (<i>E</i> bit), dan pecahan <i>f</i> (<i>M</i> bit). Untuk pola normal:</p>
+<div class="icd-eq"><math display="block"><mi>x</mi><mo>=</mo><msup><mo>(</mo><mo>&#x2212;</mo><mn>1</mn><mo>)</mo><mi>s</mi></msup><mo>&#x00D7;</mo><mo>(</mo><mn>1</mn><mo>+</mo><mfrac><mi>f</mi><msup><mn>2</mn><mi>M</mi></msup></mfrac><mo>)</mo><mo>&#x00D7;</mo><msup><mn>2</mn><mrow><mi>e</mi><mo>&#x2212;</mo><mtext>bias</mtext></mrow></msup><mspace width="2em"/><mtext>bias</mtext><mo>=</mo><msup><mn>2</mn><mrow><mi>E</mi><mo>&#x2212;</mo><mn>1</mn></mrow></msup><mo>&#x2212;</mo><mn>1</mn></math><span class="alt">x = (−1)^s × (1 + f/2^M) × 2^(e − bias) ; bias = 2^(E−1) − 1</span></div>
+<p>Angka 1 di depan pecahan ("bit tersembunyi") tidak disimpan, sehingga <i>M</i> bit memberi ketelitian <i>M</i> + 1 bit. Tiga format IEEE dasar dan format ML yang populer:</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Format</th><th scope="col" class="c">Total</th><th scope="col" class="c">E</th><th scope="col" class="c">M</th><th scope="col" class="c">Bias</th><th scope="col">Maks</th><th scope="col">Normal terkecil</th><th scope="col">ε = ulp(1)</th></tr></thead>
+<tbody>
+<tr><th scope="row">half (binary16)</th><td class="c">16</td><td class="c">5</td><td class="c">10</td><td class="c">15</td><td>65 504</td><td>6.10 × 10<sup>−5</sup></td><td>9.77 × 10<sup>−4</sup></td></tr>
+<tr><th scope="row">bfloat16</th><td class="c">16</td><td class="c">8</td><td class="c">7</td><td class="c">127</td><td>3.39 × 10<sup>38</sup></td><td>1.18 × 10<sup>−38</sup></td><td>7.81 × 10<sup>−3</sup></td></tr>
+<tr><th scope="row">single (binary32)</th><td class="c">32</td><td class="c">8</td><td class="c">23</td><td class="c">127</td><td>3.40 × 10<sup>38</sup></td><td>1.18 × 10<sup>−38</sup></td><td>1.19 × 10<sup>−7</sup></td></tr>
+<tr><th scope="row">double (binary64)</th><td class="c">64</td><td class="c">11</td><td class="c">52</td><td class="c">1023</td><td>1.80 × 10<sup>308</sup></td><td>2.23 × 10<sup>−308</sup></td><td>2.22 × 10<sup>−16</sup></td></tr>
+</tbody></table></div>
+<p><strong>Pola khusus.</strong> Bila <i>e</i> semua nol: pecahan nol memberi ±0 (ada dua nol, +0 dan −0, yang dianggap sama pada perbandingan); pecahan tidak nol memberi bilangan <strong>subnormal</strong> (denormal), bernilai (−1)<sup><i>s</i></sup> × (<i>f</i>/2<sup><i>M</i></sup>) × 2<sup>1−bias</sup> tanpa bit tersembunyi, yang mengisi celah antara nol dan bilangan normal terkecil secara bertahap (underflow bertahap). Bila <i>e</i> semua satu: pecahan nol memberi ±∞ (luapan atau pembagian dengan nol); pecahan tidak nol memberi <span data-term="nan">NaN</span> (bukan bilangan, hasil operasi tak terdefinisi seperti 0/0 atau ∞ − ∞; NaN tidak sama dengan apa pun, termasuk dirinya).</p>
+<p><strong>Contoh dekode.</strong> 0x3DCCCCCD pada single: tanda 0; eksponen 0x7B = 123, jadi 123 − 127 = −4; pecahan 0x4CCCCD = 5 033 165, signifikan 1 + 5 033 165/2<sup>23</sup> = 1.60000002; nilai 1.60000002 × 2<sup>−4</sup> = 0.100000001490116. Inilah "0.1" di float32: selisih +1.49 × 10<sup>−9</sup> dari 0.1 sejati. <strong>Contoh sandi.</strong> −2.5 = −1.25 × 2<sup>1</sup>: tanda 1, <i>e</i> = 1 + 127 = 128 = 1000 0000, pecahan 0.25 = 010…0; hasil 0xC0200000.</p>
+<p><strong>Pembulatan dan ulp.</strong> Hasil operasi dibulatkan ke bilangan tertampung terdekat; seri (tepat di tengah) dibulatkan ke yang pecahannya genap (round-to-nearest-even, bawaan IEEE, tidak bias). Jarak antar bilangan tertampung bersebelahan di sekitar <i>x</i> disebut <span data-term="ulp">ulp</span> (unit in the last place): untuk 2<sup><i>e</i></sup> ≤ |<i>x</i>| &lt; 2<sup><i>e</i>+1</sup>, ulp = 2<sup><i>e</i>−<i>M</i></sup>. Galat relatif pembulatan ≤ 2<sup>−(<i>M</i>+1)</sup> (unit roundoff <i>u</i>): 5.96 × 10<sup>−8</sup> pada single, 1.11 × 10<sup>−16</sup> pada double. Jarak absolut tumbuh dengan besarnya nilai; 2<sup>24</sup> = 16 777 216 pada single punya ulp 2, sehingga 16 777 217 <em>tidak</em> tertampung. Bilangan bulat sampai 2<sup>24</sup> (single) dan 2<sup>53</sup> (double) tertampung persis.</p>
+<p><strong>Konsekuensi.</strong> (1) Banyak pecahan desimal (0.1, 0.2, 0.3) tidak tertampung persis, sehingga 0.1 + 0.2 ≠ 0.3 pada double (selisih 5.55 × 10<sup>−17</sup>); jangan bandingkan float dengan <code>==</code> tetapi dengan toleransi. (2) Penjumlahan float tidak asosiatif: pada double, (10<sup>16</sup> + (−10<sup>16</sup>)) + 1 = 1 tetapi 10<sup>16</sup> + ((−10<sup>16</sup>) + 1) = 0, karena −10<sup>16</sup> + 1 dibulatkan kembali ke −10<sup>16</sup>. Urutan penjumlahan memengaruhi hasil, dan pemrosesan paralel (yang mengubah urutan) membuat hasil berbeda dari satu eksekusi ke eksekusi lain. (3) Pengurangan dua bilangan hampir sama menghilangkan digit signifikan (cancellation) dan memperbesar galat relatif.</p>
+<p><strong>Format kecil untuk AI.</strong> Akselerator pembelajaran mesin memotong lebar bit untuk menghemat luas, daya, dan bandwidth memori. <em>bfloat16</em> (8 bit eksponen, 7 bit pecahan) mempertahankan jangkauan single dengan ketelitian rendah; ia tidak termasuk revisi IEEE 754-2019 tetapi didukung luas pada CPU, GPU, dan akselerator. FP8 punya dua varian, E5M2 (gaya IEEE, mirip half yang dipotong) dan E4M3 (tanpa ±∞, hanya satu pola NaN, nilai maksimum 448); keduanya diusulkan bersama oleh NVIDIA, Arm, dan Intel (2022) dan dimasukkan ke spesifikasi Open Compute Project; kelompok kerja IEEE P3109 menyusun keluarga format bertingkat untuk pembelajaran mesin dan masih berstatus draf (laporan interim versi 4.0 terbit Juni 2026, bukan standar final). Spesifikasi Microscaling (MX) OCP versi 1.0 (September 2023) menambahkan blok 32 elemen yang berbagi satu faktor skala (E8M0) dengan elemen FP8, FP6, atau FP4. Varian NVFP4 milik NVIDIA memakai blok 16 elemen dengan faktor skala FP8 (E4M3). Per November 2026: format MX dan NVFP4 didukung secara native oleh GPU NVIDIA generasi Blackwell yang sudah diproduksi massal, dan MXFP4 oleh GPU AMD generasi MI355X; status dukungan di perangkat lain berbeda-beda. Format di bawah 8 bit masih berkembang cepat dan detail pembulatan serta pengelompokan skala berbeda antar vendor. Aturan umum IEEE 754 (bit tersembunyi, bias, subnormal) tetap berlaku untuk format-format ini, kecuali nilai khusus yang dipotong pada format yang sangat kecil.</p>
+
+<h3>4.8 Biaya hardware</h3>
+<p>Biaya energi operasi bervariasi besar menurut jenis dan lebar. Angka berikut dari ulasan Horowitz (ISSCC 2014) untuk proses 45 nm, hanya untuk perbandingan relatif (nilai pada node sekarang lebih kecil dalam absolut, tetapi urutan relatifnya serupa): penjumlah bulat 8 bit sekitar 0.03 pJ dan 32 bit sekitar 0.1 pJ; pengali bulat 8 bit sekitar 0.2 pJ dan 32 bit sekitar 3.1 pJ; penjumlah float 16 bit sekitar 0.4 pJ dan 32 bit sekitar 0.9 pJ; pengali float 32 bit sekitar 3.7 pJ. Kesimpulan yang bertahan: pengali jauh lebih mahal dari penjumlah, float lebih mahal dari bulat pada lebar sama (penjumlah float memerlukan penyelaras eksponen, penggeser, normalisasi, dan pembulatan), dan setiap bit yang dipangkas memangkas energi dan luas. Itulah mengapa desainer DSP dan AI berusaha memakai bit sesedikit mungkin yang masih memenuhi akurasi.</p>
+
+<h3>4.9 Urutan byte dan bit-field</h3>
+<p>Bilangan multibyte disimpan dalam memori dengan dua urutan: <em>little-endian</em> (byte paling tidak signifikan di alamat terendah; x86, ARM umumnya, RISC-V) dan <em>big-endian</em> (byte paling signifikan di alamat terendah; urutan jaringan, banyak protokol). Bilangan 0x12345678 di alamat 0..3 menjadi 78 56 34 12 pada little-endian dan 12 34 56 78 pada big-endian. Masalahnya muncul saat dua sistem bertukar data biner atau saat Anda membaca <em>hex dump</em>. Operasi bit (AND, OR, XOR, geser, masker) mengekstrak <i>bit-field</i>: untuk mengambil bit 7:4 dari <i>x</i>, hitung (<i>x</i> &gt;&gt; 4) &amp; 0xF. Register kontrol perangkat keras dan format instruksi didefinisikan sebagai bit-field.</p>
+
+<div class="icd-box model"><b>Model buku teks lawan kenyataan</b>Buku teks menyajikan two's complement dan IEEE 754 seolah dipakai seragam. Kenyataannya: tidak semua prosesor dan akselerator mengikuti IEEE 754 sepenuhnya (banyak unit GPU dan NPU membuang subnormal atau memakai pembulatan berbeda untuk menghemat luas), format kecil seperti FP8 punya nilai khusus yang berbeda antar vendor, dan penjumlah di dalam unit perkalian-akumulasi sering memakai lebar internal lebih besar dari format keluarannya. Pada fixed-point, bit pengaman dan pembulatan pada hasil antara dipilih per rangkaian. Selalu baca spesifikasi tepat unit yang Anda pakai, dan buat model referensi bit-exact.</div>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Two's complement</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Komputer menyimpan bilangan negatif dengan cara cerdik: pola bit yang sama bisa dibaca sebagai bilangan positif besar atau bilangan negatif. Dengan 8 bit, pola 11111111 dibaca 255 atau −1. Penjumlahannya tetap benar dengan cara membungkus: 255 + 1 jadi 0, begitu juga −1 + 1 = 0.</p></div>
+<div data-level="engineer"><p>Alasan two's complement menang: satu penjumlah melayani bilangan tak bertanda dan bertanda, pengurangan hanya menambah pembalik bit dan carry awal, hanya ada satu nol, dan perbandingan memakai flag. Kewaspadaan Anda: selalu tentukan tafsir sebuah sinyal (tak bertanda atau bertanda) dan lebarnya. Di Verilog, <code>signed</code> yang hilang dari satu operand membuat seluruh ekspresi dihitung tak bertanda, termasuk perluasan tanda yang tidak terjadi.</p></div>
+<div data-level="pakar"><p>Two's complement adalah representasi cincin bilangan bulat modulo 2<sup><i>n</i></sup> dengan pembagian rentang tertentu; semua operasi penjumlahan, pengurangan, dan perkalian bagian bawah sama untuk kedua tafsir, dan hanya perbandingan, geseran kanan, pembagian, dan perluasan lebar yang berbeda. Ini yang memungkinkan satu ALU untuk keduanya dan satu instruksi <code>add</code> di RISC-V tanpa varian bertanda dan tak bertanda; yang berbeda hanyalah instruksi pembanding dan cabang.</p></div>
+</div>
+<h3>2. Fixed-point</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Fixed-point menyimpan pecahan dengan cara menyimpan bilangan bulat dan hanya mengingat bahwa semuanya perlu dibagi, misalnya, 32768. Hasilnya cepat dan murah, tetapi Anda harus menjaga sendiri agar bilangan tidak terlalu besar atau terlalu kecil.</p></div>
+<div data-level="engineer"><p>Rancangan fixed-point dimulai dari analisis jangkauan dan ketelitian: nilai terbesar menentukan bit bagian bulat, galat yang diizinkan menentukan bit pecahan. Lalu tentukan aturan pembulatan di setiap perkalian dan lebar akumulator (biasanya 2 kali lebar operand ditambah bit pengaman untuk jumlah banyak suku). Buat model referensi bit-exact di Python atau C dan bandingkan dengan RTL di testbench. Alat konversi float ke fixed-point otomatis ada, tetapi hasilnya tetap harus ditinjau.</p></div>
+<div data-level="pakar"><p>Analisis galat fixed-point memodelkan setiap pembulatan sebagai sumber noise independen dengan varians LSB²/12; noise ini merambat melalui filter dengan penguatan sesuai fungsi transfer dari titik injeksinya ke keluaran. Pada filter IIR, kuantisasi koefisien menggeser kutub (bisa memindahkannya ke luar lingkaran satuan), dan pembulatan di umpan balik menyebabkan limit cycle. Karena itu struktur filter (biquad bentuk langsung, transposed, kaskade) dipilih juga berdasarkan sensitivitas terhadap kuantisasi.</p></div>
+</div>
+<h3>3. Floating-point</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Float menyimpan bilangan seperti notasi ilmiah: beberapa angka penting dan sebuah pangkat. Karena angka pentingnya terbatas, bilangan besar punya jarak antar-nilai yang besar dan sebagian pecahan seperti 0.1 hanya bisa didekati. Itu sebabnya 0.1 + 0.2 tidak persis sama dengan 0.3.</p></div>
+<div data-level="engineer"><p>Aturan praktis: float32 punya sekitar 7 digit desimal, float64 sekitar 16. Jangan menjumlahkan bilangan dengan perbedaan besar tanpa kompensasi (algoritma Kahan atau penjumlahan berpasangan), jangan bandingkan dengan <code>==</code>, hati-hati pada pengurangan bilangan hampir sama. Dalam hardware, unit float menghabiskan luas dan energi jauh lebih banyak daripada unit bulat, sehingga prosesor dan akselerator embedded sering tidak memilikinya atau memakai format lebih kecil.</p></div>
+<div data-level="pakar"><p>IEEE 754 menjamin hasil operasi dasar (tambah, kurang, kali, bagi, akar, fused multiply-add) dibulatkan benar seolah dihitung eksak lalu dibulatkan sekali. Fused multiply-add (FMA) menghitung <i>ab</i> + <i>c</i> dengan satu pembulatan, lebih akurat dan sering lebih cepat, tetapi mengubah hasil numerik bila kompilator mengubah <i>ab</i> + <i>c</i> menjadi FMA atau tidak; ini sumber ketidakcocokan antara model referensi dan hardware. Verifikasi unit float membutuhkan vektor uji khusus untuk kasus tepi (subnormal, seri pembulatan, luapan) dan sering memakai pustaka referensi dan pemeriksaan formal.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Satu pola bit, empat bacaan</h3></header>
+  <div class="stage">
+    <div class="bits" id="v1-bits" role="group" aria-label="Bit-bit, MSB di kiri"></div>
+    <div class="icd-tablewrap"><table class="icd" id="v1-tab"><thead><tr><th scope="col">Kesepakatan</th><th scope="col" class="c">Nilai</th></tr></thead><tbody></tbody></table></div>
+    <div id="v1-plot" style="margin-top:8px"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Lebar n</span><select class="icd-select" id="v1-n"><option value="4">4 bit</option><option value="8" selected>8 bit</option><option value="16">16 bit</option></select></label>
+    <label class="icd-field"><span>Pola contoh</span><select class="icd-select" id="v1-pre"><option value="">(atur sendiri)</option><option value="181">0xB5</option><option value="128">0x80 (MSB saja)</option><option value="255">0xFF (semua satu)</option><option value="127">0x7F</option><option value="0">0x00</option></select></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Setiap bit adalah tombol: tekan atau tekan Spasi untuk membaliknya (MSB paling kiri). Empat kesepakatan dihitung langsung dari rumus bagian 4.3: tak bertanda Σ b<sub>k</sub>2<sup>k</sup>; sign-magnitude (MSB tanda); one's complement (negatif = balik semua bit); two's complement (MSB berbobot −2<sup>n−1</sup>). Tombol Putar menghitung naik satu pola per langkah (64 langkah paling banyak) dan membungkus dari 1…1 ke 0…0. Grafik menggambar nilai tiap kesepakatan untuk setiap pola; untuk 16 bit, hanya sebagian pola yang digambar dan loncatan di tengah ditambahkan secara eksplisit. Nol dianggap dua kali pada sign-magnitude dan one's complement.</div>
+</div>
+<div class="icd-guide" data-id="v1-min" data-answer="0">
+  <p>Pilih 8 bit dan pola contoh <strong>0x80</strong> (hanya MSB yang satu). Berapa nilainya sebagai two's complement, dan apa hasil menegasikannya (balik semua bit lalu tambah 1)?</p>
+  <ul><li>−128, dan negasinya kembali ke 1000 0000: tidak ada +128 di 8 bit</li><li>−0, dan negasinya +0</li><li>−127, dan negasinya +127</li><li>+128, dan negasinya −128</li></ul>
+  <div class="explain"><p>MSB berbobot −2<sup>7</sup> = −128 dan bit lain nol, jadi nilainya −128. Balik semua bit memberi 0111 1111, tambah 1 memberi 1000 0000 lagi: rentang two's complement tidak simetris, dan satu-satunya bilangan yang negasinya adalah dirinya sendiri adalah −2<sup>n−1</sup>. Perhatikan tabel: sign-magnitude membaca pola yang sama sebagai −0, one's complement sebagai −127. Lalu pilih 0xFF dan tekan Putar: dari −1 ke 0 dengan satu langkah, tanda berganti di tempat yang sama dengan bit tanda.</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Penjumlah ripple-carry dan dua flag</h3></header>
+  <div class="stage"><div class="fa" id="v2-fa" style="--n:9"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>A (pola) = <b id="v2-av"></b></span><input type="range" id="v2-a" min="0" max="255" step="1" value="100"></label>
+    <label class="icd-field"><span>B (pola) = <b id="v2-bv"></b></span><input type="range" id="v2-b" min="0" max="255" step="1" value="100"></label>
+    <label class="icd-field"><span>Operasi</span><select class="icd-select" id="v2-op"><option value="add">A + B</option><option value="sub">A − B (A + ~B + 1)</option></select></label>
+    <label class="icd-field"><span>Keluaran saat overflow bertanda</span><select class="icd-select" id="v2-sat"><option value="wrap">membungkus</option><option value="sat">saturasi</option></select></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Penjumlah 8 bit dari 8 full adder: s = a ⊕ b ⊕ c<sub>in</sub> dan c<sub>out</sub> = ab + c<sub>in</sub>(a ⊕ b). Untuk A − B, B dibalik dan carry masuk awal 1. Langkah satu per satu menunjukkan carry merambat dari LSB ke MSB (delay sebanding n); langkah ke-8 menampilkan carry keluar. C = carry keluar, V = c<sub>7</sub> ⊕ c<sub>8</sub> (carry masuk dan keluar MSB berbeda), N = MSB hasil, Z = hasil nol. Slider mengatur <em>pola</em> 0 sampai 255; tafsir tak bertanda dan bertanda ditampilkan berdampingan. Tidak mencakup delay gerbang nyata maupun penjumlah lebih cepat (M08b).</div>
+</div>
+<div class="icd-guide" data-id="v2-flag" data-answer="0">
+  <p>Dengan A = B = 100 (0x64) dan operasi A + B, flag mana yang menyala dan apa artinya?</p>
+  <ul><li>V = 1 dan C = 0: 200 muat sebagai tak bertanda tetapi tidak muat sebagai bertanda (terbaca −56)</li><li>C = 1 dan V = 0: luapan tak bertanda, tetapi bertanda aman</li><li>C = 1 dan V = 1: hasil salah pada kedua tafsir</li><li>Tidak ada flag yang menyala: hasilnya benar pada kedua tafsir</li></ul>
+  <div class="explain"><p>0x64 + 0x64 = 0xC8. Sebagai tak bertanda 200 ≤ 255, tidak ada carry keluar (C = 0). Sebagai bertanda dua operand positif menghasilkan hasil dengan MSB 1: salah, V = 1, dan pola 0xC8 terbaca −56. Tekan Maju delapan kali dan lihat c<sub>7</sub> = 1 sedangkan c<sub>8</sub> = 0, ini yang membuat V = 1. Kemudian ubah A dan B menjadi 0xFF + 0x01: kini C = 1 tetapi V = 0 (bertanda: −1 + 1 = 0 benar). Terakhir ubah ke saturasi dan lihat keluaran tertempel di +127.</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Fixed-point: resolusi, pembulatan, bungkus lawan saturasi</h3></header>
+  <div class="stage"><div id="v3-p1"></div><div id="v3-p2" style="margin-top:8px"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Format</span><select class="icd-select" id="v3-fmt"><option value="1,7" selected>Q1.7 (8 bit)</option><option value="2,6">Q2.6 (8 bit)</option><option value="4,4">Q4.4 (8 bit)</option><option value="1,15">Q1.15 (16 bit)</option></select></label>
+    <label class="icd-field"><span>Posisi x/R = <b id="v3-rv"></b></span><input type="range" id="v3-r" min="-1.25" max="1.25" step="0.005" value="0.7"></label>
+    <label class="icd-field"><span>Pembulatan</span><select class="icd-select" id="v3-rnd"><option value="near">ke terdekat</option><option value="floor">pemotongan (floor)</option></select></label>
+    <label class="icd-field"><span>Saat luap</span><select class="icd-select" id="v3-ov"><option value="sat">saturasi</option><option value="wrap">membungkus</option></select></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model">Format Q<i>i</i>.<i>f</i>: lebar N = i + f, bilangan bulat bertanda r dengan nilai r/2<sup>f</sup>, rentang [−R, R − 2<sup>−f</sup>] dengan R = 2<sup>i−1</sup>. Kuantisasi r = bulatkan(x · 2<sup>f</sup>); saturasi menempel r ke [−2<sup>N−1</sup>, 2<sup>N−1</sup> − 1]; membungkus mengambil r modulo 2<sup>N</sup>. Slider geser x dari −1.25R sampai +1.25R; tombol Putar menyapu x melalui 101 langkah dan menggerakkan slider. Grafik atas: tangga keluaran lawan garis ideal; grafik bawah: galat kuantisasi dalam LSB pada jendela ±8 LSB di sekitar x (gigi gergaji; di luar rentang galat membesar). Kotak x² memakai perkalian bulat penuh lalu geser kanan f bit dengan pembulatan yang dipilih. Statistik galat memakai model uniform, tidak mencakup korelasi sinyal.</div>
+</div>
+<div class="icd-guide" data-id="v3-q17" data-answer="0">
+  <p>Format Q1.7, pembulatan ke terdekat, x = 0.7 (posisi 0.700). Kode bulat apa yang tersimpan dan berapa galatnya?</p>
+  <ul><li>90 (0x5A), nilai 0.703125, galat +0.4 LSB</li><li>89 (0x59), nilai 0.6953125, galat −0.6 LSB</li><li>89.6 tersimpan persis</li><li>91 (0x5B), nilai 0.7109375, galat +1.4 LSB</li></ul>
+  <div class="explain"><p>0.7 × 128 = 89.6, dibulatkan ke 90; 90/128 = 0.703125, galat +0.003125 = +0.4 LSB (LSB = 2<sup>−7</sup> = 0.0078125). Ganti pembulatan ke pemotongan: kodenya 89 dan galatnya −0.6 LSB, selalu ke bawah, sehingga galat rata-rata pada banyak sampel menjadi −½ LSB (bias). Geser slider ke 1.1 dengan saturasi: kode tertempel 127 (0.9921875) dan galat melebar; pilih membungkus dan nilainya melompat ke negatif.</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Penjelajah IEEE 754: tanda, eksponen, signifikan</h3></header>
+  <div class="stage"><div class="bits" id="v4-bits" role="group" aria-label="Bit-bit titik mengambang, tanda di kiri"></div><div id="v4-plot" style="margin-top:8px"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Format</span><select class="icd-select" id="v4-fmt"><option value="half">half (1+5+10)</option><option value="bf16">bfloat16 (1+8+7)</option><option value="single" selected>single (1+8+23)</option><option value="mini">mini (1+4+3, gaya IEEE)</option></select></label>
+    <label class="icd-field"><span>Sandikan bilangan desimal</span><input class="icd-input" type="text" id="v4-txt" value="0.1" inputmode="decimal" autocomplete="off" spellcheck="false"></label>
+    <div><button class="icd-btn" type="button" id="v4-go">Sandikan</button></div>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Pola w bit dibagi tanda s, eksponen terbias e (E bit), dan pecahan f (M bit). Nilai normal (−1)<sup>s</sup>(1 + f/2<sup>M</sup>)2<sup>e−bias</sup>; subnormal (e = 0): (−1)<sup>s</sup>(f/2<sup>M</sup>)2<sup>1−bias</sup>; e semua satu: ±∞ atau NaN. Penyandian memakai pembulatan ke terdekat, seri ke genap, dengan luapan ke ∞ dan hilang bertahap ke subnormal. Tombol Putar menaikkan pola satu per satu (64 langkah paling banyak) sehingga tampak bilangan tertampung berikutnya dan jaraknya (ulp). Grafik: log<sub>2</sub> ulp lawan log<sub>2</sub>|x|; tangga naik satu setiap eksponen naik satu, dan selisih sumbu x dan y selalu M (≈ galat relatif konstan 2<sup>−M</sup>); bagian datar di kiri adalah daerah subnormal. Format "mini" adalah format kecil bergaya IEEE untuk belajar; ia berbeda dari FP8 E4M3 OCP (tanpa ∞, maksimum 448). Tidak mencakup mode pembulatan lain atau pengecualian (exception flags).</div>
+</div>
+<div class="icd-guide" data-id="v4-01" data-answer="0">
+  <p>Sandikan 0.1 pada format <strong>half</strong>, lalu pada <strong>bfloat16</strong>. Mana yang lebih dekat ke 0.1, dan mana yang punya jangkauan lebih lebar?</p>
+  <ul><li>half lebih dekat (0x2E66, galat 2.4 × 10<sup>−5</sup>); bfloat16 jangkauannya jauh lebih lebar (hingga 3.4 × 10<sup>38</sup>)</li><li>bfloat16 lebih dekat dan jangkauannya lebih lebar</li><li>Keduanya sama dekat karena sama-sama 16 bit</li><li>half lebih dekat dan jangkauannya juga lebih lebar</li></ul>
+  <div class="explain"><p>half memakai 10 bit pecahan, bfloat16 hanya 7: ketelitiannya 8× lebih kasar (galat 9.8 × 10<sup>−5</sup> untuk 0x3DCD). Sebaliknya bfloat16 punya 8 bit eksponen (sama dengan single) sehingga maksimum 3.39 × 10<sup>38</sup>, sedangkan half berhenti di 65 504. Itu pertukaran yang disengaja untuk AI: jangkauan lebih penting dari presisi. Coba ketik 70000 pada half untuk melihat ∞ dan 1e-8 untuk melihat 0, kemudian pada format "mini" tekan Putar dan amati ulp melipat dua setiap eksponen naik.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+
+<h3>Contoh 1: konversi dan negasi</h3>
+<p><strong>Soal.</strong> Tulis −37 dalam two's complement 8 bit, lalu perlebar menjadi 16 bit, dan baca pola 0xB5 sebagai bilangan bertanda.</p>
+<ol>
+<li>37 = 32 + 4 + 1 = 0010 0101.</li>
+<li>Balik semua bit: 1101 1010; tambah 1: 1101 1011 = 0xDB.</li>
+<li>Periksa: −128 + 64 + 16 + 8 + 2 + 1 = −37. ✓</li>
+<li>Perluasan tanda ke 16 bit: salin bit 7 (yang 1) delapan kali: 1111 1111 1101 1011 = 0xFFDB. Nilainya tetap −37.</li>
+<li>0xB5 = 1011 0101: −128 + 32 + 16 + 4 + 1 = −75.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Perluasan nol memberi 0x00DB = 219, bukan −37: salah memilih perluasan adalah bug tafsir klasik.</p>
+
+<h3>Contoh 2: C dan V pada tiga penjumlahan</h3>
+<p><strong>Soal.</strong> Pada 8 bit, jumlahkan (a) 100 + 100, (b) 200 + 100 (sebagai tak bertanda), (c) −100 + (−100). Baca C dan V.</p>
+<ol>
+<li>(a) 0x64 + 0x64 = 0xC8. C = 0, V = 1 (dua positif, hasil negatif). Tak bertanda 200 benar; bertanda terbaca −56, salah.</li>
+<li>(b) 0xC8 + 0x64 = 0x12C → pola 0x2C = 44, C = 1. Tak bertanda: 300 tidak muat (luapan); V = 0 tidak relevan karena operandnya tidak dianggap bertanda.</li>
+<li>(c) −100 = 0x9C; 0x9C + 0x9C = 0x138 → pola 0x38 = 56, C = 1 dan V = 1 (dua negatif, hasil positif). Benar tidak muat: −200 &lt; −128.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Tak ada flag yang selalu benar: C untuk tafsir tak bertanda, V untuk bertanda. Perangkat keras hanya menyediakan keduanya.</p>
+
+<h3>Contoh 3: pembanding dari flag</h3>
+<p><strong>Soal.</strong> Bandingkan (a) 5 dan 7, (b) 0x80 dan 0x01 dengan mengurangkan a − b pada 8 bit.</p>
+<ol>
+<li>(a) 5 − 7 = 0x05 + 0xF8 + 1 = 0xFE; C = 0, N = 1, V = 0. Tak bertanda: C = 0 berarti pinjaman, a &lt; b. Bertanda: N ⊕ V = 1, a &lt; b. Cocok.</li>
+<li>(b) 0x80 − 0x01 = 0x80 + 0xFE + 1 = 0x17F → pola 0x7F; C = 1, N = 0, V = 1 (dua negatif menghasilkan positif).</li>
+<li>Tak bertanda: C = 1, tidak ada pinjaman, jadi 128 ≥ 1, benar. Bertanda: N ⊕ V = 0 ⊕ 1 = 1, jadi −128 &lt; 1, benar.</li>
+<li>Bila hanya memakai N (tanpa V) pada (b), N = 0 menyimpulkan a ≥ b: salah.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Overflow membuat tanda hasil pengurangan tidak dapat dipercaya; itu sebabnya pembanding bertanda memakai N ⊕ V.</p>
+
+<h3>Contoh 4: perkalian fixed-point Q1.15</h3>
+<p><strong>Soal.</strong> Kalikan 0.7 × 0.7 dalam Q1.15 dan hitung galat terhadap 0.49.</p>
+<ol>
+<li>0.7 × 32768 = 22937.6 → 22938 (nilai 0.70001220703125, galat +0.39 LSB).</li>
+<li>Hasil kali bulat: 22938² = 526 151 844 (skala 2<sup>30</sup>, format Q2.30).</li>
+<li>Kembali ke Q1.15: tambah setengah LSB lalu geser kanan 15: (526 151 844 + 16384) &gt;&gt; 15 = 16057 (nilai 0.490020751953125).</li>
+<li>Galat terhadap 0.49: +2.08 × 10<sup>−5</sup> ≈ 0.68 LSB. Sebagian berasal dari kuantisasi masukan (0.7 tersimpan lebih besar), sebagian dari pembulatan hasil.</li>
+<li>Kasus tepi: (−1) × (−1) = 0x8000 × 0x8000 = 2<sup>30</sup> → geser kanan 15 memberi 32768, tidak muat; saturasi menempel ke 0x7FFF = 0.99997.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Galat gabungan bisa melebihi ½ LSB per operasi; model referensi bit-exact harus meniru urutan pembulatan yang sama dengan hardware.</p>
+
+<h3>Contoh 5: menyandikan 6.5 dan membaca half</h3>
+<p><strong>Soal.</strong> (a) Sandikan 6.5 sebagai single. (b) Baca half 0x7BFF.</p>
+<ol>
+<li>(a) 6.5 = 110.1<sub>2</sub> = 1.101<sub>2</sub> × 2<sup>2</sup>. Tanda 0. Eksponen terbias 2 + 127 = 129 = 1000 0001. Pecahan 101 diikuti nol: 101 0000 0000 0000 0000 0000.</li>
+<li>Pola: 0 10000001 10100000000000000000000 = 0x40D00000.</li>
+<li>(b) 0x7BFF = 0 11110 1111111111. Eksponen 30 − 15 = 15. Signifikan 1 + 1023/1024 = 1.9990234375. Nilai = 1.9990234375 × 2<sup>15</sup> = 65 504, bilangan half terbesar.</li>
+<li>Bilangan setelahnya (0x7C00, eksponen semua satu, pecahan nol) adalah +∞. Jadi 65 520 (tepat di tengah antara 65 504 dan "65 536") dibulatkan ke genap dan menjadi ∞.</li>
+</ol>
+
+<h3>Contoh 6: ulp dan penjumlahan tak asosiatif</h3>
+<p><strong>Soal.</strong> (a) Berapa ulp single pada 10<sup>8</sup>? (b) Apa 16 777 217 pada single? (c) Hitung (10<sup>16</sup> + (−10<sup>16</sup>)) + 1 dan 10<sup>16</sup> + ((−10<sup>16</sup>) + 1) pada double.</p>
+<ol>
+<li>(a) 2<sup>26</sup> = 67 108 864 ≤ 10<sup>8</sup> &lt; 2<sup>27</sup>, sehingga ulp = 2<sup>26−23</sup> = 8. Bilangan tertampung di dekat 10<sup>8</sup> berjarak 8.</li>
+<li>(b) 2<sup>24</sup> = 16 777 216 punya ulp 2; 16 777 217 tepat di tengah 16 777 216 dan 16 777 218, dibulatkan ke yang pecahannya genap: 16 777 216.</li>
+<li>(c) Double 10<sup>16</sup> berada antara 2<sup>53</sup> ≈ 9.007 × 10<sup>15</sup> dan 2<sup>54</sup>, ulp = 2. Pertama: 10<sup>16</sup> − 10<sup>16</sup> = 0, lalu 0 + 1 = 1. Kedua: −10<sup>16</sup> + 1 harus dibulatkan ke kelipatan 2 terdekat, yaitu −10<sup>16</sup> (seri ke genap), lalu 10<sup>16</sup> − 10<sup>16</sup> = 0.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Hasil bergantung pada urutan penjumlahan: 1 lawan 0. Ini bukan bug, melainkan akibat langsung dari ulp yang tumbuh, dan alasan penjumlahan paralel perlu dicek terhadap toleransi, bukan kesamaan bit.</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Empat file, semuanya bisa dijalankan. <code>numrep.py</code> adalah model referensi bit-exact: aritmetika dua-komplemen dengan flag, fixed-point Q<i>i</i>.<i>f</i>, dan kodek IEEE 754 yang diperiksa terhadap pustaka <code>struct</code> Python. <code>addsub.v</code> adalah penjumlah/pengurang sintesis dengan flag dan penjumlah saturasi; <code>tb_addsub.v</code> memeriksanya terhadap semua 65 536 pasangan masukan. <code>floatlab.py</code> berisi percobaan lab bagian 14.</p>
+<h3>8.1 numrep.py</h3>
+<pre class="icd-src" data-lang="py">
+"""M03a: representasi bilangan: two's complement, fixed-point Qi.f, dan IEEE 754 dari nol.
+
+Semua fungsi memakai bilangan bulat Python; nilai float dibuat eksak dengan Fraction.
+"""
+import math
+import random
+import struct
+from fractions import Fraction
+
+
+# ---------- 1. Bilangan bulat ----------
+def mask(n):
+    return (1 &lt;&lt; n) - 1
+
+
+def to_twos(x, n):
+    """Pola bit n-bit (sebagai bilangan tak bertanda) untuk x bertanda; x harus muat."""
+    assert -(1 &lt;&lt; (n - 1)) &lt;= x &lt; (1 &lt;&lt; (n - 1)), "tidak muat"
+    return x &amp; mask(n)
+
+
+def from_twos(u, n):
+    """Nilai bertanda dari pola n-bit u."""
+    return u - (1 &lt;&lt; n) if u &gt;&gt; (n - 1) else u
+
+
+def add_flags(a, b, n, sub=False):
+    """Penjumlah/pengurang n-bit pada pola bit a, b. Mengembalikan (hasil, carry, overflow).
+    Pengurangan = a + ~b + 1; carry pada pengurangan berarti 'tidak ada pinjaman'."""
+    cin = 1 if sub else 0
+    bb = (~b &amp; mask(n)) if sub else b
+    total = a + bb + cin
+    res = total &amp; mask(n)
+    carry = total &gt;&gt; n
+    sa, sb, sr = a &gt;&gt; (n - 1), bb &gt;&gt; (n - 1), res &gt;&gt; (n - 1)
+    overflow = int(sa == sb and sr != sa)
+    return res, carry, overflow
+
+
+def sign_extend(u, n_from, n_to):
+    return to_twos(from_twos(u, n_from), n_to)
+
+
+def saturate(x, n):
+    lo, hi = -(1 &lt;&lt; (n - 1)), (1 &lt;&lt; (n - 1)) - 1
+    return max(lo, min(hi, x))
+
+
+# ---------- 2. Fixed-point bertanda Qi.f (i termasuk bit tanda; lebar total i+f) ----------
+def q_quant(x, i, f, mode="round", sat=True):
+    """Kuantisasi x ke Qi.f. Mengembalikan bilangan bulat bertanda (nilai = hasil / 2^f)."""
+    n = i + f
+    v = Fraction(x) * (1 &lt;&lt; f)
+    r = math.floor(v) if mode == "trunc" else round(v)      # round = setengah-ke-genap
+    lo, hi = -(1 &lt;&lt; (n - 1)), (1 &lt;&lt; (n - 1)) - 1
+    if sat:
+        return max(lo, min(hi, r))
+    return from_twos(r &amp; mask(n), n)                        # bungkus (wrap-around)
+
+
+def q_value(r, f):
+    return r / (1 &lt;&lt; f)
+
+
+def q_mul(a, b, i, f):
+    """a, b bilangan bulat Qi.f. Hasil kali penuh berskala 2^(2f); geser balik f bit dengan pembulatan
+    dan saturasi."""
+    p = a * b
+    r = (p + (1 &lt;&lt; (f - 1))) &gt;&gt; f if f &gt; 0 else p            # tambah setengah LSB lalu geser (pembulatan ke atas)
+    return saturate(r, i + f)
+
+
+# ---------- 3. IEEE 754 generik: ebits eksponen, mbits pecahan ----------
+FORMATS = {"half": (5, 10), "single": (8, 23), "double": (11, 52)}
+
+
+def decode(bits, eb, mb):
+    """Mengembalikan (jenis, nilai) dengan nilai Fraction eksak (atau None untuk inf/nan)."""
+    s = bits &gt;&gt; (eb + mb) &amp; 1
+    e = bits &gt;&gt; mb &amp; mask(eb)
+    fr = bits &amp; mask(mb)
+    bias = (1 &lt;&lt; (eb - 1)) - 1
+    sg = -1 if s else 1
+    if e == mask(eb):
+        return ("nan", None) if fr else ("inf", sg)
+    if e == 0:
+        return ("zero" if fr == 0 else "subnormal", sg * Fraction(fr) * Fraction(2) ** (1 - bias - mb))
+    return "normal", sg * (1 + Fraction(fr, 1 &lt;&lt; mb)) * Fraction(2) ** (e - bias)
+
+
+def encode(x, eb, mb):
+    """Pola bit IEEE 754 untuk x (float/int/Fraction), pembulatan ke terdekat-genap."""
+    bias = (1 &lt;&lt; (eb - 1)) - 1
+    if isinstance(x, float) and math.isnan(x):
+        return (mask(eb) &lt;&lt; mb) | (1 &lt;&lt; (mb - 1))
+    neg = (isinstance(x, float) and math.copysign(1.0, x) &lt; 0) or (not isinstance(x, float) and x &lt; 0)
+    s = 1 &lt;&lt; (eb + mb) if neg else 0
+    if isinstance(x, float) and math.isinf(x):
+        return s | (mask(eb) &lt;&lt; mb)
+    ax = abs(Fraction(x))
+    if ax == 0:
+        return s
+    e = ax.numerator.bit_length() - ax.denominator.bit_length()
+    if Fraction(2) ** e &gt; ax:
+        e -= 1
+    e = max(e, 1 - bias)                                    # di bawah ini: subnormal
+    n = round(ax / Fraction(2) ** (e - mb))                 # bilangan bulat signifikan, setengah-ke-genap
+    if n &gt;= 1 &lt;&lt; (mb + 1):                                  # pembulatan naik melewati 2^(e+1)
+        n &gt;&gt;= 1
+        e += 1
+    if e &gt; bias:
+        return s | (mask(eb) &lt;&lt; mb)                         # luapan menjadi tak hingga
+    if n &lt; 1 &lt;&lt; mb:
+        return s | n                                        # subnormal atau nol
+    return s | ((e + bias) &lt;&lt; mb) | (n - (1 &lt;&lt; mb))
+
+
+def ulp(x, eb, mb):
+    """Jarak dari |x| ke bilangan tertampung berikutnya (jarak antar-float di sekitar x)."""
+    b = encode(abs(x), eb, mb)
+    return decode(b + 1, eb, mb)[1] - decode(b, eb, mb)[1]
+
+
+# ---------- uji dan demonstrasi ----------
+def _tests():
+    # bilangan bulat
+    assert to_twos(-1, 8) == 0xFF and from_twos(0x80, 8) == -128 and from_twos(0x7F, 8) == 127
+    assert add_flags(100, 100, 8) == (200, 0, 1)                   # 100+100 luapan bertanda, tanpa carry
+    assert add_flags(0xFF, 0x01, 8) == (0, 1, 0)                   # -1 + 1: carry, tanpa luapan
+    assert add_flags(0x80, 0x80, 8) == (0, 1, 1)                   # -128 + -128
+    assert add_flags(5, 3, 8, sub=True) == (2, 1, 0)               # 5 - 3: carry = tanpa pinjaman
+    assert add_flags(0x80, 1, 8, sub=True)[2] == 1                 # -128 - 1 luapan
+    assert sign_extend(0xF0, 8, 16) == 0xFFF0 and saturate(300, 8) == 127 and saturate(-300, 8) == -128
+    for a in range(256):                                           # a - b == a + (-b) untuk semua pola, kecuali -128
+        for b in range(256):
+            r1, _, _ = add_flags(a, b, 8, sub=True)
+            assert r1 == (a - b) &amp; 0xFF
+    # fixed-point
+    assert q_quant(0.5, 1, 15) == 16384 and q_quant(1.0, 1, 15) == 32767 and q_quant(-1.0, 1, 15) == -32768
+    assert q_quant(1.0, 1, 15, sat=False) == -32768                # bungkus: +1.0 menjadi -1.0
+    assert q_mul(q_quant(0.5, 1, 15), q_quant(0.5, 1, 15), 1, 15) == 8192    # 0.5 * 0.5 = 0.25
+    assert q_mul(-32768, -32768, 1, 15) == 32767                   # (-1)*(-1) = +1 tersaturasi
+    # IEEE 754 terhadap pustaka struct, untuk banyak nilai acak
+    rnd = random.Random(7)
+    for fmt, code in (("half", "&gt;e"), ("single", "&gt;f"), ("double", "&gt;d")):
+        eb, mb = FORMATS[fmt]
+        total = 1 + eb + mb
+        n = 0
+        for _ in range(30000):
+            x = rnd.choice([rnd.uniform(-2, 2), rnd.uniform(-1e5, 1e5), 2.0 ** rnd.randint(-30, 17) * rnd.uniform(1, 2), rnd.uniform(-1, 1) * 1e-7])
+            try:
+                ref = struct.unpack("&gt;" + {"half": "H", "single": "I", "double": "Q"}[fmt], struct.pack(code, x))[0]
+            except OverflowError:
+                continue
+            assert encode(x, eb, mb) == ref, (fmt, x)
+            n += 1
+        assert n &gt; 20000
+    assert decode(encode(0.1, 8, 23), 8, 23)[0] == "normal"
+    assert encode(float("inf"), 8, 23) == 0x7F800000 and encode(-0.0, 8, 23) == 0x80000000
+    assert encode(2.0 ** 128, 8, 23) == 0x7F800000                 # luapan -&gt; tak hingga
+    assert decode(1, 8, 23)[0] == "subnormal" and decode(0x7FC00000, 8, 23)[0] == "nan"
+    assert encode(16777217, 8, 23) == encode(16777216.0, 8, 23)   # 2^24 + 1 tidak tertampung di single
+    print("Semua uji lulus.")
+
+
+if __name__ == "__main__":
+    _tests()
+    print("Bilangan bulat 8 bit:")
+    for x in (127, 1, 0, -1, -127, -128):
+        print(f"  {x:5d} -&gt; {to_twos(x, 8):08b}  (0x{to_twos(x, 8):02X})")
+    for a, b in ((100, 100), (-128, -128), (127, -1)):
+        r, c, v = add_flags(to_twos(a, 8), to_twos(b, 8), 8)
+        print(f"  {a} + {b} = {from_twos(r, 8)}  (carry={c}, overflow={v})")
+    print("Fixed-point Q1.15 (16 bit):")
+    for x in (0.1, 0.5, 0.999999, 1.0, -1.0):
+        r = q_quant(x, 1, 15)
+        print(f"  {x:&gt;9} -&gt; {r:6d} = 0x{r &amp; 0xFFFF:04X}, nilai {q_value(r, 15):.8f}, galat {q_value(r, 15) - x:+.2e}")
+    print("  0.5 * 0.5 -&gt;", q_value(q_mul(q_quant(0.5, 1, 15), q_quant(0.5, 1, 15), 1, 15), 15))
+    print("  (-1) * (-1) -&gt;", q_value(q_mul(-32768, -32768, 1, 15), 15), "(tersaturasi)")
+    print("IEEE 754 single:")
+    for x in (1.0, 0.1, -2.5, 3.4028235e38, 1e-45):
+        b = encode(x, 8, 23)
+        kind, v = decode(b, 8, 23)
+        print(f"  {x!r:&gt;12} -&gt; 0x{b:08X} {b &gt;&gt; 31}|{b &gt;&gt; 23 &amp; 255:08b}|{b &amp; 0x7FFFFF:023b}  {kind:9s} {float(v) if v is not None else 0!r}")
+    v = decode(encode(0.1, 8, 23), 8, 23)[1]
+    print(f"  0.1 tersimpan sebagai {float(v)!r}, galat {float(v - Fraction(1, 10)):+.3e}")
+    print("  2**24 + 1 =", float(decode(encode(2 ** 24 + 1, 8, 23), 8, 23)[1]), "(single); ulp di 2**24 =", float(ulp(2.0 ** 24, 8, 23)))
+    print("  0.1 + 0.2 == 0.3 (double)?", 0.1 + 0.2 == 0.3, "; selisih", 0.1 + 0.2 - 0.3)
+    print("  eps mesin: single", float(ulp(1.0, 8, 23)), "double", float(ulp(1.0, 11, 52)), "half", float(ulp(1.0, 5, 10)))
+</pre>
+<p><strong>Penjelasan per blok.</strong></p>
+<ul>
+<li><code>mask</code>, <code>to_twos</code>, <code>from_twos</code> melakukan konversi antara bilangan bertanda Python (tak terbatas lebar) dan pola <i>n</i> bit: menyaring dengan 2<sup><i>n</i></sup> − 1, dan mengurangkan 2<sup><i>n</i></sup> bila MSB satu. Itu persis rumus bagian 4.3.</li>
+<li><code>add_flags</code> menjumlah <i>a</i> + <i>b</i> (atau <i>a</i> + ~<i>b</i> + 1 untuk pengurangan) pada <i>n</i> bit dan mengembalikan hasil, carry, dan overflow. Overflow dihitung dengan definisi "dua operand bertanda sama, hasil bertanda berbeda", bukan dengan bantuan bilangan bertanda Python, sehingga ia meniru hardware.</li>
+<li><code>sign_extend</code> dan <code>saturate</code> adalah perluasan tanda dan penempelan ke rentang.</li>
+<li><code>q_quant</code> mengubah <i>x</i> menjadi kode bulat Q<i>i</i>.<i>f</i> memakai <code>Fraction</code> (tanpa galat float), dengan mode pembulatan <code>round</code> (setengah ke genap) atau <code>trunc</code> (floor), dan pilihan saturasi atau bungkus. <code>q_mul</code> mengalikan dua kode, menambah setengah LSB, menggeser kanan <i>f</i> bit, dan menempel ke rentang, urutan yang sama dengan pengali DSP khas.</li>
+<li><code>decode</code> dan <code>encode</code> adalah kodek IEEE 754 parametrik (<code>eb</code> bit eksponen, <code>mb</code> bit pecahan), sehingga half, single, dan double memakai kode yang sama. <code>encode</code> mencari eksponen dari bit-length pembilang dan penyebut, membulatkan signifikan dengan <code>round</code> Python (setengah ke genap), menangani naik ke eksponen berikutnya, luapan menjadi tak hingga, dan subnormal.</li>
+<li><code>ulp</code> memakai kenyataan bahwa pola bit bertetangga mewakili bilangan bertetangga: jaraknya adalah selisih dua dekode berurutan.</li>
+<li><code>_tests</code> mengunci fakta modul ini, termasuk 90 000 nilai acak pada half, single, dan double yang harus menghasilkan pola bit identik dengan pustaka <code>struct</code> (yang memakai FPU mesin).</li>
+</ul>
+<h3>8.2 addsub.v</h3>
+<pre class="icd-src" data-lang="verilog">
+`timescale 1ns/1ps
+// M03a: penjumlah/pengurang W bit dengan flag, dan penjumlah saturasi.
+module addsub #(parameter W = 8) (
+    input  wire [W-1:0] a, b,
+    input  wire         sub,          // 0: a + b, 1: a - b = a + ~b + 1
+    output wire [W-1:0] y,
+    output wire         carry,        // carry-out; pada pengurangan: 1 berarti tidak ada pinjaman
+    output wire         overflow      // luapan bilangan bertanda
+);
+    wire [W-1:0] bb = sub ? ~b : b;
+    wire [W:0]   t  = {1'b0, a} + {1'b0, bb} + {{W{1'b0}}, sub};
+    assign y        = t[W-1:0];
+    assign carry    = t[W];
+    assign overflow = (a[W-1] == bb[W-1]) &amp;&amp; (y[W-1] != a[W-1]);
+endmodule
+
+module satadd #(parameter W = 8) (
+    input  wire [W-1:0] a, b,
+    output wire [W-1:0] y             // a + b bertanda, tersaturasi ke [-2^(W-1), 2^(W-1)-1]
+);
+    wire [W-1:0] s;
+    wire         c, v;
+    addsub #(.W(W)) u (.a(a), .b(b), .sub(1'b0), .y(s), .carry(c), .overflow(v));
+    // luapan: hasil harus berlawanan tanda dari operand; operand positif (a[W-1]=0) -&gt; maks, negatif -&gt; min
+    assign y = v ? (a[W-1] ? {1'b1, {(W-1){1'b0}}} : {1'b0, {(W-1){1'b1}}}) : s;
+endmodule
+</pre>
+<p>Satu penjumlah melayani dua operasi: untuk <code>sub = 1</code>, <code>bb</code> adalah <code>~b</code> dan carry masuk 1. Penjumlahan dilakukan dalam <i>W</i> + 1 bit (<code>t</code>) supaya carry keluar muncul di bit teratas; operand diperluas nol di kiri agar penjumlah Verilog tidak menganggapnya bertanda. <code>overflow</code> memakai definisi bagian 4.4, dihitung pada <code>bb</code> (operand yang benar-benar masuk penjumlah), bukan pada <code>b</code>: kesalahan umum adalah memakai <code>b</code> sehingga pengurangan salah. Modul <code>satadd</code> memanggil <code>addsub</code> dan memilih nilai maksimum atau minimum bila overflow, berdasarkan tanda <code>a</code> (pada overflow, <code>a</code> dan <code>b</code> sama tandanya).</p>
+<h3>8.3 tb_addsub.v</h3>
+<pre class="icd-src" data-lang="verilog">
+`timescale 1ns/1ps
+module tb_addsub;
+    reg  [7:0] a, b;
+    reg        sub;
+    wire [7:0] y, ys;
+    wire       carry, overflow;
+    integer    i, j, errors, checks;
+    integer    sa, sb, ref_s, ref_u;
+
+    addsub #(.W(8)) dut (.a(a), .b(b), .sub(sub), .y(y), .carry(carry), .overflow(overflow));
+    satadd #(.W(8)) dsat (.a(a), .b(b), .y(ys));
+
+    function integer sgn(input [7:0] v);
+        sgn = (v &gt;= 128) ? v - 256 : v;
+    endfunction
+
+    initial begin
+        errors = 0; checks = 0;
+        for (i = 0; i &lt; 256; i = i + 1)
+            for (j = 0; j &lt; 256; j = j + 1) begin
+                a = i; b = j; sa = sgn(a); sb = sgn(b);
+                // penjumlahan
+                sub = 0; #1;
+                ref_s = sa + sb; ref_u = i + j;
+                if (y !== (ref_u &amp; 255) || carry !== (ref_u &gt; 255) || overflow !== (ref_s &gt; 127 || ref_s &lt; -128)) begin
+                    errors = errors + 1; if (errors &lt; 5) $display("SALAH add a=%0d b=%0d y=%0d c=%b v=%b", sa, sb, sgn(y), carry, overflow);
+                end
+                // saturasi
+                if (sgn(ys) !== (ref_s &gt; 127 ? 127 : ref_s &lt; -128 ? -128 : ref_s)) begin
+                    errors = errors + 1; if (errors &lt; 5) $display("SALAH sat a=%0d b=%0d y=%0d", sa, sb, sgn(ys));
+                end
+                // pengurangan
+                sub = 1; #1;
+                ref_s = sa - sb; ref_u = i - j;
+                if (y !== (ref_u &amp; 255) || carry !== (i &gt;= j) || overflow !== (ref_s &gt; 127 || ref_s &lt; -128)) begin
+                    errors = errors + 1; if (errors &lt; 5) $display("SALAH sub a=%0d b=%0d y=%0d c=%b v=%b", sa, sb, sgn(y), carry, overflow);
+                end
+                checks = checks + 3;
+            end
+        if (errors == 0) $display("LULUS: %0d pemeriksaan (semua pasangan a, b 8 bit: tambah, kurang, saturasi)", checks);
+        else             $display("GAGAL: %0d kesalahan", errors);
+        $finish;
+    end
+endmodule
+</pre>
+<p>Testbench ini <em>swa-periksa</em> (self-checking) dan <em>lengkap</em>: untuk <code>a</code> dan <code>b</code> masing-masing 256 nilai, ia membandingkan keluaran tiga operasi dengan model referensi yang dihitung memakai bilangan bulat 32 bit dari simulator (<code>ref_s</code> bertanda, <code>ref_u</code> tak bertanda). Pemeriksaan memakai <code>!==</code> agar nilai X atau Z juga terdeteksi sebagai kesalahan. Fungsi <code>sgn</code> menafsirkan pola sebagai bertanda. Hanya empat kesalahan pertama dicetak supaya log tetap singkat, dan baris akhir <code>LULUS</code> atau <code>GAGAL</code> memudahkan skrip regresi mencari hasil (M18). Karena ruang masukan hanya 2<sup>16</sup>, pemeriksaan lengkap lebih kuat daripada ribuan vektor acak.</p>
+<h3>8.4 floatlab.py</h3>
+<pre class="icd-src" data-lang="py">
+"""M03a lab: percobaan numerik dengan float. Jalankan: python3 floatlab.py"""
+import math
+import struct
+from numrep import encode, decode, FORMATS
+
+
+def f32(x):
+    """Bulatkan x ke single, kembalikan sebagai float Python."""
+    return struct.unpack("&gt;f", struct.pack("&gt;f", x))[0]
+
+
+def kahan(xs):
+    """Penjumlahan terkompensasi Kahan (dengan double)."""
+    s = c = 0.0
+    for x in xs:
+        y = x - c
+        t = s + y
+        c = (t - s) - y
+        s = t
+    return s
+
+
+# 1. 0.1 tidak tertampung persis
+print("0.1 + 0.2 =", 0.1 + 0.2, "| sama dengan 0.3?", 0.1 + 0.2 == 0.3, "| dekat 0.3?", math.isclose(0.1 + 0.2, 0.3))
+
+# 2. penjumlahan tak asosiatif
+a, b, c = 1e16, -1e16, 1.0
+print("(a+b)+c =", (a + b) + c, "| a+(b+c) =", a + (b + c))
+
+# 3. single: bilangan bulat berhenti tepat di 2^24
+print("single(16777216) =", f32(16777216.0), "| single(16777217) =", f32(16777217.0))
+
+# 4. akumulasi 0.1 sebanyak sejuta kali
+xs = [0.1] * 1_000_000
+naive = 0.0
+for x in xs:
+    naive += x
+print("jumlah naif    =", repr(naive), "| galat =", f"{naive - 100000:+.3e}")
+print("jumlah Kahan   =", repr(kahan(xs)), "| galat =", f"{kahan(xs) - 100000:+.3e}")
+print("math.fsum      =", repr(math.fsum(xs)))
+
+# 5. jarak antar-float (ulp) di berbagai besar nilai pada single
+eb, mb = FORMATS["single"]
+for x in (1.0, 1e3, 1e8, 1e30):
+    b0 = encode(x, eb, mb)
+    gap = decode(b0 + 1, eb, mb)[1] - decode(b0, eb, mb)[1]
+    print(f"ulp single di {x:&gt;7g} = {float(gap):.3e}  (relatif {float(gap) / x:.2e})")
+</pre>
+<p>Skrip pendek untuk percobaan lab: <code>f32</code> membulatkan ke single dengan <code>struct</code>, <code>kahan</code> adalah penjumlahan terkompensasi, dan bagian terakhir mencetak ulp single pada berbagai besar nilai memakai <code>numrep</code>.</p>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Sebuah register menyimpan bilangan bertanda atau tak bertanda." Register hanya menyimpan bit; tafsir ada pada instruksi yang memakainya, pembanding yang dipilih, dan deklarasi di kode. Satu pola bisa dua bilangan.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Carry dan overflow itu sama." Carry adalah luapan tafsir tak bertanda; overflow luapan tafsir bertanda. Keduanya bisa menyala sendiri-sendiri (0x7F + 0x01: V saja; 0xFF + 0x01: C saja) atau bersama (0x80 + 0x80).</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Two's complement berarti balik semua bit." Itu one's complement. Two's complement adalah balik semua bit <em>lalu tambah satu</em>; pola 0x80 negasinya tetap 0x80.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Geser kanan satu bit selalu membagi dua." Hanya untuk tak bertanda (geser logika) atau bertanda dengan geser aritmetika, dan membulatkan ke −∞: −7 &gt;&gt; 1 = −4, bukan −3 seperti pembagian C.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Fixed-point berarti kehilangan presisi, float berarti tidak." Float 32 bit hanya punya 24 bit signifikan; pada nilai dekat 1, fixed-point 32 bit dengan 30 bit pecahan lebih teliti. Float lebih fleksibel untuk jangkauan, bukan lebih teliti.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Galat float kecil jadi bisa diabaikan." Galat per operasi kecil, tetapi bisa bertumpuk: menjumlah 1.0 dua puluh juta kali pada single berhenti di 16 777 216 dan menghasilkan hasil yang salah 16%; pengurangan hampir-sama menghapus digit penting.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"NaN sama dengan NaN." Menurut IEEE 754, NaN tidak sama dengan apa pun termasuk dirinya, sehingga <code>x == x</code> salah bila x NaN. Bandingkan dengan fungsi <code>isnan</code>.</div>
+<div class="icd-box trap"><b>Jebakan industri: campuran signed dan unsigned di Verilog</b>Ekspresi Verilog hanya bertanda bila <em>semua</em> operandnya bertanda; satu operand tak bertanda mengubah seluruh ekspresi menjadi tak bertanda dan menghapus perluasan tanda. Pembanding <code>a &lt; b</code> memberi jawaban "salah" tanpa peringatan. Deklarasikan <code>signed</code> secara konsisten, gunakan <code>$signed()</code> hanya dengan sadar, dan nyalakan peringatan lebar dan tanda pada tool lint (M16).</div>
+<div class="icd-box trap"><b>Jebakan industri: lebar hasil ekspresi</b>Di Verilog, lebar ekspresi ditentukan oleh operand <em>dan</em> sisi kiri penugasan. <code>assign y = a + b;</code> dengan y 9 bit dan a, b 8 bit menghasilkan 9 bit; dengan y 8 bit carry hilang diam-diam. Tulis lebar secara eksplisit seperti pada <code>t</code> di <code>addsub.v</code>.</div>
+<div class="icd-box trap"><b>Jebakan industri: pembulatan yang berbeda antara model dan RTL</b>Model Python memakai <code>round</code> (genap), RTL memakai "tambah setengah lalu geser" (selalu naik pada seri), C memotong. Selisih 1 LSB pada beberapa persen sampel membuat scoreboard menolak desain yang sebenarnya benar. Tuliskan aturan pembulatan di spesifikasi dan buat model referensi yang meniru persis.</div>
+<div class="icd-box trap"><b>Jebakan industri: perbandingan float dengan ==</b>Uji <code>a == b</code> pada hasil float hampir selalu rapuh. Bandingkan dengan toleransi absolut dan relatif, atau jumlah ulp, dan khusus unit float perangkat keras, bandingkan bit-exact terhadap model yang meniru urutan operasi (termasuk FMA) yang sama.</div>
+<div class="icd-box trap"><b>Jebakan industri: urutan byte pada antarmuka</b>Register dan data yang dibaca byte demi byte oleh pihak lain (host, jaringan, file) harus disepakati endian-nya. Bug muncul sebagai nilai yang "hampir benar" tetapi byte-nya terbalik; selalu cantumkan urutan byte dalam spesifikasi register dan format file.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Konsep modul ini</th><th scope="col">Muncul sebagai</th><th scope="col">Tool dan tempat</th></tr></thead>
+<tbody>
+<tr><th scope="row">Two's complement, flag C/V/N/Z</th><td>ALU prosesor, register status, instruksi cabang</td><td>RTL ALU; ISA seperti RISC-V (M11)</td></tr>
+<tr><th scope="row">Lebar bit dan luapan</th><td>Bus, penghitung, alamat, akumulator</td><td>Lint (peringatan lebar dan tanda) dan simulasi; M16, M18</td></tr>
+<tr><th scope="row">Fixed-point</th><td>Filter FIR/IIR, FFT, kendali motor, ADC/DAC digital, koefisien</td><td>Model bit-exact di Python/C/MATLAB, tipe fixed-point di HLS; M14 (akselerator), M28 (ADC)</td></tr>
+<tr><th scope="row">Saturasi dan pembulatan</th><td>Audio, video, pemrosesan citra, kuantisasi jaringan saraf</td><td>RTL datapath, pustaka tipe fixed</td></tr>
+<tr><th scope="row">IEEE 754</th><td>Unit titik mengambang CPU dan GPU, pustaka numerik</td><td>Verifikasi dengan pustaka referensi (Berkeley SoftFloat dan TestFloat), simulasi, bukti formal</td></tr>
+<tr><th scope="row">Format kecil (bfloat16, FP8, MX)</th><td>Akselerator AI, sistem memori berkapasitas tinggi</td><td>Spesifikasi OCP, model referensi vendor; M28, M29</td></tr>
+<tr><th scope="row">Endian dan bit-field</th><td>Peta register, header paket, format file</td><td>Generator register (SystemRDL, IP-XACT), dokumentasi antarmuka</td></tr>
+</tbody></table></div>
+<p><strong>Bagaimana tim memilih format bilangan.</strong> Alur tipikal untuk datapath pemrosesan sinyal: (1) tulis algoritma dalam float64 dan tetapkan metrik mutu (SNR, galat maksimum, bit-error rate); (2) analisis jangkauan: nilai maksimum di setiap simpul menentukan bit bagian bulat, sering lewat simulasi dengan data representatif ditambah margin; (3) pilih bit pecahan dari anggaran galat, dan lebar akumulator dari jumlah suku; (4) tentukan pembulatan dan saturasi di tiap titik pemotongan; (5) buat model bit-exact dan ukur penurunan mutu terhadap float; (6) iterasi sampai luas dan daya minimum yang masih memenuhi mutu; (7) RTL dibandingkan bit demi bit dengan model itu. Untuk akselerator AI, langkah (1)–(6) diganti dengan pelatihan sadar-kuantisasi dan pemilihan format per lapisan, tetapi langkah (7) tetap sama.</p>
+<p>Dalam alur RTL-to-GDSII, bilangan berperan di tahap spesifikasi dan arsitektur (format dan lebar), di RTL (aturan tanda dan lebar, M16), di verifikasi (model referensi, M18), dan di sintesis (struktur penjumlah dan pengali dipilih tool dari batasan waktu, M08b dan M21).</p>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Ubah pola 0xA7 (8 bit) ke desimal sebagai tak bertanda dan sebagai two's complement. Tulis 100 dalam biner 8 bit dan heks. Tulis −1 dan −128 dalam heks 8 bit.</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p>0xA7 = 1010 0111 = 128 + 32 + 4 + 2 + 1 = 167 tak bertanda; bertanda 167 − 256 = −89. 100 = 64 + 32 + 4 = 0110 0100 = 0x64. −1 = 0xFF dan −128 = 0x80.</p></details>
+<p><strong>1.2</strong> Berapa rentang bilangan 12 bit tak bertanda dan two's complement?</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p>Tak bertanda 0 sampai 2<sup>12</sup> − 1 = 4095. Two's complement −2<sup>11</sup> = −2048 sampai 2<sup>11</sup> − 1 = 2047.</p></details>
+<p><strong>1.3</strong> Pada 8 bit, hitung 0x7F + 0x01. Berapa pola hasil, C, dan V? Bagaimana membacanya?</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>0x7F + 0x01 = 0x80. C = 0, V = 1 (dua operand nonnegatif, hasil MSB satu). Tak bertanda: 128 benar. Bertanda: 127 + 1 = 128 tidak muat dan pola terbaca −128: luapan.</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Sensor memberi nilai antara −5.0 dan +5.0. Rancang format fixed-point Q<i>i</i>.<i>f</i> terkecil dengan galat kuantisasi maksimum 0.005 (pembulatan ke terdekat). Berapa lebar total?</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p>Rentang: nilai maksimum harus ≥ 5.0, maka <i>R</i> = 2<sup><i>i</i>−1</sup> harus &gt; 5 (nilai tertinggi <i>R</i> − 2<sup>−<i>f</i></sup>): <i>i</i> = 3 memberi <i>R</i> = 4 (kurang), <i>i</i> = 4 memberi <i>R</i> = 8 (cukup). Galat maksimum ½ LSB ≤ 0.005 maka LSB ≤ 0.01, 2<sup>−<i>f</i></sup> ≤ 0.01 → <i>f</i> ≥ 6.64, jadi <i>f</i> = 7 (LSB = 0.0078, galat maksimum 0.0039). Format Q4.7, lebar total 11 bit. Pemakaian rentang −8 sampai 8 untuk sinyal ±5 menyisakan sekitar 37% rentang tak terpakai; bila sinyal mungkin lebih besar, margin itu berguna.</p></details>
+<p><strong>2.2</strong> Berapa SQNR teoretis ADC 12 bit untuk sinus skala penuh? Berapa bit minimum untuk 90 dB?</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>6.02 × 12 + 1.76 = 74.0 dB. Untuk 90 dB: <i>N</i> ≥ (90 − 1.76)/6.02 = 14.66, jadi 15 bit (15 bit memberi 92.1 dB). Dalam praktik noise rangkaian dan sinyal yang tidak skala penuh menuntut bit lebih banyak (M28).</p></details>
+<p><strong>2.3</strong> Sandikan −0.15625 sebagai single (tulis dalam heks), dan dekode 0x3E800000.</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p>0.15625 = 5/32 = 1.25 × 2<sup>−3</sup>. Tanda 1; eksponen terbias −3 + 127 = 124 = 0111 1100; pecahan 0.25 = 01 diikuti nol. Pola 1 01111100 01000000000000000000000 = 1011 1110 0010 0000 … = 0xBE200000. Untuk 0x3E800000: tanda 0, eksponen 0x7D = 125 → 125 − 127 = −2, pecahan nol → 1.0 × 2<sup>−2</sup> = 0.25.</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Buktikan bahwa perluasan tanda mempertahankan nilai two's complement: bila bit atas satu, menyalinnya <i>k</i> kali tidak mengubah nilai.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>Nilai awal (MSB satu): −2<sup><i>n</i>−1</sup> + <i>r</i>, dengan <i>r</i> jumlah bit sisanya. Setelah <i>k</i> salinan satu di posisi <i>n</i> sampai <i>n</i> + <i>k</i> − 1 (dan MSB baru di <i>n</i> + <i>k</i> − 1 berbobot negatif): nilai = −2<sup><i>n</i>+<i>k</i>−1</sup> + Σ<sub><i>j</i>=<i>n</i>−1</sub><sup><i>n</i>+<i>k</i>−2</sup> 2<sup><i>j</i></sup> + <i>r</i>. Deret geometri itu = 2<sup><i>n</i>+<i>k</i>−1</sup> − 2<sup><i>n</i>−1</sup>, sehingga nilai = −2<sup><i>n</i>−1</sup> + <i>r</i>. Sama. Untuk MSB nol, bit baru nol tidak menambah apa pun. ∎</p></details>
+<p><strong>3.2</strong> Buktikan <i>V</i> = <i>c</i><sub><i>n</i></sub> ⊕ <i>c</i><sub><i>n</i>−1</sub> (carry keluar dan carry masuk MSB), dengan <i>V</i> didefinisikan sebagai "kedua operand bertanda sama dan hasil bertanda berbeda".</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Pada bit MSB, operand <i>a</i>, <i>b</i> dan carry masuk <i>c</i> = <i>c</i><sub><i>n</i>−1</sub>; bit hasil = <i>a</i> ⊕ <i>b</i> ⊕ <i>c</i>, carry keluar <i>c</i><sub><i>n</i></sub> = maj(<i>a</i>, <i>b</i>, <i>c</i>). Kasus: (i) <i>a</i> = <i>b</i> = 0: <i>c</i><sub><i>n</i></sub> = 0, hasil = <i>c</i>; luapan bila hasil 1, yaitu <i>c</i> = 1, maka <i>V</i> = 0 ⊕ <i>c</i> = <i>c</i>, cocok. (ii) <i>a</i> = <i>b</i> = 1: <i>c</i><sub><i>n</i></sub> = 1, hasil = <i>c</i>; luapan bila hasil 0, yaitu <i>c</i> = 0, maka <i>V</i> = 1 ⊕ <i>c</i> = 1 bila <i>c</i> = 0, cocok. (iii) <i>a</i> ≠ <i>b</i>: <i>c</i><sub><i>n</i></sub> = <i>c</i> sehingga <i>V</i> = 0, dan memang tak mungkin luapan karena tanda operand berbeda. ∎</p></details>
+<p><strong>3.3</strong> (a) Buktikan galat relatif pembulatan ke terdekat pada format dengan <i>M</i> bit pecahan paling banyak 2<sup>−(<i>M</i>+1)</sup>. (b) Bila 1.0 dijumlahkan berulang pada akumulator single mulai dari 0, di mana akumulator berhenti naik, dan mengapa?</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>(a) Untuk 2<sup><i>e</i></sup> ≤ |<i>x</i>| &lt; 2<sup><i>e</i>+1</sup> jarak bilangan tertampung 2<sup><i>e</i>−<i>M</i></sup>; pembulatan ke terdekat menghasilkan galat paling banyak setengahnya, 2<sup><i>e</i>−<i>M</i>−1</sup>; dibagi |<i>x</i>| ≥ 2<sup><i>e</i></sup> memberi galat relatif ≤ 2<sup>−<i>M</i>−1</sup>. ∎ (b) Single punya <i>M</i> = 23. Akumulator naik tepat sampai 2<sup>24</sup> = 16 777 216, karena semua bilangan bulat sampai di sana tertampung. Pada 2<sup>24</sup> ulp = 2, jadi 16 777 216 + 1 = 16 777 217 tepat di tengah dua bilangan tertampung dan dibulatkan ke yang genap (pecahan genap): 16 777 216. Akumulator terjebak. Setelah dua puluh juta penambahan, hasilnya 16 777 216, bukan 20 000 000. Perbaikan: akumulator double, penjumlahan berpasangan, atau penjumlahan Kahan.</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Jelaskan two's complement dan mengapa ia dipakai."</summary>
+<p><strong>Kerangka jawaban:</strong> Definisi: MSB berbobot −2<sup><i>n</i>−1</sup>; negasi = balik bit + 1; rentang −2<sup><i>n</i>−1</sup> … 2<sup><i>n</i>−1</sup> − 1. Alasan: satu penjumlah melayani bilangan tak bertanda dan bertanda, pengurangan hanya menambah pembalik dan carry masuk, hanya satu nol. Sebut kasus tepi (−128 tak bisa dinegasikan) dan perluasan tanda. Tambahkan bahwa perbandingan dan geser kanan adalah operasi yang berbeda antar tafsir.</p></details>
+<details class="icd-sol"><summary>"Apa perbedaan carry dan overflow? Beri contoh."</summary>
+<p><strong>Kerangka jawaban:</strong> Carry = carry keluar MSB, luapan tak bertanda. Overflow = hasil bertanda salah (operand tanda sama, hasil tanda berbeda), ekuivalen carry masuk ≠ carry keluar MSB. Contoh 8 bit: 0x7F + 1 (V saja), 0xFF + 1 (C saja), 0x80 + 0x80 (keduanya). Pada pengurangan C = 1 berarti tidak ada pinjaman. Sebutkan pembanding: tak bertanda dari C, bertanda dari N ⊕ V.</p></details>
+<details class="icd-sol"><summary>"Bagaimana Anda merancang datapath fixed-point untuk filter FIR?"</summary>
+<p><strong>Kerangka jawaban:</strong> Mulai dari model float, tentukan mutu target; analisis jangkauan masukan, koefisien, dan akumulator; bit pecahan dari anggaran galat (6 dB per bit); lebar akumulator = lebar masukan + lebar koefisien + log<sub>2</sub>(jumlah suku) agar tak meluap; pembulatan dan saturasi di keluaran saja (bukan di tiap suku) bila memungkinkan; koefisien simetris menghemat pengali. Buat model bit-exact dan bandingkan dengan RTL; ukur SQNR nyata terhadap float.</p></details>
+<details class="icd-sol"><summary>"Mengapa 0.1 + 0.2 ≠ 0.3 dan bagaimana menguji hasil float di verifikasi?"</summary>
+<p><strong>Kerangka jawaban:</strong> 0.1 dan 0.2 tidak punya penulisan biner berhingga, tersimpan sebagai bilangan terdekat; jumlahnya dibulatkan lagi dan berbeda 1 ulp dari 0.3 terdekat. Uji dengan toleransi (relatif dan absolut) bila membandingkan algoritma berbeda, tetapi bit-exact bila membandingkan hardware terhadap model yang meniru urutan operasi, pembulatan, FMA, dan perlakuan subnormal yang sama. Sebut kasus tepi yang harus ada di vektor uji: nol bertanda, subnormal, seri pembulatan, luapan, NaN, ∞.</p></details>
+<details class="icd-sol"><summary>"Kapan memakai bfloat16, FP16, FP8, atau bilangan bulat untuk inferensi AI?"</summary>
+<p><strong>Kerangka jawaban:</strong> Pertukaran jangkauan lawan presisi. bfloat16: jangkauan sama dengan single, presisi rendah; stabil untuk pelatihan tanpa penskalaan. FP16: presisi lebih baik, jangkauan sempit (maks 65 504) sehingga perlu penskalaan. FP8 (E4M3 untuk bobot dan aktivasi, E5M2 untuk gradien) dan format blok MX: menghemat memori dan energi, memerlukan faktor skala per blok atau per tensor. INT8/INT4: paling hemat, memerlukan kalibrasi. Sebut bahwa dukungan hardware dan detail format berbeda antar vendor, sehingga model referensi per perangkat diperlukan.</p></details>
+<details class="icd-sol"><summary>"Apa jebakan tanda dan lebar di Verilog dan bagaimana menghindarinya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Ekspresi hanya bertanda bila semua operand bertanda; satu operand tak bertanda membuat semua tak bertanda dan menghapus perluasan tanda. Lebar ekspresi dipengaruhi sisi kiri penugasan, sehingga carry bisa hilang atau perluasan terjadi tak terduga. Perbaikan: deklarasikan <code>signed</code> konsisten, lebar eksplisit untuk hasil antara, <code>$signed</code> hanya di tempat yang disengaja, lint dengan peringatan lebar, dan testbench lengkap seperti <code>tb_addsub.v</code>.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: model referensi bilangan dan penjumlah Verilog yang diperiksa lengkap</h2>
+<p><strong>Tujuan:</strong> menjalankan model Python dan testbench Verilog, mematahkan penjumlah dengan sengaja untuk melihat testbench menangkapnya, lalu melakukan percobaan numerik float. Waktu: sekitar 90 menit. Tool: Python 3 dan Icarus Verilog (<code>iverilog</code>, <code>vvp</code>). Di Windows, jalankan di WSL2 (Ubuntu); Linux asli juga sama.</p>
+<h3>Langkah 0: siapkan</h3>
+<pre class="icd-src" data-lang="sh">
+sudo apt update &amp;&amp; sudo apt install -y iverilog python3
+mkdir -p ~/icd/m03a &amp;&amp; cd ~/icd/m03a
+# salin numrep.py, addsub.v, tb_addsub.v, floatlab.py dari bagian 8 (atau dari folder lab/m03a)
+</pre>
+<h3>Langkah 1: model referensi</h3>
+<pre class="icd-src" data-lang="sh">
+python3 numrep.py
+</pre>
+<p>Keluaran yang benar (baris pertama berarti semua <code>assert</code>, termasuk 90 000 pembandingan terhadap <code>struct</code>, lulus):</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+Semua uji lulus.
+Bilangan bulat 8 bit:
+    127 -&gt; 01111111  (0x7F)
+      1 -&gt; 00000001  (0x01)
+      0 -&gt; 00000000  (0x00)
+     -1 -&gt; 11111111  (0xFF)
+   -127 -&gt; 10000001  (0x81)
+   -128 -&gt; 10000000  (0x80)
+  100 + 100 = -56  (carry=0, overflow=1)
+  -128 + -128 = 0  (carry=1, overflow=1)
+  127 + -1 = 126  (carry=1, overflow=0)
+Fixed-point Q1.15 (16 bit):
+        0.1 -&gt;   3277 = 0x0CCD, nilai 0.10000610, galat +6.10e-06
+        0.5 -&gt;  16384 = 0x4000, nilai 0.50000000, galat +0.00e+00
+   0.999999 -&gt;  32767 = 0x7FFF, nilai 0.99996948, galat -2.95e-05
+        1.0 -&gt;  32767 = 0x7FFF, nilai 0.99996948, galat -3.05e-05
+       -1.0 -&gt; -32768 = 0x8000, nilai -1.00000000, galat +0.00e+00
+  0.5 * 0.5 -&gt; 0.25
+  (-1) * (-1) -&gt; 0.999969482421875 (tersaturasi)
+IEEE 754 single:
+           1.0 -&gt; 0x3F800000 0|01111111|00000000000000000000000  normal    1.0
+           0.1 -&gt; 0x3DCCCCCD 0|01111011|10011001100110011001101  normal    0.10000000149011612
+          -2.5 -&gt; 0xC0200000 1|10000000|01000000000000000000000  normal    -2.5
+  3.4028235e+38 -&gt; 0x7F7FFFFF 0|11111110|11111111111111111111111  normal    3.4028234663852886e+38
+         1e-45 -&gt; 0x00000001 0|00000000|00000000000000000000001  subnormal 1.401298464324817e-45
+  0.1 tersimpan sebagai 0.10000000149011612, galat +1.490e-09
+  2**24 + 1 = 16777216.0 (single); ulp di 2**24 = 2.0
+  0.1 + 0.2 == 0.3 (double)? False ; selisih 5.551115123125783e-17
+  eps mesin: single 1.1920928955078125e-07 double 2.220446049250313e-16 half 0.0009765625
+</pre>
+<p><strong>Baca hasilnya.</strong> −128 dan −127 hanya berbeda di LSB tetapi pola 0x80 dan 0x81 ada di dua ujung rentang; 100 + 100 memberi −56 dengan overflow tanpa carry; 127 + (−1) menghasilkan carry tetapi bukan overflow (−1 sebagai 0xFF dan 127 tidak melampaui rentang). Pada Q1.15, 0.1 → 3277 dengan galat +6.1 × 10<sup>−6</sup>; 1.0 tertempel di 0x7FFF; (−1) × (−1) tersaturasi. Single: 0.1 tersimpan 0.10000000149…, dan 2<sup>24</sup> + 1 kembali ke 2<sup>24</sup>.</p>
+<h3>Langkah 2: periksa penjumlah Verilog</h3>
+<pre class="icd-src" data-lang="sh">
+iverilog -g2012 -Wall -o sim addsub.v tb_addsub.v
+vvp sim
+</pre>
+<p>Keluaran yang benar:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+LULUS: 196608 pemeriksaan (semua pasangan a, b 8 bit: tambah, kurang, saturasi)
+tb_addsub.v:42: $finish called at 131072000 (1ps)
+</pre>
+<p>196 608 = 65 536 pasangan × 3 operasi. Semua pasangan diperiksa, bukan sampel.</p>
+<h3>Langkah 3: rusak dengan sengaja</h3>
+<p>Di <code>addsub.v</code>, ubah baris overflow menjadi <code>assign overflow = carry;</code> (kesalahan klasik: menyamakan carry dan overflow). Tebak dulu: apakah testbench akan gagal pada penjumlahan, pengurangan, atau keduanya, dan kira-kira berapa banyak kesalahan?</p>
+<pre class="icd-src" data-lang="sh">
+cp addsub.v addsub_bug.v
+sed -i 's/assign overflow = .*/assign overflow = carry;/' addsub_bug.v
+iverilog -g2012 -o sim_bug addsub_bug.v tb_addsub.v &amp;&amp; vvp sim_bug
+</pre>
+<details class="icd-sol"><summary>Hasil yang diharapkan</summary>
+<p>Keluaran:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+SALAH sub a=0 b=0 y=0 c=1 v=1
+SALAH sub a=0 b=-128 y=-128 c=0 v=0
+SALAH sub a=1 b=0 y=1 c=1 v=1
+SALAH sub a=1 b=1 y=0 c=1 v=1
+GAGAL: 97921 kesalahan
+tb_addsub.v:42: $finish called at 131072000 (1ps)
+</pre>
+<p>Baris pertama menunjukkan kesalahan pada pengurangan <code>a = 0, b = 0</code>: <code>0 − 0</code> menghasilkan carry 1 (tidak ada pinjaman) sehingga <code>overflow = carry</code> salah menyala. Penjumlahan juga gagal (mis. 100 + 100 tidak menyalakan flag, sedangkan 0xFF + 0x01 menyalakannya tanpa alasan) dan saturasi ikut salah karena memakai flag itu. Itu sebabnya jumlahnya puluhan ribu. Pelajaran: satu definisi yang salah di satu baris terdeteksi seketika oleh pemeriksaan lengkap, dan pesan kesalahan awal sudah menunjuk ke mana harus mencari.</p></details>
+<h3>Langkah 4: percobaan float</h3>
+<pre class="icd-src" data-lang="sh">
+python3 floatlab.py
+</pre>
+<p>Keluaran yang benar:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+0.1 + 0.2 = 0.30000000000000004 | sama dengan 0.3? False | dekat 0.3? True
+(a+b)+c = 1.0 | a+(b+c) = 0.0
+single(16777216) = 16777216.0 | single(16777217) = 16777216.0
+jumlah naif    = 100000.00000133288 | galat = +1.333e-06
+jumlah Kahan   = 100000.0 | galat = +0.000e+00
+math.fsum      = 100000.0
+ulp single di       1 = 1.192e-07  (relatif 1.19e-07)
+ulp single di    1000 = 6.104e-05  (relatif 6.10e-08)
+ulp single di   1e+08 = 8.000e+00  (relatif 8.00e-08)
+ulp single di   1e+30 = 7.556e+22  (relatif 7.56e-08)
+</pre>
+<p><strong>Baca hasilnya.</strong> 0.1 + 0.2 tidak sama dengan 0.3 tetapi <code>isclose</code> benar. Penjumlahan tak asosiatif: 1.0 lawan 0.0. Single berhenti mewakili bilangan bulat ganjil setelah 2<sup>24</sup>. Menjumlah 0.1 sebanyak sejuta kali memberi galat 1.3 × 10<sup>−6</sup> pada double (naif), 0 dengan Kahan dan <code>fsum</code>. Galat relatif ulp stabil sekitar 10<sup>−7</sup> pada single walau ulp absolut berubah dari 10<sup>−7</sup> sampai 10<sup>22</sup>.</p>
+<h3>Langkah 5: tantangan</h3>
+<p>Tulis <code>stagnasi.py</code> yang memakai <code>f32</code> untuk menunjukkan titik di mana akumulator single berhenti naik bila Anda menjumlah 1.0 berulang. Mulai dari 16 777 214 supaya cepat. Tebak dulu: nilai terakhir berapa?</p>
+<details class="icd-sol"><summary>Solusi</summary>
+<pre class="icd-src" data-lang="py">
+"""M03a lab tantangan: akumulator single berhenti naik di 2^24."""
+import struct
+
+
+def f32(x):
+    return struct.unpack("&gt;f", struct.pack("&gt;f", x))[0]
+
+
+s = 16777214.0                      # mulai dekat 2^24 supaya cepat
+for n in range(1, 6):
+    s = f32(s + 1.0)                # tiap penambahan dibulatkan ke single
+    print(f"setelah {n} penambahan: {s:.1f}")
+print("2**24 =", 2 ** 24, "| berhenti naik:", f32(2 ** 24 + 1.0) == 2 ** 24)
+</pre>
+<p>Keluaran yang benar:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+setelah 1 penambahan: 16777215.0
+setelah 2 penambahan: 16777216.0
+setelah 3 penambahan: 16777216.0
+setelah 4 penambahan: 16777216.0
+setelah 5 penambahan: 16777216.0
+2**24 = 16777216 | berhenti naik: True
+</pre>
+<p>Akumulator naik sampai 16 777 216 lalu berhenti, sesuai solusi 3.3b. Tantangan lanjutan: ubah akumulator ke double dan ke Kahan, dan hitung berapa tambahan yang dibutuhkan agar galat single melewati 1%.</p></details>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Pola bit tidak punya arti tanpa tafsir; n bit memberi 2<sup>n</sup> pola. Tak bertanda: 0 … 2<sup>n</sup> − 1. Two's complement: −2<sup>n−1</sup> … 2<sup>n−1</sup> − 1, MSB berbobot −2<sup>n−1</sup>.</li>
+<li>Negasi = ~x + 1; −2<sup>n−1</sup> tak punya pasangan positif. Perluasan tanda menyalin MSB; perluasan nol untuk tak bertanda.</li>
+<li>Penjumlah sama untuk dua tafsir. C (carry keluar) untuk tak bertanda; V = c<sub>n</sub> ⊕ c<sub>n−1</sub> untuk bertanda. Pengurangan = a + ~b + 1 dan C = 1 berarti tanpa pinjaman. Bertanda a &lt; b ⟺ N ⊕ V.</li>
+<li>Geser kiri = ×2<sup>k</sup>. Geser kanan: logika (tak bertanda) atau aritmetika (bertanda, membulatkan ke −∞). Perkalian n × n memberi 2n bit.</li>
+<li>Qi.f: nilai = r/2<sup>f</sup>, LSB 2<sup>−f</sup>, rentang [−R, R − 2<sup>−f</sup>], R = 2<sup>i−1</sup>. Pembulatan ke terdekat: galat ≤ ½ LSB; pemotongan: bias −½ LSB. Saturasi untuk sinyal, bungkus untuk penghitung. SQNR ≈ 6.02N + 1.76 dB.</li>
+<li>IEEE 754: (−1)<sup>s</sup>(1 + f/2<sup>M</sup>)2<sup>e−bias</sup>; bias 2<sup>E−1</sup> − 1; subnormal pada e = 0; ∞ dan NaN pada e semua satu. Pembulatan ke terdekat-genap; galat relatif ≤ 2<sup>−(M+1)</sup>; ulp tumbuh dengan nilai.</li>
+<li>Float: tidak asosiatif; 0.1 tak tertampung; jangan pakai <code>==</code>; bilangan bulat tertampung sampai 2<sup>24</sup> (single) dan 2<sup>53</sup> (double); format kecil (bfloat16, FP8, MX) menukar presisi dengan jangkauan dan energi.</li>
+<li>Little-endian: byte terendah di alamat terendah (x86, ARM umumnya, RISC-V); big-endian: sebaliknya (urutan jaringan).</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Bilangan bulat</h4>2<sup>8</sup> = 256 · 2<sup>10</sup> = 1024 · 2<sup>16</sup> = 65 536<br>tak bertanda: 0…2ⁿ−1<br>two's: −2ⁿ⁻¹…2ⁿ⁻¹−1<br>−x = ~x + 1<br>8 bit: 0x80 = −128, 0xFF = −1, 0x7F = 127</div>
+<div class="icd-card"><h4>Flag</h4>C = carry keluar MSB<br>V = c_n ⊕ c_(n−1)<br>N = MSB hasil · Z = hasil nol<br>sub: a + ~b + 1, C = 1 tanpa pinjaman<br>tak bertanda a&lt;b: C = 0<br>bertanda a&lt;b: N ⊕ V</div>
+<div class="icd-card"><h4>Fixed-point</h4>Qi.f: r/2^f, N = i + f<br>LSB = 2^−f · R = 2^(i−1)<br>Q1.15: LSB 3.05e−5, [−1, 0.99997]<br>kali: Q(i1+i2).(f1+f2), geser f, bulatkan, tempel<br>SQNR = 6.02N + 1.76 dB</div>
+<div class="icd-card"><h4>IEEE 754</h4>half 1+5+10 bias 15 · maks 65504<br>bfloat16 1+8+7 · single 1+8+23 bias 127<br>double 1+11+52 bias 1023<br>ε = 2^−M · u = 2^−(M+1)<br>e=0: nol/subnormal · e=1…1: ∞/NaN</div>
+<div class="icd-card"><h4>Jebakan float</h4>0.1 + 0.2 ≠ 0.3<br>(a+b)+c ≠ a+(b+c)<br>single: 2²⁴ + 1 = 2²⁴<br>NaN ≠ NaN · +0 = −0<br>Kahan atau fsum untuk jumlah panjang</div>
+<div class="icd-card"><h4>Energi relatif (45 nm)</h4>tambah int 8b ≈ 0.03 pJ · 32b ≈ 0.1 pJ<br>kali int 8b ≈ 0.2 pJ · 32b ≈ 3.1 pJ<br>tambah FP 16b ≈ 0.4 pJ · 32b ≈ 0.9 pJ<br>kali FP 32b ≈ 3.7 pJ (Horowitz 2014)</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>Patterson &amp; Hennessy, <i>Computer Organization and Design</i>: bab aritmetika untuk komputer (bilangan bertanda, penjumlah dan ALU, perkalian, titik mengambang dan IEEE 754).</li>
+<li>Harris &amp; Harris, <i>Digital Design and Computer Architecture</i>: bab blok bangun digital (sistem bilangan, penjumlah, aritmetika, fixed-point dan floating-point).</li>
+<li>Weste &amp; Harris, <i>CMOS VLSI Design</i>: bab subsistem datapath (penjumlah, pengali, penggeser); rujukan untuk M08b.</li>
+<li>Oppenheim &amp; Schafer, <i>Discrete-Time Signal Processing</i>: bab struktur sistem waktu-diskret (efek panjang kata terbatas: kuantisasi koefisien, galat pembulatan) dan bab sampling (kuantisasi dan SQNR).</li>
+<li>Goldberg, <i>What Every Computer Scientist Should Know About Floating-Point Arithmetic</i> (ACM Computing Surveys, 1991): artikel klasik tentang pembulatan, galat, dan IEEE 754.</li>
+<li>Muller dkk., <i>Handbook of Floating-Point Arithmetic</i>: bab definisi dan format, serta bab aritmetika dengan pembulatan benar; rujukan perancang unit float.</li>
+<li>Overton, <i>Numerical Computing with IEEE Floating Point Arithmetic</i>: pengantar singkat tentang format dan perilaku nilai khusus.</li>
+<li>IEEE Std 754-2019, <i>Standard for Floating-Point Arithmetic</i>; spesifikasi OCP <i>Microscaling Formats (MX) v1.0</i> dan spesifikasi OCP <i>8-bit Floating Point (OFP8)</i>; draf kelompok kerja IEEE P3109 (belum final per November 2026).</li>
+<li>Horowitz, <i>Computing's Energy Problem (and what we can do about it)</i>, plenary ISSCC 2014: tabel energi operasi.</li>
+<li>Dokumentasi Icarus Verilog (<code>iverilog</code>, <code>vvp</code>) untuk simulasi dan sistem tugas <code>$display</code>.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut ke <a href="m03b-kode-deteksi-koreksi.html">M03b</a>: kode Gray, paritas, Hamming, dan CRC (deteksi dan koreksi galat). Modul sebelumnya: <a href="m02c-bode-filter-tline.html">M02c</a>.</p>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, svg = ICD.svg, q = ICD.q, num = ICD.fmt.num, si = ICD.fmt.si;
+
+ICD.gloss.add([
+{ id: 'bit', en: 'bit', idn: 'bit', def: 'Satuan informasi terkecil: 0 atau 1; di chip, dua tingkat tegangan.', mod: 'M03a' },
+{ id: 'byte', en: 'byte', idn: 'byte', def: 'Kelompok 8 bit; unit alamat memori yang umum.', mod: 'M03a' },
+{ id: 'heks', en: 'hexadecimal', idn: 'heksadesimal', def: 'Basis 16; satu digit mewakili empat bit (nibble), sehingga 0xB5 = 1011 0101.', mod: 'M03a' },
+{ id: 'lsb', en: 'least significant bit', idn: 'bit paling kanan (LSB)', def: 'Bit berbobot 2⁰; dalam fixed-point, juga satuan resolusi terkecil.', mod: 'M03a' },
+{ id: 'twoscomp', en: "two's complement", idn: 'komplemen dua', def: 'Representasi bilangan bertanda dengan MSB berbobot −2^(n−1); negasi = balik bit lalu tambah 1.', mod: 'M03a, M08b, M11' },
+{ id: 'carry', en: 'carry flag', idn: 'flag carry', def: 'Carry keluar dari bit teratas penjumlah; luapan pada tafsir tak bertanda (pada pengurangan: 1 = tanpa pinjaman).', mod: 'M03a, M08b, M11' },
+{ id: 'ovf', en: 'overflow flag', idn: 'flag overflow', def: 'Hasil bertanda salah: operand bertanda sama, hasil bertanda berbeda; sama dengan carry masuk ≠ carry keluar MSB.', mod: 'M03a, M08b, M11' },
+{ id: 'signext', en: 'sign extension', idn: 'perluasan tanda', def: 'Memperlebar bilangan bertanda dengan menyalin MSB ke bit baru; nilai tidak berubah.', mod: 'M03a, M16' },
+{ id: 'sat', en: 'saturation', idn: 'saturasi', def: 'Menempel hasil yang luap ke nilai maksimum atau minimum alih-alih membungkus.', mod: 'M03a, M28' },
+{ id: 'fixedpoint', en: 'fixed-point', idn: 'titik tetap', def: 'Bilangan bulat dengan skala 2^f yang disepakati: nilai = r/2^f; notasi Qi.f.', mod: 'M03a' },
+{ id: 'sqnr', en: 'signal-to-quantization-noise ratio', idn: 'rasio sinyal terhadap noise kuantisasi', def: 'Untuk sinus skala penuh dan N bit: SQNR ≈ 6.02·N + 1.76 dB.', mod: 'M03a, M28' },
+{ id: 'ieee754', en: 'IEEE 754', idn: 'IEEE 754', def: 'Standar bilangan titik mengambang: tanda, eksponen terbias, pecahan, dengan nol, subnormal, tak hingga, dan NaN.', mod: 'M03a' },
+{ id: 'bias', en: 'exponent bias', idn: 'bias eksponen', def: 'Konstanta 2^(E−1) − 1 yang dikurangkan dari bidang eksponen agar eksponen bisa negatif tanpa bit tanda.', mod: 'M03a' },
+{ id: 'subnormal', en: 'subnormal number', idn: 'bilangan subnormal', def: 'Bilangan float dengan eksponen nol dan tanpa bit tersembunyi; mengisi celah antara nol dan bilangan normal terkecil.', mod: 'M03a' },
+{ id: 'ulp', en: 'unit in the last place', idn: 'ulp', def: 'Jarak antara dua bilangan float bertetangga di sekitar sebuah nilai; 2^(e−M) untuk 2^e ≤ |x| < 2^(e+1).', mod: 'M03a' },
+{ id: 'nan', en: 'not a number', idn: 'NaN', def: 'Nilai float untuk hasil tak terdefinisi (0/0, ∞ − ∞); tidak sama dengan apa pun, termasuk dirinya.', mod: 'M03a' },
+{ id: 'endian', en: 'endianness', idn: 'urutan byte', def: 'Urutan byte bilangan multibyte di memori: little-endian (byte rendah di alamat terendah) atau big-endian.', mod: 'M03a, M11' },
+{ id: 'dB', en: 'decibel', idn: 'desibel', def: 'Satuan logaritmik rasio; 20·log10 untuk tegangan, 10·log10 untuk daya.', mod: 'M01a' }
+]);
+
+function fx(x, d){ var s = x.toFixed(d); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace('-', '−'); }
+function sg(x, d){ return (x >= 0 ? '+' : '') + fx(x, d); }
+function P2(n){ return Math.pow(2, n); }
+function hx(v, d){ var s = v.toString(16).toUpperCase(); while (s.length < d) s = '0' + s; return '0x' + s; }
+function bin(v, n){ var s = '', k; for (k = n - 1; k >= 0; k--){ s += Math.floor(v / P2(k)) % 2; if (k % 4 === 0 && k > 0) s += ' '; } return s; }
+function bitAt(v, k){ return Math.floor(v / P2(k)) % 2; }
+function rEven(x){ var f = Math.floor(x), d = x - f; if (d < 0.5) return f; if (d > 0.5) return f + 1; return f % 2 === 0 ? f : f + 1; }
+function ssci(x, d){ return (x >= 0 ? '+' : '') + sci(x, d); }
+function sci(x, d){ if (x === 0) return '0'; var e = Math.floor(Math.log10(Math.abs(x))), m = x / Math.pow(10, e), s = m.toFixed(d); if (Math.abs(+s) >= 10){ e++; s = (x / Math.pow(10, e)).toFixed(d); } return s.replace('-', '−') + ' × 10^' + (e < 0 ? '−' + (-e) : e); }
+
+/* ---------- 1. pola bit, empat bacaan ---------- */
+var V1 = 181, N1 = 8, T1 = 0, v1ctl, v1plot;
+function v1Vals(v, n){
+  var M = P2(n), H = M / 2, sign = v >= H, mag = v % H;
+  return { u: v, sm: sign ? -mag : mag, oc: sign ? -(M - 1 - v) : v, tc: sign ? v - M : v, sign: sign, mag: mag, M: M, H: H, neg: (M - v) % M };
+}
+function v1Build(){
+  var host = q('#v1-bits'), k, b; host.textContent = '';
+  for (k = N1 - 1; k >= 0; k--){
+    b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-k', k); b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', 'bit ' + k);
+    if (k === N1 - 1) b.className = 'fs';
+    b.innerHTML = '<span class="lab">' + k + '</span><span class="b">0</span>';
+    b.addEventListener('click', function(){
+      var kk = +this.getAttribute('data-k'); V1 += bitAt(V1, kk) ? -P2(kk) : P2(kk); v1ctl.reset();
+      var again = q('#v1-bits button[data-k="' + kk + '"]'); if (again) again.focus();
+    });
+    host.appendChild(b);
+  }
+}
+function v1Draw(s){
+  V1 = s.v; var n = N1, d = v1Vals(V1, n), bs = qa('#v1-bits button'), k;
+  bs.forEach(function(b){ var kk = +b.getAttribute('data-k'), on = bitAt(V1, kk) === 1; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('.b').textContent = on ? '1' : '0'; });
+  var smTxt = d.sign && d.mag === 0 ? '−0' : fx(d.sm, 0), ocTxt = V1 === d.M - 1 ? '−0' : fx(d.oc, 0), nd = v1Vals(d.neg, n);
+  q('#v1-tab tbody').innerHTML = '<tr><th scope="row">Tak bertanda</th><td class="c">' + d.u + '</td></tr><tr><th scope="row">Sign-magnitude</th><td class="c">' + smTxt + '</td></tr>' +
+    '<tr><th scope="row">One\'s complement</th><td class="c">' + ocTxt + '</td></tr><tr><th scope="row">Two\'s complement</th><td class="c">' + fx(d.tc, 0) + '</td></tr><tr><th scope="row">Heksadesimal</th><td class="c">' + hx(V1, Math.ceil(n / 4)) + '</td></tr>';
+  var pts = [[], [], []], step = d.M <= 256 ? 1 : d.M / 256, p, list = [];
+  for (p = 0; p < d.M; p += step) list.push(p);
+  if (d.M > 256){ list.push(d.H - 1); list.push(d.H); list.push(d.M - 1); list.sort(function(a, b){ return a - b; }); }
+  list.forEach(function(pp){ var w = v1Vals(pp, n); pts[0].push([pp, w.u]); pts[1].push([pp, w.tc]); pts[2].push([pp, w.sm]); });
+  var o = { height: 200, x: { label: 'pola', unit: '', min: 0, max: d.M - 1, plain: true }, y: { label: 'nilai', unit: '', min: -d.H, max: d.M, plain: true },
+    series: [{ label: 'tak bertanda', kind: 'data', dash: [], unit: '', pts: pts[0] }, { label: "two's complement", kind: 'ctrl', dash: [], unit: '', pts: pts[1] }, { label: 'sign-magnitude', kind: 'analog', dash: [5, 4], unit: '', pts: pts[2] }],
+    marks: [{ x: V1, label: 'pola', kind: 'hi' }, { y: 0, label: '0', kind: 'ink2' }] };
+  if (!v1plot) v1plot = ICD.plot('#v1-plot', o); else v1plot.set(o);
+  q('#v1-out').textContent = 'Pola ' + bin(V1, n) + ' = ' + hx(V1, Math.ceil(n / 4)) + ' · tak bertanda = ' + d.u + ' · sign-magnitude = ' + smTxt + " · one's complement = " + ocTxt + " · two's complement = " + fx(d.tc, 0) +
+    " · negasi two's (balik bit + 1) = " + hx(d.neg, Math.ceil(n / 4)) + ' (' + fx(nd.tc, 0) + ')' + (d.tc === -d.H ? ' ← sama dengan dirinya sendiri' : '') + ' · geser aritmetika kanan 1 = ' + fx(Math.floor(d.tc / 2), 0) + ' · geser logika kanan 1 = ' + Math.floor(V1 / 2);
+}
+function v1Init(){ return { v: V1, n: 0, t: ++T1 }; }
+function v1Step(s){ return s.n >= 64 ? null : { v: (s.v + 1) % P2(N1), n: s.n + 1, t: ++T1 }; }
+
+/* ---------- 2. penjumlah ---------- */
+var v2ctl;
+function v2Calc(){
+  var A = +q('#v2-a').value, B = +q('#v2-b').value, sub = q('#v2-op').value === 'sub', bb = sub ? 255 - B : B, c = [sub ? 1 : 0], s = [], i, y = 0;
+  for (i = 0; i < 8; i++){ var a = bitAt(A, i), b = bitAt(bb, i); s[i] = a ^ b ^ c[i]; c[i + 1] = (a & b) | (c[i] & (a ^ b)); y += s[i] * P2(i); }
+  return { A: A, B: B, sub: sub, bb: bb, c: c, s: s, y: y, C: c[8], V: c[8] ^ c[7], N: s[7], Z: y === 0 ? 1 : 0 };
+}
+function sg8(v){ return v >= 128 ? v - 256 : v; }
+function sn(n){ return String(n).replace('-', '−'); }
+function v2Draw(st){
+  var R = v2Calc(), k = st.k, j, h = '', row;
+  q('#v2-av').textContent = hx(R.A, 2) + ' (' + R.A + ' tak bertanda, ' + sn(sg8(R.A)) + ' bertanda)'; q('#v2-bv').textContent = hx(R.B, 2) + ' (' + R.B + ' tak bertanda, ' + sn(sg8(R.B)) + ' bertanda)';
+  h += '<div class="rl h">bit</div>'; for (j = 8; j >= 0; j--) h += '<div class="h">' + (j === 8 ? 'C' : j) + '</div>';
+  h += '<div class="rl">carry masuk</div>'; for (j = 8; j >= 0; j--) h += '<div class="' + (j <= k && R.c[j] ? 'cy' : '') + '">' + (j <= k ? R.c[j] : '·') + '</div>';
+  h += '<div class="rl">A</div>'; for (j = 8; j >= 0; j--) h += j === 8 ? '<div></div>' : '<div class="' + (bitAt(R.A, j) ? 'on' : '') + '">' + bitAt(R.A, j) + '</div>';
+  h += '<div class="rl">' + (R.sub ? '~B' : 'B') + '</div>'; for (j = 8; j >= 0; j--) h += j === 8 ? '<div></div>' : '<div class="' + (bitAt(R.bb, j) ? 'on' : '') + '">' + bitAt(R.bb, j) + '</div>';
+  h += '<div class="rl">hasil</div>'; for (j = 8; j >= 0; j--) h += j === 8 ? '<div></div>' : '<div class="' + (j < k && R.s[j] ? 'on' : '') + '">' + (j < k ? R.s[j] : '·') + '</div>';
+  q('#v2-fa').innerHTML = h;
+  var sa = sg8(R.A), sb = sg8(R.B), sTrue = R.sub ? sa - sb : sa + sb, uTrue = R.sub ? R.A - R.B : R.A + R.B, op = R.sub ? '−' : '+', sat = q('#v2-sat').value === 'sat';
+  var uFit = R.sub ? R.C === 1 : R.C === 0, outv = R.y, sOut = sg8(R.y);
+  if (sat && R.V){ sOut = sa >= 0 ? 127 : -128; outv = sOut < 0 ? sOut + 256 : sOut; }
+  var cmp = R.sub ? ' · a &lt; b? tak bertanda: ' + (R.C === 0 ? 'ya' : 'tidak') + ' (C = ' + R.C + '), bertanda: ' + ((R.N ^ R.V) ? 'ya' : 'tidak') + ' (N ⊕ V)' : '';
+  q('#v2-out').innerHTML = 'A = ' + hx(R.A, 2) + ', B = ' + hx(R.B, 2) + ' · A ' + op + ' B: pola hasil = ' + hx(R.y, 2) + ' · C = ' + R.C + ', V = ' + R.V + ', N = ' + R.N + ', Z = ' + R.Z +
+    ' · tak bertanda: ' + R.A + ' ' + op + ' ' + R.B + ' = ' + sn(uTrue) + (uFit ? ' (muat)' : ' (TIDAK muat)') + ' · bertanda: ' + sn(sa) + ' ' + op + ' ' + sn(sb) + ' = ' + sn(sTrue) + (R.V ? ' (OVERFLOW, pola terbaca ' + sn(sg8(R.y)) + ')' : ' (muat)') +
+    ' · keluaran ' + (sat ? 'saturasi' : 'membungkus') + ' = ' + hx(outv, 2) + ' (' + sn(sOut) + ' bertanda)' + cmp + ' · ripple: ' + k + ' dari 8 bit selesai';
+}
+
+/* ---------- 3. fixed-point ---------- */
+var v3ctl, T3 = 0, lastT3 = -1;
+function v3Par(){
+  var f = q('#v3-fmt').value.split(','), i = +f[0], fr = +f[1], N = i + fr, R = P2(i - 1);
+  return { i: i, f: fr, N: N, R: R, r: +q('#v3-r').value, rnd: q('#v3-rnd').value, ov: q('#v3-ov').value, lsb: P2(-fr) };
+}
+function v3Fit(P, rr){
+  var lo = -P2(P.N - 1), hi = P2(P.N - 1) - 1, M = P2(P.N);
+  if (rr >= lo && rr <= hi) return { r: rr, st: 'dalam rentang' };
+  if (P.ov === 'sat') return { r: rr < lo ? lo : hi, st: 'SATURASI' };
+  return { r: (((rr - lo) % M) + M) % M + lo, st: 'MEMBUNGKUS' };
+}
+function v3Q(P, x){
+  var v = x * P2(P.f), rr = P.rnd === 'floor' ? Math.floor(v) : rEven(v), o = v3Fit(P, rr);
+  return { scaled: v, raw: rr, r: o.r, st: o.st, val: o.r / P2(P.f) };
+}
+function v3Draw(s){
+  var P = v3Par();
+  if (s.t !== lastT3){ lastT3 = s.t; if (s.i >= 0) q('#v3-r').value = (-1.25 + 0.025 * s.i).toFixed(3); }
+  P.r = +q('#v3-r').value; var x = P.r * P.R, a, n, pts = [], err = [], Q = v3Q(P, x);
+  q('#v3-rv').textContent = fx(P.r, 3) + ' (x = ' + fx(x, 4) + ')';
+  for (n = 0; n <= 500; n++){ a = -1.25 * P.R + 2.5 * P.R * n / 500; pts.push([a, v3Q(P, a).val]); }
+  var o1 = { height: 210, x: { label: 'x', unit: '', min: -1.25 * P.R, max: 1.25 * P.R, plain: true }, y: { label: 'Q(x)', unit: '', min: -1.5 * P.R, max: 1.5 * P.R, plain: true },
+    series: [{ label: 'ideal', kind: 'ink2', dash: [5, 4], unit: '', pts: [[-1.25 * P.R, -1.25 * P.R], [1.25 * P.R, 1.25 * P.R]] }, { label: 'tersimpan', kind: 'data', dash: [], unit: '', pts: pts }], marks: [{ x: x, label: 'x', kind: 'hi' }] };
+  var w = 8 * P.lsb, emin = 1e9, emax = -1e9;
+  for (n = 0; n <= 400; n++){ a = x - w + 2 * w * n / 400; var e = (v3Q(P, a).val - a) / P.lsb; emin = Math.min(emin, e); emax = Math.max(emax, e); err.push([a, e]); }
+  var pad = Math.max(0.2, (emax - emin) * 0.1);
+  var o2 = { height: 160, x: { label: 'x (jendela ±8 LSB)', unit: '', min: x - w, max: x + w, plain: true }, y: { label: 'galat', unit: 'LSB', min: emin - pad, max: emax + pad, plain: true },
+    series: [{ label: 'Q(x) − x', kind: 'analog', dash: [], unit: 'LSB', pts: err }], marks: [{ x: x, label: 'x', kind: 'hi' }, { y: 0, label: '0', kind: 'ink2' }] };
+  if (!window._v3p1){ window._v3p1 = ICD.plot('#v3-p1', o1); window._v3p2 = ICD.plot('#v3-p2', o2); } else { window._v3p1.set(o1); window._v3p2.set(o2); }
+  var eL = (Q.val - x) / P.lsb, M = P2(P.N), pat = (((Q.r % M) + M) % M), p = P2(P.f) > 0 ? Q.r : 0, prod = Q.r * Q.r / P2(P.f), pr = P.rnd === 'floor' ? Math.floor(prod) : rEven(prod), pf = v3Fit(P, pr);
+  q('#v3-out').textContent = 'Q' + P.i + '.' + P.f + ' (N = ' + P.N + ' bit) · LSB = 2^−' + P.f + ' = ' + num(P.lsb, 6) + ' · rentang [' + fx(-P.R, 0) + ', ' + num(P.R - P.lsb, 8) + '] · x = ' + fx(x, 4) + ' · x·2^f = ' + fx(Q.scaled, 2) + ' → kode ' + fx(Q.r, 0) + ' (' + hx(pat, Math.ceil(P.N / 4)) + ')' +
+    ' · nilai tersimpan = ' + num(Q.val, 8) + ' · galat = ' + sg(eL, 3) + ' LSB (' + sg(Q.val - x, 6) + ') · status: ' + Q.st + ' · x² = ' + fx(x * x, 4) + ' → tersimpan ' + num(pf.r / P2(P.f), 8) + ' (' + pf.st + ') · SQNR teoretis ' + P.N + ' bit = ' + fx(6.02 * P.N + 1.76, 1) + ' dB';
+}
+function v3Init(){ return { i: -1, t: ++T3 }; }
+function v3Step(s){ return s.i >= 100 ? null : { i: s.i + 1, t: ++T3 }; }
+
+/* ---------- 4. IEEE 754 ---------- */
+var FMT = { half: [5, 10], bf16: [8, 7], single: [8, 23], mini: [4, 3] }, v4ctl, v4plot, P4 = 0, IN4 = null, T4 = 0;
+function f4(){ var f = FMT[q('#v4-fmt').value]; return { E: f[0], M: f[1], tot: 1 + f[0] + f[1], bias: P2(f[0] - 1) - 1 }; }
+function dec4(P, F){
+  var s = bitAt(P, F.E + F.M), e = Math.floor(P / P2(F.M)) % P2(F.E), fr = P % P2(F.M), sgn = s ? -1 : 1, v;
+  if (e === P2(F.E) - 1) return fr ? { k: 'NaN', v: NaN, s: s, e: e, f: fr } : { k: s ? '−∞' : '+∞', v: sgn * Infinity, s: s, e: e, f: fr };
+  if (e === 0){ v = sgn * fr / P2(F.M) * P2(1 - F.bias); return { k: fr ? 'subnormal' : (s ? 'nol (−0)' : 'nol (+0)'), v: fr ? v : sgn * 0, s: s, e: e, f: fr }; }
+  return { k: 'normal', v: sgn * (1 + fr / P2(F.M)) * P2(e - F.bias), s: s, e: e, f: fr };
+}
+function enc4(x, F){
+  var sb = (x < 0 || (x === 0 && 1 / x < 0)) ? P2(F.E + F.M) : 0, inf = (P2(F.E) - 1) * P2(F.M);
+  if (x !== x) return inf + P2(F.M - 1);
+  var ax = Math.abs(x); if (ax === Infinity) return sb + inf; if (ax === 0) return sb;
+  var e = Math.floor(Math.log2(ax)); if (P2(e) > ax) e--; else if (P2(e + 1) <= ax) e++;
+  if (e < 1 - F.bias) e = 1 - F.bias;
+  var n = rEven(ax / P2(e - F.M));
+  if (n >= P2(F.M + 1)){ n /= 2; e++; }
+  if (e > F.bias) return sb + inf;
+  if (n < P2(F.M)) return sb + n;
+  return sb + (e + F.bias) * P2(F.M) + (n - P2(F.M));
+}
+function parse4(t){
+  t = String(t).trim().toLowerCase().replace(',', '.').replace('−', '-');
+  if (t === 'inf' || t === '+inf' || t === '∞') return Infinity; if (t === '-inf') return -Infinity; if (t === 'nan') return NaN;
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/.test(t)) return undefined;
+  return Number(t);
+}
+function v4Build(){
+  var F = f4(), host = q('#v4-bits'), k, b; host.textContent = '';
+  for (k = F.tot - 1; k >= 0; k--){
+    b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-k', k); b.setAttribute('aria-pressed', 'false'); b.style.minWidth = '30px';
+    b.setAttribute('aria-label', 'bit ' + k + (k === F.tot - 1 ? ' (tanda)' : k >= F.M ? ' (eksponen)' : ' (pecahan)'));
+    b.className = k === F.tot - 1 ? 'fs' : k >= F.M ? 'fe' : '';
+    b.innerHTML = '<span class="lab">' + k + '</span><span class="b">0</span>';
+    b.addEventListener('click', function(){
+      var kk = +this.getAttribute('data-k'); P4 += bitAt(P4, kk) ? -P2(kk) : P2(kk); IN4 = null; v4ctl.reset();
+      var again = q('#v4-bits button[data-k="' + kk + '"]'); if (again) again.focus();
+    });
+    host.appendChild(b);
+  }
+}
+function v4Draw(s){
+  var F = f4(); P4 = s.p; IN4 = s.inp;
+  qa('#v4-bits button').forEach(function(b){ var kk = +b.getAttribute('data-k'), on = bitAt(P4, kk) === 1; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('.b').textContent = on ? '1' : '0'; });
+  var d = dec4(P4, F), tot = F.tot, groups = bin(P4, tot).replace(/ /g, ''), gs = groups.slice(0, 1) + '|' + groups.slice(1, 1 + F.E) + '|' + groups.slice(1 + F.E);
+  var absP = P4 % P2(tot - 1), nx = absP + 1 < P2(tot - 1) ? dec4(absP + 1, F) : null, cur = dec4(absP, F), ulp = nx && isFinite(nx.v) ? nx.v - cur.v : null;
+  var minSub = P2(1 - F.bias - F.M), maxV = (2 - P2(-F.M)) * P2(F.bias), pts = [], e, l0 = 1 - F.bias - F.M, eTop = P2(F.E) - 2;
+  for (e = 0; e <= eTop; e++){
+    var lo = e === 0 ? l0 : e - F.bias, hi = e + 1 - F.bias, u = Math.max(e, 1) - F.bias - F.M;
+    pts.push([lo, u]); pts.push([hi, u]);
+  }
+  var mk = [];
+  if (isFinite(d.v) && d.v !== 0) mk.push({ x: Math.log2(Math.abs(d.v)), label: '|x|', kind: 'hi' });
+  var o = { height: 200, x: { label: 'log₂|x|', unit: '', min: l0, max: F.bias + 1, plain: true }, y: { label: 'log₂ ulp', unit: '', min: l0 - 1, max: eTop - F.bias - F.M + 1, plain: true },
+    series: [{ label: 'log₂ ulp lawan log₂|x|', kind: 'data', dash: [], unit: '', pts: pts }], marks: mk };
+  if (!v4plot) v4plot = ICD.plot('#v4-plot', o); else v4plot.set(o);
+  var txt = 'pola = ' + hx(P4, Math.ceil(tot / 4)) + ' · ' + gs + ' · kelas: ' + d.k + ' · s = ' + d.s + ', e = ' + d.e + (d.k === 'normal' ? ' (eksponen sebenarnya ' + fx(d.e - F.bias, 0) + ')' : '') + ', f = ' + d.f;
+  if (d.k === 'normal' || d.k === 'subnormal') txt += ' · signifikan = ' + (d.k === 'normal' ? 1 : 0) + ' + ' + d.f + '/' + P2(F.M) + ' = ' + (d.k === 'normal' ? 1 + d.f / P2(F.M) : d.f / P2(F.M));
+  txt += ' · nilai = ' + (d.v !== d.v ? 'NaN' : isFinite(d.v) ? (d.v === 0 ? (d.s ? '−0' : '0') : String(d.v).replace('-', '−')) : d.k);
+  if (ulp != null && d.k !== 'NaN') txt += ' · ulp = ' + String(ulp) + ' (relatif ' + (d.v ? sci(Math.abs(ulp / d.v), 2) : '—') + ')';
+  txt += ' · unit roundoff u = 2^−' + (F.M + 1) + ' = ' + sci(P2(-(F.M + 1)), 3) + ' · maks = ' + String(maxV) + ' · normal terkecil = ' + String(P2(1 - F.bias)) + ' · subnormal terkecil = ' + String(minSub);
+  if (IN4 != null && IN4 === IN4) txt += ' · masukan ' + String(IN4).replace('-', '−') + ' → galat ' + (isFinite(d.v) ? ssci(d.v - IN4, 3) + ' (relatif ' + (IN4 ? ssci((d.v - IN4) / IN4, 2) : '—') + ')' : 'tak terhingga (luapan)');
+  q('#v4-out').textContent = txt;
+}
+function v4Init(){ return { p: P4, inp: IN4, n: 0, t: ++T4 }; }
+function v4Step(s){ var F = f4(); return (s.n >= 64 || s.p + 1 >= P2(F.tot)) ? null : { p: s.p + 1, inp: null, n: s.n + 1, t: ++T4 }; }
+function v4Go(){
+  var x = parse4(q('#v4-txt').value), F = f4();
+  if (x === undefined){ ICD.toast('Bukan bilangan yang sah. Contoh: 0.1, -2.5, 1e-8, inf, nan.'); return; }
+  P4 = enc4(x, F); IN4 = x; v4ctl.reset();
+}
+
+/* ---------- kuis ---------- */
+function quiz(){
+ICD.quiz.mount('#kuis', { id: 'm03a', title: 'Kuis M03a', questions: [
+{ q: "Pola 8 bit 0xF3 dibaca sebagai two's complement. Berapa nilainya?", o: [
+  { t: '−13', ok: true, w: '0xF3 = 243; 243 − 256 = −13. Cara lain: −128 + 64 + 32 + 16 + 2 + 1 = −13.' },
+  { t: '−3', w: 'Itu hasil membaca hanya nibble rendah 0011 sebagai bilangan; bobot MSB −128 harus ikut dihitung.' },
+  { t: '243', w: 'Itu tafsir tak bertanda; pertanyaan menanyakan tafsir two\'s complement.' },
+  { t: '−115', w: 'Itu nilai sign-magnitude (tanda 1, besar 0x73 = 115), bukan two\'s complement.' }] },
+{ q: 'Pada 8 bit, 0x7F + 0x01 menghasilkan 0x80. Berapa C dan V?', o: [
+  { t: 'C = 0, V = 1', ok: true, w: 'Tidak ada carry keluar, tetapi dua operand nonnegatif menghasilkan hasil dengan MSB 1: overflow bertanda.' },
+  { t: 'C = 1, V = 0', w: 'Carry baru muncul bila jumlah mencapai 256 atau lebih; di sini jumlahnya 128.' },
+  { t: 'C = 1, V = 1', w: 'Carry 0 karena 127 + 1 = 128 masih muat di 8 bit tak bertanda.' },
+  { t: 'C = 0, V = 0', w: 'V = 1 karena 127 + 1 = 128 tidak muat dalam rentang bertanda (maksimum 127).' }] },
+{ q: 'Penjumlahan 0xFF + 0x01 pada 8 bit menghasilkan 0x00 dengan C = 1, V = 0. Apa tafsir yang benar?', o: [
+  { t: 'Benar sebagai bertanda (−1 + 1 = 0), tidak muat sebagai tak bertanda (256)', ok: true, w: 'C menandai luapan tak bertanda; V = 0 berarti hasil bertanda benar.' },
+  { t: 'Salah untuk kedua tafsir', w: 'V = 0 menunjukkan hasil bertanda tepat 0, tidak salah.' },
+  { t: 'Benar untuk kedua tafsir', w: 'Sebagai tak bertanda 255 + 1 = 256 tidak muat 8 bit, sehingga C = 1 menandai luapan.' },
+  { t: 'Salah sebagai bertanda karena ada carry', w: 'Carry bukan indikator luapan bertanda; yang menentukan adalah V.' }] },
+{ q: "Berapa rentang bilangan 10 bit two's complement?", o: [
+  { t: '−512 sampai 511', ok: true, w: '−2⁹ = −512 sampai 2⁹ − 1 = 511; satu pola dipakai untuk nol.' },
+  { t: '−511 sampai 511', w: 'Itu rentang sign-magnitude atau one\'s complement yang punya dua nol.' },
+  { t: '−1024 sampai 1023', w: 'Itu rentang 11 bit; 10 bit memberi 2¹⁰ = 1024 pola total.' },
+  { t: '0 sampai 1023', w: 'Itu rentang tak bertanda 10 bit.' }] },
+{ q: 'Setelah mengurangkan a − b pada 8 bit, mana yang menunjukkan a < b untuk bilangan bertanda?', o: [
+  { t: 'N ⊕ V = 1', ok: true, w: 'Bila tidak ada overflow, tanda hasil menunjukkan; bila overflow, tanda terbalik, sehingga N ⊕ V yang benar.' },
+  { t: 'C = 0', w: 'Itu pembanding untuk tafsir tak bertanda (ada pinjaman).' },
+  { t: 'N = 1 saja', w: 'Akan salah saat overflow, mis. −128 − 1 menghasilkan N = 0.' },
+  { t: 'Z = 1', w: 'Z = 1 berarti a = b, bukan a < b.' }] },
+{ q: 'Berapa −7 >> 1 dengan geser aritmetika kanan (bilangan bertanda, hasil bulat)?', o: [
+  { t: '−4', ok: true, w: 'Geser aritmetika membulatkan ke −∞: −3.5 menjadi −4. Pola 0xF9 menjadi 0xFC.' },
+  { t: '−3', w: 'Itu hasil pembagian bilangan bulat C (memotong ke nol), bukan geseran.' },
+  { t: '124', w: 'Itu hasil geser logika pada 8 bit (0xF9 >> 1 = 0x7C), yang memasukkan 0 di MSB.' },
+  { t: '−3.5', w: 'Hasil geser tetap bilangan bulat; tidak ada bit pecahan yang dipertahankan.' }] },
+{ q: 'Berapa resolusi (nilai 1 LSB) format Q1.15?', o: [
+  { t: '2⁻¹⁵ ≈ 3.05 × 10⁻⁵', ok: true, w: 'Nilai = r/2¹⁵ sehingga satu langkah kode sama dengan 2⁻¹⁵.' },
+  { t: '2⁻¹⁶ ≈ 1.53 × 10⁻⁵', w: 'Itu resolusi bila 16 bit semuanya pecahan; Q1.15 memakai satu bit untuk tanda.' },
+  { t: '2⁻¹⁴ ≈ 6.1 × 10⁻⁵', w: 'Itu resolusi Q2.14; Q1.15 punya 15 bit pecahan.' },
+  { t: '1', w: 'Itu resolusi bilangan bulat murni, tanpa bit pecahan.' }] },
+{ q: 'Dalam Q1.15, hasil perkalian (−1) × (−1) dengan saturasi adalah:', o: [
+  { t: '0x7FFF ≈ 0.99997', ok: true, w: '+1.0 tidak muat; nilai maksimum Q1.15 adalah 1 − 2⁻¹⁵, jadi hasil ditempel ke sana.' },
+  { t: '+1.0 tepat', w: 'Q1.15 tidak dapat menyimpan +1.0; rentang atasnya 0.99997.' },
+  { t: '0x8000 = −1.0', w: 'Itu hasil bila membungkus, bukan saturasi.' },
+  { t: '0', w: 'Tidak ada alasan hasil menjadi nol; nilai sebenarnya +1.' }] },
+{ q: 'Berapa SQNR teoretis kuantisasi 14 bit untuk sinus skala penuh?', o: [
+  { t: 'Sekitar 86 dB', ok: true, w: '6.02 × 14 + 1.76 = 86.04 dB.' },
+  { t: 'Sekitar 84 dB', w: 'Itu 6.02 × 14 tanpa konstanta 1.76 dB dari sinus skala penuh.' },
+  { t: 'Sekitar 98 dB', w: 'Itu hasil 16 bit, bukan 14 bit.' },
+  { t: 'Sekitar 43 dB', w: 'Itu setengahnya, seolah tiap bit memberi 3 dB; yang benar sekitar 6 dB per bit.' }] },
+{ q: 'Mengapa 0.1 + 0.2 tidak sama persis dengan 0.3 pada double?', o: [
+  { t: 'Ketiganya tidak punya penulisan biner berhingga sehingga disimpan sebagai pendekatan, dan hasil penjumlahannya dibulatkan lagi', ok: true, w: '0.1 = 0.0001100110011… biner yang berulang; galat-galat kecil itu menjumlah menjadi selisih 1 ulp dari 0.3 tersimpan.' },
+  { t: 'Prosesor memiliki bug penjumlahan', w: 'Ini perilaku standar IEEE 754 yang sama di semua prosesor.' },
+  { t: 'Python salah membulatkan', w: 'Semua bahasa pada perangkat keras IEEE 754 memberi hasil sama.' },
+  { t: 'Bilangan desimal tidak bisa disimpan di komputer', w: 'Desimal yang kelipatan pangkat dua (0.5, 0.25) tersimpan persis; 0.1 tidak.' }] },
+{ q: 'Pola single 0xC1200000 bernilai:', o: [
+  { t: '−10.0', ok: true, w: 'Tanda 1; eksponen 0x82 = 130 → 3; pecahan 0x200000 = 0.25; −1.25 × 2³ = −10.' },
+  { t: '−2.5', w: 'Itu 0xC0200000; eksponennya 128 → 1, bukan 130.' },
+  { t: '−1.25', w: 'Itu mengabaikan eksponen 2³ = 8; signifikan 1.25 harus dikalikan.' },
+  { t: '+10.0', w: 'Bit 31 bernilai 1 (0xC = 1100), sehingga tandanya negatif.' }] },
+{ q: 'Bilangan normal positif terkecil pada single adalah:', o: [
+  { t: '2⁻¹²⁶ ≈ 1.18 × 10⁻³⁸', ok: true, w: 'Eksponen terbias 1 memberi 1 − 127 = −126 dengan signifikan 1.0.' },
+  { t: '2⁻¹⁴⁹ ≈ 1.40 × 10⁻⁴⁵', w: 'Itu bilangan subnormal terkecil, bukan normal.' },
+  { t: '2⁻¹²⁷ ≈ 5.88 × 10⁻³⁹', w: 'Itu sebuah bilangan subnormal; bilangan normal tidak lebih kecil dari 2⁻¹²⁶.' },
+  { t: '2⁻¹²⁸ ≈ 2.94 × 10⁻³⁹', w: 'Itu juga subnormal; eksponen normal tidak turun di bawah −126.' }] },
+{ q: 'Pada single, apa hasil 100 000 000 + 1 (sebagai float)?', o: [
+  { t: '100 000 000, tidak berubah', ok: true, w: 'ulp di dekat 10⁸ adalah 8; penambahan 1 kurang dari setengah ulp dan hilang saat pembulatan.' },
+  { t: '100 000 001', w: 'Tidak tertampung: bilangan tertampung di dekat 10⁸ berjarak 8.' },
+  { t: '100 000 008', w: 'Pembulatan ke terdekat membuang 1 (kurang dari 4), tidak melompat ke tetangga.' },
+  { t: '100 000 004', w: 'Itu bukan kelipatan 8, sehingga tidak tertampung di sana.' }] },
+{ q: 'Bilangan 0x12345678 disimpan little-endian mulai alamat 0. Byte apa yang ada di alamat 0?', o: [
+  { t: '0x78', ok: true, w: 'Little-endian menaruh byte paling tidak signifikan di alamat terendah: 78 56 34 12.' },
+  { t: '0x12', w: 'Itu big-endian, tempat byte paling signifikan di alamat terendah.' },
+  { t: '0x34', w: 'Itu byte ketiga dalam urutan little-endian, bukan yang pertama.' },
+  { t: '0x56', w: 'Itu byte kedua dalam urutan little-endian.' }] }
+] });
+ICD.cards.register('m03a-bilangan', [
+{ id: 'rng', f: "Rentang n bit: tak bertanda dan two's complement?", b: "Tak bertanda 0…2ⁿ−1; two's complement −2ⁿ⁻¹…2ⁿ⁻¹−1 (tak simetris, satu nol)." },
+{ id: 'neg', f: "Negasi di two's complement dan kasus pengecualian?", b: '−x = ~x + 1. Pengecualian: −2ⁿ⁻¹ negasinya dirinya sendiri (8 bit: 0x80).' },
+{ id: 'ext', f: 'Perluasan tanda dan perluasan nol?', b: 'Bertanda: salin MSB ke bit baru (0xF0 → 0xFFF0). Tak bertanda: isi 0.' },
+{ id: 'cf', f: 'Flag carry dan overflow?', b: 'C = carry keluar MSB (luapan tak bertanda). V = c_n ⊕ c_(n−1) (luapan bertanda). Pengurangan: C = 1 tanpa pinjaman.' },
+{ id: 'cmp', f: 'Pembanding dari flag setelah a − b?', b: 'Tak bertanda a<b: C = 0. Bertanda a<b: N ⊕ V = 1.' },
+{ id: 'sub', f: 'Pengurangan dengan penjumlah?', b: 'a − b = a + ~b + 1 (balik b, carry masuk 1).' },
+{ id: 'shr', f: 'Geser kanan logika lawan aritmetika?', b: 'Logika mengisi 0 (tak bertanda); aritmetika menyalin MSB (bertanda), membulatkan ke −∞: −7>>1 = −4.' },
+{ id: 'mul', f: 'Lebar hasil kali n × n?', b: 'Hingga 2n bit; bit rendah n sama untuk bertanda dan tak bertanda, bit atas berbeda. Luas pengali ~ n².' },
+{ id: 'qf', f: 'Notasi Qi.f dan resolusinya?', b: 'Nilai r/2^f; N = i + f (i termasuk tanda); LSB = 2^−f; rentang [−2^(i−1), 2^(i−1) − 2^−f].' },
+{ id: 'rnd', f: 'Pembulatan terdekat lawan pemotongan?', b: 'Terdekat: galat ≤ ½ LSB, tanpa bias. Pemotongan (floor): galat (−1, 0] LSB, bias −½ LSB yang menumpuk.' },
+{ id: 'qmul', f: 'Perkalian fixed-point Qi.f?', b: 'Hasil Q(2i).(2f); tambah ½ LSB, geser kanan f, tempel ke rentang. (−1)×(−1) harus tersaturasi.' },
+{ id: 'sqnr', f: 'SQNR kuantisasi N bit?', b: '≈ 6.02·N + 1.76 dB untuk sinus skala penuh; ~6 dB per bit; 16 bit ≈ 98 dB.' },
+{ id: 'fmt', f: 'Bentuk bilangan IEEE 754 normal?', b: '(−1)^s × (1 + f/2^M) × 2^(e−bias), bias = 2^(E−1) − 1; bit 1 di depan tidak disimpan.' },
+{ id: 'frm', f: 'Ukuran half, bfloat16, single, double?', b: 'half 1+5+10 · bfloat16 1+8+7 · single 1+8+23 · double 1+11+52; bias 15, 127, 127, 1023.' },
+{ id: 'spec', f: 'Pola khusus IEEE 754?', b: 'e = 0: ±0 (f = 0) atau subnormal. e = 1…1: ±∞ (f = 0) atau NaN. NaN ≠ NaN; +0 = −0.' },
+{ id: 'ulp', f: 'Rumus ulp dan galat relatif?', b: 'ulp = 2^(e−M) untuk 2^e ≤ |x| < 2^(e+1); galat relatif ≤ 2^−(M+1): single 5.96e−8, double 1.11e−16.' },
+{ id: 'noa', f: 'Mengapa penjumlahan float tak asosiatif?', b: 'Tiap tambah dibulatkan; ulp tumbuh dengan nilai. Double: (1e16 + −1e16) + 1 = 1, tetapi 1e16 + (−1e16 + 1) = 0.' },
+{ id: 'end', f: 'Little-endian lawan big-endian?', b: 'Little: byte rendah di alamat rendah (x86, ARM, RISC-V); big: byte tinggi dulu (urutan jaringan). 0x12345678 → 78 56 34 12 (little).' }
+]);
+ICD.cards.mount('#kartu', { file: 'm03a-bilangan' });
+}
+
+var qa = ICD.qa;
+ICD.ready(function(){
+  v1Build();
+  v1ctl = ICD.sim.mount('#v1', { fps: 6, max: 65, unit: 'langkah hitung', label: 'Kontrol pola bit', init: v1Init, step: v1Step, draw: v1Draw });
+  q('#v1-n').addEventListener('change', function(){ N1 = +this.value; V1 = V1 % P2(N1); v1Build(); v1ctl.reset(); });
+  q('#v1-pre').addEventListener('change', function(){ if (this.value !== ''){ V1 = (+this.value) % P2(N1); v1ctl.reset(); } });
+  v2ctl = ICD.sim.mount('#v2', { fps: 2, max: 9, unit: 'bit selesai', label: 'Kontrol penjumlah ripple-carry', init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= 8 ? null : { k: s.k + 1 }; }, draw: v2Draw });
+  ['#v2-a', '#v2-b', '#v2-op', '#v2-sat'].forEach(function(id){ q(id).addEventListener('input', function(){ v2ctl.redraw(); }); });
+  v3ctl = ICD.sim.mount('#v3', { fps: 12, max: 102, unit: 'langkah sapuan', label: 'Kontrol sapuan fixed-point', init: v3Init, step: v3Step, draw: v3Draw });
+  ['#v3-fmt', '#v3-r', '#v3-rnd', '#v3-ov'].forEach(function(id){ q(id).addEventListener('input', function(){ v3ctl.redraw(); }); });
+  q('#v4-txt').value = '0.1'; P4 = enc4(0.1, f4()); IN4 = 0.1; v4Build();
+  v4ctl = ICD.sim.mount('#v4', { fps: 4, max: 65, unit: 'langkah pola', label: 'Kontrol pola titik mengambang', init: v4Init, step: v4Step, draw: v4Draw });
+  q('#v4-fmt').addEventListener('change', function(){ var x = parse4(q('#v4-txt').value); if (x === undefined) x = 0.1; var F = f4(); P4 = enc4(x, F); IN4 = x; v4Build(); v4ctl.reset(); });
+  q('#v4-go').addEventListener('click', v4Go);
+  q('#v4-txt').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); v4Go(); } });
+  quiz();
+});
+})();
+</script>
+</body>
+</html>

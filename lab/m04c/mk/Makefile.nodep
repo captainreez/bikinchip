@@ -1,0 +1,13 @@
+# Makefile.nodep: SENGAJA tanpa dependensi header; tanpa -MMD, perubahan header tidak memicu kompilasi ulang.
+CC     := gcc
+CFLAGS := -std=c11 -Wall -Wextra -O2
+OBJS   := main.o util.o lib.o
+
+prog: $(OBJS)
+	$(CC) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	rm -f prog *.o *.d

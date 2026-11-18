@@ -1,0 +1,13 @@
+# hasil uji dan berkas sementara
+shots/
+node_modules/
+*.o
+*.d
+*.vcd
+*.fst
+*.out
+__pycache__/
+lab/**/a.out
+lab/m04c/mk/prog
+.DS_Store
+Thumbs.db

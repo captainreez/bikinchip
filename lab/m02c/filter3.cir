@@ -1,0 +1,15 @@
+* M02c: tangga LC Butterworth orde 3, 50 ohm, fc = 1 MHz
+Vs in 0 DC 0 AC 1
+Rs in a 50
+C1 a 0 3.1831n
+L2 a b 15.915u
+C3 b 0 3.1831n
+RL b 0 50
+.ac dec 50 100k 10Meg
+.control
+run
+meas ac v_dc FIND vm(b) AT=100k
+meas ac v_fc FIND vm(b) AT=1Meg
+meas ac v_2fc FIND vm(b) AT=2Meg
+.endc
+.end

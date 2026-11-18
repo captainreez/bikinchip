@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M04c Linux, shell, Git, Make, regex — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+p code,li code,td code{overflow-wrap:anywhere}
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+table.icd td.hl,table.icd th.hl{outline:2px solid var(--s-hi);outline-offset:-2px;font-weight:700}
+table.icd td.mono{font-family:var(--f-mono);font-size:.82rem;word-break:break-all}
+.dag{margin:6px 0}
+.dag svg{width:100%;height:auto;max-height:300px}
+.dag .nd rect{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.dag .nd text{fill:var(--ink);font:12px var(--f-mono)}
+.dag .nd.touch rect{stroke:var(--s-ctrl);stroke-width:3.5}
+.dag .nd.need rect{stroke:var(--s-hi);stroke-width:2.5;stroke-dasharray:5 3}
+.dag .nd.run rect{fill:var(--s-hi);stroke:var(--s-hi)}
+.dag .nd.run text{fill:#fff}
+.dag .nd.done rect{fill:var(--s-data);stroke:var(--s-data)}
+.dag .nd.done text{fill:#fff}
+.dag .ed{stroke:var(--ink2);stroke-width:1.3;fill:none;opacity:.7}
+.trk{display:grid;grid-template-columns:5.5em 1fr;gap:6px;align-items:center;margin:3px 0;font:.82rem var(--f-mono)}
+.trk .tr{position:relative;height:22px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.trk .bar{position:absolute;top:0;bottom:0;background:var(--s-data);color:#fff;font-size:.72rem;display:flex;align-items:center;justify-content:center;opacity:.55}
+.trk .bar.on{opacity:1;background:var(--s-hi)}
+.trk .bar.fin{opacity:1;background:var(--s-data)}
+.trk .now{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.fdt td.arrow{font-family:var(--f-mono)}
+.rowlab{font:.78rem var(--f-mono);color:var(--ink2);margin-top:6px}
+.bits{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+</style>
+</head>
+<body data-file="m04c-linux-git-make">
+<main>
+<p class="icd-small icd-muted">Bagian 1: Fondasi · M04 bagian c dari 4 · sekitar 12 jam · prasyarat: <a href="m04b-assembly-toolchain-os.html">M04b</a> (proses, fork/exec, rantai alat), <a href="m04a-c-pointer.html">M04a</a></p>
+<h1>M04c Linux, shell, Git, Make, regex</h1>
+<p>Hampir semua alat perancangan IC dijalankan dari baris perintah Linux, dirangkai oleh skrip shell dan Makefile, dan semua kerja tim disimpan di Git. Modul ini membuat Anda lancar di keempat hal itu dengan cara yang bisa dibuktikan: setiap perilaku yang dijelaskan dijalankan sungguhan (bash 5.2, GNU make 4.3, Git 2.43, Python 3 di Ubuntu 24.04), dan model mainan di visualisasi dicocokkan dengan alat nyata: urutan pengalihan I/O dengan bash, jumlah langkah regex dengan <code>re</code> Python, himpunan target make yang dibangun ulang dengan <code>make</code> sungguhan, dan ID objek Git dengan <code>git hash-object</code> dan <code>git commit</code>. Targetnya bukan menghafal perintah, melainkan memahami <em>model mentalnya</em>: file descriptor, graf ketergantungan, dan objek yang beralamat isi.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<ul>
+<li><strong>Alur kerja EDA adalah rangkaian program baris perintah.</strong> Simulator, sintesis, STA, dan verifikasi fisik dijalankan lewat skrip; log berukuran ratusan megabita harus disaring dengan <code>grep</code>, <code>awk</code>, dan regex; hasil regresi dirangkum dengan pipa. Insinyur yang fasih di shell menyelesaikan dalam satu baris apa yang lain kerjakan dengan jam klik.</li>
+<li><strong>Make (dan penerusnya) adalah cara berpikir "bangun hanya yang berubah".</strong> Sintesis chip bisa berjam-jam; menjalankan ulang hanya tahap yang masukannya berubah menghemat hari kerja. Graf ketergantungan yang salah menghasilkan build usang yang diam-diam salah, penyebab klasik "di mesin saya jalan".</li>
+<li><strong>Git adalah catatan kebenaran proyek.</strong> RTL, testbench, skrip, dan constraint adalah kode; tanpa riwayat yang bersih Anda tidak bisa menjawab "kapan timing mulai gagal?" atau menggabungkan pekerjaan lima orang. <code>git bisect</code> mengubah pertanyaan itu menjadi pencarian biner otomatis.</li>
+<li><strong>Kesalahan kecil punya biaya besar.</strong> Variabel tanpa kutip yang menghapus direktori salah, regex yang membuat parser log menggantung, atau berkas hasil yang tak sengaja masuk repositori bisa merusak sehari kerja tim; keduanya mudah dihindari bila model mentalnya benar.</li>
+<li><strong>Wawancara.</strong> "Apa beda <code>2&gt;&amp;1 &gt; f</code> dengan <code>&gt; f 2&gt;&amp;1</code>?", "Apa itu merge vs rebase?", "Mengapa <code>make</code> tak membangun ulang saat header berubah?", dan "apa itu ReDoS?" ditanyakan di banyak wawancara firmware, infrastruktur, dan verifikasi.</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Shell menjalankan program dengan tiga aliran standar (fd 0, 1, 2) yang bisa dialihkan <em>berurutan dari kiri ke kanan</em>; pipa menyambung program-program kecil. Regex adalah bahasa pola; mesin backtracking sederhana tetapi bisa eksponensial. Make menjalankan resep hanya bila prasyarat lebih baru, sehingga graf ketergantungan harus lengkap. Git menyimpan isi dengan alamat hasil hash: blob, tree, commit membentuk DAG Merkle; cabang hanyalah penunjuk, dan merge atau rebase hanyalah cara menyusun ulang penunjuk itu.</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> <a href="m04b-assembly-toolchain-os.html">M04b</a> (proses, <code>fork</code>/<code>exec</code>, sinyal, rantai alat) dan <a href="m04a-c-pointer.html">M04a</a>. Anda butuh Linux atau WSL2 (Ubuntu) dengan <code>bash</code>, <code>git</code>, <code>make</code>, <code>gcc</code>, dan <code>python3</code>; lihat langkah 0 lab.</p>
+<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<ol>
+<li>Menavigasi hierarki berkas Linux, membaca dan menetapkan izin (rwx dan notasi oktal, <code>umask</code>), dan mengelola proses (<code>ps</code>, <code>kill</code>, <code>jobs</code>) termasuk di WSL2.</li>
+<li>Menjelaskan <span data-term="shell">shell</span> sebagai pembuat proses dengan tiga <span data-term="fd">file descriptor</span>, menulis pengalihan dan <span data-term="pipe">pipa</span> yang benar, dan meramalkan hasil <code>2&gt;&amp;1 &gt; f</code> lawan <code>&gt; f 2&gt;&amp;1</code>.</li>
+<li>Menulis skrip bash yang aman: kutip variabel, periksa status keluar, pakai <code>set -euo pipefail</code> dan <code>trap</code>, dan menyebut batasnya.</li>
+<li>Menyaring log dengan <code>grep</code>, <code>sed</code>, <code>awk</code>, <code>sort</code>, <code>uniq</code>, dan <code>find</code>/<code>xargs</code>.</li>
+<li>Menulis <span data-term="regex">regex</span>, membedakannya dari glob, dan menjelaskan mengapa mesin <span data-term="backtrack">backtracking</span> bisa membutuhkan waktu eksponensial (ReDoS) dan cara menghindarinya.</li>
+<li>Menulis Makefile dengan aturan pola, variabel otomatis, dan dependensi header otomatis; meramalkan <span data-term="target">target</span> mana yang dibangun ulang dan berapa lama build paralel (<code>-j</code>).</li>
+<li>Menjelaskan model objek Git (blob, tree, commit) sebagai <span data-term="dag">DAG</span> beralamat isi, menghitung ID sebuah blob, dan memakai <code>branch</code>, <code>merge</code> 3 arah, <span data-term="rebase">rebase</span>, <code>bisect</code>, dan <code>reflog</code> dengan paham akibatnya.</li>
+<li>Menyelesaikan konflik merge dan menerapkan praktik Git untuk proyek perangkat keras (jangan menyimpan berkas hasil, kelola biner besar, riwayat yang bersih).</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Shell dan pipa: lini perakitan dari alat kecil</h3>
+<p>Bayangkan lini perakitan: tiap stasiun melakukan satu hal sederhana (saring, urutkan, hitung) dan meneruskan hasilnya ke stasiun berikutnya lewat ban berjalan. Itulah pipa <code>grep | sort | uniq -c</code>. Shell adalah mandor yang memasang ban berjalan di antara stasiun, mengarahkan keluaran normal ke satu bak dan keluhan (galat) ke bak lain. <em>Di mana analogi ini berhenti:</em> semua stasiun bekerja serentak (bukan bergiliran), ban berjalan punya kapasitas (bila penuh, stasiun hulu menunggu), dan mandor memasang sambungan <em>berurutan dari kiri ke kanan</em> sehingga urutan penulisan mengubah hasil.</p>
+<h3>Regex: stensil untuk teks</h3>
+<p>Regex adalah stensil yang digeser di atas teks: "satu huruf besar, lalu angka, lalu apa saja sampai titik dua". Untuk satu stensil sederhana, mencocokkan itu cepat. <em>Di mana analogi ini berhenti:</em> stensil yang punya banyak cara berbeda menutupi bagian yang sama (mis. "kelompok huruf a, ulang kelompok itu") memaksa mesin mencoba satu per satu semua kombinasi bila gagal; waktunya bisa meledak.</p>
+<h3>Make: daftar belanja yang tahu apa yang sudah ada</h3>
+<p>Resep kue menyebut bahan; Anda hanya menyiapkan ulang bahan yang berubah sejak terakhir. Make membaca "kue butuh adonan dan krim; adonan butuh tepung dan telur" dan membandingkan waktu modifikasi: bila tepung lebih baru dari adonan, adonan dibuat ulang, lalu kue. <em>Di mana analogi ini berhenti:</em> make hanya tahu ketergantungan yang Anda tuliskan (atau dihasilkan kompiler); bahan yang lupa disebut (mis. header) berubah tanpa membangunkan apa pun, sehingga kue tampak mutakhir tetapi usang.</p>
+<h3>Git: arsip foto berlabel sidik jari</h3>
+<p>Git menyimpan setiap versi isi berkas sebagai objek dengan label yang dihitung dari isinya (sidik jari). Dua berkas berisi sama berbagi satu objek; satu byte berbeda memberi label sama sekali baru. Sebuah "versi proyek" (commit) hanyalah catatan yang menyebut daftar label berkas dan commit sebelumnya; cabang hanyalah sticky note yang menempel pada satu commit. <em>Di mana analogi ini berhenti:</em> sidik jari itu dihitung dengan hash sehingga rantai commit saling mengunci: mengubah masa lalu berarti mengubah semua label sesudahnya, yang menjelaskan mengapa rebase "menulis ulang sejarah" dan berbahaya pada cabang bersama.</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Linux: berkas, izin, dan proses</h3>
+<p>Di Linux semuanya dipandang sebagai berkas di satu pohon yang berakar di <code>/</code>. Direktori yang penting: <code>/home</code> (data pengguna), <code>/usr</code> (program dan pustaka), <code>/etc</code> (konfigurasi), <code>/tmp</code> (sementara), <code>/dev</code> (perangkat, mis. <code>/dev/null</code> yang membuang apa pun), dan <code>/proc</code> (jendela ke kernel: <code>/proc/&lt;pid&gt;/maps</code> dari M04b). Jalur absolut diawali <code>/</code>; <code>.</code> dan <code>..</code> berarti direktori ini dan induknya; <code>~</code> adalah direktori rumah.</p>
+<p><strong>Izin.</strong> Setiap berkas punya pemilik, grup, dan sembilan bit izin: baca (r = 4), tulis (w = 2), eksekusi (x = 1) untuk <em>pemilik</em>, <em>grup</em>, dan <em>lainnya</em>. Notasi oktal menjumlahkan bit tiap kelompok: <code>chmod 755 f</code> berarti rwxr-xr-x (7 = 4 + 2 + 1, 5 = 4 + 1); <code>644</code> berarti rw-r--r--. Pada <em>direktori</em>, r berarti boleh melihat daftar, w boleh menambah atau menghapus entri, dan x boleh <em>melintasi</em> (mengakses isi bernama). <code>umask</code> mencabut bit dari izin awal: berkas baru dimulai dari 666 dan direktori dari 777, lalu dikurangi umask (bit AND NOT): umask <code>022</code> menghasilkan berkas 644 dan direktori 755; <code>027</code> menghasilkan 640 dan 750.</p>
+<div class="icd-eq"><math display="block"><mi>izin</mi><mo>=</mo><mi>dasar</mi><mo>&#x2227;</mo><mo>&#x00AC;</mo><mi>umask</mi><mspace width="1.5em"/><mn>666</mn><mo>&#x2227;</mo><mo>&#x00AC;</mo><mn>022</mn><mo>=</mo><mn>644</mn></math><span class="alt">izin = dasar AND (NOT umask) ; contoh: 666 AND NOT 022 = 644 (oktal)</span></div>
+<p><strong>Proses.</strong> <code>ps aux</code> atau <code>top</code> menampilkan proses; <code>kill -TERM pid</code> meminta berhenti dengan sopan dan <code>kill -KILL pid</code> (sinyal 9, tak bisa ditangkap) memaksa. Perintah yang diakhiri <code>&amp;</code> berjalan di latar; <code>jobs</code>, <code>fg</code>, <code>bg</code>, dan Ctrl-Z mengelola pekerjaan di shell interaktif. Variabel lingkungan (<code>PATH</code>, <code>HOME</code>) diwariskan ke proses anak; <code>PATH</code> adalah daftar direktori yang dicari shell untuk nama perintah (<code>command -v gcc</code> menunjukkan hasilnya).</p>
+<p><strong>WSL2 (untuk Anda di Windows).</strong> WSL2 menjalankan kernel Linux sungguhan dalam mesin virtual ringan, jadi semua perilaku modul ini berlaku apa adanya. Dua kebiasaan penting: (1) simpan proyek di sistem berkas Linux (<code>~/proyek</code>), bukan di <code>/mnt/c/...</code>, karena akses lintas sistem berkas jauh lebih lambat dan izin berkas bisa berbeda; (2) waspadai akhir baris CRLF (Windows) lawan LF (Linux): skrip shell berakhiran CRLF gagal dengan pesan aneh (<code>^M: bad interpreter</code>). Atur editor ke LF atau gunakan <code>.gitattributes</code> (bagian 4.6).</p>
+
+<h3>4.2 Shell: file descriptor, pengalihan, pipa, status keluar</h3>
+<p><span data-term="shell">Shell</span> membaca baris perintah, memecahnya menjadi kata (setelah ekspansi), dan untuk tiap perintah melakukan <code>fork</code>; di proses anak ia mengatur pengalihan lalu memanggil <code>exec</code> (rantai dari M04b), lalu <code>waitpid</code> untuk mengambil status keluar. Setiap proses punya tabel <span data-term="fd">file descriptor</span>; tiga yang standar: <strong>0</strong> = stdin (masukan), <strong>1</strong> = stdout (keluaran normal), <strong>2</strong> = stderr (galat dan diagnosis). Awalnya ketiganya menunjuk terminal.</p>
+<p><strong>Pengalihan</strong> mengubah tujuan sebuah fd sebelum <code>exec</code>, <em>berurutan dari kiri ke kanan</em>:</p>
+<ul>
+<li><code>&gt; f</code>: fd 1 menunjuk berkas f (dikosongkan); <code>&gt;&gt; f</code> menambahkan; <code>&lt; f</code> fd 0 dari f; <code>2&gt; f</code> fd 2 ke f.</li>
+<li><code>n&gt;&amp;m</code>: fd n menjadi <em>salinan</em> fd m <em>pada saat itu</em> (panggilan sistem <code>dup2(m, n)</code>). Karena itu <code>2&gt;&amp;1</code> artinya "ke mana pun stdout menunjuk <em>sekarang</em>".</li>
+<li><code>&amp;&gt; f</code> (bash) setara <code>&gt; f 2&gt;&amp;1</code>.</li>
+</ul>
+<div class="icd-eq"><math display="block"><mi>n</mi><mo>&#x003E;</mo><mo>&#x0026;</mo><mi>m</mi><mspace width="1.2em"/><mo>&#x21D2;</mo><mspace width="1.2em"/><mi>tujuan</mi><mo>(</mo><mi>n</mi><mo>)</mo><mo>&#x2190;</mo><mi>tujuan</mi><mo>(</mo><mi>m</mi><mo>)</mo><mspace width="1em"/><mtext>(nilai saat ini, bukan nanti)</mtext></math><span class="alt">n>&m berarti tujuan(n) := tujuan(m) pada saat pengalihan ini diproses; pengalihan sesudahnya tidak ikut berubah</span></div>
+<p>Akibatnya <code>cmd &gt; f 2&gt;&amp;1</code> mengirim <em>keduanya</em> ke f (fd 1 → f dulu, lalu fd 2 menyalin f), sedangkan <code>cmd 2&gt;&amp;1 &gt; f</code> hanya mengirim stdout ke f: pada saat <code>2&gt;&amp;1</code> diproses, fd 1 masih menunjuk terminal, sehingga stderr tetap ke terminal. Visualisasi 1 dan <code>redir.sh</code> memperlihatkannya.</p>
+<p><strong>Pipa</strong> <code>a | b</code>: shell membuat pipa (<code>pipe()</code>), menjalankan a dengan stdout ke ujung tulis dan b dengan stdin dari ujung baca, <em>serentak</em>. Pipa punya penyangga kernel (64 KiB pada Linux secara default); bila penuh, penulis diblokir (tekanan balik), dan bila pembaca menutup lebih dulu, penulis menerima SIGPIPE. Pengaturan pipa dilakukan <em>sebelum</em> pengalihan eksplisit, sehingga <code>a 2&gt;&amp;1 | b</code> mengirim stdout dan stderr a ke pipa.</p>
+<p><strong>Status keluar.</strong> Setiap perintah mengembalikan bilangan 0–255; 0 = sukses, selain itu galat (<code>$?</code>; 126 tak bisa dieksekusi, 127 perintah tak ditemukan, 128 + n dibunuh sinyal n, mis. 139 = SIGSEGV). Operator: <code>a &amp;&amp; b</code> (b bila a sukses), <code>a || b</code> (b bila a gagal), <code>a; b</code> (selalu). Status sebuah <em>pipa</em> adalah status perintah <em>terakhir</em> kecuali <code>set -o pipefail</code> diaktifkan (maka status adalah galat paling kanan yang tak nol). Pengamatan di <code>quote_demo.sh</code>: <code>false | true</code> memberi status 0 tanpa <code>pipefail</code> dan 1 dengan.</p>
+<p><strong>Ekspansi dan kutip.</strong> Sebelum menjalankan perintah, shell mengekspansi: variabel (<code>$x</code>), perintah (<code>$(...)</code>), aritmetika (<code>$((...))</code>), lalu <em>pemisahan kata</em> (pada spasi, tab, newline) dan <em>glob</em> (<code>*</code>, <code>?</code>, <code>[a-z]</code>) pada hasil yang <em>tanpa kutip</em>. Aturannya: kutip tunggal <code>'...'</code> literal total; kutip ganda <code>"..."</code> membolehkan <code>$</code> tetapi mencegah pemisahan kata dan glob; tanpa kutip, nilai berspasi pecah. Sebab itu <code>rm $f</code> dengan <code>f="a b"</code> menghapus dua berkas <code>a</code> dan <code>b</code>, dan <code>rm $dir/*</code> dengan <code>dir</code> kosong menjadi <code>rm /*</code>. <strong>Kebiasaan:</strong> selalu tulis <code>"$var"</code>, <code>"$@"</code>, dan <code>"$(cmd)"</code>.</p>
+<p><strong>Skrip yang aman.</strong> Kepala yang disarankan: <code>#!/usr/bin/env bash</code> lalu <code>set -euo pipefail</code>: <code>-e</code> berhenti pada perintah gagal, <code>-u</code> menganggap variabel tak terdefinisi sebagai galat, <code>pipefail</code> seperti di atas. <code>trap 'rm -rf "$tmp"' EXIT</code> membereskan berkas sementara apa pun cara skrip berakhir. Batasnya: <code>set -e</code> tidak berlaku di dalam kondisi (<code>if cmd</code>, <code>cmd || ...</code>, <code>cmd &amp;&amp; ...</code>) dan perilakunya halus pada fungsi dan subshell, sehingga ia jaring pengaman, bukan pengganti pemeriksaan eksplisit pada langkah yang penting. Untuk logika rumit atau struktur data, beralih ke Python (M04d).</p>
+
+<h3>4.3 Alat teks: filter yang dirangkai</h3>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Alat</th><th scope="col">Fungsi</th><th scope="col">Pola yang sering</th></tr></thead>
+<tbody>
+<tr><th scope="row">grep</th><td>baris yang cocok pola</td><td><code>grep -E 'ERROR|FATAL'</code>, <code>-v</code> (kebalikan), <code>-c</code> (hitung), <code>-o</code> (hanya bagian cocok), <code>-n</code>, <code>-r</code> (rekursif)</td></tr>
+<tr><th scope="row">sed</th><td>ubah aliran per baris</td><td><code>sed -E 's/a(b+)c/\1/'</code>, <code>sed -n '5,9p'</code></td></tr>
+<tr><th scope="row">awk</th><td>kolom dan hitung</td><td><code>awk '/slack/{ s += $4 } END { print s }'</code>; <code>$1</code>, <code>NF</code>, <code>NR</code>, <code>BEGIN</code>, <code>END</code></td></tr>
+<tr><th scope="row">sort, uniq</th><td>urutkan, hapus duplikat</td><td><code>sort | uniq -c | sort -rn</code> (tabel frekuensi; <code>uniq</code> hanya menggabungkan baris <em>bersebelahan</em>, jadi urutkan dulu)</td></tr>
+<tr><th scope="row">cut, tr, wc, head, tail</th><td>potong kolom, ganti karakter, hitung, ujung berkas</td><td><code>cut -d: -f1</code>, <code>tr -d ' '</code>, <code>wc -l</code>, <code>tail -f</code></td></tr>
+<tr><th scope="row">find, xargs</th><td>cari berkas, jalankan pada hasil</td><td><code>find . -name '*.v' -print0 | xargs -0 grep -l module</code> (<code>-print0</code> dan <code>-0</code> aman untuk nama berspasi)</td></tr>
+<tr><th scope="row">tee, diff</th><td>cabangkan aliran, bandingkan</td><td><code>cmd 2>&1 | tee run.log</code>, <code>diff -u a b</code></td></tr>
+</tbody></table></div>
+<p>Filosofi Unix: program kecil yang melakukan satu hal dan bekerja pada aliran teks, dirangkai dengan pipa. Biaya tabel frekuensi di atas didominasi pengurutan, O(<i>n</i> log <i>n</i>) untuk <i>n</i> baris. Contoh di lab, <code>logparse.sh</code>, mengubah log sintesis tiruan menjadi hitungan per tingkat, hitungan per kode, slack terburuk, dan area terakhir dalam lima perintah pendek.</p>
+
+<h3>4.4 Regex: bahasa pola dan dua jenis mesin</h3>
+<p>Ekspresi reguler (regex) menyatakan himpunan string dari tiga operasi dasar: <em>penyambungan</em> (<code>ab</code>), <em>pilihan</em> (<code>a|b</code>), dan <em>bintang Kleene</em> (<code>a*</code> = nol atau lebih a). Perluasan praktis: <code>+</code> (satu atau lebih), <code>?</code> (opsional), <code>.</code> (karakter apa saja), kelas <code>[a-z0-9_]</code>, jangkar <code>^</code> dan <code>$</code>, pengulangan <code>{m,n}</code>, dan kelompok <code>( )</code>. <code>grep</code> dasar memakai BRE; <code>grep -E</code> memakai ERE (tanpa pelarian <code>\+</code> dan <code>\|</code>); <code>grep -P</code> dan Python <code>re</code> memakai varian Perl dengan fitur tambahan (<em>lazy</em> <code>*?</code>, <em>lookahead</em>, referensi balik).</p>
+<div class="icd-box model"><b>Glob lawan regex</b>Glob dipakai shell untuk <em>nama berkas</em>: <code>*</code> = rangkaian karakter apa saja, <code>?</code> = satu karakter. Dalam regex, <code>*</code> berarti "ulangi hal sebelumnya", sehingga glob <code>*.v</code> setara regex <code>.*\.v$</code>. Mencampur keduanya adalah salah satu kesalahan paling umum (<code>grep *.v</code> mengekspansi glob dulu!).</div>
+<p><strong>Dua cara mengimplementasikan.</strong> (a) <em>Otomaton</em> (Thompson NFA atau DFA hasil konversinya): membaca masukan sekali, waktu O(<i>n</i>) tanpa memandang pola; dipakai <code>grep</code>/<code>awk</code> (sebagian besar), RE2, dan mesin regex Rust; tidak mendukung referensi balik. (b) <span data-term="backtrack">Backtracking</span>: mencoba satu pilihan, bila gagal mundur dan mencoba pilihan berikut; sederhana, mendukung referensi balik dan lookahead, dipakai Perl, Python, Java, JavaScript, PCRE. Kelemahannya: kasus terburuk eksponensial. Untuk <code>(a+)+b</code> pada string <i>a<sup>n</sup></i> tanpa <code>b</code>, mesin harus gagal setelah mencoba <em>setiap cara</em> membagi <i>n</i> huruf a menjadi kelompok berurutan; jumlahnya komposisi bilangan <i>n</i>, yaitu 2<sup><i>n</i>−1</sup>.</p>
+<div class="icd-eq"><math display="block"><msub><mi>C</mi><mi>n</mi></msub><mo>=</mo><msup><mn>2</mn><mrow><mi>n</mi><mo>&#x2212;</mo><mn>1</mn></mrow></msup><mspace width="1.5em"/><mi>langkah</mi><mo>&#x2248;</mo><mi>k</mi><mo>&#x22C5;</mo><msup><mn>2</mn><mi>n</mi></msup></math><span class="alt">jumlah komposisi n = 2^(n−1) ; langkah (a+)+b pada a^n tanpa b tumbuh ≈ k · 2^n (hasil ukur: 90127 langkah pada n = 14, rasio 2,000 dari n = 13)</span></div>
+<p>Hasil ukur <code>regex_bt.py</code> (mesin mini yang cocok dengan <code>re.fullmatch</code> untuk semua string pendek): pada <i>n</i> = 14, <code>a+b</code> memakai 33 langkah (linear), <code>a*a*b</code> 273 (kuadratik: dua bintang saling bersaing), <code>(a+)+b</code> 90.127 (eksponensial), dan <code>(a|aa)+b</code> 8.970 (tumbuh seperti deret Fibonacci, rasio ≈ 1,6). Bila string diakhiri <code>b</code> (cocok), <code>(a+)+b</code> hanya 26 langkah: ledakan terjadi saat <em>gagal</em>. Itulah ReDoS (<em>regular expression denial of service</em>): masukan yang dirancang membuat pola yang tampak tak berbahaya menggantung server atau parser. <strong>Pencegahan:</strong> hindari pengulangan bersarang atas pola yang tumpang tindih, jangkarkan pola, batasi panjang masukan, gunakan kuantifier posesif atau kelompok atomik bila tersedia, pakai mesin waktu-linear (RE2) untuk masukan tak tepercaya, dan beri batas waktu.</p>
+
+<h3>4.5 Make: graf ketergantungan dan build bertahap</h3>
+<p>Sebuah Makefile adalah daftar <em>aturan</em>: <code>target: prasyarat</code> diikuti <em>resep</em> (perintah shell) yang diawali karakter <strong>tab</strong> (bukan spasi; galatnya <code>*** missing separator</code>). Aturan membentuk <span data-term="dag">graf berarah tanpa siklus</span> (DAG): sisi dari prasyarat ke target. Algoritma make untuk membangun target <i>T</i>:</p>
+<ol>
+<li>Bangun setiap prasyarat <i>T</i> secara rekursif.</li>
+<li>Bila <i>T</i> tidak ada, atau ada prasyarat yang <em>waktu modifikasinya lebih baru</em> dari <i>T</i>, jalankan resep; jika tidak, lewati ("up to date").</li>
+</ol>
+<p>Maka build bertahap benar <em>hanya jika graf lengkap</em>: setiap berkas yang memengaruhi hasil harus menjadi prasyarat langsung atau tak langsung. Fitur penting: <strong>variabel otomatis</strong> (<code>$@</code> target, <code>$&lt;</code> prasyarat pertama, <code>$^</code> semua prasyarat, <code>$*</code> batang pola), <strong>aturan pola</strong> (<code>%.o: %.c</code>), <strong>variabel</strong> (<code>=</code> dievaluasi lambat tiap dipakai, <code>:=</code> sekali saat didefinisikan, <code>?=</code> hanya bila belum ada), <code>.PHONY</code> untuk target yang bukan berkas (<code>clean</code>, <code>test</code>), <code>make -n</code> (uji kering), <code>make -B</code> (paksa semua), dan <code>$$</code> untuk <code>$</code> literal di resep.</p>
+<p><strong>Ketergantungan header otomatis.</strong> Daftar header yang diinclude sebuah <code>.c</code> diketahui kompiler: <code>gcc -MMD -MP</code> menulis berkas <code>.d</code> berisi aturan <code>util.o: util.c util.h config.h</code> (dan target palsu untuk header agar penghapusan header tak merusak build); Makefile memuatnya dengan <code>-include $(OBJS:.o=.d)</code>. Tanpa ini perubahan header tak membangunkan siapa pun: <code>mk_test.sh</code> membuktikannya (setelah <code>touch util.h</code>, <code>Makefile.nodep</code> berkata "up to date" padahal objek usang).</p>
+<p><strong>Build paralel.</strong> <code>make -jN</code> menjalankan hingga <i>N</i> resep serentak selama urutan ketergantungan dipatuhi. Misalkan waktu total seluruh pekerjaan <i>T</i><sub>1</sub> (satu pekerja) dan panjang jalur kritis <i>T</i><sub>∞</sub> (rantai terpanjang dari kerja yang saling bergantung):</p>
+<div class="icd-eq"><math display="block"><msub><mi>T</mi><mi>N</mi></msub><mo>&#x2265;</mo><mo>max</mo><mo>(</mo><mfrac><msub><mi>T</mi><mn>1</mn></msub><mi>N</mi></mfrac><mo>,</mo><msub><mi>T</mi><mi>&#x221E;</mi></msub><mo>)</mo></math><span class="alt">T_N ≥ max(T_1 / N, T_∞) : waktu dengan N pekerja tidak bisa lebih kecil dari beban dibagi pekerja, maupun jalur kritis</span></div>
+<p>Pada proyek contoh (durasi <code>main.o</code> 3, <code>util.o</code> 2, <code>lib.o</code> 4, tautan 2 satuan waktu) saat semua dibangun: <i>T</i><sub>1</sub> = 11 dan <i>T</i><sub>∞</sub> = 4 + 2 = 6. Maka <i>N</i> = 1 memberi 11, <i>N</i> = 2 memberi 8 (penjadwalan serakah menurut urutan prasyarat; batas bawah 6), dan <i>N</i> ≥ 3 memberi 6: menambah pekerja melewati lebar graf tidak membantu. Batas ini sama dengan batas penjadwalan prosesor di M04b. Pada jalur kritis yang panjang (satu target lambat) -j besar sia-sia; pecahkan target lambat atau pindahkan kerja dari jalur kritis.</p>
+<p>Make dan penerusnya: <em>Ninja</em> (cepat, dibangkitkan oleh CMake atau Meson), <em>CMake</em> dan <em>Meson</em> (pembangkit build), <em>Bazel</em> (build hermetik dengan cache jauh). Di EDA, make sering menjadi perekat alur (sintesis → STA → laporan) dan dipakai simulator sumber terbuka seperti Verilator dan cocotb. Pesan modul: <em>tulis dependensi secara lengkap, otomatis bila bisa</em>.</p>
+
+<h3>4.6 Git: objek beralamat isi dan DAG</h3>
+<p>Git adalah sistem berkas beralamat isi dengan lapisan riwayat di atasnya. Semuanya objek dengan <strong>ID = SHA-1 dari (judul + isi)</strong>:</p>
+<div class="icd-eq"><math display="block"><mi>ID</mi><mo>=</mo><mi>SHA-1</mi><mo>(</mo><mtext>"jenis panjang"</mtext><mo>+</mo><mtext>NUL</mtext><mo>+</mo><mi>isi</mi><mo>)</mo></math><span class="alt">ID = SHA-1("blob 6\0hello\n") = ce013625030ba8dba906f756967f9e9ca394464a ; judul = jenis, spasi, panjang isi dalam byte, byte NUL</span></div>
+<ul>
+<li><strong>blob</strong>: isi sebuah berkas (tanpa nama).</li>
+<li><strong>tree</strong>: sebuah direktori: daftar entri (mode, nama, ID) terurut menurut nama; setiap entri menunjuk blob atau tree lain. Di dalam objek, ID ditulis sebagai 20 byte mentah.</li>
+<li><strong>commit</strong>: menunjuk tepat satu tree (snapshot proyek), nol atau lebih commit <em>induk</em>, penulis, pengomit (dengan waktu), dan pesan.</li>
+<li><strong>tag</strong> beranotasi: nama berlabel untuk sebuah objek.</li>
+</ul>
+<p>Karena ID bergantung pada isi, dua berkas identik berbagi satu blob (deduplikasi), dan mengubah satu byte mengubah ID blob, ID tree yang memuatnya, ID tree induknya sampai akar, dan ID commit: ini struktur <em>pohon Merkle</em>. Rantai commit juga mengunci diri lewat ID induk, sehingga seluruh riwayat dapat diverifikasi dari ID commit teratas. Dalam angka: hash dua blob <code>hello\n</code> dan <code>hello, git\n</code> berbeda di 37 dari 40 digit heksadesimal (<code>gitobj.py</code>), dan visualisasi 4 menghitung semua ID itu di browser, yang cocok dengan <code>git hash-object</code>, <code>git write-tree</code>, dan <code>git commit</code> sungguhan. <strong>Status per November 2026:</strong> repositori memakai SHA-1 secara bawaan; format objek SHA-256 sudah ada, dan dokumentasi resmi <code>BreakingChanges</code> menyatakan bahwa perubahan default ke SHA-256 direncanakan untuk Git 3.0 tanpa tanggal rilis yang ditetapkan (ID menjadi 64 digit). Beberapa artikel populer saling berbeda tentang statusnya, jadi periksa repositori Anda dengan <code>git rev-parse --show-object-format</code>; cara hitungnya sama, hanya fungsi hash dan panjang ID yang berbeda.</p>
+<p><strong>Tiga area.</strong> <em>Working tree</em> (berkas yang Anda edit), <em>index</em> atau <em>staging area</em> (apa yang akan masuk commit berikutnya; <code>git add</code>), dan <em>repositori</em> (riwayat; <code>git commit</code>). <code>git diff</code> membandingkan working tree dengan index, <code>git diff --staged</code> index dengan HEAD. <strong>Cabang adalah penunjuk:</strong> sebuah berkas kecil di <code>.git/refs/heads/</code> berisi satu ID commit; <code>HEAD</code> menunjuk cabang yang aktif; membuat cabang murah (menulis 41 byte), dan <code>git commit</code> memajukan penunjuk cabang aktif ke commit baru.</p>
+<p><strong>Menggabungkan.</strong> <code>git merge feat</code>:</p>
+<ul>
+<li><em>Fast-forward</em> bila cabang tujuan adalah leluhur langsung: penunjuk hanya maju, tanpa commit baru.</li>
+<li><em>Merge 3 arah</em> bila riwayat bercabang: Git mencari <em>merge base</em> (leluhur bersama terdekat) <i>B</i>, lalu per bagian berkas membandingkan versi <i>B</i>, <i>A</i> (tujuan), dan <i>C</i> (cabang): bila hanya satu sisi berubah dari <i>B</i>, ambil sisi itu; bila kedua sisi berubah sama, ambil satu; bila berubah <em>berbeda</em> pada bagian yang sama, terjadi <em>konflik</em> dan Git menandainya dengan <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>. Hasilnya <em>commit merge</em> dengan dua induk (<code>git_demo.sh</code> memeriksanya).</li>
+<li><span data-term="rebase">Rebase</span> memutar ulang commit cabang di atas ujung lain: hasilnya riwayat lurus, tetapi commit-commit itu <em>baru</em> (induknya berubah, jadi ID berubah). <strong>Aturan emas:</strong> jangan rebase commit yang sudah dibagikan ke orang lain; rebase hanya untuk pekerjaan lokal sebelum digabung.</li>
+</ul>
+<p><strong>Alat lain.</strong> <code>git log --graph --oneline</code>; <code>git switch</code> (pindah cabang), <code>git restore</code> (batalkan perubahan berkas); <code>git reset --soft/--mixed/--hard</code> (menggeser penunjuk cabang dan, berturut-turut, index dan working tree); <code>git stash</code>; <code>git cherry-pick</code> (salin satu commit); <code>git reflog</code> (catatan lokal ke mana HEAD pernah menunjuk: jaring pengaman setelah <code>reset --hard</code> atau rebase yang keliru, entri yang masih terjangkau disimpan 90 hari dan yang tak terjangkau 30 hari secara default); <code>git tag</code> (rilis); <code>git bisect</code> (bagian berikut); dan jarak jauh: <code>fetch</code> (ambil objek), <code>pull</code> (fetch + merge atau rebase), <code>push</code>.</p>
+<p><strong>Bisect.</strong> Bila tes lulus di commit lama <i>G</i> dan gagal di commit baru <i>S</i>, <code>git bisect</code> melakukan pencarian biner pada riwayat di antaranya: uji commit tengah, buang separuh, ulangi. Untuk <i>n</i> kandidat dibutuhkan ⌈log<sub>2</sub> <i>n</i>⌉ uji; <code>git bisect run perintah</code> mengotomatiskannya (status 0 = baik, 1–127 kecuali 125 = buruk, 125 = lewati). Pada <code>git_demo.sh</code>, tujuh commit kandidat diselesaikan dengan 3 uji. Seribu commit cukup 10 uji.</p>
+<p><strong>Praktik untuk proyek perangkat keras.</strong> (1) <em>Simpan sumber, bukan hasil</em>: netlist hasil sintesis, GDS, dump gelombang, dan keluaran simulator dibangkitkan ulang dan membengkakkan repositori; masukkan ke <code>.gitignore</code>. (2) Biner besar yang memang harus dilacak (mis. data referensi) memakai Git LFS atau penyimpanan artefak, bukan riwayat biasa. (3) Commit kecil dan atomik dengan pesan yang menjelaskan <em>mengapa</em>. (4) Jangan pernah mengomit rahasia (kunci API) atau berkas berlisensi pihak ketiga (bagian PDK yang tak boleh disebarkan): riwayat bersifat permanen, dan menghapus berkas di commit baru tidak menghapusnya dari commit lama; rahasia yang pernah bocor harus diganti, bukan hanya dihapus. (5) Atur <code>.gitattributes</code> untuk akhir baris (<code>*.sh text eol=lf</code>) agar WSL dan Windows akur.</p>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Shell dan pipa</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Shell adalah program tempat Anda mengetik perintah. Setiap program punya tiga "pipa" standar: masukan, keluaran, dan galat. Anda bisa mengarahkan keluaran ke berkas dengan <code>&gt;</code> dan menyambung keluaran satu program menjadi masukan program lain dengan <code>|</code>. Selalu apit variabel dengan kutip ganda agar nama berspasi tidak pecah.</p></div>
+<div data-level="engineer"><p>Pakai <code>set -euo pipefail</code> dan <code>trap</code> di skrip, ingat urutan pengalihan (<code>&gt; f 2&gt;&amp;1</code>), dan gunakan <code>"$@"</code> untuk meneruskan argumen. Periksa status keluar langkah penting secara eksplisit; gunakan <code>mktemp</code> untuk berkas sementara; <code>shellcheck</code> menangkap sebagian besar kesalahan kutip. Untuk proses panjang gunakan <code>tee run.log</code> agar layar dan berkas sama-sama mendapat keluaran, atau <code>nohup</code>/<code>tmux</code> agar tak mati saat sesi putus.</p></div>
+<div data-level="pakar"><p>Pengalihan adalah urutan <code>dup2</code>/<code>open</code> di proses anak sebelum <code>exec</code>; <code>&gt;&amp;</code> menyalin entri tabel fd (bukan "mengikat" fd), jadi tabel fd dan <em>open file description</em> yang dibagi (offset bersama) adalah model yang tepat. Pipa dan <code>O_NONBLOCK</code>, atomisitas tulis hingga <code>PIPE_BUF</code> (4096 byte di Linux), SIGPIPE, dan fd yang bocor ke proses anak (<code>O_CLOEXEC</code>) adalah sumber bug halus. Perbedaan bash, dash, dan POSIX sh (array, <code>[[ ]]</code>, <code>&amp;&gt;</code>) menentukan portabilitas skrip; EDA tua sering memakai csh/tcsh untuk skrip pengaturan lingkungan, sehingga Anda harus bisa membacanya.</p></div>
+</div>
+<h3>2. Regex dan alat teks</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Regex adalah cara menulis pola teks, mis. "huruf lalu angka-angka". <code>grep</code> mencari baris yang cocok, <code>sed</code> mengganti, <code>awk</code> menghitung per kolom. Mulailah dari pola sederhana dan uji pada beberapa baris contoh sebelum dipakai pada log besar.</p></div>
+<div data-level="engineer"><p>Gunakan <code>grep -E</code> untuk pola yang bisa dibaca, jangkarkan pola (<code>^</code>, <code>$</code>), dan hindari <code>.*</code> yang rakus bila bisa memakai kelas yang tepat. Waspadai pengulangan bersarang pada mesin backtracking untuk masukan tak tepercaya. Rangkai <code>sort | uniq -c | sort -rn</code> untuk tabel frekuensi, dan <code>awk</code> untuk agregasi; bila kebutuhan tumbuh (struktur, join), pindah ke Python.</p></div>
+<div data-level="pakar"><p>Regex teoretis (tanpa referensi balik) setara otomaton berhingga: NFA Thompson disimulasikan dalam O(<i>m</i> · <i>n</i>) dan DFA dalam O(<i>n</i>) dengan biaya ruang eksponensial pada kasus terburuk (dibangun malas oleh banyak mesin). Referensi balik membuat pencocokan NP-lengkap, itulah alasan RE2 menolaknya. Backtracking adalah pencarian DFS atas NFA; versi dengan memoisasi (dan kuantifier posesif atau atomik) membatasi ledakan, dan beberapa mesin modern (mis. varian V8, .NET) menambahkan mode non-backtracking.</p></div>
+</div>
+<h3>3. Make dan Git</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Make membangun program dan hanya mengerjakan ulang bagian yang berubah, berdasarkan daftar "A butuh B". Git menyimpan riwayat proyek: tiap commit adalah foto proyek, dan cabang memungkinkan beberapa orang bekerja terpisah lalu menggabungkan hasilnya.</p></div>
+<div data-level="engineer"><p>Tulis Makefile dengan variabel, aturan pola, dan <code>-MMD -MP</code>; gunakan <code>-j$(nproc)</code> dan <code>make -n</code> untuk memeriksa. Di Git, biasakan cabang pendek, commit atomik, <code>git rebase</code> hanya untuk cabang lokal, <code>git merge</code> untuk cabang bersama, <code>git bisect run</code> untuk regresi, dan <code>.gitignore</code> untuk hasil build. Tinjau <code>git diff --staged</code> sebelum commit.</p></div>
+<div data-level="pakar"><p>Make berbasis waktu modifikasi rentan terhadap jam yang tak sinkron (sistem berkas jaringan) dan perubahan yang tak mengubah mtime; sistem build hermetik (Bazel) memakai hash isi dan sandbox untuk build yang bisa direproduksi dan di-cache. Git menyimpan objek longgar yang lalu dipadatkan ke <em>packfile</em> dengan kompresi delta; <code>git gc</code>, graf commit, bloom filter jalur, dan <em>partial clone</em> membuat repositori besar layak. Merge default (<code>ort</code>) menangani deteksi penggantian nama, dan strategi alternatif serta <code>rerere</code> (mengingat penyelesaian konflik) mengurangi kerja berulang. Peralihan SHA-1 ke SHA-256 memengaruhi semua ID, tanda tangan commit, dan ekosistem alat yang menyimpan ID 40 digit.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Tabel file descriptor: urutan pengalihan</h3></header>
+  <div class="stage">
+    <div class="rowlab">tujuan fd 0, 1, 2 (sel bersorot = baru berubah); program <code>both</code> menulis OUT ke fd 1 dan ERR ke fd 2</div>
+    <div class="icd-tablewrap"><table class="icd fdt" id="v1-tab"></table></div>
+    <div class="rowlab">hasil akhir: ke mana OUT dan ERR sampai</div>
+    <div class="icd-tablewrap"><table class="icd" id="v1-res"></table></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Perintah</span><select class="icd-select" id="v1-form">
+      <option value="0">both</option>
+      <option value="1">both &gt; f</option>
+      <option value="2">both 2&gt; f</option>
+      <option value="3" selected>both &gt; f 2&gt;&amp;1</option>
+      <option value="4">both 2&gt;&amp;1 &gt; f</option>
+      <option value="5">both &amp;&gt; f</option>
+      <option value="6">both 2&gt;&amp;1 | cat &gt; f</option>
+      <option value="7">both &gt; /dev/null 2&gt;&amp;1</option></select></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Model: tiap proses mulai dengan fd 1 → "stdout asli" dan fd 2 → "stderr asli" (pada lab: pipa penangkap dan berkas penangkap). Pengalihan diproses berurutan dari kiri ke kanan: <code>&gt; f</code> mengarahkan fd 1 ke berkas f; <code>2&gt; f</code> fd 2 ke f; <code>2&gt;&amp;1</code> menyalin <em>tujuan fd 1 saat itu</em> ke fd 2 (<code>dup2</code>); <code>&amp;&gt; f</code> (bash) menetapkan keduanya ke f; pada pipa, shell lebih dulu memasang fd 1 → pipa, lalu pengalihan eksplisit diproses, dan <code>cat &gt; f</code> meneruskan isi pipa ke f. Disederhanakan: tanpa penyangga (buffering) stdio, tanpa penulisan serentak, urutan OUT sebelum ERR pada f karena <code>both</code> menulis OUT dulu. Delapan bentuk dicocokkan dengan bash sungguhan oleh <code>redir.sh</code>.</div>
+</div>
+<div class="icd-guide" data-id="v1-order" data-answer="0">
+  <p>Pilih <code>both 2&gt;&amp;1 &gt; f</code> dan prediksikan sebelum maju: ke mana ERR pergi, dan apa isi f?</p>
+  <ul><li>ERR muncul di stdout asli (layar); f hanya berisi OUT</li><li>ERR dan OUT sama-sama masuk f</li><li>ERR hilang (dibuang) dan f berisi OUT</li><li>ERR muncul di stderr asli (layar) dan f berisi OUT</li></ul>
+  <div class="explain"><p>Pengalihan diproses dari kiri ke kanan. Saat <code>2&gt;&amp;1</code> diproses, fd 1 masih menunjuk <em>stdout asli</em>, sehingga fd 2 menjadi salinan itu: ERR sekarang ikut ke stdout asli. Baru sesudahnya <code>&gt; f</code> memindahkan fd 1 ke f; fd 2 <em>tidak</em> ikut pindah karena salinannya sudah dibuat. Hasil: f berisi OUT saja, dan ERR keluar bersama stdout asli (bukan stderr asli). Jawaban "kedua di f" adalah hasil urutan sebaliknya (<code>&gt; f 2&gt;&amp;1</code>). Inilah mengapa <code>cmd 2&gt;&amp;1 | tee log</code> berfungsi (pipa dipasang dulu) tetapi <code>cmd 2&gt;&amp;1 &gt; log</code> tidak mengumpulkan galat ke berkas.</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Regex backtracking: berapa langkah sampai gagal?</h3></header>
+  <div class="stage">
+    <div class="icd-tablewrap"><table class="icd" id="v2-tab"></table></div>
+    <div id="v2-plot" style="margin-top:8px"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Pola (cocokkan seluruh string)</span><select class="icd-select" id="v2-pat">
+      <option value="a+b">a+b</option><option value="a*a*b">a*a*b</option><option value="(a+)+b" selected>(a+)+b</option><option value="(a|aa)+b">(a|aa)+b</option></select></label>
+    <label class="icd-field"><span>String uji</span><select class="icd-select" id="v2-str"><option value="a" selected>aⁿ (n huruf a, tanpa b: gagal)</option><option value="ab">aⁿb (diakhiri b: cocok)</option></select></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Mesin backtracking mini (continuation-passing) untuk literal, <code>.</code>, <code>|</code>, <code>( )</code>, <code>*</code>, <code>+</code>, <code>?</code> serakah; satu langkah = satu pemanggilan fungsi pencocok. Tiap tekan Maju menambah n (panjang string) satu. Pencocokan penuh (seluruh string), identik dengan <code>re.fullmatch</code> untuk semua string pendek (diperiksa di <code>regex_bt.py</code>), dan angka langkah identik dengan skrip itu. Grafik memakai log<sub>10</sub>(langkah): garis lurus berarti pertumbuhan eksponensial, kelengkungan ke atas yang melandai berarti polinomial. Disederhanakan: hanya mesin backtracking serakah, tanpa optimasi (memoisasi, literal awal) yang dimiliki mesin nyata, sehingga angka mutlak berbeda dari <code>re</code>, tetapi bentuk pertumbuhannya sama.</div>
+</div>
+<div class="icd-guide" data-id="v2-growth" data-answer="0">
+  <p>Pilih <code>(a+)+b</code> dengan string aⁿ (gagal) dan maju sampai n = 14. Bila n naik satu lagi, kira-kira berapa kali lipat langkahnya?</p>
+  <ul><li>Sekitar 2 kali lipat (eksponensial)</li><li>Bertambah konstan (sekitar 7 langkah)</li><li>Bertambah sekitar n langkah (linear)</li><li>Hampir tak berubah karena hasilnya sama-sama gagal</li></ul>
+  <div class="explain"><p>Pada n = 14 langkahnya 90.127 dan pada n = 13 adalah 45.070; rasio 2,000. Alasannya: <code>(a+)+</code> bisa membagi n huruf a menjadi kelompok berurutan dengan 2<sup>n−1</sup> cara (komposisi bilangan n), dan karena akhirnya tak ada <code>b</code>, mesin harus mencoba <em>semuanya</em> sebelum menyerah. Bandingkan <code>a+b</code> (33 langkah pada n = 14, bertambah 2 per huruf), <code>a*a*b</code> (273, kuadratik), dan <code>(a|aa)+b</code> (8.970; rasio ≈ 1,6). Ganti string ke aⁿb: <code>(a+)+b</code> menjadi 26 langkah, linear, karena kecocokan ditemukan pada percobaan pertama. Pelajaran ReDoS: biaya terburuk muncul pada masukan yang <em>hampir</em> cocok.</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Make: apa yang dibangun ulang, dan berapa lama dengan -j</h3></header>
+  <div class="stage">
+    <div class="rowlab">graf ketergantungan (garis tebal = berkas yang disentuh, putus-putus = harus dibangun ulang, terisi = berjalan atau selesai)</div>
+    <div class="dag" id="v3-dag"></div>
+    <div id="v3-trk"></div>
+    <div id="v3-plot" style="margin-top:8px"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Berkas yang diubah (touch)</span><select class="icd-select" id="v3-touch"><option value="none">tidak ada</option><option value="config.h" selected>config.h</option><option value="util.h">util.h</option><option value="util.c">util.c</option><option value="main.c">main.c</option><option value="lib.c">lib.c</option><option value="all">semua (build dari nol)</option></select></label>
+    <label class="icd-field"><span>Pekerja paralel -j = <b id="v3-jv"></b></span><input type="range" id="v3-j" min="1" max="4" step="1" value="2"></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model">Graf sama dengan proyek <code>lab/m04c/mk</code>: <code>main.o</code> ← main.c, util.h, config.h; <code>util.o</code> ← util.c, util.h, config.h; <code>lib.o</code> ← lib.c, config.h; <code>prog</code> ← ketiga objek. Aturan make: target dibangun ulang bila ada prasyarat yang dibangun ulang atau disentuh (propagasi). Himpunan target yang dibangun ulang untuk tiap sentuhan dicocokkan dengan GNU make sungguhan (<code>mk_test.sh</code>). Waktu: main.o 3, util.o 2, lib.o 4, prog 2 satuan (angka mengandaikan, bukan hasil ukur); penjadwalan serakah menurut urutan prasyarat (main.o, util.o, lib.o), satu target per pekerja, target dimulai segera setelah prasyaratnya selesai dan ada pekerja bebas. Grafik: waktu total (makespan) untuk N = 1…4 dan batas bawah max(T₁/N, T∞). Disederhanakan: tanpa overhead start proses, tanpa kontensi disk atau memori, tanpa variasi waktu.</div>
+</div>
+<div class="icd-guide" data-id="v3-make" data-answer="0">
+  <p>Pilih <code>util.h</code> dan -j = 2. Target apa saja yang dibangun ulang, dan berapa waktu totalnya?</p>
+  <ul><li>main.o, util.o, prog; total 5 satuan waktu</li><li>main.o, util.o, lib.o, prog; total 8 satuan waktu</li><li>util.o dan prog saja; total 4 satuan waktu</li><li>main.o, util.o, prog; total 7 satuan waktu</li></ul>
+  <div class="explain"><p>Dua objek meng-include util.h: main.o dan util.o (lib.o tidak); keduanya menyulut prog. Total kerja T₁ = 3 + 2 + 2 = 7. Dengan dua pekerja: main.o (0–3) dan util.o (0–2) berjalan serentak, prog menunggu yang paling lama (main.o) lalu berjalan 3–5: total 5, sama dengan jalur kritis T∞ = 3 + 2 = 5, jadi batas bawahnya tercapai. Jawaban 7 adalah waktu satu pekerja (-j 1). Jawaban 8 adalah build dari nol dengan -j 2, dan jawaban 4 mustahil karena di bawah jalur kritis. Pada <code>Makefile.nodep</code> (tanpa ketergantungan header) sentuhan ini tak membangun apa pun: build usang.</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Objek Git: ID dihitung dari isi (SHA-1 di browser)</h3></header>
+  <div class="stage">
+    <div class="icd-tablewrap"><table class="icd" id="v4-tab"></table></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>a.txt (versi 1, baris baru ditambahkan otomatis)</span><input class="icd-input" id="v4-a1" type="text" value="hello" autocomplete="off" spellcheck="false"></label>
+    <label class="icd-field"><span>b.txt</span><input class="icd-input" id="v4-b" type="text" value="world" autocomplete="off" spellcheck="false"></label>
+    <label class="icd-field"><span>a.txt (versi 2)</span><input class="icd-input" id="v4-a2" type="text" value="hello, git" autocomplete="off" spellcheck="false"></label>
+    <label class="icd-field"><span>Pesan commit 1</span><input class="icd-input" id="v4-m1" type="text" value="first" autocomplete="off" spellcheck="false"></label>
+    <label class="icd-field"><span>Pesan commit 2</span><input class="icd-input" id="v4-m2" type="text" value="edit a.txt" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Tujuh langkah: blob a.txt v1, blob b.txt, tree 1, commit 1, blob a.txt v2, tree 2, commit 2. ID objek = SHA-1("jenis panjang\0" + isi); tree = entri "100644 nama\0" + 20 byte ID terurut menurut nama; commit = baris tree, parent, author, committer (waktu tetap 1700000000 dan 1700000060, zona +0000, Ani &lt;ani@example.com&gt;), baris kosong, pesan + newline. SHA-1 dihitung oleh kode JavaScript di halaman ini. Dengan isi bawaan, ketujuh ID identik dengan keluaran <code>git hash-object</code>, <code>git write-tree</code>, dan <code>git commit</code> sungguhan (diperiksa di <code>gitobj.py</code>). Disederhanakan: hanya berkas biasa (mode 100644) satu tingkat, satu pembuat, tanpa kompresi atau packfile; repositori SHA-256 memakai fungsi hash lain dan ID 64 digit.</div>
+</div>
+<div class="icd-guide" data-id="v4-objs" data-answer="0">
+  <p>Dengan isi bawaan, maju sampai langkah 7. Commit kedua hanya mengubah a.txt. Berapa objek <em>baru</em> yang dibuatnya?</p>
+  <ul><li>3: blob a.txt baru, tree baru, dan commit baru</li><li>4: blob a.txt, blob b.txt, tree, dan commit</li><li>1: hanya commit</li><li>2: blob a.txt dan commit</li></ul>
+  <div class="explain"><p>Blob b.txt tidak berubah isinya, sehingga ID-nya sama (cc628cc…) dan tree 2 menunjuk blob yang sama: tidak ada salinan. Yang berubah: blob a.txt (isi baru, ID baru), tree 2 (karena salah satu entrinya berubah), dan commit 2 (menunjuk tree baru dan commit 1 sebagai induk). Itulah deduplikasi isi pada pohon Merkle: perubahan kecil hanya membuat objek di sepanjang jalur dari berkas ke akar. Dua blob a.txt berbeda di 37 dari 40 digit meski isinya mirip: perubahan satu byte menggeser seluruh hash (efek avalanche).</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+
+<h3>Contoh 1. Izin dan umask</h3>
+<p>Skrip <code>build.sh</code> harus dibaca dan dijalankan pemilik, dibaca dan dijalankan grup, dan tak boleh disentuh orang lain. <strong>Penyelesaian:</strong> pemilik perlu baca, tulis, dan eksekusi: 4 + 2 + 1 = 7; grup hanya baca dan eksekusi: 4 + 1 = 5; lainnya tak punya izin: 0. Jadi <code>chmod 750 build.sh</code> (rwxr-x---). Pada <code>umask 027</code> berkas baru: 666 AND NOT 027 = 640 (rw-r-----), direktori baru: 777 AND NOT 027 = 750. Berkas baru tak otomatis bisa dieksekusi (dasar 666, tanpa bit x), itulah sebabnya skrip memerlukan <code>chmod +x</code>.</p>
+
+<h3>Contoh 2. Menelusuri <code>both 2&gt;&amp;1 &gt; f</code></h3>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Setelah</th><th scope="col">fd 1 →</th><th scope="col">fd 2 →</th><th scope="col">Catatan</th></tr></thead>
+<tbody>
+<tr><td>awal</td><td class="c">stdout asli</td><td class="c">stderr asli</td><td>terminal atau penangkap</td></tr>
+<tr><td><code>2&gt;&amp;1</code></td><td class="c">stdout asli</td><td class="c">stdout asli</td><td>fd 2 menyalin tujuan fd 1 saat ini</td></tr>
+<tr><td><code>&gt; f</code></td><td class="c">f</td><td class="c">stdout asli</td><td>fd 2 tidak ikut pindah</td></tr>
+</tbody></table></div>
+<p>Hasil: OUT ke f; ERR ke stdout asli; stderr asli kosong. Ini persis baris <code>both 2&gt;&amp;1 &gt; f</code> pada keluaran <code>redir.sh</code> (isi f = OUT, stdout = ERR, stderr = tanda hubung). Urutan <code>&gt; f 2&gt;&amp;1</code> menghasilkan f berisi OUT dan ERR.</p>
+
+<h3>Contoh 3. Regex untuk menarik slack</h3>
+<p>Dari <code>sample.log</code> kita ingin angka slack bertanda. Pola ERE: <code>slack = -?[0-9]+\.[0-9]+</code>. Unsur: literal <code>slack = </code>; <code>-?</code> tanda minus opsional; <code>[0-9]+</code> satu atau lebih digit; <code>\.</code> titik literal (tanpa garis miring, titik cocok dengan apa pun); lalu digit pecahan. <code>grep -oE</code> pola itu mencetak tiga baris: <code>slack = -0.12</code>, <code>slack = -0.31</code>, <code>slack = 0.45</code>. Untuk mengambil kode di dalam tanda kurung: <code>sed -E 's/.*\((.*)\):.*/\1/'</code> (kelompok tangkap <code>(.*)</code> di antara tanda kurung literal <code>\(</code> dan <code>\)</code>) menghasilkan <code>SYN-001</code>, <code>SYN-123</code>, dan seterusnya. Pola ini aman: tak ada pengulangan bersarang, dan satu <code>.*</code> serakah di awal paling banyak menyebabkan mundur sebanyak panjang baris.</p>
+
+<h3>Contoh 4. Jadwal build dengan -j 2 untuk <code>util.h</code></h3>
+<p>Target yang dibangun ulang: <code>main.o</code> (3), <code>util.o</code> (2), lalu <code>prog</code> (2). t = 0: pekerja 1 memulai main.o, pekerja 2 memulai util.o. t = 2: util.o selesai, tak ada target siap lain (prog menunggu main.o), pekerja 2 menganggur. t = 3: main.o selesai, prog dimulai pada pekerja 1 sampai t = 5. Total 5 = jalur kritis (3 + 2); T₁ = 7, batas bawah max(7/2, 5) = 5. Menambah pekerja ketiga tidak mempercepat sama sekali.</p>
+
+<h3>Contoh 5. ID sebuah blob dengan tangan</h3>
+<p>Berkas berisi <code>hello</code> dan newline: 6 byte. Judul: <code>blob 6</code> lalu byte NUL, jadi bahan hash adalah <code>blob 6\0hello\n</code>. Hasil SHA-1 yang sama muncul dari dua jalan: <code>printf 'blob 6\0hello\n' | sha1sum</code> dan <code>printf 'hello\n' | git hash-object --stdin</code>, keduanya <code>ce013625030ba8dba906f756967f9e9ca394464a</code>. Berkas kosong: <code>blob 0\0</code> → <code>e69de29bb2d1d6434b8b29ae775ad8c2e48c5391</code> (ID blob kosong yang terkenal; semua berkas kosong di semua repositori berbagi objek ini). Perhatikan bahwa nama berkas tidak ikut: nama ada di tree.</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Lima belas berkas yang dijalankan sungguhan: empat skrip bash (<code>redir.sh</code>, <code>quote_demo.sh</code>, <code>logparse.sh</code> dengan <code>sample.log</code>), mesin regex <code>regex_bt.py</code>, proyek Make di <code>mk/</code> beserta <code>mk_test.sh</code>, dan dua pembuktian Git (<code>gitobj.py</code>, <code>git_demo.sh</code>). Skrip yang memuat pemeriksaan (<code>redir.sh</code>, <code>regex_bt.py</code>, <code>mk_test.sh</code>, <code>gitobj.py</code>, <code>git_demo.sh</code>) berhenti dengan galat bila hasilnya menyimpang dan mencetak "lulus" bila semua benar; <code>quote_demo.sh</code> dan <code>logparse.sh</code> mencetak hasil yang dibaca langsung. Semua dijalankan pada Ubuntu 24.04 (bash 5.2, GNU make 4.3, Git 2.43, Python 3).</p>
+<h3>8.1 redir.sh</h3>
+<pre class="icd-src" data-lang="sh">
+#!/usr/bin/env bash
+# redir.sh: pengalihan (redirection) diproses KIRI KE KANAN; "2&gt;&amp;1" menyalin tujuan stdout SAAT ITU.
+# Setiap bentuk dijalankan dengan fungsi `both` (menulis OUT ke stdout dan ERR ke stderr); kita periksa ke mana keduanya pergi.
+both() { echo OUT; echo ERR &gt;&amp;2; }
+t=$(mktemp -d); cd "$t"
+printf '%-24s %-9s %-9s %-9s\n' "bentuk" "isi f" "stdout" "stderr"
+chk() { [ "$RES" = "$1" ] || { echo "GAGAL: $CMD menghasilkan $RES, seharusnya $1"; exit 1; }; }
+run() {                                   # $1 = perintah (teks), dievaluasi oleh bash
+  local cmd=$1 so se f
+  CMD=$1
+  rm -f f
+  so=$( { eval "$cmd"; } 2&gt;"$t/se" )      # stdout asli ditangkap oleh $( ), stderr asli ke berkas se
+  se=$(cat "$t/se")
+  f=$( [ -f f ] &amp;&amp; tr '\n' ',' &lt; f || true )
+  printf '%-24s %-9s %-9s %-9s\n' "$cmd" "${f:--}" "${so:--}" "${se:--}"
+  RES="${f:--}|${so:--}|${se:--}"
+}
+run 'both'                 ; chk "-|OUT|ERR"
+run 'both &gt; f'             ; chk "OUT,|-|ERR"
+run 'both 2&gt; f'            ; chk "ERR,|OUT|-"
+run 'both &gt; f 2&gt;&amp;1'        ; chk "OUT,ERR,|-|-"
+run 'both 2&gt;&amp;1 &gt; f'        ; chk "OUT,|ERR|-"
+run 'both &amp;&gt; f'            ; chk "OUT,ERR,|-|-"
+run 'both 2&gt;&amp;1 | cat &gt; f'  ; chk "OUT,ERR,|-|-"
+run 'both &gt; /dev/null 2&gt;&amp;1'; chk "-|-|-"
+echo "semua pemeriksaan redir.sh lulus"
+</pre>
+<p>Fungsi <code>both</code> menulis OUT ke stdout dan ERR ke stderr. <code>run</code> mengevaluasi sebuah bentuk perintah dengan stdout asli ditangkap oleh <code>$( )</code> dan stderr asli ke berkas <code>se</code>, lalu membaca isi <code>f</code> dengan <code>tr</code> (newline menjadi koma agar satu baris); <code>${f:--}</code> mencetak "-" bila kosong. Fungsi <code>chk</code> membandingkan tiga kolom (isi f, stdout, stderr) dengan hasil yang diharapkan dan menghentikan skrip bila beda, sehingga delapan baris tabel adalah klaim yang diperiksa, bukan sekadar cetakan. Perhatikan baris kelima: <code>both 2&gt;&amp;1 &gt; f</code> memberi stdout = ERR dan f = OUT.</p>
+<h3>8.2 quote_demo.sh</h3>
+<pre class="icd-src" data-lang="sh">
+#!/usr/bin/env bash
+# quote_demo.sh: kutip, pemisahan kata, status keluar, set -euo pipefail, trap.
+t=$(mktemp -d); cd "$t"; trap 'rm -rf "$t"' EXIT
+printf 'abc' &gt; "a b.txt"; printf 'xy' &gt; c.txt           # satu nama berspasi, satu biasa
+
+echo "-- 1. pemisahan kata"
+f="a b.txt"
+n_tanpa=$(printf '%s\n' $f | wc -l)                    # $f tanpa kutip dipecah menjadi 2 kata
+n_kutip=$(printf '%s\n' "$f" | wc -l)                  # "$f" tetap 1 kata
+echo "jumlah argumen tanpa kutip = $n_tanpa, dengan kutip = $n_kutip"
+[ "$n_tanpa" = 2 ] &amp;&amp; [ "$n_kutip" = 1 ]
+wc -c $f 2&gt;&amp;1 | head -2 | sed "s#$t/##"                # gagal: "a" dan "b.txt" tidak ada
+wc -c "$f"
+for g in *; do echo "glob: [$g]"; done                 # glob dengan nama berspasi aman bila "$g" dikutip
+
+echo "-- 2. status keluar dan pipefail"
+false | true; echo "tanpa pipefail: status = $?"
+( set -o pipefail; false | true; echo "dengan pipefail: status = $?" )
+
+echo "-- 3. set -e menghentikan skrip pada galat pertama"
+( set -e; echo "sebelum"; false; echo "TIDAK TERCETAK" ) ; echo "status subshell = $?"
+
+echo "-- 4. variabel tak terdefinisi dengan set -u"
+( set -u; echo "isi: ${tidak_ada}" ) 2&gt;&amp;1 | sed 's/^[^:]*: line [0-9]*: //'
+echo "semua pemeriksaan quote_demo.sh selesai"
+</pre>
+<p>Bagian 1 membuktikan pemisahan kata: <code>$f</code> tanpa kutip menjadi dua argumen, <code>"$f"</code> satu; <code>wc -c $f</code> gagal untuk berkas "a" dan "b.txt" yang tak ada. Bagian 2 menunjukkan status 0 tanpa <code>pipefail</code> dan 1 dengan. Bagian 3 menunjukkan <code>set -e</code> menghentikan subshell pada <code>false</code> (baris "TIDAK TERCETAK" tak muncul). Bagian 4 menunjukkan <code>set -u</code>. Tanda kurung <code>( ... )</code> membuat subshell agar opsi tak bocor ke bagian lain. <code>trap ... EXIT</code> membersihkan direktori sementara.</p>
+<h3>8.3 sample.log dan logparse.sh</h3>
+<pre class="icd-src" data-lang="text" data-ln="off">
+[10:00:01] INFO (SYN-001): memulai sintesis modul alu
+[10:00:03] WARNING (SYN-123): sinyal 'carry' tidak digerakkan
+[10:00:04] WARNING (SYN-123): sinyal 'flag_z' tidak digerakkan
+[10:00:09] WARNING (LNT-042): latch terinferensi pada 'sel'
+[10:00:12] INFO (OPT-007): area = 1520.5 um2
+[10:00:15] ERROR (TIM-501): slack = -0.12 ns pada jalur a-&gt;b
+[10:00:16] WARNING (SYN-123): sinyal 'ovf' tidak digerakkan
+[10:00:20] ERROR (TIM-501): slack = -0.31 ns pada jalur c-&gt;d
+[10:00:21] INFO (TIM-100): slack = 0.45 ns pada jalur e-&gt;f
+[10:00:25] WARNING (LNT-042): latch terinferensi pada 'mode'
+[10:00:30] ERROR (DRC-210): lebar logam 0.04 um &lt; minimum 0.05 um
+[10:00:31] INFO (OPT-007): area = 1498.0 um2
+</pre>
+<pre class="icd-src" data-lang="sh">
+#!/usr/bin/env bash
+# logparse.sh: ringkasan log dengan grep, sed, awk, sort, uniq (saluran/pipeline).
+set -euo pipefail
+log=${1:-sample.log}
+echo "-- jumlah per tingkat"
+grep -oE '\] [A-Z]+ ' "$log" | tr -d '] ' | sort | uniq -c | sort -k1,1nr -k2,2
+echo "-- kode peringatan dan galat (paling sering dulu)"
+grep -E '\] (WARNING|ERROR) ' "$log" | sed -E 's/^.*\((.*)\):.*$/\1/' | sort | uniq -c | sort -k1,1nr -k2,2
+echo "-- slack terburuk (ns)"
+awk '/slack = /{ for (i=1;i&lt;=NF;i++) if ($i=="=") { v=$(i+1)+0; if (!seen || v&lt;min) { min=v; seen=1 } } } END { printf "%.2f\n", min }' "$log"
+echo "-- total pelanggaran slack (negatif)"
+awk '/slack = -/{ n++ } END { print n+0 }' "$log"
+echo "-- area terakhir (um2)"
+sed -nE 's/.*area = ([0-9.]+) um2/\1/p' "$log" | tail -1
+</pre>
+<p>Lima ringkasan dari satu log. (1) <code>grep -oE</code> mengambil hanya tingkat (INFO, WARNING, ERROR), <code>tr</code> membuang karakter pembatas, lalu <code>sort | uniq -c | sort</code> membentuk tabel frekuensi. (2) Kode tiap peringatan dan galat diambil dengan <code>sed</code> kelompok tangkap. (3) <code>awk</code> mencari slack minimum dengan menelusuri kolom (<code>NF</code>) sampai tanda <code>=</code> lalu membaca kolom berikutnya. (4) <code>awk</code> menghitung baris dengan <code>slack = -</code>. (5) <code>sed -n</code> dengan opsi <code>p</code> mengambil area, <code>tail -1</code> yang terakhir. Dengan <code>set -euo pipefail</code> skrip berhenti bila salah satu tahap pipa gagal.</p>
+<h3>8.4 regex_bt.py</h3>
+<pre class="icd-src" data-lang="py">
+"""regex_bt.py: mesin regex backtracking kecil (literal, ., |, (), *, +, ?) yang menghitung LANGKAH.
+Hasil kecocokan penuh diperiksa terhadap modul re bawaan Python; langkah menunjukkan ledakan eksponensial pada pola seperti (a+)+b."""
+import itertools, re
+
+def parse(p):
+    pos = 0
+    def peek(): return p[pos] if pos &lt; len(p) else None
+    def alt():
+        nonlocal pos
+        n = cat()
+        while peek() == '|':
+            pos += 1; n = ('alt', n, cat())
+        return n
+    def cat():
+        nonlocal pos
+        n = ('empty',)
+        while peek() is not None and peek() not in '|)':
+            a = post()
+            n = a if n == ('empty',) else ('cat', n, a)
+        return n
+    def post():
+        nonlocal pos
+        a = atom()
+        while peek() in ('*', '+', '?'):
+            a = ({'*': 'star', '+': 'plus', '?': 'opt'})[peek()], a; pos += 1
+        return a
+    def atom():
+        nonlocal pos
+        c = peek(); pos += 1
+        if c == '(':
+            n = alt(); assert peek() == ')', 'kurung tak seimbang'; pos += 1; return n
+        return ('chr', c)
+    n = alt(); assert pos == len(p), 'sisa pola'
+    return n
+
+def fullmatch(p, s):
+    """kembalikan (cocok, langkah); satu langkah = satu pemanggilan m()"""
+    ast, n, steps = parse(p), len(s), [0]
+    def m(node, i, k):
+        steps[0] += 1
+        t = node[0]
+        if t == 'empty': return k(i)
+        if t == 'chr': return i &lt; n and (node[1] == '.' or s[i] == node[1]) and k(i + 1)
+        if t == 'cat': return m(node[1], i, lambda j: m(node[2], j, k))
+        if t == 'alt': return m(node[1], i, k) or m(node[2], i, k)
+        if t == 'opt': return m(node[1], i, k) or k(i)
+        if t == 'star':
+            def loop(j): return m(node[1], j, lambda j2: j2 &gt; j and loop(j2)) or k(j)
+            return loop(i)
+        if t == 'plus': return m(('cat', node[1], ('star', node[1])), i, k)
+        raise ValueError(t)
+    return bool(m(ast, 0, lambda j: j == n)), steps[0]
+
+if __name__ == '__main__':
+    pats = ['a+b', '(a+)+b', 'a*a*b', '(a|b)*abb', '(ab)*', 'a?b?c', '.*x', '(a|aa)+b', 'a(b|c)*d?', '(a*)*b']
+    for p in pats:
+        for L in range(0, 7):
+            for tup in itertools.product('abcdx', repeat=L) if L &lt;= 5 else []:
+                s = ''.join(tup)
+                assert fullmatch(p, s)[0] == bool(re.fullmatch(p, s)), (p, s)
+    print('mesin backtracking == re.fullmatch untuk 10 pola x semua string abcdx sepanjang &lt;= 5')
+    print('n   a+b(a^n)   (a+)+b(a^n)  a*a*b(a^n)   (a+)+b(a^n b)')
+    rows = {}
+    for n in range(1, 15):
+        s = 'a' * n
+        rows[n] = [fullmatch('a+b', s)[1], fullmatch('(a+)+b', s)[1], fullmatch('a*a*b', s)[1], fullmatch('(a+)+b', s + 'b')[1]]
+        print(f'{n:2d} {rows[n][0]:9d} {rows[n][1]:12d} {rows[n][2]:11d} {rows[n][3]:14d}')
+    assert not fullmatch('(a+)+b', 'a' * 10)[0] and fullmatch('(a+)+b', 'a' * 10 + 'b')[0]
+    for n in range(2, 15): assert rows[n][1] &gt; 1.9 * rows[n - 1][1] * 0.95 and rows[n][0] &lt; 5 * n + 5   # eksponensial vs linear
+    fib = [fullmatch('(a|aa)+b', 'a' * n)[1] for n in range(1, 15)]
+    print('(a|aa)+b pada a^n, n = 1..14:', fib)
+    assert fib[-1] / fib[-2] &gt; 1.5 and fib[-1] / fib[-2] &lt; 1.7        # tumbuh seperti deret Fibonacci (~1,618)
+    ratio = rows[14][1] / rows[13][1]
+    print(f'rasio langkah (a+)+b dari n = 13 ke 14: {ratio:.3f} (mendekati 2 = eksponensial)')
+    assert 1.9 &lt; ratio &lt; 2.1
+    print('semua pemeriksaan regex_bt.py lulus')
+</pre>
+<p><code>parse</code> adalah parser turun-rekursif untuk tata bahasa <em>alt → cat → postfix → atom</em>, membentuk pohon sintaks. <code>fullmatch</code> adalah mesin backtracking bergaya continuation: <code>m(node, i, k)</code> mencoba mencocokkan <code>node</code> dari posisi <code>i</code> dan, bila berhasil, memanggil <code>k(j)</code> untuk sisa pola. Untuk <code>star</code> (serakah) <code>loop</code> mencoba satu iterasi lagi dulu, baru berhenti; syarat <code>j2 &gt; j</code> mencegah iterasi kosong tanpa akhir. Variabel <code>steps</code> menghitung pemanggilan <code>m</code>. Bagian <code>__main__</code> membandingkan hasil dengan <code>re.fullmatch</code> untuk 10 pola pada semua string dari alfabet abcdx sepanjang paling lama lima, lalu mencetak tabel langkah dan memeriksa bahwa pertumbuhan <code>(a+)+b</code> berlipat dua dan <code>a+b</code> linear.</p>
+<h3>8.5 Proyek Make: Makefile, Makefile.nodep, dan sumber C</h3>
+<pre class="icd-src" data-lang="text" data-ln="off">
+# Makefile: proyek kecil dengan dependensi header otomatis (-MMD -MP).
+CC     := gcc
+CFLAGS := -std=c11 -Wall -Wextra -O2 -MMD -MP
+OBJS   := main.o util.o lib.o
+
+prog: $(OBJS)
+	$(CC) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $&lt;
+
+-include $(OBJS:.o=.d)
+
+.PHONY: test clean
+test: prog
+	./prog
+
+clean:
+	rm -f prog *.o *.d
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+# Makefile.nodep: SENGAJA tanpa dependensi header; tanpa -MMD, perubahan header tidak memicu kompilasi ulang.
+CC     := gcc
+CFLAGS := -std=c11 -Wall -Wextra -O2
+OBJS   := main.o util.o lib.o
+
+prog: $(OBJS)
+	$(CC) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $&lt;
+
+clean:
+	rm -f prog *.o *.d
+</pre>
+<pre class="icd-src" data-lang="c">
+#include &lt;stdio.h&gt;
+#include "util.h"
+#include "config.h"
+int main(void) {
+    printf("mac(2,5,1) = %ld, twice(21) = %ld\n", mac(2, 5, 1), lib_twice(21));
+    return 0;
+}
+</pre>
+<pre class="icd-src" data-lang="c">
+#include "util.h"
+#include "config.h"
+long mac(long a, long b, long c) { return a * b * SCALE + c; }
+</pre>
+<pre class="icd-src" data-lang="c">
+#include "config.h"
+long lib_twice(long x) { return 2 * x + SCALE - SCALE; }
+</pre>
+<pre class="icd-src" data-lang="c">
+#ifndef UTIL_H
+#define UTIL_H
+long mac(long a, long b, long c);
+long lib_twice(long x);
+#endif
+</pre>
+<pre class="icd-src" data-lang="c">
+#ifndef CONFIG_H
+#define CONFIG_H
+#define SCALE 3
+#endif
+</pre>
+<p>Dalam <code>Makefile</code>: <code>:=</code> mengevaluasi variabel sekali; <code>prog: $(OBJS)</code> memakai <code>$^</code> (semua prasyarat) dan <code>$@</code> (target); aturan pola <code>%.o: %.c</code> memakai <code>$&lt;</code> (berkas .c); <code>-MMD -MP</code> membuat <code>.d</code> berisi ketergantungan header yang dimuat oleh <code>-include $(OBJS:.o=.d)</code> (tanda minus mengabaikan berkas yang belum ada); <code>.PHONY</code> menandai <code>test</code> dan <code>clean</code> sebagai bukan berkas. <code>Makefile.nodep</code> sama persis tanpa <code>-MMD</code> dan tanpa <code>-include</code>: contoh jebakan. Sumbernya kecil: <code>main.c</code> memanggil <code>mac</code> dan <code>lib_twice</code>; header <code>config.h</code> mendefinisikan <code>SCALE</code> yang dipakai <code>util.c</code> dan <code>lib.c</code>, sehingga mengubah <code>config.h</code> memang memengaruhi dua objek (<code>main.c</code> juga meng-include-nya).</p>
+<h3>8.6 mk_test.sh</h3>
+<pre class="icd-src" data-lang="sh">
+#!/usr/bin/env bash
+# mk_test.sh: membuktikan perilaku build bertahap (incremental) GNU make pada proyek mk/.
+set -euo pipefail
+here=$(cd "$(dirname "$0")" &amp;&amp; pwd)
+t=$(mktemp -d); trap 'rm -rf "$t"' EXIT
+cp "$here"/mk/* "$t"/; cd "$t"
+rebuilt() {                                   # daftar target yang dikompilasi/ditaut oleh satu pemanggilan make
+  local out; out=$(make "$@" 2&gt;&amp;1)
+  local l; l=$(printf '%s\n' "$out" | sed -nE 's/^gcc (.* )?-o ([^ ]+).*/\2/p' | sort | tr '\n' ' ')
+  if [ -z "$l" ]; then printf '%s\n' "$out" | grep -E 'up to date|Nothing to be done' | head -1; else echo "dibangun: ${l% }"; fi
+}
+want() { [ "$1" = "$2" ] || { echo "SALAH: dapat [$1] ingin [$2]"; exit 1; }; }
+tick() { sleep 0.02; touch "$1"; }
+echo "-- awal (semua)";                 r=$(rebuilt); echo "$r"; want "$r" "dibangun: lib.o main.o prog util.o"
+echo "-- tanpa perubahan";              r=$(rebuilt); echo "$r"; want "$r" "make: 'prog' is up to date."
+for f in config.h util.h util.c main.c lib.c; do
+  tick "$f"; echo "-- touch $f"; r=$(rebuilt); echo "$r"
+  case $f in
+    config.h) want "$r" "dibangun: lib.o main.o prog util.o";;
+    util.h)   want "$r" "dibangun: main.o prog util.o";;
+    util.c)   want "$r" "dibangun: prog util.o";;
+    main.c)   want "$r" "dibangun: main.o prog";;
+    lib.c)    want "$r" "dibangun: lib.o prog";;
+  esac
+done
+echo "-- hasil program"; make -s test
+echo "-- make -n (uji kering) setelah touch util.c"; tick util.c; make -n | sed 's/ -MMD -MP//'
+make -s &gt;/dev/null
+echo "-- paralel: make -j4 setelah touch config.h"; tick config.h; r=$(rebuilt -j4); echo "$r"; want "$r" "dibangun: lib.o main.o prog util.o"
+echo "-- jebakan: Makefile tanpa dependensi header"
+make clean &gt;/dev/null; make -f Makefile.nodep &gt;/dev/null; tick util.h
+r=$(rebuilt -f Makefile.nodep); echo "setelah touch util.h: $r"; want "$r" "make: 'prog' is up to date."
+echo "-- jebakan: spasi, bukan tab, di awal resep"
+printf 'prog: main.c\n    gcc -o prog main.c\n' &gt; Makefile.bad
+make -f Makefile.bad 2&gt;&amp;1 | sed 's/^make: //' | head -1 || true
+echo "semua pemeriksaan mk_test.sh lulus"
+</pre>
+<p>Skrip menyalin proyek ke direktori sementara, lalu fungsi <code>rebuilt</code> menjalankan <code>make</code> dan menyaring baris perintah <code>gcc ... -o X</code> untuk daftar target yang dibangun, diurutkan agar tak bergantung pada urutan paralel. <code>want</code> membandingkan dengan hasil yang diharapkan dan menghentikan skrip bila beda. Pengujian mencakup build awal, tanpa perubahan, sentuhan pada tiap berkas, uji kering <code>-n</code>, <code>-j4</code>, jebakan ketergantungan header, dan galat "missing separator" akibat spasi pada awal resep.</p>
+<h3>8.7 gitobj.py</h3>
+<pre class="icd-src" data-lang="py">
+"""gitobj.py: menghitung ID objek Git (blob, tree, commit) dengan SHA-1 dan membandingkannya dengan git sungguhan.
+Format: ID = SHA-1("&lt;jenis&gt; &lt;panjang&gt;\\0" + isi). Tree: entri "&lt;mode&gt; &lt;nama&gt;\\0" + 20 byte ID, diurutkan menurut nama.
+Commit: baris tree, parent, author, committer, baris kosong, pesan."""
+import hashlib, os, subprocess, tempfile, shutil
+
+def obj(kind, body): return hashlib.sha1(b'%s %d\0' % (kind.encode(), len(body)) + body).hexdigest()
+def blob(data): return obj('blob', data)
+def tree(entries):                                   # entries: {nama: id_hex}, semua berkas biasa (mode 100644)
+    body = b''.join(b'100644 %s\0' % n.encode() + bytes.fromhex(h) for n, h in sorted(entries.items()))
+    return obj('tree', body)
+def commit(tree_id, parent, name, email, ts, msg):
+    lines = [f'tree {tree_id}'] + ([f'parent {parent}'] if parent else [])
+    lines += [f'author {name} &lt;{email}&gt; {ts} +0000', f'committer {name} &lt;{email}&gt; {ts} +0000', '', msg, '']
+    return obj('commit', '\n'.join(lines).encode())
+
+def git(*a, cwd, env=None, inp=None):
+    e = dict(os.environ, GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_SYSTEM='/dev/null', **(env or {}))
+    return subprocess.run(['git', *a], cwd=cwd, env=e, input=inp, capture_output=True, text=True, check=True).stdout.strip()
+
+if __name__ == '__main__':
+    A1, A2, B = b'hello\n', b'hello, git\n', b'world\n'
+    ha1, ha2, hb = blob(A1), blob(A2), blob(B)
+    t1 = tree({'a.txt': ha1, 'b.txt': hb}); t2 = tree({'a.txt': ha2, 'b.txt': hb})
+    c1 = commit(t1, None, 'Ani', 'ani@example.com', 1700000000, 'first')
+    c2 = commit(t2, c1, 'Ani', 'ani@example.com', 1700000060, 'edit a.txt')
+    d = tempfile.mkdtemp()
+    try:
+        git('init', '-q', '-b', 'main', '.', cwd=d)
+        env = lambda ts: {'GIT_AUTHOR_NAME': 'Ani', 'GIT_AUTHOR_EMAIL': 'ani@example.com', 'GIT_COMMITTER_NAME': 'Ani', 'GIT_COMMITTER_EMAIL': 'ani@example.com',
+                          'GIT_AUTHOR_DATE': f'{ts} +0000', 'GIT_COMMITTER_DATE': f'{ts} +0000'}
+        open(os.path.join(d, 'a.txt'), 'wb').write(A1); open(os.path.join(d, 'b.txt'), 'wb').write(B)
+        assert git('hash-object', 'a.txt', cwd=d) == ha1 and git('hash-object', 'b.txt', cwd=d) == hb
+        git('add', 'a.txt', 'b.txt', cwd=d); assert git('write-tree', cwd=d) == t1
+        git('commit', '-q', '-m', 'first', cwd=d, env=env(1700000000)); assert git('rev-parse', 'HEAD', cwd=d) == c1
+        open(os.path.join(d, 'a.txt'), 'wb').write(A2)
+        git('add', 'a.txt', cwd=d); assert git('write-tree', cwd=d) == t2
+        git('commit', '-q', '-m', 'edit a.txt', cwd=d, env=env(1700000060)); assert git('rev-parse', 'HEAD', cwd=d) == c2
+        assert git('cat-file', '-t', c2, cwd=d) == 'commit' and git('cat-file', '-p', c2, cwd=d).splitlines()[1] == f'parent {c1}'
+    finally: shutil.rmtree(d)
+    print('blob a.txt v1 ("hello\\n")        ', ha1); print('blob b.txt   ("world\\n")        ', hb); print('tree commit 1                    ', t1)
+    print('commit 1 (first)                 ', c1); print('blob a.txt v2 ("hello, git\\n")   ', ha2); print('tree commit 2                    ', t2); print('commit 2 (edit a.txt)            ', c2)
+    diff = sum(x != y for x, y in zip(ha1, ha2)); print(f'digit heksadesimal berbeda antara dua blob a.txt: {diff} dari 40')
+    assert ha1 == 'ce013625030ba8dba906f756967f9e9ca394464a' and blob(b'') == 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
+    print('semua pemeriksaan gitobj.py lulus: ID model == ID git sungguhan')
+</pre>
+<p><code>obj</code> membentuk <code>judul + NUL + isi</code> dan mengambil SHA-1; <code>tree</code> mengurutkan entri menurut nama dan menulis ID sebagai 20 byte; <code>commit</code> menyusun baris header Git. Bagian <code>__main__</code> membuat repositori nyata di direktori sementara (dengan konfigurasi pengguna dimatikan agar hasil tetap), membangun dua commit dengan waktu tetap, dan <code>assert</code> bahwa ID blob, tree, dan commit hitungan kita sama dengan <code>git hash-object</code>, <code>git write-tree</code>, dan <code>git rev-parse HEAD</code>. Itu mengonfirmasi model objek dan juga angka yang ditampilkan visualisasi 4.</p>
+<h3>8.8 git_demo.sh</h3>
+<pre class="icd-src" data-lang="sh">
+#!/usr/bin/env bash
+# git_demo.sh: percabangan, merge 3 arah, konflik, rebase, dan bisect, dengan waktu tetap agar ID commit tetap sama tiap dijalankan.
+set -euo pipefail
+export GIT_AUTHOR_NAME=Ani GIT_AUTHOR_EMAIL=ani@example.com GIT_COMMITTER_NAME=Ani GIT_COMMITTER_EMAIL=ani@example.com
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null            # abaikan konfigurasi pengguna
+t=$(mktemp -d); trap 'rm -rf "$t"' EXIT; cd "$t"; git init -q -b main .
+tick=1700000000
+ci() { tick=$((tick+60)); GIT_AUTHOR_DATE="$tick +0000" GIT_COMMITTER_DATE="$tick +0000" git commit -q "$@"; }
+mg() { tick=$((tick+60)); GIT_AUTHOR_DATE="$tick +0000" GIT_COMMITTER_DATE="$tick +0000" git merge -q "$@"; }
+add() { printf '%s\n' "$2" &gt;&gt; "$1"; git add "$1"; }
+
+echo "== 1. riwayat awal"
+add alu.v "module alu;"; ci -m "alu: kerangka"
+add tb.v "module tb;"; ci -m "tb: kerangka"
+git switch -q -c feat
+add fifo.v "module fifo;"; ci -m "fifo: kerangka"
+add fifo.v "  // depth 8"; ci -m "fifo: kedalaman 8"
+git switch -q main
+add alu.v "  // carry"; ci -m "alu: carry"
+echo "== 2. merge 3 arah (tanpa konflik)"
+mg --no-edit feat
+git log --graph --oneline --decorate | sed -E 's/\b[0-9a-f]{7}\b/&lt;ID&gt;/'
+echo "tulang riwayat: $(git rev-list --count HEAD) commit; commit merge punya $(git log -1 --format=%p | wc -w) induk"
+[ "$(git log -1 --format=%p | wc -w)" = 2 ]
+
+echo "== 3. konflik: dua cabang mengubah baris yang sama"
+git switch -q -c konflik
+printf 'module alu;\n  // carry versi konflik\n' &gt; alu.v; git add alu.v; ci -m "alu: ubah carry (konflik)"
+git switch -q main
+printf 'module alu;\n  // carry versi main\n' &gt; alu.v; git add alu.v; ci -m "alu: ubah carry (main)"
+if mg --no-edit konflik &gt;/dev/null 2&gt;&amp;1; then echo "TIDAK ADA KONFLIK?"; exit 1; fi
+echo "status: $(git status --short | tr '\n' ' ')"
+cat alu.v
+printf 'module alu;\n  // carry gabungan\n' &gt; alu.v; git add alu.v; ci -m "merge konflik: gabungan"
+echo "diselesaikan: $(git log -1 --format=%s)"
+
+echo "== 4. rebase: riwayat lurus"
+git switch -q -c rb HEAD~3 2&gt;/dev/null || git switch -q -c rb HEAD~1
+add rb.txt "satu"; ci -m "rb: satu"
+git rebase -q main 2&gt;&amp;1 | head -1 || true
+echo "rebase: $(git rev-list --count main..rb) commit rb di atas main; merge-base == main: $([ "$(git merge-base main rb)" = "$(git rev-parse main)" ] &amp;&amp; echo ya || echo tidak)"
+
+echo "== 5. bisect: cari commit pertama yang merusak"
+git switch -q -c bis main
+echo baik &gt; status.txt; git add status.txt; ci -m "dasar: status baik"
+for i in 1 2 3 4 5 6 7; do
+  if [ "$i" -ge 5 ]; then echo "BURUK" &gt; status.txt; else echo "baik" &gt; status.txt; fi
+  echo "$i" &gt;&gt; catatan.txt; git add status.txt catatan.txt; ci -m "perubahan $i"
+done
+git bisect start HEAD HEAD~7 &gt; /dev/null
+git bisect run sh -c 'grep -q baik status.txt' &gt; bisect.out
+echo "langkah uji bisect: $(grep -c '^running' bisect.out) dari 7 commit kandidat"
+git bisect log | sed -nE 's/^# first bad commit: \[[0-9a-f]+\] (.*)/commit buruk pertama: \1/p'
+git bisect reset &gt;/dev/null 2&gt;&amp;1
+echo "semua pemeriksaan git_demo.sh lulus"
+</pre>
+<p>Lima bagian pada repositori sementara dengan identitas dan waktu tetap (<code>ci</code> dan <code>mg</code> menaikkan jam setiap commit): (1) riwayat awal dan satu cabang <code>feat</code>; (2) merge 3 arah tanpa konflik yang menghasilkan commit dengan dua induk (diperiksa); (3) konflik di baris yang sama: <code>git status --short</code> menampilkan <code>UU</code>, berkas berisi penanda konflik, dan penyelesaian manual diikuti commit; (4) rebase menghasilkan riwayat lurus (merge-base sama dengan ujung main); (5) <code>git bisect run</code> menemukan commit buruk pertama di antara tujuh dengan tiga uji. ID commit disamarkan dengan sed agar keluaran stabil, tetapi karena waktu tetap, ID aslinya pun sama di tiap eksekusi.</p>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>"<code>2&gt;&amp;1</code> berarti 'gabungkan stderr ke stdout' di mana pun ia ditulis."</b>Ia menyalin tujuan stdout <em>saat itu</em>. <code>cmd 2&gt;&amp;1 &gt; f</code> tidak memasukkan galat ke f; <code>cmd &gt; f 2&gt;&amp;1</code> memasukkannya (visualisasi 1). Dengan pipa, <code>cmd 2&gt;&amp;1 | tee f</code> benar karena pipa dipasang lebih dulu.</div>
+<div class="icd-box mis"><b>"Tanda kutip hanya soal kerapian."</b>Tanpa kutip, nilai berspasi pecah dan hasil diperluas oleh glob. <code>rm -rf $dir/*</code> dengan <code>dir</code> kosong menjadi <code>rm -rf /*</code>. Kutip variabel dan gunakan <code>"${dir:?}"</code> untuk menghentikan skrip bila kosong.</div>
+<div class="icd-box mis"><b>"<code>set -e</code> menjamin skrip berhenti pada setiap galat."</b>Ia tidak berlaku di dalam kondisi (<code>if</code>, <code>||</code>, <code>&amp;&amp;</code>), dalam pipa tanpa <code>pipefail</code>, dan berperilaku halus pada fungsi. Periksa langkah penting secara eksplisit.</div>
+<div class="icd-box mis"><b>"Glob dan regex itu sama."</b><code>*.v</code> di shell berarti semua berkas berakhiran .v; di regex <code>*</code> mengulang hal sebelumnya. <code>grep *.v</code> mengekspansi glob lebih dulu; tulis <code>grep -E '\.v$'</code>.</div>
+<div class="icd-box trap"><b>Jebakan: ReDoS.</b>Pola dengan pengulangan bersarang atau pilihan yang tumpang tindih (<code>(a+)+</code>, <code>(a|aa)+</code>) pada mesin backtracking bisa eksponensial pada masukan yang hampir cocok. Terima masukan tak tepercaya hanya dengan mesin waktu-linear atau pola yang sudah ditinjau dan dibatasi panjangnya.</div>
+<div class="icd-box trap"><b>Jebakan: header tak terdaftar di Makefile.</b>Tanpa <code>-MMD -MP</code> (atau daftar manual) perubahan header tak membangun ulang apa pun, dan Anda menjalankan biner usang (<code>Makefile.nodep</code>). Gejala: hasil berubah hanya setelah <code>make clean</code>.</div>
+<div class="icd-box trap"><b>Jebakan: tab lawan spasi di Makefile.</b>Resep harus diawali tab; editor yang mengubah tab menjadi spasi memicu <code>missing separator</code>. Atur editor (indentasi tab untuk Makefile) dan atur <code>.editorconfig</code>.</div>
+<div class="icd-box mis"><b>"Cabang Git adalah salinan proyek."</b>Cabang adalah satu penunjuk ke commit (41 byte). Karena itu membuatnya murah dan "menghapus cabang" tidak menghapus commit selama masih ada penunjuk lain atau reflog.</div>
+<div class="icd-box trap"><b>Jebakan: rebase pada cabang yang sudah dibagikan.</b>Rebase membuat commit baru dengan ID baru; orang lain yang memegang commit lama akan mendapat riwayat ganda dan konflik. Rebase hanya untuk pekerjaan lokal; untuk menimpa cabang jarak jauh gunakan <code>--force-with-lease</code>, bukan <code>--force</code>, dan hanya pada cabang pribadi.</div>
+<div class="icd-box trap"><b>Jebakan: rahasia atau berkas besar di riwayat.</b>Menghapus berkas pada commit berikutnya tidak menghapusnya dari commit lama. Kunci yang bocor harus diganti; riwayat bisa ditulis ulang (<code>git filter-repo</code>), tetapi semua klon lain tetap menyimpannya. Cegah dengan <code>.gitignore</code> dan pemindai rahasia pra-commit.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<ul>
+<li><strong>Alur EDA = shell + Tcl + Python + make.</strong> Skrip pengendali (bash atau Python) memanggil alat dengan berkas Tcl; make atau penerusnya menjaga tahap bertahap; penjadwal tugas di farm komputasi (mis. LSF atau Slurm) menjalankan regresi paralel; modul lingkungan (<code>module load</code>) memilih versi alat. Banyak skrip pengaturan lama masih berupa csh atau tcsh, jadi Anda harus bisa membacanya.</li>
+<li><strong>Log sebagai data.</strong> Regresi menghasilkan ribuan log; tim membuat rangkuman otomatis (jumlah lulus, kode galat yang paling sering, slack terburuk) dengan pipa seperti <code>logparse.sh</code> atau skrip Python, dan menyimpannya sebagai artefak CI.</li>
+<li><strong>Git di tim chip.</strong> Sumber RTL, testbench, skrip, constraint, dan dokumentasi tinggal di Git; berkas hasil (netlist, GDS, gelombang) dibangkitkan ulang atau disimpan sebagai artefak. Biner besar memakai Git LFS atau penyimpanan artefak, dan sebagian perusahaan besar memakai sistem lain (mis. Perforce) untuk aset sangat besar; konsepnya (snapshot, cabang, integrasi) tetap sama.</li>
+<li><strong>Tinjauan kode dan CI.</strong> Perubahan masuk lewat permintaan penggabungan yang ditinjau; CI menjalankan regresi singkat, pemeriksaan lint, dan pemeriksaan format; cabang utama dijaga selalu hijau. Pesan commit yang baik menjelaskan <em>mengapa</em>, merujuk tiket, dan satu commit = satu perubahan logis.</li>
+<li><strong>Bisect untuk regresi.</strong> Ketika timing atau regresi gagal, <code>git bisect run ./cek.sh</code> menunjuk commit pemicu dalam ⌈log₂ n⌉ percobaan; skrip uji harus deterministik dan cepat.</li>
+<li><strong>Keamanan dan lisensi.</strong> Berkas PDK dan IP pihak ketiga sering berlisensi terbatas; jangan mengomitnya ke repositori yang tak sesuai. Gunakan pemindai rahasia pra-commit dan hak akses repositori yang tepat.</li>
+<li><strong>Windows dan WSL2.</strong> Simpan proyek di dalam sistem berkas Linux WSL, atur akhir baris (LF untuk <code>.sh</code> lewat <code>.gitattributes</code>), dan jalankan alat Linux di WSL. WSL2 memakai kernel Linux sungguhan sehingga perilaku di modul ini berlaku.</li>
+<li><strong>Status per November 2026.</strong> Lab diuji dengan bash 5.2, GNU make 4.3, dan Git 2.43 (Ubuntu 24.04); versi lebih baru berperilaku sama untuk semua yang dibahas. Git masih memakai SHA-1 secara bawaan pada repositori baru menurut dokumentasi resmi, dengan SHA-256 sebagai rencana Git 3.0 tanpa tanggal tetap.</li>
+</ul>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Berapa izin simbolik dari <code>chmod 750</code>, dan berapa izin berkas dan direktori baru di bawah <code>umask 027</code>?</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p>750 = rwxr-x---: pemilik 7 = rwx, grup 5 = r-x, lainnya 0. Dengan umask 027: berkas 666 AND NOT 027 = 640 (rw-r-----); direktori 777 AND NOT 027 = 750 (rwxr-x---).</p></details>
+<p><strong>1.2</strong> Tulis satu perintah yang menyimpan stdout dan stderr <code>make</code> ke <code>build.log</code> <em>dan</em> menampilkannya di layar.</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p><code>make 2&gt;&amp;1 | tee build.log</code>. Pipa dipasang lebih dulu, lalu <code>2&gt;&amp;1</code> mengarahkan stderr ke pipa bersama stdout; <code>tee</code> menyalin ke layar dan berkas. Dengan <code>set -o pipefail</code>, status perintah tetap status <code>make</code> bila gagal.</p></details>
+<p><strong>1.3</strong> Sebutkan apa yang dicetak <code>both 2&gt;&amp;1 &gt; f</code> dan apa isi f (lihat visualisasi 1).</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>Layar (stdout asli) menerima ERR; f berisi OUT. Stderr asli kosong. Karena 2&gt;&amp;1 menyalin tujuan fd 1 yang saat itu masih stdout asli.</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Dengan graf proyek contoh dan <code>touch main.c</code>, berapa waktu total dengan -j 1, -j 2, dan -j 4 (durasi main.o 3, util.o 2, lib.o 4, tautan 2)?</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p>Hanya main.o dan prog dibangun ulang: T₁ = 3 + 2 = 5 dan jalur kritis T∞ = 5 (keduanya berantai). Jadi 5 untuk -j 1, 2, dan 4: tidak ada paralelisme yang bisa dimanfaatkan. Bandingkan <code>touch config.h</code>: 11, 8, dan 6.</p></details>
+<p><strong>2.2</strong> Tulis satu ekspresi <code>grep -oE</code> yang mengambil semua angka slack negatif dari <code>sample.log</code>, dan satu perintah <code>awk</code> yang menjumlahkannya.</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p><code>grep -oE 'slack = -[0-9]+\.[0-9]+' sample.log</code> mengambil <code>slack = -0.12</code> dan <code>slack = -0.31</code> (hanya yang bertanda minus). Penjumlahan: <code>awk '/slack = -/{ for (i=1;i&lt;=NF;i++) if ($i=="=") s += $(i+1) } END { printf "%.2f\n", s }' sample.log</code> memberi −0,43 (−0,12 + −0,31). Perhatikan <code>\.</code>: tanpa garis miring, titik cocok dengan karakter apa pun.</p></details>
+<p><strong>2.3</strong> Sebuah proyek punya 1000 commit antara versi baik terakhir dan versi buruk. Berapa uji maksimum yang dibutuhkan <code>git bisect</code>, dan berapa bila ada 5000 commit?</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p>Pencarian biner membutuhkan ⌈log₂ <i>n</i>⌉ uji: ⌈log₂ 1000⌉ = 10 (2¹⁰ = 1024) dan ⌈log₂ 5000⌉ = 13 (2¹³ = 8192, sedangkan 2¹² = 4096 &lt; 5000). Syarat: tes harus deterministik dan commit baik dan buruk benar-benar mengapit perubahan (riwayat linier atau minimal dapat diurutkan).</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Buktikan bahwa jumlah cara <code>(a+)+</code> membagi <i>a<sup>n</sup></i> menjadi kelompok berurutan adalah 2<sup><i>n</i>−1</sup>, dan jelaskan kaitannya dengan langkah mesin backtracking bila string tak diakhiri <code>b</code>.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>Satu pembagian ditentukan oleh pilihan untuk setiap dari <i>n</i> − 1 celah di antara huruf a berdekatan: apakah celah itu <em>batas kelompok</em> atau bukan. Itu 2<sup><i>n</i>−1</sup> kemungkinan (komposisi bilangan <i>n</i>). Mesin serakah menelusuri pembagian itu dengan urutan tertentu; karena tak ada <code>b</code>, tiap pembagian gagal di akhir sehingga seluruh ruang diperiksa: langkah ≥ 2<sup><i>n</i>−1</sup>. Hasil ukur: rasio 2,000 antar <i>n</i>.</p></details>
+<p><strong>3.2</strong> Tunjukkan bahwa waktu build paralel <i>T<sub>N</sub></i> ≥ max(<i>T</i><sub>1</sub>/<i>N</i>, <i>T</i><sub>∞</sub>) dan beri contoh graf yang mencapai kedua batas.</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>(i) <i>N</i> pekerja menyelesaikan paling banyak <i>N</i> satuan kerja per satuan waktu, jadi kerja total <i>T</i><sub>1</sub> butuh minimal <i>T</i><sub>1</sub>/<i>N</i>. (ii) Rantai ketergantungan terpanjang (jalur kritis) harus dikerjakan berurutan, jadi butuh minimal <i>T</i><sub>∞</sub> berapa pun <i>N</i>. Karena keduanya batas bawah, <i>T<sub>N</sub></i> ≥ maksimum keduanya.</p><p><strong>Mencapai batas jalur kritis:</strong> <code>touch util.h</code> dengan <i>N</i> = 2: <i>T</i><sub>1</sub> = 7, <i>T</i><sub>∞</sub> = 5, batas = max(3,5; 5) = 5, dan jadwal main.o ‖ util.o lalu prog tepat 5. <strong>Mencapai batas kerja total:</strong> empat target mandiri berdurasi 2 dengan <i>N</i> = 2: <i>T</i><sub>1</sub> = 8, <i>T</i><sub>∞</sub> = 2, batas = max(4; 2) = 4, dan dua gelombang × 2 = 4. <strong>Tidak selalu tercapai:</strong> build penuh proyek ini dengan <i>N</i> = 2 memberi batas max(5,5; 6) = 6, tetapi jadwal serakah menurut urutan prasyarat membutuhkan 8 (lib.o baru mulai setelah util.o selesai); jadwal optimal (lib.o di satu pekerja, main.o + util.o di pekerja lain) memberi 7. Batas bawah menghitung dua keterbatasan terpisah dan bisa terlalu optimistis ketika keduanya berinteraksi.</p></details>
+<p><strong>3.3</strong> Jelaskan mengapa mengubah satu byte pada commit lama mengubah ID semua commit sesudahnya, dan akibatnya untuk <code>git rebase</code> dan <code>git push --force</code>.</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>ID commit = SHA-1 atas isinya, yang memuat ID tree dan ID induk. Ubah satu byte → ID blob berubah → ID tree berubah → ID commit berubah → ID commit anak (yang menyebut induk itu) berubah, dan seterusnya sampai ujung cabang. Rebase persis mengubah induk (dasar) sebuah rangkaian commit, sehingga semuanya menjadi commit baru dengan ID baru; commit lama tetap ada selama masih ada penunjuk atau reflog. Setelah rebase, mendorong ke jarak jauh memerlukan <code>--force-with-lease</code> karena riwayat lokal dan jarak jauh bercabang; orang lain yang memegang ID lama harus menyelaraskan ulang, itu sebabnya dilarang untuk cabang bersama.</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Apa beda <code>cmd &gt; f 2&gt;&amp;1</code> dan <code>cmd 2&gt;&amp;1 &gt; f</code>?"</summary>
+<p><strong>Kerangka jawaban:</strong> Pengalihan diproses kiri ke kanan; <code>n&gt;&amp;m</code> menyalin tujuan fd m saat itu ke fd n (<code>dup2</code>). Pada bentuk pertama stdout ke f dulu, lalu stderr menyalin f: keduanya ke f. Pada bentuk kedua stderr menyalin stdout asli (terminal), baru stdout ke f: hanya stdout ke f. Tambahkan bahwa dengan pipa, pipa dipasang lebih dulu sehingga <code>cmd 2&gt;&amp;1 | tee</code> benar. Poin plus: menyebut tabel fd dan dup2.</p></details>
+<details class="icd-sol"><summary>"Mengapa <code>make</code> tidak membangun ulang saat header berubah, dan bagaimana memperbaikinya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Make hanya tahu ketergantungan yang ditulis; header yang di-include tak tercantum sebagai prasyarat sehingga mtime-nya tak diperiksa. Perbaikan: biarkan kompiler membangkitkan ketergantungan (<code>-MMD -MP</code>) dan <code>-include *.d</code>, atau tuliskan manual. Jelaskan akibat build usang dan cara mendeteksinya (hasil berubah hanya setelah <code>clean</code>). Poin plus: sistem build berbasis hash (Bazel) dan waktu jam yang tak sinkron.</p></details>
+<details class="icd-sol"><summary>"Merge atau rebase? Kapan memakai masing-masing?"</summary>
+<p><strong>Kerangka jawaban:</strong> Merge mempertahankan riwayat apa adanya dan membuat commit dengan dua induk; aman untuk cabang bersama. Rebase memutar ulang commit di atas dasar baru, riwayat lurus tetapi ID berubah; hanya untuk pekerjaan lokal yang belum dibagikan. Praktik umum: rebase cabang fitur lokal di atas main sebelum membuka permintaan penggabungan, lalu gabungkan (merge atau squash) sesuai kebijakan tim. Sebut <code>reflog</code> sebagai jaring pengaman.</p></details>
+<details class="icd-sol"><summary>"Bagaimana Git menyimpan data?"</summary>
+<p><strong>Kerangka jawaban:</strong> Penyimpanan beralamat isi: ID = SHA-1 (judul + isi). Objek blob (isi berkas), tree (direktori), commit (tree + induk + metadata). Cabang dan HEAD hanya penunjuk. Perubahan kecil hanya membuat objek di sepanjang jalur berkas ke akar; isi sama dipakai bersama. Tambahkan packfile dengan kompresi delta dan rencana SHA-256. Poin plus: struktur pohon Merkle dan implikasinya pada rebase.</p></details>
+<details class="icd-sol"><summary>"Apa itu ReDoS dan bagaimana mencegahnya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Pada mesin regex backtracking, pola dengan pengulangan bersarang atau pilihan tumpang tindih (<code>(a+)+b</code>) menghasilkan waktu eksponensial pada masukan yang hampir cocok; penyerang bisa membuat layanan menggantung. Pencegahan: mesin waktu-linear (RE2), pola yang dijangkarkan dan tanpa bersarang, batas panjang dan batas waktu, kuantifier posesif atau atomik. Contoh angka: 90.127 langkah pada n = 14 dan berlipat dua per huruf.</p></details>
+<details class="icd-sol"><summary>"Apa yang dilakukan <code>set -euo pipefail</code>, dan apa batasnya?"</summary>
+<p><strong>Kerangka jawaban:</strong> <code>-e</code> berhenti pada perintah gagal, <code>-u</code> galat pada variabel tak terdefinisi, <code>pipefail</code> membuat status pipa adalah galat paling kanan. Batas: <code>-e</code> tak berlaku dalam kondisi, <code>||</code>, dan <code>&amp;&amp;</code>, dan halus pada fungsi dan subshell; gunakan <code>trap</code> untuk pembersihan dan periksa langkah kritis secara eksplisit. Poin plus: <code>shellcheck</code>, dan kapan beralih ke Python.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: shell, regex, make, dan Git</h2>
+<p><strong>Tujuan:</strong> menguji sendiri urutan pengalihan, kutip, saluran teks, backtracking regex, build bertahap, dan model objek Git. Platform: Linux atau WSL2 (Ubuntu); lihat catatan Windows di bagian 4.1. Taruh folder di <code>~/icd/m04c</code> (sistem berkas Linux, bukan <code>/mnt/c</code>).</p>
+<h3>Langkah 0: siapkan</h3>
+<pre class="icd-src" data-lang="sh">
+sudo apt update &amp;&amp; sudo apt install -y git make gcc python3
+mkdir -p ~/icd/m04c &amp;&amp; cd ~/icd/m04c      # salin seluruh isi folder lab/m04c (termasuk mk/)
+bash --version | head -1; make --version | head -1; git --version
+</pre>
+<h3>Langkah 1: urutan pengalihan</h3>
+<pre class="icd-src" data-lang="sh">
+bash redir.sh
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+bentuk                   isi f     stdout    stderr   
+both                     -         OUT       ERR      
+both &gt; f                 OUT,      -         ERR      
+both 2&gt; f                ERR,      OUT       -        
+both &gt; f 2&gt;&amp;1            OUT,ERR,  -         -        
+both 2&gt;&amp;1 &gt; f            OUT,      ERR       -        
+both &amp;&gt; f                OUT,ERR,  -         -        
+both 2&gt;&amp;1 | cat &gt; f      OUT,ERR,  -         -        
+both &gt; /dev/null 2&gt;&amp;1    -         -         -        
+semua pemeriksaan redir.sh lulus
+</pre>
+<p>Cocokkan tiap baris dengan visualisasi 1. Tantangan: tambahkan bentuk <code>both 2&gt;&amp;1 | wc -l</code> dan <code>both 2&gt; /dev/null | wc -l</code> dan ramalkan hasilnya dulu.</p>
+<h3>Langkah 2: kutip, pipefail, set -e</h3>
+<pre class="icd-src" data-lang="sh">
+bash quote_demo.sh
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+-- 1. pemisahan kata
+jumlah argumen tanpa kutip = 2, dengan kutip = 1
+wc: a: No such file or directory
+wc: b.txt: No such file or directory
+3 a b.txt
+glob: [a b.txt]
+glob: [c.txt]
+-- 2. status keluar dan pipefail
+tanpa pipefail: status = 0
+dengan pipefail: status = 1
+-- 3. set -e menghentikan skrip pada galat pertama
+sebelum
+status subshell = 1
+-- 4. variabel tak terdefinisi dengan set -u
+tidak_ada: unbound variable
+semua pemeriksaan quote_demo.sh selesai
+</pre>
+<p>Coba hapus tanda kutip pada baris <code>wc -c "$f"</code> dan lihat apa yang pecah. Pasang <code>shellcheck</code> (<code>sudo apt install shellcheck</code>) dan jalankan pada skrip Anda sendiri.</p>
+<h3>Langkah 3: saluran teks</h3>
+<pre class="icd-src" data-lang="sh">
+bash logparse.sh sample.log
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+-- jumlah per tingkat
+      5 WARNING
+      4 INFO
+      3 ERROR
+-- kode peringatan dan galat (paling sering dulu)
+      3 SYN-123
+      2 LNT-042
+      2 TIM-501
+      1 DRC-210
+-- slack terburuk (ns)
+-0.31
+-- total pelanggaran slack (negatif)
+2
+-- area terakhir (um2)
+1498.0
+</pre>
+<p>Tambahkan satu baris <code>ERROR</code> baru ke log dan pastikan angka bertambah. Tantangan: tulis satu baris yang mengurutkan kode menurut jumlah galat saja (tanpa peringatan).</p>
+<h3>Langkah 4: backtracking regex</h3>
+<pre class="icd-src" data-lang="sh">
+python3 regex_bt.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+mesin backtracking == re.fullmatch untuk 10 pola x semua string abcdx sepanjang &lt;= 5
+n   a+b(a^n)   (a+)+b(a^n)  a*a*b(a^n)   (a+)+b(a^n b)
+ 1         7           13          13             13
+ 2         9           25          21             14
+ 3        11           48          31             15
+ 4        13           93          43             16
+ 5        15          182          57             17
+ 6        17          359          73             18
+ 7        19          712          91             19
+ 8        21         1417         111             20
+ 9        23         2826         133             21
+10        25         5643         157             22
+11        27        11276         183             23
+12        29        22541         211             24
+13        31        45070         241             25
+14        33        90127         273             26
+(a|aa)+b pada a^n, n = 1..14: [14, 26, 43, 71, 116, 189, 307, 498, 807, 1307, 2116, 3425, 5543, 8970]
+rasio langkah (a+)+b dari n = 13 ke 14: 2.000 (mendekati 2 = eksponensial)
+semua pemeriksaan regex_bt.py lulus
+</pre>
+<p>Cocokkan baris n = 14 dengan visualisasi 2. Di Python sungguhan coba <code>import re, time; s = 'a'*26; t = time.time(); re.fullmatch('(a+)+b', s); print(time.time() - t)</code> untuk melihat berapa lama mesin <code>re</code> menggantung; naikkan n sedikit demi sedikit dan perhatikan lipat dua (jangan langsung memakai n besar).</p>
+<h3>Langkah 5: build bertahap dan jebakan</h3>
+<pre class="icd-src" data-lang="sh">
+bash mk_test.sh
+cd mk &amp;&amp; make &amp;&amp; make -n -B | head -5    # lihat apa yang akan dilakukan make -B
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+-- awal (semua)
+dibangun: lib.o main.o prog util.o
+-- tanpa perubahan
+make: 'prog' is up to date.
+-- touch config.h
+dibangun: lib.o main.o prog util.o
+-- touch util.h
+dibangun: main.o prog util.o
+-- touch util.c
+dibangun: prog util.o
+-- touch main.c
+dibangun: main.o prog
+-- touch lib.c
+dibangun: lib.o prog
+-- hasil program
+mac(2,5,1) = 31, twice(21) = 42
+-- make -n (uji kering) setelah touch util.c
+gcc -std=c11 -Wall -Wextra -O2 -c -o util.o util.c
+gcc -o prog main.o util.o lib.o
+-- paralel: make -j4 setelah touch config.h
+dibangun: lib.o main.o prog util.o
+-- jebakan: Makefile tanpa dependensi header
+setelah touch util.h: make: 'prog' is up to date.
+-- jebakan: spasi, bukan tab, di awal resep
+Makefile.bad:2: *** missing separator.  Stop.
+semua pemeriksaan mk_test.sh lulus
+</pre>
+<p>Pecahkan dengan sengaja: ubah tab di depan resep menjadi spasi dan baca pesan galatnya (sudah diperlihatkan pada langkah terakhir keluaran); hapus <code>-include</code> dari <code>Makefile</code> lalu <code>touch util.h</code> dan amati build usang; ubah <code>-j4</code> menjadi <code>-j1</code> dan bandingkan waktu dengan <code>time make</code> pada proyek yang lebih besar.</p>
+<h3>Langkah 6: ID objek Git</h3>
+<pre class="icd-src" data-lang="sh">
+python3 gitobj.py
+printf 'hello\n' | git hash-object --stdin
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+blob a.txt v1 ("hello\n")         ce013625030ba8dba906f756967f9e9ca394464a
+blob b.txt   ("world\n")         cc628ccd10742baea8241c5924df992b5c019f71
+tree commit 1                     18eb80fbbbf9160491c007668d5298f1e86cd40a
+commit 1 (first)                  2e47f06f48e8ef4518e26f608e702625635843d7
+blob a.txt v2 ("hello, git\n")    94bab17c85ac96c4dd0cfcb7a16f22f6862733eb
+tree commit 2                     9d57d37999ef33a5ff5794eed721e8766e01051b
+commit 2 (edit a.txt)             56dbbd480950b764bc030411d15c4eebdec3de6d
+digit heksadesimal berbeda antara dua blob a.txt: 37 dari 40
+semua pemeriksaan gitobj.py lulus: ID model == ID git sungguhan
+</pre>
+<p>Buka halaman ini, ubah isi a.txt di visualisasi 4 menjadi <code>hello</code> dengan huruf kapital dan amati bahwa ID berubah total. Untuk melihat objek nyata: <code>git init x &amp;&amp; cd x &amp;&amp; echo hi &gt; a &amp;&amp; git add a &amp;&amp; git commit -m satu</code> lalu <code>find .git/objects -type f</code> dan <code>git cat-file -p HEAD</code>.</p>
+<h3>Langkah 7: percabangan, merge, konflik, rebase, bisect</h3>
+<pre class="icd-src" data-lang="sh">
+bash git_demo.sh
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+== 1. riwayat awal
+== 2. merge 3 arah (tanpa konflik)
+*   &lt;ID&gt; (HEAD -&gt; main) Merge branch 'feat'
+|\  
+| * &lt;ID&gt; (feat) fifo: kedalaman 8
+| * &lt;ID&gt; fifo: kerangka
+* | &lt;ID&gt; alu: carry
+|/  
+* &lt;ID&gt; tb: kerangka
+* &lt;ID&gt; alu: kerangka
+tulang riwayat: 6 commit; commit merge punya 2 induk
+== 3. konflik: dua cabang mengubah baris yang sama
+status: UU alu.v 
+module alu;
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+  // carry versi main
+=======
+  // carry versi konflik
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; konflik
+diselesaikan: merge konflik: gabungan
+== 4. rebase: riwayat lurus
+rebase: 1 commit rb di atas main; merge-base == main: ya
+== 5. bisect: cari commit pertama yang merusak
+langkah uji bisect: 3 dari 7 commit kandidat
+commit buruk pertama: perubahan 5
+semua pemeriksaan git_demo.sh lulus
+</pre>
+<p>Ulangi bagian 3 secara manual di repositori sendiri: buat dua cabang yang mengubah baris sama, gabungkan, baca penanda konflik, selesaikan, dan periksa <code>git log --graph --oneline</code>. Lalu salah dengan sengaja: <code>git reset --hard HEAD~1</code> dan pulihkan dengan <code>git reflog</code> dan <code>git reset --hard HEAD@{1}</code>.</p>
+<h3>Langkah 8: tantangan mandiri</h3>
+<p>Tulis skrip <code>regress.sh</code> yang (a) menjalankan <code>make test</code> dengan <code>set -euo pipefail</code> dan <code>trap</code>, (b) menyimpan keluaran di <code>run.log</code> lewat <code>tee</code>, (c) mencetak jumlah baris <code>ERROR</code> dengan <code>grep -c</code>, dan (d) keluar nonnol bila ada galat. Tambahkan <code>.gitignore</code> yang mengabaikan <code>*.o</code>, <code>*.d</code>, <code>prog</code>, dan <code>run.log</code>, lalu periksa dengan <code>git status</code> bahwa hanya sumber yang terlacak.</p>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Izin: r = 4, w = 2, x = 1 untuk pemilik, grup, lainnya; izin baru = dasar (666 berkas, 777 direktori) AND NOT umask. Pada direktori, x = boleh melintasi.</li>
+<li>Shell: fd 0, 1, 2; pengalihan berurutan kiri ke kanan; <code>n&gt;&amp;m</code> menyalin tujuan fd m saat itu; <code>&gt; f 2&gt;&amp;1</code> ≠ <code>2&gt;&amp;1 &gt; f</code>; pipa serentak dan berpenyangga; status pipa = perintah terakhir kecuali <code>pipefail</code>.</li>
+<li>Kutip: selalu <code>"$var"</code>; tanpa kutip terjadi pemisahan kata dan glob. Skrip aman: <code>set -euo pipefail</code> dan <code>trap</code>, dengan batas <code>-e</code> di dalam kondisi.</li>
+<li>Regex: konkatenasi, <code>|</code>, <code>*</code> (+ <code>+ ? . [] ^ $ {}</code>); glob ≠ regex; mesin otomaton O(n), backtracking bisa eksponensial: <code>(a+)+b</code> berlipat dua per huruf (90.127 langkah pada n = 14).</li>
+<li>Make: target dibangun ulang bila ada prasyarat lebih baru; graf harus lengkap (<code>-MMD -MP</code> untuk header); <code>$@ $&lt; $^</code>; <code>.PHONY</code>; resep diawali tab; <code>-jN</code> terbatas oleh <i>T<sub>N</sub></i> ≥ max(<i>T</i><sub>1</sub>/<i>N</i>, <i>T</i><sub>∞</sub>).</li>
+<li>Git: ID = SHA-1("jenis panjang\0" + isi); blob, tree, commit membentuk DAG Merkle; cabang = penunjuk; merge 3 arah memakai merge base dan menandai konflik; rebase membuat commit baru; bisect = ⌈log₂ n⌉ uji; jangan rebase cabang bersama; jangan simpan hasil build atau rahasia.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Izin dan umask</h4>r4 w2 x1<br>chmod 755 = rwxr-xr-x<br>666/777 AND NOT umask<br>umask 022: 644/755<br>umask 027: 640/750</div>
+<div class="icd-card"><h4>Pengalihan</h4>&gt; f · &gt;&gt; f · &lt; f · 2&gt; f<br>&gt; f 2&gt;&amp;1 (keduanya ke f)<br>2&gt;&amp;1 &gt; f (hanya stdout)<br>cmd 2&gt;&amp;1 | tee log<br>&amp;&gt; f (bash)</div>
+<div class="icd-card"><h4>Skrip aman</h4>set -euo pipefail<br>trap '...' EXIT<br>"$var" "$@" "$(cmd)"<br>mktemp -d<br>find -print0 | xargs -0</div>
+<div class="icd-card"><h4>Alat teks</h4>grep -E -o -c -v -n<br>sed -E 's/a/b/' · -n p<br>awk '/p/{...} END{...}'<br>sort | uniq -c | sort -rn<br>cut tr wc head tail</div>
+<div class="icd-card"><h4>Make</h4>target: prasyarat<br>(tab) resep<br>$@ $&lt; $^ · %.o: %.c<br>-MMD -MP · -include *.d<br>.PHONY · -n · -j · -B</div>
+<div class="icd-card"><h4>Git</h4>add · commit · diff --staged<br>switch -c · merge · rebase<br>log --graph --oneline<br>reflog · bisect run<br>.gitignore · LFS</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>Shotts, <i>The Linux Command Line</i>: bagian navigasi, izin, pengalihan dan pipa, ekspansi dan kutip, dan penulisan skrip shell.</li>
+<li>Kerrisk, <i>The Linux Programming Interface</i>: bab I/O berkas dan file descriptor, pipa dan FIFO, proses dan sinyal.</li>
+<li>Bryant &amp; O'Hallaron, <i>Computer Systems: A Programmer's Perspective</i>: bab I/O tingkat sistem (pengalihan dengan <code>dup2</code>) dan bab penautan (kaitannya dengan make).</li>
+<li>Manual GNU Bash dan manual GNU Make (Free Software Foundation): bagian aturan, variabel otomatis, aturan pola, ketergantungan header otomatis, dan eksekusi paralel.</li>
+<li>Chacon &amp; Straub, <i>Pro Git</i> (gratis daring): bab dasar Git, percabangan dan merge, rebase, dan bab Git Internals (objek, referensi, packfile); dokumentasi resmi Git, termasuk halaman <code>BreakingChanges</code> untuk rencana SHA-256.</li>
+<li>Friedl, <i>Mastering Regular Expressions</i>: bab mesin NFA dan DFA, dan bab efisiensi serta backtracking.</li>
+<li>Cox, "Regular Expression Matching Can Be Simple And Fast" (artikel, 2007): perbandingan mesin Thompson NFA dan backtracking.</li>
+<li>Arpaci-Dusseau, <i>Operating Systems: Three Easy Pieces</i>: bagian API proses (fork, exec, wait) yang mendasari kerja shell.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut ke <a href="m04d-python-tcl-algoritma.html">M04d</a>: Python, Tcl, struktur data dan algoritma. Modul sebelumnya: <a href="m04b-assembly-toolchain-os.html">M04b</a>.</p>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q, qa = ICD.qa;
+var MINUS = '−';
+
+ICD.gloss.add([
+{ id: 'shell', en: 'shell', idn: 'shell (cangkang perintah)', def: 'Program yang membaca perintah, memperluas variabel, glob, dan kutip, mengatur pengalihan dan pipa, lalu menjalankan program lain lewat fork dan exec; contoh: bash.', mod: 'M04c' },
+{ id: 'fd', en: 'file descriptor', idn: 'deskriptor berkas', def: 'Bilangan kecil per proses yang menunjuk ke sebuah berkas, pipa, atau perangkat terbuka. Standar: 0 = stdin, 1 = stdout, 2 = stderr; pengalihan mengubah tujuan fd lewat dup2.', mod: 'M04b, M04c' },
+{ id: 'pipe', en: 'pipe', idn: 'pipa', def: 'Penyangga di kernel (sekitar 64 KiB di Linux) yang menghubungkan stdout satu proses ke stdin proses lain; kedua proses berjalan serentak.', mod: 'M04c' },
+{ id: 'regex', en: 'regular expression', idn: 'ekspresi reguler', def: 'Pola untuk himpunan string, dibangun dari konkatenasi, pilihan |, dan pengulangan *. Berbeda dari glob shell (*.v). Mesin otomaton bekerja O(n); mesin backtracking bisa eksponensial.', mod: 'M04c' },
+{ id: 'backtrack', en: 'backtracking', idn: 'penelusuran mundur', def: 'Strategi mesin regex yang mencoba satu pilihan lalu mundur ke pilihan lain bila gagal; pada pola bersarang seperti (a+)+b langkahnya berlipat dua per huruf (ReDoS).', mod: 'M04c' },
+{ id: 'target', en: 'make target', idn: 'target make', def: 'Berkas (atau nama palsu .PHONY) yang dibangun oleh sebuah aturan make: target: prasyarat, diikuti resep yang diawali tab. Dibangun ulang bila ada prasyarat yang lebih baru.', mod: 'M04c' },
+{ id: 'dag', en: 'directed acyclic graph', idn: 'graf berarah tanpa siklus', def: 'Graf ketergantungan tanpa lingkaran. Make membangunnya dari aturan; Git memakainya untuk riwayat commit. Jalur terpanjang menentukan batas waktu paralel T∞.', mod: 'M04c, M06' },
+{ id: 'rebase', en: 'rebase', idn: 'rebase', def: 'Memutar ulang rangkaian commit di atas dasar baru sehingga riwayat lurus. Tiap commit menjadi commit baru dengan ID baru; jangan dipakai pada cabang yang sudah dibagikan.', mod: 'M04c' },
+{ id: 'umask', en: 'umask', idn: 'umask', def: 'Topeng bit izin pada pembuatan berkas: izin baru = izin dasar (666 berkas, 777 direktori) AND NOT umask; umask 022 memberi 644 dan 755.', mod: 'M04c' },
+{ id: 'blob', en: 'Git blob', idn: 'blob Git', def: 'Objek Git untuk isi sebuah berkas; ID = SHA-1("blob panjang\\0" + isi). Isi sama menghasilkan ID sama, sehingga disimpan sekali.', mod: 'M04c' }
+]);
+
+/* ---------- pembantu ---------- */
+function nf(x){ var s = String(Math.round(x)), r = '', i; for (i = 0; i < s.length; i++){ if (i && (s.length - i) % 3 === 0) r += '.'; r += s[i]; } return r; }
+function dc(x, d){ return x.toFixed(d).replace('.', ','); }
+function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+/* ---------- 1. tabel file descriptor ---------- */
+var FORMS = [
+  { c: 'both', ops: [] },
+  { c: 'both > f', ops: [['> f', function(f){ f[1] = 'F'; }]] },
+  { c: 'both 2> f', ops: [['2> f', function(f){ f[2] = 'F'; }]] },
+  { c: 'both > f 2>&1', ops: [['> f', function(f){ f[1] = 'F'; }], ['2>&1', function(f){ f[2] = f[1]; }]] },
+  { c: 'both 2>&1 > f', ops: [['2>&1', function(f){ f[2] = f[1]; }], ['> f', function(f){ f[1] = 'F'; }]] },
+  { c: 'both &> f', ops: [['&> f', function(f){ f[1] = 'F'; f[2] = 'F'; }]] },
+  { c: 'both 2>&1 | cat > f', ops: [['| (fd 1 → pipa)', function(f){ f[1] = 'P'; }], ['2>&1', function(f){ f[2] = f[1]; }]] },
+  { c: 'both > /dev/null 2>&1', ops: [['> /dev/null', function(f){ f[1] = 'N'; }], ['2>&1', function(f){ f[2] = f[1]; }]] }
+];
+var DEST = { S: 'stdout asli', E: 'stderr asli', F: 'berkas f', P: 'pipa → cat → f', N: '/dev/null (dibuang)' };
+function v1Fd(form, k){
+  var f = [ 'I', 'S', 'E' ], i, last = -1;
+  for (i = 0; i < k; i++){ var before = f.slice(); FORMS[form].ops[i][1](f); last = i; f.chg = before.map(function(v, j){ return v !== f[j]; }); }
+  f.last = last; return f;
+}
+function v1Draw(st){
+  var form = +q('#v1-form').value, F = FORMS[form], n = F.ops.length, k = Math.min(st.k, n), f = v1Fd(form, k), i;
+  var h = '<thead><tr><th scope="col">fd</th><th scope="col">peran</th><th scope="col">tujuan sekarang</th></tr></thead><tbody>';
+  var opl = n ? F.ops.map(function(o, j){ return (j < k ? '✓ ' : (j === k ? '▶ ' : '')) + esc(o[0]); }).join(' &nbsp;→&nbsp; ') : '(tidak ada pengalihan)';
+  h += '<tr><td colspan="3" class="mono">pengalihan diproses kiri ke kanan: ' + opl + '</td></tr>';
+  var role = ['stdin', 'stdout', 'stderr'];
+  for (i = 0; i < 3; i++){
+    var chg = f.chg && f.chg[i] && f.last === k - 1;
+    h += '<tr><td class="c' + (chg ? ' hl' : '') + '">' + i + '</td><td>' + role[i] + '</td><td class="' + (chg ? 'hl' : '') + '">' + (i === 0 ? 'stdin asli' : DEST[f[i]]) + '</td></tr>';
+  }
+  q('#v1-tab').innerHTML = h + '</tbody>';
+  var res = '<thead><tr><th scope="col">pesan</th><th scope="col">ditulis ke</th><th scope="col">sampai di</th></tr></thead><tbody>';
+  res += '<tr><td class="c">OUT</td><td>fd 1</td><td>' + DEST[f[1]] + '</td></tr><tr><td class="c">ERR</td><td>fd 2</td><td>' + DEST[f[2]] + '</td></tr></tbody>';
+  q('#v1-res').innerHTML = res;
+  var so = [], se = [], ff = [];
+  [['OUT', f[1]], ['ERR', f[2]]].forEach(function(p){ var t = p[1]; if (t === 'S') so.push(p[0]); else if (t === 'E') se.push(p[0]); else if (t === 'F' || t === 'P') ff.push(p[0]); });
+  function j(a){ return a.length ? a.join(',') : '-'; }
+  q('#v1-out').textContent = F.c + ' · diproses ' + k + ' dari ' + n + (k < n ? ' (sementara)' : ' (selesai)') + ' · stdout asli: ' + j(so) + ' · stderr asli: ' + j(se) + ' · isi f: ' + j(ff);
+}
+
+/* ---------- 2. regex backtracking ---------- */
+function parse(p){
+  var pos = 0;
+  function peek(){ return pos < p.length ? p[pos] : null; }
+  function alt(){ var n = cat(); while (peek() === '|'){ pos++; n = ['alt', n, cat()]; } return n; }
+  function cat(){ var n = ['empty']; while (peek() !== null && peek() !== '|' && peek() !== ')'){ var a = post(); n = (n[0] === 'empty') ? a : ['cat', n, a]; } return n; }
+  function post(){ var a = atom(), c; while ((c = peek()) === '*' || c === '+' || c === '?'){ a = [c === '*' ? 'star' : (c === '+' ? 'plus' : 'opt'), a]; pos++; } return a; }
+  function atom(){ var c = peek(); pos++; if (c === '('){ var n = alt(); pos++; return n; } return ['chr', c]; }
+  return alt();
+}
+function fullmatch(p, s){
+  var ast = parse(p), n = s.length, steps = 0;
+  function m(node, i, k){
+    steps++;
+    var t = node[0];
+    if (t === 'empty') return k(i);
+    if (t === 'chr') return i < n && (node[1] === '.' || s[i] === node[1]) && k(i + 1);
+    if (t === 'cat') return m(node[1], i, function(j){ return m(node[2], j, k); });
+    if (t === 'alt') return m(node[1], i, k) || m(node[2], i, k);
+    if (t === 'opt') return m(node[1], i, k) || k(i);
+    if (t === 'star'){ var loop = function(j){ return m(node[1], j, function(j2){ return j2 > j && loop(j2); }) || k(j); }; return loop(i); }
+    if (t === 'plus') return m(['cat', node[1], ['star', node[1]]], i, k);
+    throw new Error(t);
+  }
+  var ok = !!m(ast, 0, function(j){ return j === n; });
+  return { ok: ok, steps: steps };
+}
+var V2N = 18, memo = {};
+function v2Run(pat, mode, n){
+  var key = pat + '|' + mode + '|' + n;
+  if (!memo[key]){ var s = ''; for (var i = 0; i < n; i++) s += 'a'; if (mode === 'ab') s += 'b'; memo[key] = fullmatch(pat, s); }
+  return memo[key];
+}
+var v2plot = null;
+function v2Draw(st){
+  var pat = q('#v2-pat').value, mode = q('#v2-str').value, n = Math.min(Math.max(st.n, 1), V2N), i;
+  var r = v2Run(pat, mode, n), pr = n > 1 ? v2Run(pat, mode, n - 1) : null;
+  var h = '<thead><tr><th scope="col">n</th><th scope="col">langkah</th><th scope="col">× dari n−1</th><th scope="col">hasil</th></tr></thead><tbody>';
+  for (i = Math.max(1, n - 7); i <= n; i++){
+    var a = v2Run(pat, mode, i), b = i > 1 ? v2Run(pat, mode, i - 1) : null;
+    h += '<tr><td class="c' + (i === n ? ' hl' : '') + '">' + i + '</td><td class="c' + (i === n ? ' hl' : '') + '">' + nf(a.steps) + '</td><td class="c">' + (b ? dc(a.steps / b.steps, 2) : '—') + '</td><td class="c">' + (a.ok ? 'cocok' : 'tidak cocok') + '</td></tr>';
+  }
+  q('#v2-tab').innerHTML = h + '</tbody>';
+  q('#v2-out').textContent = pat + ' · ' + (mode === 'ab' ? 'aⁿb' : 'aⁿ') + ' · n = ' + n + ' · langkah ' + nf(r.steps) + ' · ' + (pr ? '× ' + dc(r.steps / pr.steps, 2) + ' dari n−1' : 'n pertama') + ' · ' + (r.ok ? 'cocok' : 'tidak cocok') + (n >= V2N ? ' · n maksimum' : '');
+  var pts = [], ymax = 1, lg;
+  for (i = 1; i <= n; i++){ lg = Math.log(v2Run(pat, mode, i).steps) / Math.LN10; pts.push([i, lg]); ymax = Math.max(ymax, lg); }
+  var ref = [], rr;
+  for (i = 1; i <= n; i++){ rr = Math.log(v2Run('a+b', mode, i).steps) / Math.LN10; ref.push([i, rr]); ymax = Math.max(ymax, rr); }
+  var ser = [{ label: pat, kind: 'data', dash: [], unit: '', pts: pts }];
+  if (pat !== 'a+b') ser.push({ label: 'a+b (acuan linear)', kind: 'ink2', dash: [5, 4], unit: '', pts: ref });
+  var o = { height: 190, x: { label: 'n (jumlah huruf a)', unit: '', min: 1, max: V2N, plain: true }, y: { label: 'log10(langkah)', unit: '', min: 0, max: Math.ceil(ymax * 1.1 * 2) / 2 + 0.5, plain: true }, series: ser, marks: [{ x: n, label: 'n', kind: 'hi' }] };
+  if (!v2plot) v2plot = ICD.plot('#v2-plot', o); else v2plot.set(o);
+}
+
+/* ---------- 3. make: DAG dan jadwal paralel ---------- */
+var DUR = { mo: 3, uo: 2, lo: 4, pg: 2 }, ORDER = ['mo', 'uo', 'lo', 'pg'], NAME = { mo: 'main.o', uo: 'util.o', lo: 'lib.o', pg: 'prog' };
+var SRC = { mo: ['main.c', 'util.h', 'config.h'], uo: ['util.c', 'util.h', 'config.h'], lo: ['lib.c', 'config.h'] };
+function v3Re(t){
+  var R = {}, any = false;
+  if (t === 'all'){ ORDER.forEach(function(x){ R[x] = 1; }); return R; }
+  ['mo', 'uo', 'lo'].forEach(function(x){ if (SRC[x].indexOf(t) >= 0){ R[x] = 1; any = true; } });
+  if (any) R.pg = 1;
+  return R;
+}
+function v3Sched(t, N){
+  var R = v3Re(t), list = ORDER.filter(function(x){ return R[x]; }), start = {}, end = {}, run = [], time = 0, done = 0, i, guard = 0;
+  function ready(x){ if (x !== 'pg') return true; return ['mo', 'uo', 'lo'].every(function(y){ return !R[y] || (end[y] !== undefined && end[y] <= time); }); }
+  while (done < list.length && guard++ < 100){
+    list.forEach(function(x){ if (start[x] === undefined && run.length < N && ready(x)){ start[x] = time; end[x] = time + DUR[x]; run.push(x); } });
+    var nx = Infinity; run.forEach(function(x){ nx = Math.min(nx, end[x]); });
+    if (nx === Infinity) break;
+    time = nx;
+    run = run.filter(function(x){ if (end[x] <= time){ done++; return false; } return true; });
+  }
+  var M = 0, T1 = 0, Ti = 0;
+  list.forEach(function(x){ M = Math.max(M, end[x]); T1 += DUR[x]; });
+  ['mo', 'uo', 'lo'].forEach(function(x){ if (R[x]) Ti = Math.max(Ti, DUR[x] + (R.pg ? DUR.pg : 0)); });
+  return { R: R, list: list, start: start, end: end, M: M, T1: T1, Ti: Ti };
+}
+var NODES = { 'main.c': [20, 8], 'util.h': [138, 8], 'config.h': [256, 8], 'util.c': [374, 8], 'lib.c': [492, 8],
+  mo: [60, 92], uo: [250, 92], lo: [440, 92], pg: [250, 176] };
+function v3Dag(t, S, tm){
+  var W = 96, H = 28, svg = '<svg viewBox="0 0 620 214" role="img" aria-label="graf ketergantungan proyek make">', e = '', nd = '', key;
+  function ctr(k, bottom){ var p = NODES[k]; return [p[0] + W / 2, p[1] + (bottom ? H : 0)]; }
+  ['mo', 'uo', 'lo'].forEach(function(x){ SRC[x].forEach(function(s){ var a = ctr(s, true), b = ctr(x, false); e += '<path class="ed" d="M' + a[0] + ' ' + a[1] + ' L' + b[0] + ' ' + b[1] + '"/>'; }); var a = ctr(x, true), b = ctr('pg', false); e += '<path class="ed" d="M' + a[0] + ' ' + a[1] + ' L' + b[0] + ' ' + b[1] + '"/>'; });
+  for (key in NODES){
+    var cls = '', label = NAME[key] || key;
+    if (NAME[key]){
+      if (S.R[key]){ cls = tm >= S.end[key] ? 'done' : (tm >= S.start[key] ? 'run' : 'need'); }
+    } else if (t === key || t === 'all') cls = 'touch';
+    nd += '<g class="nd ' + cls + '"><rect x="' + NODES[key][0] + '" y="' + NODES[key][1] + '" width="' + W + '" height="' + H + '" rx="6"/><text x="' + (NODES[key][0] + W / 2) + '" y="' + (NODES[key][1] + 18) + '" text-anchor="middle">' + label + '</text></g>';
+  }
+  q('#v3-dag').innerHTML = svg + e + nd + '</svg>';
+}
+var v3plot = null;
+function v3Draw(st){
+  var t = q('#v3-touch').value, N = +q('#v3-j').value, S = v3Sched(t, N), tm = Math.min(st.k, S.M), i;
+  q('#v3-jv').textContent = String(N);
+  v3Dag(t, S, tm);
+  var trk = q('#v3-trk'); trk.textContent = '';
+  if (S.M === 0){ var p = document.createElement('div'); p.className = 'rowlab'; p.textContent = "tidak ada yang dibangun ulang (make: 'prog' is up to date.)"; trk.appendChild(p); }
+  else S.list.forEach(function(x){
+    var row = document.createElement('div'); row.className = 'trk';
+    var lab = document.createElement('span'); lab.textContent = NAME[x] + ' ' + DUR[x]; row.appendChild(lab);
+    var tr = document.createElement('div'); tr.className = 'tr';
+    var bar = document.createElement('div'); bar.className = 'bar' + (tm >= S.end[x] ? ' fin' : (tm >= S.start[x] ? ' on' : ''));
+    bar.style.left = (100 * S.start[x] / S.M) + '%'; bar.style.width = (100 * DUR[x] / S.M) + '%'; bar.textContent = S.start[x] + '–' + S.end[x];
+    var now = document.createElement('div'); now.className = 'now'; now.style.left = (100 * tm / S.M) + '%';
+    tr.appendChild(bar); tr.appendChild(now); row.appendChild(tr); trk.appendChild(row);
+  });
+  var lb = Math.max(S.T1 / N, S.Ti), lbs = (Math.round(lb * 100) % 100 === 0) ? String(Math.round(lb)) : dc(lb, 2);
+  var head = 'sentuh ' + (t === 'none' ? '(tidak ada)' : (t === 'all' ? 'semua' : t)) + ' · dibangun ulang: ' + (S.list.length ? S.list.map(function(x){ return NAME[x]; }).join(', ') : 'tidak ada') + ' · -j ' + N;
+  if (S.M === 0) q('#v3-out').textContent = head + ' · total 0';
+  else if (tm < S.M){ var runs = S.list.filter(function(x){ return tm >= S.start[x] && tm < S.end[x]; }).map(function(x){ return NAME[x]; }); q('#v3-out').textContent = head + ' · t = ' + tm + ' dari ' + S.M + ' · berjalan: ' + (runs.length ? runs.join(', ') : '—'); }
+  else q('#v3-out').textContent = head + ' · total ' + S.M + ' · T₁ = ' + S.T1 + ' · T∞ = ' + S.Ti + ' · batas bawah max(T₁/N, T∞) = ' + lbs;
+  var pm = [], pb = [], ymax = 1, n2;
+  for (n2 = 1; n2 <= 4; n2++){ var s2 = v3Sched(t, n2); pm.push([n2, s2.M]); pb.push([n2, Math.max(s2.T1 / n2, s2.Ti)]); ymax = Math.max(ymax, s2.M); }
+  var o = { height: 180, x: { label: 'pekerja paralel -j', unit: '', min: 1, max: 4, plain: true }, y: { label: 'waktu total', unit: '', min: 0, max: ymax + 1, plain: true },
+    series: [{ label: 'waktu total (jadwal serakah)', kind: 'data', dash: [], unit: '', pts: pm }, { label: 'batas bawah max(T₁/N, T∞)', kind: 'ctrl', dash: [5, 4], unit: '', pts: pb }], marks: [{ x: N, label: 'j', kind: 'hi' }] };
+  if (!v3plot) v3plot = ICD.plot('#v3-plot', o); else v3plot.set(o);
+}
+
+/* ---------- 4. objek Git dengan SHA-1 ---------- */
+function sha1(b){
+  var l = b.length, n = (((l + 8) >> 6) + 1) << 6, m = new Uint8Array(n), w = new Uint32Array(80), i, t, o;
+  m.set(b); m[l] = 0x80;
+  var hi = Math.floor(l / 536870912), lo = (l << 3) >>> 0;
+  m[n - 8] = hi >>> 24; m[n - 7] = (hi >>> 16) & 255; m[n - 6] = (hi >>> 8) & 255; m[n - 5] = hi & 255;
+  m[n - 4] = lo >>> 24; m[n - 3] = (lo >>> 16) & 255; m[n - 2] = (lo >>> 8) & 255; m[n - 1] = lo & 255;
+  var h0 = 0x67452301, h1 = 0xEFCDAB89, h2 = 0x98BADCFE, h3 = 0x10325476, h4 = 0xC3D2E1F0;
+  for (o = 0; o < n; o += 64){
+    for (i = 0; i < 16; i++) w[i] = ((m[o + 4 * i] << 24) | (m[o + 4 * i + 1] << 16) | (m[o + 4 * i + 2] << 8) | m[o + 4 * i + 3]) >>> 0;
+    for (t = 16; t < 80; t++){ var x = w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]; w[t] = ((x << 1) | (x >>> 31)) >>> 0; }
+    var a = h0, b2 = h1, c = h2, d = h3, e = h4;
+    for (t = 0; t < 80; t++){
+      var f, k;
+      if (t < 20){ f = (b2 & c) | (~b2 & d); k = 0x5A827999; }
+      else if (t < 40){ f = b2 ^ c ^ d; k = 0x6ED9EBA1; }
+      else if (t < 60){ f = (b2 & c) | (b2 & d) | (c & d); k = 0x8F1BBCDC; }
+      else { f = b2 ^ c ^ d; k = 0xCA62C1D6; }
+      var tmp = ((((a << 5) | (a >>> 27)) + f + e + k + w[t]) >>> 0);
+      e = d; d = c; c = ((b2 << 30) | (b2 >>> 2)) >>> 0; b2 = a; a = tmp;
+    }
+    h0 = (h0 + a) >>> 0; h1 = (h1 + b2) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0; h4 = (h4 + e) >>> 0;
+  }
+  var r = new Uint8Array(20), hs = [h0, h1, h2, h3, h4];
+  for (i = 0; i < 5; i++){ r[4 * i] = hs[i] >>> 24; r[4 * i + 1] = (hs[i] >>> 16) & 255; r[4 * i + 2] = (hs[i] >>> 8) & 255; r[4 * i + 3] = hs[i] & 255; }
+  return r;
+}
+function hex(b){ var s = '', i; for (i = 0; i < b.length; i++) s += (b[i] < 16 ? '0' : '') + b[i].toString(16); return s; }
+function unhex(s){ var r = new Uint8Array(s.length / 2), i; for (i = 0; i < r.length; i++) r[i] = parseInt(s.substr(2 * i, 2), 16); return r; }
+function enc(s){ return new TextEncoder().encode(s); }
+function cat2(arrs){ var n = 0, i; arrs.forEach(function(a){ n += a.length; }); var r = new Uint8Array(n), o = 0; arrs.forEach(function(a){ r.set(a, o); o += a.length; }); return r; }
+function objId(kind, body){ return hex(sha1(cat2([enc(kind + ' ' + body.length + '\0'), body]))); }
+function mkTree(a, b){ return objId('tree', cat2([enc('100644 a.txt\0'), unhex(a), enc('100644 b.txt\0'), unhex(b)])); }
+function mkCommit(tree, parent, ts, msg){
+  var L = ['tree ' + tree]; if (parent) L.push('parent ' + parent);
+  L.push('author Ani <ani@example.com> ' + ts + ' +0000', 'committer Ani <ani@example.com> ' + ts + ' +0000', '', msg, '');
+  return objId('commit', enc(L.join('\n')));
+}
+function v4Calc(){
+  var a1 = q('#v4-a1').value + '\n', bb = q('#v4-b').value + '\n', a2 = q('#v4-a2').value + '\n';
+  var ba1 = objId('blob', enc(a1)), bb1 = objId('blob', enc(bb)), ba2 = objId('blob', enc(a2));
+  var t1 = mkTree(ba1, bb1), t2 = mkTree(ba2, bb1);
+  var c1 = mkCommit(t1, null, 1700000000, q('#v4-m1').value), c2 = mkCommit(t2, c1, 1700000060, q('#v4-m2').value);
+  return [
+    ['blob a.txt v1', enc(a1).length, ba1, 'isi "' + esc(q('#v4-a1').value) + '\\n"'],
+    ['blob b.txt', enc(bb).length, bb1, 'isi "' + esc(q('#v4-b').value) + '\\n"'],
+    ['tree 1', 2 * 28 + 40 + 0, t1, 'a.txt → ' + ba1.slice(0, 7) + '…, b.txt → ' + bb1.slice(0, 7) + '…'],
+    ['commit 1', null, c1, 'tree ' + t1.slice(0, 7) + '…, tanpa induk, "' + esc(q('#v4-m1').value) + '"'],
+    ['blob a.txt v2', enc(a2).length, ba2, 'isi "' + esc(q('#v4-a2').value) + '\\n"'],
+    ['tree 2', null, t2, 'a.txt → ' + ba2.slice(0, 7) + '…, b.txt → ' + bb1.slice(0, 7) + '… (sama)'],
+    ['commit 2', null, c2, 'tree ' + t2.slice(0, 7) + '…, induk ' + c1.slice(0, 7) + '…, "' + esc(q('#v4-m2').value) + '"']
+  ];
+}
+function v4Draw(st){
+  var R = v4Calc(), k = Math.min(st.k, 7), i;
+  var h = '<thead><tr><th scope="col">#</th><th scope="col">objek</th><th scope="col">ID SHA-1 (40 digit heks)</th><th scope="col">isi</th></tr></thead><tbody>';
+  for (i = 0; i < k; i++) h += '<tr><td class="c' + (i === k - 1 ? ' hl' : '') + '">' + (i + 1) + '</td><td>' + R[i][0] + '</td><td class="mono' + (i === k - 1 ? ' hl' : '') + '">' + R[i][2] + '</td><td>' + R[i][3] + '</td></tr>';
+  if (!k) h += '<tr><td colspan="4">belum ada objek; tekan Maju</td></tr>';
+  q('#v4-tab').innerHTML = h + '</tbody>';
+  var diff = 0, a = R[0][2], b = R[4][2];
+  for (i = 0; i < 40; i++) if (a[i] !== b[i]) diff++;
+  var fresh = 0, seen = [R[0][2], R[1][2], R[2][2], R[3][2]];
+  [R[4][2], R[5][2], R[6][2]].forEach(function(id){ if (seen.indexOf(id) < 0){ fresh++; seen.push(id); } });
+  if (k === 0) q('#v4-out').textContent = 'siap · tujuh objek akan dihitung · SHA-1 dihitung oleh JavaScript di halaman ini';
+  else if (k < 7) q('#v4-out').textContent = 'langkah ' + k + ' dari 7 · ' + R[k - 1][0] + ' = ' + R[k - 1][2];
+  else q('#v4-out').textContent = 'selesai · commit 2 = ' + R[6][2] + ' · dua blob a.txt beda di ' + diff + ' dari 40 digit · objek baru pada commit 2: ' + fresh;
+}
+
+/* ---------- kuis ---------- */
+function quizSetup(){
+ICD.quiz.mount('#kuis', { id: 'm04c', title: 'Kuis M04c', questions: [
+{ q: 'Dengan <code>umask 027</code>, berapa izin berkas biasa yang baru dibuat program yang meminta mode 666?', o: [
+  { t: '640 (rw-r-----)', ok: true, w: 'Izin baru = 666 AND NOT 027. Bit 027 menghapus w dari grup (2) dan semua bit lainnya (7), sehingga tersisa pemilik 6, grup 4, lainnya 0.' },
+  { t: '750 (rwxr-x---)', w: 'Itu hasil untuk direktori (777 AND NOT 027). Berkas biasa tidak mendapat bit x dari program yang meminta 666.' },
+  { t: '027', w: 'Itu nilai topengnya sendiri, bukan izin hasil. Topeng menentukan bit yang dihapus.' },
+  { t: '751', w: 'Izin tak pernah "dikurangi" secara aritmetika; ini operasi bit AND NOT, dan 751 memberi x ke orang lain yang justru ditutup oleh topeng.' }] },
+{ q: 'Apa isi berkas <code>f</code> setelah <code>both 2&gt;&amp;1 &gt; f</code>, dengan <code>both</code> menulis OUT ke stdout dan ERR ke stderr?', o: [
+  { t: 'Hanya OUT; ERR keluar bersama stdout asli (terminal)', ok: true, w: 'Pengalihan diproses kiri ke kanan: 2&gt;&amp;1 menyalin tujuan fd 1 saat itu (stdout asli), baru kemudian &gt; f memindahkan fd 1 saja.' },
+  { t: 'OUT dan ERR', w: 'Itu hasil urutan <code>&gt; f 2&gt;&amp;1</code>, saat fd 1 sudah menunjuk f ketika disalin ke fd 2.' },
+  { t: 'Hanya ERR', w: 'Yang masuk ke f adalah apa yang ditulis ke fd 1 (OUT). ERR sudah dialihkan ke tujuan stdout asli sebelumnya.' },
+  { t: 'Kosong', w: 'fd 1 menunjuk ke f, jadi OUT tetap tertulis di f.' }] },
+{ q: 'Mengapa <code>make 2&gt;&amp;1 | tee build.log</code> menyimpan galat ke <code>build.log</code>?', o: [
+  { t: 'Pipa dipasang lebih dulu, lalu 2&gt;&amp;1 menyalin fd 1 (pipa) ke fd 2', ok: true, w: 'Shell memasang fd 1 → pipa sebelum memproses pengalihan perintah, jadi salinan fd 2 juga menunjuk ke pipa dan tee menerima keduanya.' },
+  { t: 'Karena tee membaca stderr dari terminal', w: 'tee hanya membaca stdin (pipa) dan tidak tahu tentang stderr proses lain.' },
+  { t: 'Karena | otomatis menggabungkan stderr', w: 'Pipa hanya membawa stdout; tanpa 2&gt;&amp;1 (atau <code>|&amp;</code> di bash) stderr tetap ke terminal.' },
+  { t: 'Karena tee membuka build.log dengan mode tambah', w: 'Mode berkas tidak berkaitan dengan ke mana stderr diarahkan; yang menentukan adalah tujuan fd 2 saat make dijalankan.' }] },
+{ q: 'Skrip menjalankan <code>rm -rf $dir/*</code> dan variabel <code>dir</code> kosong. Apa yang terjadi?', o: [
+  { t: 'Kata menjadi <code>/*</code> sehingga rm menghapus isi direktori akar', ok: true, w: '$dir tak berkutip lenyap, sisanya <code>/*</code> di-glob menjadi /bin, /etc, dan seterusnya. Perlindungan --preserve-root tidak menangkapnya karena argumennya bukan "/" itu sendiri; kutip dan pakai <code>"${dir:?}"</code>.' },
+  { t: 'Tidak terjadi apa-apa karena string kosong', w: 'Variabel kosong tidak membatalkan perintah; kata <code>/*</code> tetap ada.' },
+  { t: 'Galat "variable not set" dan skrip berhenti', w: 'Itu hanya terjadi dengan <code>set -u</code> atau <code>${dir:?}</code>; tanpa keduanya variabel kosong diam-diam.' },
+  { t: 'Hanya isi direktori kerja yang terhapus', w: 'Glob <code>*</code> sendiri akan menyasar direktori kerja, tetapi di sini ada awalan "/" dari $dir/*, bukan hanya *.' }] },
+{ q: 'Apa status keluar <code>false | true</code> tanpa <code>pipefail</code>?', o: [
+  { t: '0', ok: true, w: 'Status pipa adalah status perintah terakhir (true). Dengan <code>set -o pipefail</code> statusnya menjadi 1 karena false gagal.' },
+  { t: '1', w: 'Itu status false, tetapi tanpa pipefail hanya status perintah paling kanan yang dipakai.' },
+  { t: '127', w: '127 berarti perintah tidak ditemukan; false dan true ada.' },
+  { t: 'Tidak tentu, bergantung urutan proses selesai', w: 'Kedua proses berjalan serentak, tetapi aturan statusnya baku: perintah terakhir (tanpa pipefail).' }] },
+{ q: 'Di bawah <code>set -e</code>, situasi mana yang <em>tidak</em> menghentikan skrip meski perintahnya gagal?', o: [
+  { t: 'Perintah gagal yang dipakai sebagai kondisi <code>if</code>', ok: true, w: 'Perintah dalam kondisi if, while, atau di sisi kiri &amp;&amp; dan || dikecualikan karena statusnya dipakai untuk keputusan.' },
+  { t: 'Perintah sederhana gagal pada baris sendiri', w: 'Itulah kasus utama yang membuat set -e menghentikan skrip.' },
+  { t: 'Pipa yang tahap tengahnya gagal, dengan pipefail aktif', w: 'Dengan pipefail status pipa gagal, sehingga set -e menghentikan skrip.' },
+  { t: 'Perintah gagal di dalam subshell yang mewarisi set -e', w: 'Subshell berhenti pada kegagalan itu dan statusnya nonnol, yang kemudian menghentikan skrip induk (terlihat di quote_demo.sh).' }] },
+{ q: 'Perintah mana yang menampilkan baris yang <em>berakhir</em> dengan <code>.v</code>?', o: [
+  { t: '<code>grep -E \'\\.v$\' daftar.txt</code>', ok: true, w: '\\. adalah titik harfiah dan $ menjangkar ke akhir baris; tanda kutip mencegah shell mengubah pola.' },
+  { t: '<code>grep *.v daftar.txt</code>', w: 'Shell meng-glob *.v menjadi nama berkas yang cocok sebelum grep berjalan; ini glob, bukan regex.' },
+  { t: '<code>grep \'.v\' daftar.txt</code>', w: 'Titik cocok dengan karakter apa saja dan tak ada jangkar akhir, jadi juga cocok dengan "dev" di tengah baris.' },
+  { t: '<code>grep -F \'*.v\' daftar.txt</code>', w: '-F mencari teks harfiah "*.v" (dengan tanda bintang), yang tak dimaksudkan di sini.' }] },
+{ q: 'Pola <code>(a+)+b</code> dicocokkan dengan string a<sup>n</sup> tanpa b. Dari n = 13 ke 14, langkah mesin backtracking kira-kira...', o: [
+  { t: 'berlipat dua (eksponensial)', ok: true, w: 'Ada 2<sup>n−1</sup> cara membagi n huruf a menjadi kelompok, dan semuanya dicoba; terukur 45.070 → 90.127 (rasio 2,00).' },
+  { t: 'bertambah sekitar 2 langkah', w: 'Itu pertumbuhan pola <code>a+b</code> yang linear (31 → 33 langkah).' },
+  { t: 'bertambah sekitar n kali', w: 'Pertumbuhan seperti itu muncul pada <code>a*a*b</code> (kuadratik), bukan pola bersarang.' },
+  { t: 'tidak berubah', w: 'Langkah selalu bertambah dengan panjang string pada kasus gagal.' }] },
+{ q: 'Jenis mesin regex mana yang menjamin waktu linear pada ukuran masukan?', o: [
+  { t: 'Simulasi NFA/DFA ala Thompson (mis. RE2)', ok: true, w: 'Mesin otomaton melacak semua keadaan sekaligus sehingga waktunya O(n·m); tak mendukung backreference.' },
+  { t: 'Mesin backtracking dengan kuantifier serakah', w: 'Backtracking bisa eksponensial pada pola bersarang yang hampir cocok (ReDoS).' },
+  { t: 'Mesin backtracking yang diberi pola lebih pendek', w: 'Panjang pola tidak menjamin; yang menentukan adalah struktur pola (bersarang atau tumpang tindih).' },
+  { t: 'Semua mesin regex bawaan bahasa pemrograman', w: 'Banyak pustaka (termasuk re milik Python) memakai backtracking untuk mendukung fitur seperti backreference.' }] },
+{ q: 'Proyek memakai <code>-MMD -MP</code> dan <code>-include $(OBJS:.o=.d)</code>. Setelah <code>touch util.h</code> (dipakai main.c dan util.c), apa yang dibangun ulang?', o: [
+  { t: 'main.o, util.o, dan prog', ok: true, w: 'Berkas .d mencatat bahwa main.o dan util.o bergantung pada util.h; prog dibangun ulang karena objeknya baru (cocok dengan mk_test.sh). lib.o tidak menyertakan util.h.' },
+  { t: 'Semua objek termasuk lib.o', w: 'lib.o tidak bergantung pada util.h, jadi tidak dibangun ulang (itu terjadi untuk config.h).' },
+  { t: 'Tidak ada apa-apa', w: 'Itu hasil <code>Makefile.nodep</code> tanpa ketergantungan header, jebakan build usang.' },
+  { t: 'Hanya prog', w: 'prog hanya dibangun ulang bila salah satu objek berubah; objek harus dibangun lebih dulu.' }] },
+{ q: 'Sebuah build punya total kerja T₁ = 11 dan jalur kritis T∞ = 6 satuan. Berapa waktu paling cepat dengan 4 pekerja?', o: [
+  { t: '6 (dibatasi jalur kritis)', ok: true, w: 'T<sub>N</sub> ≥ max(T₁/N, T∞) = max(2,75; 6) = 6; berapa pun pekerjanya, rantai berurutan harus dikerjakan berurutan.' },
+  { t: '2,75 (T₁/4)', w: 'Itu batas dari kerja total saja; jalur kritis 6 lebih besar dan tak bisa dilewati.' },
+  { t: '4', w: 'Jumlah pekerja bukan satuan waktu, dan 4 < 6 mustahil.' },
+  { t: '11', w: '11 adalah waktu satu pekerja (-j 1); pekerja tambahan memang mempercepat.' }] },
+{ q: 'Satu byte pada berkas di commit lama diubah (lalu seluruh riwayat dibangun ulang). ID mana yang berubah?', o: [
+  { t: 'Blob itu, semua tree di atasnya sampai akar, commit tersebut, dan semua commit turunannya', ok: true, w: 'ID adalah hash isi; tree menyimpan ID anak, dan commit menyimpan ID tree dan induk, sehingga perubahan menjalar ke atas dan ke depan.' },
+  { t: 'Hanya blob itu', w: 'Tree yang menunjuk ke blob menyimpan ID-nya, jadi ID tree berubah juga.' },
+  { t: 'Blob dan commit tersebut saja', w: 'Commit-commit sesudahnya menyebut ID induk; bila induk berubah, ID mereka ikut berubah.' },
+  { t: 'Tidak ada, ID dihitung dari nama berkas', w: 'ID blob dihitung dari jenis, panjang, dan isi, bukan dari nama.' }] },
+{ q: 'Antara versi baik dan buruk ada 1000 commit. Berapa uji paling banyak untuk <code>git bisect</code>?', o: [
+  { t: '10', ok: true, w: 'Pencarian biner: ⌈log₂ 1000⌉ = 10 karena 2<sup>10</sup> = 1024 ≥ 1000. Syarat: uji deterministik.' },
+  { t: '500', w: 'Itu rata-rata pencarian linear, bukan biner.' },
+  { t: '1000', w: 'Itu kasus terburuk pencarian linear satu per satu.' },
+  { t: '100', w: 'Mirip log₁₀ 1000 = 3, bukan jumlah uji biner.' }] },
+{ q: 'Apa itu cabang (<em>branch</em>) di Git, dan mengapa rebase pada cabang bersama berbahaya?', o: [
+  { t: 'Penunjuk bernama ke satu commit; rebase membuat commit baru berID baru sehingga riwayat orang lain bercabang', ok: true, w: 'Cabang hanya berkas kecil berisi ID commit. Rebase menyalin commit di atas dasar baru; ID lama tetap dipegang rekan sehingga muncul riwayat ganda dan konflik.' },
+  { t: 'Salinan penuh proyek; rebase menghapus salinan lama', w: 'Cabang bukan salinan; commit tak dihapus oleh rebase (masih ada lewat reflog).' },
+  { t: 'Berkas konfigurasi; rebase mengubah konfigurasi', w: 'Konfigurasi ada di .git/config, dan rebase tidak mengubahnya.' },
+  { t: 'Folder sementara; rebase menggabungkan folder', w: 'Cabang bukan folder; folder kerja hanya cerminan commit yang sedang di-checkout.' }] }
+]});
+}
+
+/* ---------- flashcard ---------- */
+ICD.cards.register('m04c-linux-git-make', [
+{ id: 'perm', f: 'Izin dan umask?', b: 'r = 4, w = 2, x = 1 untuk pemilik, grup, lainnya. Izin baru = 666 (berkas) atau 777 (direktori) AND NOT umask; umask 022 → 644/755, 027 → 640/750.' },
+{ id: 'fd', f: 'Tiga fd standar?', b: '0 = stdin, 1 = stdout, 2 = stderr; angka kecil per proses yang menunjuk ke berkas, pipa, atau perangkat.' },
+{ id: 'dup', f: 'Arti n>&m?', b: 'Salin tujuan fd m saat itu ke fd n (dup2). Diproses kiri ke kanan; salinan tidak mengikuti perubahan berikutnya.' },
+{ id: 'order', f: '> f 2>&1 lawan 2>&1 > f?', b: 'Pertama: keduanya ke f. Kedua: hanya stdout ke f; stderr tetap ke tujuan stdout lama (terminal).' },
+{ id: 'tee', f: 'Menyimpan dan menampilkan log build?', b: 'make 2>&1 | tee build.log (pipa dipasang dulu, jadi stderr ikut). Tambahkan set -o pipefail agar status make terjaga.' },
+{ id: 'quote', f: 'Aturan kutip?', b: 'Selalu "$var": tanpa kutip terjadi pemisahan kata dan glob. Pakai "${dir:?}" agar variabel kosong menghentikan skrip.' },
+{ id: 'safe', f: 'Skrip aman?', b: 'set -euo pipefail dan trap EXIT untuk pembersihan; batas -e: tak berlaku di kondisi if, ||, &&. Periksa langkah kritis secara eksplisit.' },
+{ id: 'pf', f: 'Status pipa?', b: 'Perintah paling kanan; false | true = 0. Dengan pipefail: galat paling kanan yang nonnol (false | true = 1).' },
+{ id: 'glob', f: 'Glob lawan regex?', b: 'Glob (*.v) diperluas shell ke nama berkas; regex (\\.v$) menjelaskan pola teks. Kutip pola regex agar shell tidak mengubahnya.' },
+{ id: 'tools', f: 'Alat teks utama?', b: 'grep -E -o -c -v, sed s/a/b/ dan -n p, awk pola{aksi}, sort | uniq -c, cut, tr, wc; pipa membangun ringkasan log.' },
+{ id: 'redos', f: 'ReDoS?', b: 'Backtracking pada pola bersarang (a+)+b: 2^(n−1) pembagian dicoba pada masukan hampir cocok (90.127 langkah pada n = 14, berlipat dua per huruf). Cegah dengan mesin linear atau pola yang ditinjau.' },
+{ id: 'make', f: 'Aturan make?', b: 'target: prasyarat, lalu resep diawali tab. Dibangun ulang bila prasyarat lebih baru. Otomatis: $@ target, $< prasyarat pertama, $^ semua; pola %.o: %.c.' },
+{ id: 'hdr', f: 'Ketergantungan header?', b: 'Pakai -MMD -MP dan -include $(OBJS:.o=.d); tanpanya perubahan header tak membangun ulang apa pun (build usang).' },
+{ id: 'par', f: 'Batas build paralel?', b: 'T_N ≥ max(T₁/N, T∞): kerja total dibagi pekerja, dan jalur kritis berurutan. Contoh: T₁ = 11, T∞ = 6 → tidak bisa di bawah 6.' },
+{ id: 'obj', f: 'ID objek Git?', b: 'SHA-1("jenis panjang\\0" + isi). Blob = isi berkas, tree = daftar entri (mode, nama, ID), commit = tree + induk + penulis + pesan.' },
+{ id: 'branch', f: 'Cabang Git?', b: 'Penunjuk ke satu commit (berkas kecil berisi ID). Murah dibuat; menghapus cabang tidak langsung menghapus commit karena ada reflog.' },
+{ id: 'merge', f: 'Merge lawan rebase?', b: 'Merge menyimpan riwayat dan membuat commit dengan dua induk; rebase memutar ulang commit di atas dasar baru (ID baru, riwayat lurus). Jangan rebase cabang bersama.' },
+{ id: 'bisect', f: 'git bisect?', b: 'Pencarian biner commit penyebab regresi: ⌈log₂ n⌉ uji (1000 commit → 10). Gunakan git bisect run ./cek.sh dengan uji deterministik.' }
+]);
+ICD.cards.mount('#kartu', { file: 'm04c-linux-git-make' });
+
+/* ---------- pasang ---------- */
+ICD.ready(function(){
+  var v1ctl, v2ctl, v3ctl, v4ctl;
+  v1ctl = ICD.sim.mount('#v1', { fps: 1, max: 6, unit: 'pengalihan', label: 'Kontrol tabel fd',
+    init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= FORMS[+q('#v1-form').value].ops.length ? null : { k: s.k + 1 }; }, draw: v1Draw });
+  q('#v1-form').addEventListener('change', function(){ v1ctl.reset(); });
+  v2ctl = ICD.sim.mount('#v2', { fps: 2, max: 20, unit: 'n', label: 'Kontrol regex',
+    init: function(){ return { n: 1 }; }, step: function(s){ return s.n >= V2N ? null : { n: s.n + 1 }; }, draw: v2Draw });
+  ['#v2-pat', '#v2-str'].forEach(function(id){ q(id).addEventListener('change', function(){ v2ctl.reset(); }); });
+  v3ctl = ICD.sim.mount('#v3', { fps: 2, max: 14, unit: 'satuan waktu', label: 'Kontrol jadwal make',
+    init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= v3Sched(q('#v3-touch').value, +q('#v3-j').value).M ? null : { k: s.k + 1 }; }, draw: v3Draw });
+  q('#v3-touch').addEventListener('change', function(){ v3ctl.reset(); });
+  q('#v3-j').addEventListener('input', function(){ v3ctl.reset(); });
+  q('#v3-j').addEventListener('change', function(){ v3ctl.reset(); });
+  v4ctl = ICD.sim.mount('#v4', { fps: 1, max: 9, unit: 'objek', label: 'Kontrol objek Git',
+    init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= 7 ? null : { k: s.k + 1 }; }, draw: v4Draw });
+  ['#v4-a1', '#v4-b', '#v4-a2', '#v4-m1', '#v4-m2'].forEach(function(id){ q(id).addEventListener('input', function(){ v4ctl.reset(); }); });
+  quizSetup();
+});
+})();
+</script>
+</body>
+</html>

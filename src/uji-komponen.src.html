@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uji komponen — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+</head>
+<!--
+  KONTRAK HALAMAN MODUL (dipakai semua file Fase C):
+  - <body data-file="id-file"> : id sama dengan nama file tanpa .html
+  - <main> berisi <section class="icd-sec" id="s01"> ... dengan satu <h2> per bagian
+  - Kode: <pre class="icd-src" data-lang="sv|tcl|sdc|py|c|asm|spice|sh|vhdl|upf">
+  - Penjelasan berlapis: <div class="icd-layers"><div data-level="pemula|engineer|pakar">
+  - Eksperimen terpandu: <div class="icd-guide" data-id data-answer="indeks"><p>tanya</p><ul><li>…</li></ul><div class="explain">…</div></div>
+  - Istilah: <span data-term="id"> setelah ICD.gloss.add([...])
+  - Rumus: <div class="icd-eq"><math display="block">…</math><span class="alt">teks</span></div>
+  - Kuis: ICD.quiz.mount(el, {id, title, questions:[{q, o:[{t, w, ok}]}]})
+  - Flashcard: ICD.cards.register(file, [{id, f, b}]); ICD.cards.mount(el, {file})
+-->
+<body data-file="uji-komponen">
+<main>
+<h1>Uji komponen ICD-Core</h1>
+<p>Halaman ini memeriksa bahwa semua komponen bersama bekerja di perangkat Anda sebelum 98 file modul bergantung padanya. Buka di laptop dan di ponsel, lalu jalankan daftar periksa di bagian terakhir.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Penyimpanan antar file</h2>
+<p>Tekan tombol di bawah, lalu buka <a href="index.html#data">index.html bagian Data</a>. Jika di sana tertulis "tanda uji terbaca", progres semua file menyatu di browser ini.</p>
+<div class="icd-row"><button type="button" class="icd-btn primary" id="probe">Tulis tanda uji</button><span id="probe-out" class="icd-small" aria-live="polite"></span></div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Rumus (MathML) dan penjelasan berlapis</h2>
+<p>Tegangan kapasitor pada rangkaian RC yang diberi tegangan step:</p>
+<div class="icd-eq"><math display="block"><msub><mi>v</mi><mi>C</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><msub><mi>V</mi><mi>S</mi></msub><mo>&#x2062;</mo><mrow><mo>(</mo><mn>1</mn><mo>&#x2212;</mo><msup><mi>e</mi><mrow><mo>&#x2212;</mo><mi>t</mi><mo>/</mo><mi>R</mi><mi>C</mi></mrow></msup><mo>)</mo></mrow></math><span class="alt">v_C(t) = V_S · (1 − e^(−t/RC))</span></div>
+<p id="math-out" class="icd-small icd-muted"></p>
+<div class="icd-layers">
+  <div data-level="pemula"><p>Kapasitor seperti ember yang diisi lewat selang sempit. Awalnya air mengalir deras, lalu makin lambat karena ember hampir penuh. <span data-term="tau">Konstanta waktu</span> menyatakan seberapa lama pengisian itu.</p></div>
+  <div data-level="engineer"><p>Setelah satu τ = RC tegangan mencapai 63.2% nilai akhir; setelah 4.6τ mencapai 99%. Rise time 10% ke 90% adalah 2.2τ.</p></div>
+  <div data-level="pakar"><p>Pada interconnect nyata R dan C tersebar sepanjang kawat. Delay 50% kawat RC tersebar mendekati 0.38·R·C, bukan 0.69·R·C seperti model satu R satu C; inilah dasar model Elmore dan penyisipan repeater.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Grafik dari persamaan model</h2>
+<div class="icd-viz" id="rc">
+  <header><h3>Rangkaian RC: transien dan respons frekuensi</h3></header>
+  <div class="stage"><div id="rc-t"></div><div id="rc-f" style="margin-top:14px"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>R = <b id="rc-rv"></b></span><input type="range" id="rc-r" min="2" max="6" step="0.02" value="4"></label>
+    <label class="icd-field"><span>C = <b id="rc-cv"></b></span><input type="range" id="rc-c" min="-12" max="-6" step="0.02" value="-10"></label>
+  </div>
+  <div class="readout" id="rc-out" aria-live="polite"></div>
+  <div class="model">Model: satu resistor dan satu kapasitor ideal, sumber step 1 V dengan resistansi sumber nol. Tidak ada induktansi maupun kebocoran.</div>
+</div>
+<div class="icd-guide" data-id="rc-dobel" data-answer="1">
+  <p>Jika R digandakan dan C tetap, apa yang terjadi pada frekuensi cutoff?</p>
+  <ul><li>Naik dua kali</li><li>Turun menjadi setengah</li><li>Tetap</li><li>Turun menjadi seperempat</li></ul>
+  <div class="explain"><p>f<sub>c</sub> = 1/(2πRC). R berada di penyebut dengan pangkat satu, jadi menggandakan R membagi dua f<sub>c</sub>. Kurva Bode bergeser ke kiri satu oktaf, dan kurva transien menjadi dua kali lebih lambat.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Waveform: pelanggaran setup dan hold</h2>
+<div class="icd-viz">
+  <header><h3>Flip-flop D: kapan data boleh berubah</h3></header>
+  <div class="stage" id="wv"></div>
+  <div class="params"><label class="icd-field"><span>Data berubah pada t = <b id="wv-tv"></b></span><input type="range" id="wv-t" min="2" max="6" step="0.1" value="3"></label></div>
+  <div class="readout" id="wv-out" aria-live="polite"></div>
+  <div class="model">Model: tepi naik clock di t = 4 dan t = 8; setup 0.6, hold 0.3, clock-to-Q 0.4 satuan waktu. Pada pelanggaran, Q digambar X sampai tepi berikutnya. Flip-flop nyata akan mengendap ke 0 atau 1 setelah waktu acak (metastability, dibahas di M09).</div>
+</div>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Simulasi dengan langkah maju dan mundur</h2>
+<div class="icd-viz" id="simbox">
+  <header><h3>Counter 3 bit dengan enable</h3></header>
+  <div class="stage" id="sim-w"></div>
+  <div class="params"><label class="icd-row"><input type="checkbox" id="sim-en" checked> enable = 1</label></div>
+  <div class="readout" id="sim-out"></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Penyorot sintaks</h2>
+<pre class="icd-src" data-lang="sv">
+// Counter 3 bit dengan enable dan reset sinkron
+module counter #(parameter int W = 3) (
+  input  logic         clk, rst_n, en,
+  output logic [W-1:0] q
+);
+  always_ff @(posedge clk) begin
+    if (!rst_n)  q &lt;= '0;
+    else if (en) q &lt;= q + 1'b1;
+  end
+endmodule
+</pre>
+<pre class="icd-src" data-lang="sdc">
+# Clock 500 MHz di port clk
+create_clock -name clk -period 2.0 [get_ports clk]
+set_input_delay 0.4 -clock clk [get_ports en]
+</pre>
+<pre class="icd-src" data-lang="py">
+import math
+def f_cutoff(r, c):
+    """Frekuensi cutoff RC dalam Hz."""
+    return 1 / (2 * math.pi * r * c)  # 10k, 100p -> 159 kHz
+</pre>
+<pre class="icd-src" data-lang="asm">
+# a0 = a0 + a1, lalu kembali
+add_two:
+    add  a0, a0, a1
+    ret
+</pre>
+<pre class="icd-src" data-lang="spice">
+* RC low-pass
+V1 in 0 PULSE(0 1 0 1p 1p 1 2)
+R1 in out 10k
+C1 out 0 100p
+.tran 10n 5u
+.end
+</pre>
+<pre class="icd-src" data-lang="c">
+/* Tulis register lewat pointer */
+#define UART_TX ((volatile uint32_t *)0x10000000)
+void putc(char c) { *UART_TX = (uint32_t)c; }
+</pre>
+<pre class="icd-src" data-lang="sh">
+iverilog -g2012 -o sim counter.sv tb.sv &amp;&amp; vvp sim   # kompilasi lalu jalankan
+</pre>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Kuis dan flashcard</h2>
+<div id="kuis"></div>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kalkulator</h2>
+<div class="icd-card" id="calc"></div>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Daftar periksa</h2>
+<div class="icd-card">
+<p>Centang yang berhasil. Jika ada yang gagal, sebutkan nomornya beserta nama browser dan perangkat.</p>
+<ol id="checks">
+<li>Tanda uji terbaca di index.html (bagian 1).</li>
+<li>Rumus tampil sebagai pecahan dan pangkat, bukan teks datar (bagian 2).</li>
+<li>Menggeser slider R dan C mengubah kedua grafik seketika (bagian 3).</li>
+<li>Mengetuk grafik menampilkan nilai di bawahnya (bagian 3).</li>
+<li>Tombol Putar, Jeda, Maju, Mundur, Reset bekerja (bagian 5).</li>
+<li>Kode berwarna dan tombol Salin bekerja (bagian 6).</li>
+<li>Tombol ◐ di kanan atas mengganti tema terang dan gelap.</li>
+<li>Di ponsel tidak ada yang terpotong ke samping; tabel dan waveform bisa digulir.</li>
+<li>Setelah menutup dan membuka lagi halaman ini, skor kuis dan tanda "selesai dibaca" masih ada.</li>
+</ol>
+</div>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q, si = ICD.fmt.si, store = ICD.store;
+ICD.gloss.add([{ id: 'tau', en: 'time constant', idn: 'konstanta waktu', def: 'Hasil kali R dan C (τ = RC); waktu yang dibutuhkan respons orde satu untuk mencapai 63.2% perubahan totalnya.', mod: 'M02' }]);
+
+ICD.ready(function(){
+  /* 1. penyimpanan */
+  function probeText(){ var p = store.get('meta.probe', null); q('#probe-out').textContent = (store.persistent() ? 'Penyimpanan browser aktif. ' : 'Penyimpanan browser TIDAK tersedia. ') + (p ? 'Tanda uji tertulis pada ' + new Date(p.at).toLocaleString('id-ID') + '.' : 'Belum ada tanda uji.'); }
+  q('#probe').addEventListener('click', function(){ store.set('meta.probe', { from: 'uji-komponen', at: Date.now() }); probeText(); ICD.toast('Tanda uji ditulis.'); });
+  probeText();
+  q('#math-out').textContent = ICD.math.supported() ? 'MathML didukung browser ini.' : 'MathML tidak didukung browser ini; rumus ditampilkan sebagai teks satu baris.';
+
+  /* 3. RC */
+  var pt = null, pf = null;
+  function rc(){
+    var R = Math.pow(10, parseFloat(q('#rc-r').value)), C = Math.pow(10, parseFloat(q('#rc-c').value)), tau = R * C, fc = 1 / (2 * Math.PI * tau);
+    q('#rc-rv').textContent = si(R, 'Ω'); q('#rc-cv').textContent = si(C, 'F');
+    var ot = { title: 'Transien RC', height: 220, x: { label: 't', unit: 's', min: 0, max: 6 * tau }, y: { label: 'v_C', unit: 'V', min: 0, max: 1.05 },
+      series: [{ label: 'v_C', unit: 'V', kind: 'analog', dash: [], pts: ICD.sample(function(t){ return 1 - Math.exp(-t / tau); }, 0, 6 * tau, 160) }],
+      marks: [{ x: tau, label: 'τ' }, { y: 0.632, label: '63.2%' }] };
+    var of = { title: 'Bode magnitudo RC', height: 220, x: { label: 'f', unit: 'Hz', log: true, min: fc / 1000, max: fc * 1000 }, y: { label: '|H|', unit: 'dB', min: -60, max: 5 },
+      series: [{ label: '|H|', unit: 'dB', kind: 'analog', dash: [], pts: ICD.sample(function(f){ return -10 * Math.log10(1 + Math.pow(f / fc, 2)); }, fc / 1000, fc * 1000, 160, true) }],
+      marks: [{ x: fc, label: 'f_c' }, { y: -3.01, label: '−3 dB' }] };
+    if (!pt){ pt = ICD.plot('#rc-t', ot); pf = ICD.plot('#rc-f', of); } else { pt.set(ot); pf.set(of); }
+    q('#rc-out').textContent = 'τ = ' + si(tau, 's') + '  ·  f_c = ' + si(fc, 'Hz') + '  ·  t(10–90%) = ' + si(2.197 * tau, 's');
+  }
+  q('#rc-r').addEventListener('input', rc); q('#rc-c').addEventListener('input', rc); rc();
+
+  /* 4. setup/hold */
+  var wv = null, TS = 0.6, TH = 0.3, TCQ = 0.4;
+  function clkSegs(){ var s = [], t; for (t = 0; t < 12; t += 4){ s.push([t, t + 2, 1]); s.push([t + 2, t + 4, 0]); } return s; }
+  function wave(){
+    var td = parseFloat(q('#wv-t').value), viol = td > 4 - TS + 1e-9 && td < 4 + TH - 1e-9, qs, msg;
+    if (viol){ qs = [[0, 4 + TCQ, 0], [4 + TCQ, 8 + TCQ, 'x'], [8 + TCQ, 12, 1]]; msg = 'PELANGGARAN ' + (td < 4 ? 'setup' : 'hold') + ': data berubah di dalam jendela terlarang. Q tidak terdefinisi sampai tepi berikutnya.'; }
+    else if (td <= 4 - TS + 1e-9){ qs = [[0, 4 + TCQ, 0], [4 + TCQ, 12, 1]]; msg = 'Aman: data stabil ' + ICD.fmt.num(4 - td, 3) + ' sebelum tepi (setup 0.6). Q menangkap 1 pada tepi t = 4.'; }
+    else { qs = [[0, 8 + TCQ, 0], [8 + TCQ, 12, 1]]; msg = 'Aman: data berubah ' + ICD.fmt.num(td - 4, 3) + ' setelah tepi (hold 0.3). Q masih menangkap 0 pada t = 4 dan baru 1 pada t = 8.'; }
+    var spec = { title: 'Setup dan hold flip-flop D', step: 40, tick: { unit: 'satuan' },
+      signals: [{ name: 'clk', kind: 'clock', segs: clkSegs() }, { name: 'D', kind: 'data', segs: [[0, td, 0], [td, 12, 1]] }, { name: 'Q', kind: 'data', segs: qs }],
+      spans: [{ sig: 'D', t0: 4 - TS, t1: 4, label: 'setup', align: 'end', kind: viol && td < 4 ? 'viol' : 'hi' }, { sig: 'D', t0: 4, t1: 4 + TH, label: 'hold', align: 'start', kind: viol && td >= 4 ? 'viol' : 'hi' }],
+      marks: [{ t: 4, label: 'tepi' }, { t: 8, label: 'tepi' }] };
+    q('#wv-tv').textContent = td.toFixed(1); q('#wv-out').textContent = msg;
+    if (!wv) wv = ICD.wave.render('#wv', spec); else wv.update(spec);
+  }
+  q('#wv-t').addEventListener('input', wave); wave();
+
+  /* 5. sim */
+  var simW = null;
+  ICD.sim.mount('#simbox', { fps: 2, unit: 'siklus', label: 'Kontrol simulasi counter',
+    init: function(){ return { q: 0, hist: [0], en: [1] }; },
+    step: function(s){ var en = q('#sim-en').checked ? 1 : 0, nq = en ? (s.q + 1) % 8 : s.q; return { q: nq, hist: s.hist.concat(nq).slice(-12), en: s.en.concat(en).slice(-12) }; },
+    draw: function(s, i){
+      var n = s.hist.length, spec = { title: 'Counter 3 bit', step: 40, signals: [
+        { name: 'clk', kind: 'clock', wave: new Array(n + 1).join('p') },
+        { name: 'en', kind: 'ctrl', segs: s.en.map(function(v, k){ return [k, k + 1, v]; }) },
+        { name: 'q[2:0]', kind: 'data', segs: s.hist.map(function(v, k){ return [k, k + 1, '=', String(v)]; }) }] };
+      if (!simW) simW = ICD.wave.render('#sim-w', spec); else simW.update(spec);
+      q('#sim-out').textContent = 'siklus ' + i + '  ·  q = ' + s.q + ' (biner ' + ('00' + s.q.toString(2)).slice(-3) + ')';
+    } });
+
+  /* 7. kuis dan flashcard */
+  ICD.quiz.mount('#kuis', { id: 'uji', title: 'Kuis contoh', questions: [
+    { q: 'Rangkaian RC dengan R = 10 kΩ dan C = 100 pF. Berapa konstanta waktunya?', o: [
+      { t: '1 µs', ok: true, w: 'τ = R·C = 10<sup>4</sup> Ω × 10<sup>−10</sup> F = 10<sup>−6</sup> s.' },
+      { t: '1 ns', w: 'Ini terjadi jika R dibaca 10 Ω. Awalan k berarti ×1000.' },
+      { t: '1 ms', w: 'Terlalu besar seribu kali; 100 pF adalah 10<sup>−10</sup> F, bukan 10<sup>−7</sup> F.' },
+      { t: '159 kHz', w: 'Itu frekuensi cutoff 1/(2πRC), bukan konstanta waktu, dan satuannya pun berbeda.' }] },
+    { q: 'Data berubah 0.2 satuan sebelum tepi clock, padahal setup time 0.6. Apa akibatnya?', o: [
+      { t: 'Pelanggaran setup; keluaran bisa metastabil', ok: true, w: 'Data harus stabil selama seluruh jendela setup sebelum tepi.' },
+      { t: 'Pelanggaran hold', w: 'Hold menyangkut perubahan data setelah tepi clock, bukan sebelumnya.' },
+      { t: 'Tidak apa-apa selama data stabil tepat di tepi clock', w: 'Flip-flop butuh waktu untuk menangkap data; stabil hanya di tepi tidak cukup.' },
+      { t: 'Flip-flop selalu menangkap nilai lama', w: 'Tidak dijamin. Hasilnya bisa nilai lama, nilai baru, atau keadaan tak tentu sementara.' }] },
+    { q: 'Bilangan 0xA5 dibaca sebagai two\'s complement 8 bit. Berapa nilainya?', o: [
+      { t: '−91', ok: true, w: '0xA5 = 165. Bit teratas 1, jadi nilainya 165 − 256 = −91.' },
+      { t: '165', w: 'Itu tafsiran tak bertanda. Dalam two\'s complement bit teratas berbobot −128.' },
+      { t: '−37', w: 'Ini hasil sign-magnitude (bit tanda ditambah 0x25 = 37), bukan two\'s complement.' },
+      { t: '−90', w: 'Ini hasil one\'s complement; two\'s complement berbeda satu.' }] }
+  ] });
+  ICD.cards.register('uji-komponen', [
+    { id: 'c1', f: 'Rumus konstanta waktu rangkaian RC?', b: 'τ = R·C. Setelah 1τ respons mencapai 63.2%.' },
+    { id: 'c2', f: 'Apa itu setup time?', b: 'Lama data harus stabil <b>sebelum</b> tepi clock.' },
+    { id: 'c3', f: 'Apa itu hold time?', b: 'Lama data harus tetap stabil <b>setelah</b> tepi clock.' }]);
+  ICD.cards.mount('#kartu', { file: 'uji-komponen' });
+
+  /* 8. kalkulator */
+  ICD.calc.mount('#calc', 'slack');
+
+  /* 9. daftar periksa */
+  ICD.qa('#checks li').forEach(function(li, i){
+    var cb = ICD.el('input', { type: 'checkbox', style: 'margin-right:8px;width:18px;height:18px' }); cb.checked = !!store.get('progress.uji-komponen.checks.c' + i, false);
+    cb.addEventListener('change', function(){ store.set('progress.uji-komponen.checks.c' + i, cb.checked); });
+    var lab = ICD.el('label'); while (li.firstChild) lab.appendChild(li.firstChild); lab.insertBefore(cb, lab.firstChild); li.appendChild(lab);
+  });
+});
+})();
+</script>
+</body>
+</html>

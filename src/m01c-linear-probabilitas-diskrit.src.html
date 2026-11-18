@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M01c Aljabar linear, probabilitas, statistik, matematika diskrit — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+table.mat{border-collapse:separate;border-spacing:6px 4px;font-family:var(--f-mono);font-size:1rem;margin:4px 0}
+table.mat td{min-width:68px;text-align:right;padding:6px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+table.mat td.rhs{border-left:3px solid var(--ink2)}
+table.mat tr.chg td{background:var(--tint);border-color:var(--accent)}
+table.mat td.piv{border:2px solid var(--s-hi);font-weight:700}
+table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-weight:400;text-align:right;padding-right:4px}
+#v4 .nd{cursor:default}
+</style>
+</head>
+<body data-file="m01c-linear-probabilitas-diskrit">
+<main>
+<p class="icd-small icd-muted">Bagian 1: Fondasi · M01 bagian c dari 4 · sekitar 15 jam · prasyarat: <a href="m01a-matematika-dasar.html">M01a</a>, <a href="m01b-kompleks-kalkulus.html">M01b</a></p>
+<h1>M01c Aljabar linear, probabilitas, statistik, matematika diskrit</h1>
+<p>Tiga cabang matematika yang menjawab tiga pertanyaan berbeda. Aljabar linear: bagaimana menyelesaikan ribuan persamaan sekaligus? Probabilitas dan statistik: bagaimana merancang sesuatu yang tetap bekerja walaupun setiap transistor sedikit berbeda? Matematika diskrit: bagaimana bernalar tentang benda yang bisa dihitung satu per satu, seperti bit, gerbang, dan sambungan?</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<ul>
+<li><strong>Setiap simulasi rangkaian adalah sistem persamaan linear.</strong> SPICE menyusun satu persamaan untuk setiap simpul rangkaian lalu menyelesaikan semuanya bersama, berulang kali di setiap langkah waktu. Analisis jatuh tegangan pada jaringan daya sebuah chip (IR drop, M23) menyelesaikan sistem dengan jutaan sampai miliaran persamaan.</li>
+<li><strong>Tidak ada dua transistor yang sama.</strong> Pabrik tidak bisa membuat miliaran transistor identik. Setiap delay, setiap tegangan ambang, setiap arus bocor adalah besaran acak dengan sebaran tertentu. Sebuah chip dengan satu miliar sel memori hanya berguna bila <em>semua</em> selnya bekerja, sehingga setiap sel harus dirancang dengan margin jauh melampaui "biasanya bekerja".</li>
+<li><strong>Merancang untuk kasus terburuk terlalu mahal.</strong> Menganggap semua gerbang di sebuah path sekaligus berada di nilai terburuknya menghasilkan chip yang lambat dan boros. Analisis timing modern (OCV, POCV, LVF di M22c) memakai statistik agar margin tidak berlebihan. Selisihnya bisa belasan persen frekuensi.</li>
+<li><strong>Tool EDA adalah algoritma graf.</strong> Netlist adalah graf. Analisis timing adalah pencarian path terpanjang pada graf. Placement dan routing adalah optimasi pada graf. Bahkan simulasi RTL mengurutkan evaluasi gerbang dengan urutan topologis.</li>
+<li><strong>Menghitung kemungkinan menentukan strategi verifikasi.</strong> Adder 32 bit punya 2<sup>64</sup> kombinasi masukan. Mengetahui bahwa angka itu mustahil dicoba semuanya adalah alasan adanya constrained-random, coverage, dan formal (M18, M19).</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Engineer chip berpikir dalam sebaran, bukan dalam satu angka. Pertanyaannya bukan "berapa delay path ini?" melainkan "seberapa sering delay path ini melampaui batas, dan berapa chip yang gagal karenanya?"</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a> (eksponen, logaritma) dan <a href="m01b-kompleks-kalkulus.html">M01b</a> (integral sebagai luas, fungsi eksponensial).</p>
+<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<ol>
+<li>Menulis sistem persamaan linear dalam bentuk <span data-term="matriks">matriks</span> <i>A</i><b>x</b> = <b>b</b>, mengalikan matriks, dan menghitung <span data-term="det">determinan</span> serta invers matriks 2 × 2.</li>
+<li>Menyelesaikan sistem tiga persamaan dengan <span data-term="gauss">eliminasi Gauss</span>, dan mengenali sistem <span data-term="singular">singular</span>.</li>
+<li>Menghitung <span data-term="mean">rata-rata</span>, <span data-term="var">variansi</span>, dan <span data-term="sigma">simpangan baku</span>, serta menggabungkan sebaran beberapa besaran bebas dengan akar jumlah kuadrat.</li>
+<li>Memakai <span data-term="normal">distribusi normal</span>: mengubah batas menjadi jumlah sigma, lalu menjadi peluang gagal dan yield.</li>
+<li>Memakai distribusi binomial dan Poisson untuk menghitung peluang sejumlah kegagalan.</li>
+<li>Menjelaskan <span data-term="mc">Monte Carlo</span>, galatnya yang menyusut sebanding 1/√<i>N</i>, dan mengapa peristiwa langka sulit disimulasikan.</li>
+<li>Menghitung banyaknya kemungkinan dengan aturan perkalian, permutasi, dan kombinasi; serta menghitung dalam aritmetika modular.</li>
+<li>Menyusun <span data-term="topo">urutan topologis</span> sebuah graf berarah tanpa siklus dan mencari path terpanjangnya.</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Matriks: tabel yang bisa dioperasikan</h3>
+<p>Bayangkan daftar belanja tiga toko untuk tiga barang. Menyusunnya sebagai tabel membuat pola terlihat, dan membuat komputer bisa mengerjakannya. Matriks adalah tabel angka dengan aturan penjumlahan dan perkalian. Sistem persamaan linear adalah teka-teki "berapa harga tiap barang, jika total di tiap toko diketahui?", dan eliminasi Gauss adalah cara sistematis menyelesaikannya: kurangi satu baris dari baris lain sampai tiap baris hanya menyisakan satu yang tidak diketahui. <em>Di mana analogi ini berhenti:</em> tabel belanja hanya dibaca. Matriks juga bisa dipandang sebagai <em>mesin</em> yang mengubah satu vektor menjadi vektor lain, misalnya memutar atau meregangkan; cara pandang ini penting untuk eigenvalue dan transformasi di M01d.</p>
+<h3>Probabilitas: peramal yang jujur</h3>
+<p>Peramal cuaca tidak tahu apakah besok hujan, tetapi dari ratusan hari serupa ia tahu 30% di antaranya hujan. Probabilitas adalah bilangan antara 0 dan 1 yang menyatakan seberapa sering sesuatu terjadi bila situasinya diulang sangat banyak kali. <em>Di mana analogi ini berhenti:</em> hari-hari tidak pernah benar-benar berulang, sedangkan pabrik chip benar-benar mengulang proses yang sama miliaran kali. Di sini probabilitas bukan kiasan; "satu per sejuta" berarti benar-benar seribu sel rusak dalam satu miliar sel.</p>
+<h3>Simpangan baku: lebar kerumunan</h3>
+<p>Minta seratus orang melempar bola ke sasaran. Lemparan mengumpul di sekitar satu titik (rata-rata) dengan sebaran tertentu. Simpangan baku σ mengukur lebar kerumunan itu. Sekitar dua pertiga lemparan jatuh dalam satu σ dari pusat; hampir semuanya dalam tiga σ. <em>Di mana analogi ini berhenti:</em> "hampir semuanya" tidak cukup untuk chip. Dengan satu miliar sel, kejadian yang peluangnya satu per sejuta terjadi seribu kali. Karena itu perancang memori berbicara tentang 5σ dan 6σ, wilayah yang tidak pernah Anda lihat dalam seratus lemparan.</p>
+<h3>Monte Carlo: mencoba berkali-kali dengan dadu</h3>
+<p>Ingin tahu peluang menang sebuah permainan kartu yang rumit? Daripada menurunkan rumus, mainkan seribu kali dan hitung berapa kali menang. Monte Carlo melakukan itu dengan komputer: bangkitkan variasi acak, simulasikan, ulangi, lalu hitung statistiknya. <em>Di mana analogi ini berhenti:</em> permainan kartu cepat dimainkan. Satu simulasi rangkaian bisa memakan menit, dan untuk mengukur peluang satu per semiliar Anda butuh bermiliar-miliar percobaan; di situlah teknik khusus diperlukan.</p>
+<h3>Graf: peta jalur, bukan peta wilayah</h3>
+<p>Peta kereta bawah tanah tidak peduli jarak sebenarnya atau belokan rel. Ia hanya menunjukkan stasiun dan sambungan antar stasiun. Itulah graf: simpul dan sambungan. Netlist sebuah chip adalah graf dengan gerbang sebagai simpul dan kawat sebagai sambungan. <em>Di mana analogi ini berhenti:</em> kereta bisa berjalan dua arah, sedangkan sinyal logika mengalir satu arah, dari keluaran gerbang ke masukan gerbang berikutnya. Graf chip <em>berarah</em>, dan sifat inilah yang membuat urutan evaluasi dan analisis timing mungkin dilakukan.</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Vektor dan matriks</h3>
+<p>Sebuah <span data-term="vektor">vektor</span> adalah daftar bilangan berurutan, ditulis tegak: <b>v</b> = (<i>v</i><sub>1</sub>, <i>v</i><sub>2</sub>, …, <i>v</i><sub><i>n</i></sub>). Tegangan semua simpul sebuah rangkaian adalah satu vektor. Sebuah <span data-term="matriks">matriks</span> adalah tabel bilangan dengan <i>m</i> baris dan <i>n</i> kolom; elemen di baris <i>i</i> kolom <i>j</i> ditulis <i>a</i><sub><i>ij</i></sub>.</p>
+<p><strong><span data-term="dot">Hasil kali titik</span></strong> dua vektor sama panjang adalah jumlah hasil kali elemen-elemen yang bersesuaian: <b>u</b> · <b>v</b> = <i>u</i><sub>1</sub><i>v</i><sub>1</sub> + <i>u</i><sub>2</sub><i>v</i><sub>2</sub> + … + <i>u</i><sub><i>n</i></sub><i>v</i><sub><i>n</i></sub>. Hasilnya satu bilangan.</p>
+<p><strong>Perkalian matriks dengan vektor.</strong> Elemen ke-<i>i</i> dari <i>A</i><b>x</b> adalah hasil kali titik baris ke-<i>i</i> matriks dengan <b>x</b>. Karena itu sistem persamaan</p>
+<p style="text-align:center;font-family:var(--f-mono)">3<i>v</i><sub>1</sub> − <i>v</i><sub>2</sub> − <i>v</i><sub>3</sub> = 2<br>−<i>v</i><sub>1</sub> + 3<i>v</i><sub>2</sub> − <i>v</i><sub>3</sub> = 0<br>−<i>v</i><sub>1</sub> − <i>v</i><sub>2</sub> + 3<i>v</i><sub>3</sub> = 0</p>
+<p>bisa ditulis ringkas sebagai <i>A</i><b>x</b> = <b>b</b>:</p>
+<div class="icd-eq"><math display="block"><mrow><mo>[</mo><mtable><mtr><mtd><mn>3</mn></mtd><mtd><mo>&#x2212;</mo><mn>1</mn></mtd><mtd><mo>&#x2212;</mo><mn>1</mn></mtd></mtr><mtr><mtd><mo>&#x2212;</mo><mn>1</mn></mtd><mtd><mn>3</mn></mtd><mtd><mo>&#x2212;</mo><mn>1</mn></mtd></mtr><mtr><mtd><mo>&#x2212;</mo><mn>1</mn></mtd><mtd><mo>&#x2212;</mo><mn>1</mn></mtd><mtd><mn>3</mn></mtd></mtr></mtable><mo>]</mo></mrow><mrow><mo>[</mo><mtable><mtr><mtd><msub><mi>v</mi><mn>1</mn></msub></mtd></mtr><mtr><mtd><msub><mi>v</mi><mn>2</mn></msub></mtd></mtr><mtr><mtd><msub><mi>v</mi><mn>3</mn></msub></mtd></mtr></mtable><mo>]</mo></mrow><mo>=</mo><mrow><mo>[</mo><mtable><mtr><mtd><mn>2</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd></mtr></mtable><mo>]</mo></mrow></math><span class="alt">[[3, −1, −1], [−1, 3, −1], [−1, −1, 3]] · [v1, v2, v3] = [2, 0, 0]</span></div>
+<p>Sistem ini bukan contoh sembarang. Ia berasal dari rangkaian tiga simpul: setiap simpul terhubung ke ground dan ke dua simpul lain lewat resistor 1 kΩ, dan arus 2 mA disuntikkan ke simpul 1. Dengan konduktansi dalam milisiemens dan arus dalam miliampere, tegangannya keluar dalam volt. Cara menyusun matriks seperti ini dari sebuah rangkaian (analisis nodal) dibahas di <a href="m02a-rangkaian-dc.html">M02a</a>.</p>
+<p><strong>Perkalian matriks dengan matriks.</strong> Elemen (<i>i</i>, <i>j</i>) dari <i>AB</i> adalah hasil kali titik baris <i>i</i> dari <i>A</i> dengan kolom <i>j</i> dari <i>B</i>. Jumlah kolom <i>A</i> harus sama dengan jumlah baris <i>B</i>. Perkalian matriks <strong>tidak komutatif</strong>: umumnya <i>AB</i> ≠ <i>BA</i>.</p>
+<p><strong><span data-term="identitas">Matriks identitas</span></strong> <i>I</i> berisi 1 di diagonal dan 0 di tempat lain; <i>AI</i> = <i>IA</i> = <i>A</i>. <strong><span data-term="invers">Invers</span></strong> <i>A</i><sup>−1</sup> adalah matriks yang memenuhi <i>A</i><sup>−1</sup><i>A</i> = <i>I</i>. Jika ada, solusi sistem adalah <b>x</b> = <i>A</i><sup>−1</sup><b>b</b>.</p>
+
+<h3>4.2 Determinan dan invers 2 × 2</h3>
+<p>Untuk matriks 2 × 2 dengan baris (<i>a</i>, <i>b</i>) dan (<i>c</i>, <i>d</i>):</p>
+<div class="icd-eq"><math display="block"><mi>det</mi><mo>&#x2061;</mo><mi>A</mi><mo>=</mo><mi>a</mi><mi>d</mi><mo>&#x2212;</mo><mi>b</mi><mi>c</mi><mspace width="2em"/><msup><mi>A</mi><mrow><mo>&#x2212;</mo><mn>1</mn></mrow></msup><mo>=</mo><mfrac><mn>1</mn><mrow><mi>a</mi><mi>d</mi><mo>&#x2212;</mo><mi>b</mi><mi>c</mi></mrow></mfrac><mrow><mo>[</mo><mtable><mtr><mtd><mi>d</mi></mtd><mtd><mo>&#x2212;</mo><mi>b</mi></mtd></mtr><mtr><mtd><mo>&#x2212;</mo><mi>c</mi></mtd><mtd><mi>a</mi></mtd></mtr></mtable><mo>]</mo></mrow></math><span class="alt">det A = ad − bc     A⁻¹ = 1/(ad − bc) · [[d, −b], [−c, a]]</span></div>
+<p><em>Pemeriksaan:</em> kalikan <i>A</i><sup>−1</sup> dengan <i>A</i>. Elemen kiri atas: (<i>da</i> − <i>bc</i>)/(<i>ad</i> − <i>bc</i>) = 1. Elemen kanan atas: (<i>db</i> − <i>bd</i>)/(<i>ad</i> − <i>bc</i>) = 0. Dua elemen lain serupa, sehingga hasilnya <i>I</i>.</p>
+<p><strong>Arti determinan.</strong> Secara geometri, |det <i>A</i>| adalah faktor perbesaran luas saat matriks itu dipakai sebagai transformasi. Jika det <i>A</i> = 0, bidang dipipihkan menjadi garis: informasi hilang dan tidak bisa dibalik. Matriks seperti itu disebut <span data-term="singular">singular</span>, tidak punya invers, dan sistem <i>A</i><b>x</b> = <b>b</b> tidak punya solusi tunggal (bisa tanpa solusi, bisa tak berhingga banyak). Itu terjadi bila satu baris adalah kelipatan atau gabungan baris-baris lain: persamaannya tidak memberi informasi baru.</p>
+
+<h3>4.3 Eliminasi Gauss</h3>
+<p>Untuk sistem lebih besar, rumus invers tidak praktis. <span data-term="gauss">Eliminasi Gauss</span> memakai tiga operasi yang tidak mengubah solusi: menukar dua baris, mengalikan satu baris dengan bilangan bukan nol, dan menambahkan kelipatan satu baris ke baris lain. Tujuannya membuat semua elemen di bawah diagonal menjadi nol (bentuk segitiga atas), lalu menyelesaikan dari bawah ke atas (<em>substitusi mundur</em>).</p>
+<p><strong>Contoh</strong> pada sistem di 4.1, ditulis sebagai matriks diperluas [<i>A</i> | <b>b</b>]:</p>
+<ol>
+<li>Elemen diagonal pertama (<span data-term="pivot">pivot</span>) adalah 3. Baris 2 ← baris 2 + ⅓ baris 1: (0, 8/3, −4/3 | 2/3). Baris 3 ← baris 3 + ⅓ baris 1: (0, −4/3, 8/3 | 2/3).</li>
+<li>Pivot kedua 8/3. Baris 3 ← baris 3 + ½ baris 2: (0, 0, 2 | 1).</li>
+<li>Substitusi mundur: 2<i>v</i><sub>3</sub> = 1, jadi <i>v</i><sub>3</sub> = 0.5. Lalu (8/3)<i>v</i><sub>2</sub> − (4/3)(0.5) = 2/3, jadi <i>v</i><sub>2</sub> = 0.5. Terakhir 3<i>v</i><sub>1</sub> − 0.5 − 0.5 = 2, jadi <i>v</i><sub>1</sub> = 1.</li>
+</ol>
+<p>Hasil: simpul 1 berada di 1 V, simpul 2 dan 3 di 0.5 V. Determinan matriks sama dengan hasil kali semua pivot (dengan tanda berbalik setiap kali ada pertukaran baris): 3 × 8/3 × 2 = 16.</p>
+<p><strong>Pivot parsial.</strong> Jika pivot bernilai nol atau sangat kecil, pembagian gagal atau galat pembulatan membesar. Penyelesaiannya menukar baris agar pivot adalah elemen terbesar di kolomnya. Jika seluruh kolom di bawah diagonal nol, matriksnya singular.</p>
+<p><strong>Biaya.</strong> Eliminasi <i>n</i> persamaan memerlukan kira-kira <i>n</i>³/3 perkalian. Menggandakan jumlah simpul menaikkan waktu hitung delapan kali.</p>
+
+<h3>4.4 Peluang</h3>
+<p><span data-term="prob">Peluang</span> sebuah kejadian <i>A</i>, ditulis <i>P</i>(<i>A</i>), adalah bilangan dari 0 (mustahil) sampai 1 (pasti). Tiga aturan dasar:</p>
+<ul>
+<li><strong>Komplemen:</strong> <i>P</i>(tidak <i>A</i>) = 1 − <i>P</i>(<i>A</i>). Menghitung "paling sedikit satu gagal" hampir selalu lebih mudah lewat 1 − <i>P</i>(tidak ada yang gagal).</li>
+<li><strong>Penjumlahan:</strong> jika <i>A</i> dan <i>B</i> tidak mungkin terjadi bersamaan, <i>P</i>(<i>A</i> atau <i>B</i>) = <i>P</i>(<i>A</i>) + <i>P</i>(<i>B</i>).</li>
+<li><strong>Perkalian:</strong> jika <i>A</i> dan <i>B</i> <span data-term="bebas">saling bebas</span> (terjadinya yang satu tidak mengubah peluang yang lain), <i>P</i>(<i>A</i> dan <i>B</i>) = <i>P</i>(<i>A</i>) · <i>P</i>(<i>B</i>).</li>
+</ul>
+<p><strong>Yield banyak sel.</strong> Jika setiap sel gagal dengan peluang <i>p</i> secara saling bebas, peluang semua <i>N</i> sel baik adalah (1 − <i>p</i>)<sup><i>N</i></sup>. Untuk <i>p</i> kecil ini sangat dekat dengan <i>e</i><sup>−<i>Np</i></sup>, karena ln(1 − <i>p</i>) ≈ −<i>p</i>. <strong>Contoh:</strong> 100 sel dengan <i>p</i> = 0.0027: (1 − 0.0027)<sup>100</sup> = 0.7631, dan <i>e</i><sup>−0.27</sup> = 0.7634.</p>
+
+<h3>4.5 Variabel acak, rata-rata, dan simpangan baku</h3>
+<p><span data-term="rv">Variabel acak</span> adalah besaran yang nilainya ditentukan oleh sesuatu yang acak: delay sebuah gerbang pada chip yang diambil sembarang, misalnya. Dua angka merangkum sebarannya:</p>
+<div class="icd-eq"><math display="block"><mi>&#x3BC;</mi><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munderover><mo>&#x2211;</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><msub><mi>x</mi><mi>i</mi></msub><mspace width="2em"/><msup><mi>&#x3C3;</mi><mn>2</mn></msup><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munderover><mo>&#x2211;</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><msup><mrow><mo>(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#x2212;</mo><mi>&#x3BC;</mi><mo>)</mo></mrow><mn>2</mn></msup></math><span class="alt">μ = (1/N)·Σ x_i     σ² = (1/N)·Σ (x_i − μ)²</span></div>
+<p><span data-term="mean">Rata-rata</span> μ adalah pusat sebaran. <span data-term="var">Variansi</span> σ² adalah rata-rata kuadrat jarak dari pusat; akarnya, <span data-term="sigma">simpangan baku</span> σ, bersatuan sama dengan datanya sehingga lebih mudah ditafsirkan. Bila μ dan σ ditaksir dari sejumlah sampel (bukan dari seluruh populasi), pembagi variansi diganti <i>N</i> − 1; selisihnya hanya terasa untuk sampel kecil.</p>
+<p><strong>Menjumlahkan besaran acak.</strong> Untuk dua variabel acak <i>X</i> dan <i>Y</i>, rata-rata jumlahnya selalu μ<sub><i>X</i></sub> + μ<sub><i>Y</i></sub>. Jika keduanya saling bebas, <em>variansinya</em> yang dijumlahkan, bukan simpangan bakunya:</p>
+<div class="icd-eq"><math display="block"><msub><mi>&#x3C3;</mi><mrow><mi>X</mi><mo>+</mo><mi>Y</mi></mrow></msub><mo>=</mo><msqrt><mrow><msubsup><mi>&#x3C3;</mi><mi>X</mi><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>&#x3C3;</mi><mi>Y</mi><mn>2</mn></msubsup></mrow></msqrt></math><span class="alt">σ_(X+Y) = √(σ_X² + σ_Y²)</span></div>
+<p>Aturan ini disebut akar jumlah kuadrat (<span data-term="rss">RSS</span>). <em>Alasannya:</em> kuadrat simpangan jumlah adalah (Δ<i>x</i> + Δ<i>y</i>)² = Δ<i>x</i>² + Δ<i>y</i>² + 2Δ<i>x</i>Δ<i>y</i>. Rata-rata dua suku pertama adalah kedua variansi. Suku silang rata-ratanya nol bila <i>X</i> dan <i>Y</i> bebas, karena simpangan positif yang satu sama seringnya bertemu simpangan positif maupun negatif yang lain.</p>
+<p>Akibat penting: jumlah <i>n</i> besaran bebas yang masing-masing bersimpangan baku σ punya simpangan baku σ√<i>n</i>, bukan <i>n</i>σ. Dan rata-rata dari <i>n</i> pengukuran punya simpangan baku σ/√<i>n</i>. <strong>Contoh:</strong> path berisi 16 gerbang, tiap gerbang 20 ps dengan σ = 2 ps. Rata-rata delay path 320 ps; σ path = 2 × √16 = 8 ps. Jika semua gerbang <span data-term="korelasi">berkorelasi</span> sempurna (naik-turun bersama), σ path menjadi 16 × 2 = 32 ps. Kenyataan berada di antaranya, dan memisahkan bagian yang berkorelasi dari yang acak adalah inti analisis variasi di M22c.</p>
+
+<h3>4.6 Distribusi normal</h3>
+<p><span data-term="normal">Distribusi normal</span> (Gaussian) adalah kurva lonceng yang ditentukan oleh μ dan σ. Kerapatan peluangnya:</p>
+<div class="icd-eq"><math display="block"><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>=</mo><mfrac><mn>1</mn><mrow><mi>&#x3C3;</mi><msqrt><mrow><mn>2</mn><mi>&#x3C0;</mi></mrow></msqrt></mrow></mfrac><msup><mi>e</mi><mrow><mo>&#x2212;</mo><msup><mrow><mo>(</mo><mi>x</mi><mo>&#x2212;</mo><mi>&#x3BC;</mi><mo>)</mo></mrow><mn>2</mn></msup><mo>/</mo><mo>(</mo><mn>2</mn><msup><mi>&#x3C3;</mi><mn>2</mn></msup><mo>)</mo></mrow></msup></math><span class="alt">f(x) = 1/(σ·√(2π)) · e^(−(x − μ)² / (2σ²))</span></div>
+<p>Peluang bahwa nilainya berada di antara dua batas adalah <em>luas</em> di bawah kurva di antara batas itu, yaitu sebuah integral (M01b). Luas totalnya 1. Integral ini tidak punya rumus tertutup; nilainya ditabelkan atau dihitung lewat fungsi galat <code>erf</code>.</p>
+<p><strong>Mengapa normal begitu sering muncul.</strong> <span data-term="clt">Teorema limit pusat</span> menyatakan bahwa jumlah banyak pengaruh kecil yang saling bebas mendekati distribusi normal, apa pun bentuk sebaran masing-masing. Tegangan ambang transistor ditentukan oleh jumlah atom dopan di kanalnya, yang merupakan jumlah dari banyak kejadian acak kecil; karena itu sebarannya mendekati normal.</p>
+<p><strong>Nilai-<i>z</i>.</strong> Setiap soal distribusi normal diselesaikan dengan mengubah batas menjadi "berapa σ dari rata-rata": <i>z</i> = (<i>x</i> − μ)/σ.</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Batas</th><th scope="col">Di dalam ±<i>k</i>σ</th><th scope="col">Di luar, dua sisi</th><th scope="col">Di luar, satu sisi</th></tr></thead>
+<tbody>
+<tr><td class="c">1σ</td><td class="c">68.27%</td><td class="c">31.73%</td><td class="c">15.87%</td></tr>
+<tr><td class="c">2σ</td><td class="c">95.45%</td><td class="c">4.55%</td><td class="c">2.28%</td></tr>
+<tr><td class="c">3σ</td><td class="c">99.73%</td><td class="c">0.27% = 2 700 ppm</td><td class="c">1 350 ppm</td></tr>
+<tr><td class="c">4σ</td><td class="c">99.9937%</td><td class="c">63 ppm</td><td class="c">32 ppm</td></tr>
+<tr><td class="c">5σ</td><td class="c">99.99994%</td><td class="c">0.57 ppm</td><td class="c">0.29 ppm</td></tr>
+<tr><td class="c">6σ</td><td class="c">99.9999998%</td><td class="c">2.0 × 10<sup>−9</sup></td><td class="c">9.9 × 10<sup>−10</sup></td></tr>
+</tbody></table></div>
+<p>(ppm = per sejuta.) "Dua sisi" dipakai bila nilai terlalu besar maupun terlalu kecil sama-sama gagal; "satu sisi" bila hanya satu arah yang bermasalah, misalnya delay yang terlalu lama.</p>
+<p><strong>Contoh.</strong> Path di 4.5 (μ = 320 ps, σ = 8 ps) harus selesai dalam 340 ps. <i>z</i> = (340 − 320)/8 = 2.5. Peluang satu sisi melampaui 2.5σ adalah 0.62%: dari setiap seribu chip, sekitar enam gagal pada path ini.</p>
+
+<h3>4.7 Binomial dan Poisson</h3>
+<p>Bila sebuah percobaan dengan peluang berhasil <i>p</i> diulang <i>n</i> kali secara saling bebas, peluang tepat <i>k</i> berhasil mengikuti <span data-term="binom">distribusi binomial</span>:</p>
+<div class="icd-eq"><math display="block"><mi>P</mi><mo>(</mo><mi>k</mi><mo>)</mo><mo>=</mo><mrow><mo>(</mo><mfrac linethickness="0"><mi>n</mi><mi>k</mi></mfrac><mo>)</mo></mrow><msup><mi>p</mi><mi>k</mi></msup><msup><mrow><mo>(</mo><mn>1</mn><mo>&#x2212;</mo><mi>p</mi><mo>)</mo></mrow><mrow><mi>n</mi><mo>&#x2212;</mo><mi>k</mi></mrow></msup></math><span class="alt">P(k) = C(n, k) · p^k · (1 − p)^(n − k)</span></div>
+<p>Faktor <i>p</i><sup><i>k</i></sup>(1 − <i>p</i>)<sup><i>n</i>−<i>k</i></sup> adalah peluang satu urutan tertentu dengan <i>k</i> berhasil; faktor C(<i>n</i>, <i>k</i>) menghitung banyaknya urutan seperti itu (bagian 4.9). Rata-ratanya <i>np</i> dan variansinya <i>np</i>(1 − <i>p</i>).</p>
+<p>Bila <i>n</i> sangat besar dan <i>p</i> sangat kecil, yang penting hanya hasil kalinya, λ = <i>np</i> (rata-rata jumlah kejadian), dan binomial menjadi <span data-term="poisson">distribusi Poisson</span>: <i>P</i>(<i>k</i>) = λ<sup><i>k</i></sup><i>e</i><sup>−λ</sup>/<i>k</i>!. Khususnya <i>P</i>(0) = <i>e</i><sup>−λ</sup>. Inilah asal model yield di M00: jika rata-rata jumlah cacat per die adalah λ = <i>D</i><sub>0</sub><i>A</i>, peluang sebuah die bebas cacat adalah <i>e</i><sup>−<i>D</i>₀<i>A</i></sup>.</p>
+
+<h3>4.8 Monte Carlo</h3>
+<p>Bila hubungan antara variasi dan hasil terlalu rumit untuk rumus, pakai <span data-term="mc">Monte Carlo</span>: (1) bangkitkan nilai acak setiap parameter dari sebarannya, (2) hitung atau simulasikan hasilnya, (3) ulangi <i>N</i> kali, (4) hitung rata-rata, simpangan baku, dan pecahan yang gagal.</p>
+<p><strong>Galatnya.</strong> Rata-rata dari <i>N</i> sampel sendiri adalah besaran acak dengan simpangan baku σ/√<i>N</i> (bagian 4.5). Untuk taksiran peluang gagal <i>p</i> dari <i>N</i> percobaan, simpangan bakunya</p>
+<div class="icd-eq"><math display="block"><msub><mi>&#x3C3;</mi><mover><mi>p</mi><mo>^</mo></mover></msub><mo>=</mo><msqrt><mfrac><mrow><mi>p</mi><mo>(</mo><mn>1</mn><mo>&#x2212;</mo><mi>p</mi><mo>)</mo></mrow><mi>N</mi></mfrac></msqrt></math><span class="alt">σ_p̂ = √(p(1 − p)/N)</span></div>
+<p>(dari variansi binomial <i>Np</i>(1 − <i>p</i>) dibagi <i>N</i>²). Dua akibat praktis. Pertama, agar galat turun sepuluh kali, jumlah sampel harus naik seratus kali. Kedua, untuk mengukur <i>p</i> kecil dengan galat relatif ε diperlukan kira-kira <i>N</i> ≈ 1/(<i>p</i>ε²) sampel: peluang 10<sup>−3</sup> dengan galat 10% butuh 100 000 percobaan.</p>
+<div class="icd-box model"><b>Model buku teks lawan kenyataan</b>Seluruh bagian ini mengandaikan sebaran normal dan variabel yang saling bebas. Pada devais nyata, ekor sebaran sering tidak normal: arus bocor, misalnya, bergantung eksponensial pada tegangan ambang sehingga sebarannya miring (log-normal). Variasi juga punya bagian yang berkorelasi antar transistor berdekatan. Rumus di sini memberi intuisi dan taksiran pertama yang benar; signoff memakai model yang dikarakterisasi dari silikon (M06c, M22c).</div>
+
+<h3>4.9 Menghitung kemungkinan</h3>
+<ul>
+<li><strong>Aturan perkalian.</strong> Jika pilihan pertama punya <i>m</i> cara dan pilihan kedua <i>n</i> cara, gabungannya <i>m</i> · <i>n</i> cara. Sebuah kata <i>n</i> bit punya 2 · 2 · … · 2 = 2<sup><i>n</i></sup> nilai.</li>
+<li><strong><span data-term="faktorial">Faktorial</span> dan permutasi.</strong> Banyaknya cara mengurutkan <i>n</i> benda berbeda adalah <i>n</i>! = <i>n</i> · (<i>n</i> − 1) · … · 1, dengan 0! = 1. Mengurutkan <i>k</i> benda yang dipilih dari <i>n</i>: <i>n</i>!/(<i>n</i> − <i>k</i>)!.</li>
+<li><strong><span data-term="kombinasi">Kombinasi</span>.</strong> Banyaknya cara memilih <i>k</i> dari <i>n</i> tanpa memedulikan urutan:</li>
+</ul>
+<div class="icd-eq"><math display="block"><mrow><mo>(</mo><mfrac linethickness="0"><mi>n</mi><mi>k</mi></mfrac><mo>)</mo></mrow><mo>=</mo><mfrac><mrow><mi>n</mi><mo>!</mo></mrow><mrow><mi>k</mi><mo>!</mo><mo>(</mo><mi>n</mi><mo>&#x2212;</mo><mi>k</mi><mo>)</mo><mo>!</mo></mrow></mfrac></math><span class="alt">C(n, k) = n! / (k!·(n − k)!)</span></div>
+<p><em>Alasannya:</em> ada <i>n</i>!/(<i>n</i> − <i>k</i>)! cara memilih berurutan, dan setiap kelompok <i>k</i> benda terhitung <i>k</i>! kali (sekali untuk tiap urutannya), jadi dibagi <i>k</i>!. <strong>Contoh:</strong> banyaknya kata 8 bit yang memuat tepat tiga bit 1 adalah C(8, 3) = 56. Banyaknya pasangan sinyal yang mungkin saling mengganggu di antara 64 kawat sejajar adalah C(64, 2) = 2 016.</p>
+
+<h3>4.10 Himpunan dan logika</h3>
+<p>Sebuah <span data-term="himpunan">himpunan</span> adalah kumpulan benda tanpa urutan dan tanpa pengulangan. Operasinya: gabungan <i>A</i> ∪ <i>B</i> (anggota <i>A</i> atau <i>B</i>), irisan <i>A</i> ∩ <i>B</i> (anggota keduanya), dan komplemen (bukan anggota). Ketiganya berpadanan langsung dengan operasi logika OR, AND, dan NOT pada pernyataan benar-salah. Hukum De Morgan berlaku di kedua dunia: komplemen dari gabungan adalah irisan komplemen-komplemennya, atau dalam logika NOT(<i>a</i> OR <i>b</i>) = (NOT <i>a</i>) AND (NOT <i>b</i>). Aljabar ini dikembangkan penuh di <a href="m08a-boolean-kmap.html">M08a</a>.</p>
+
+<h3>4.11 Aritmetika modular</h3>
+<p><i>a</i> mod <i>n</i> adalah sisa pembagian <i>a</i> oleh <i>n</i>, selalu di antara 0 dan <i>n</i> − 1. <span data-term="mod">Aritmetika modular</span> adalah aritmetika "jam": setelah <i>n</i> − 1 kembali ke 0. Hardware digital bekerja seperti ini secara alami: register <i>n</i> bit hanya menyimpan nilai mod 2<sup><i>n</i></sup>, sehingga counter 8 bit yang berisi 250 lalu ditambah 10 menjadi 260 mod 256 = 4.</p>
+<p>Sifat yang berguna: penjumlahan, pengurangan, dan perkalian boleh dilakukan dulu lalu diambil modulonya, atau diambil modulonya dulu; hasilnya sama. Karena itu selisih dua penunjuk yang sudah "berputar" tetap benar: dengan penunjuk tulis 3 dan penunjuk baca 250 pada penunjuk 8 bit, jumlah isi FIFO adalah (3 − 250) mod 256 = 9.</p>
+<p>Kasus khusus <i>n</i> = 2: penjumlahan mod 2 adalah operasi XOR (1 + 1 = 0). Aritmetika ini mendasari parity, CRC, dan kode koreksi galat di M03b.</p>
+
+<h3>4.12 Graf</h3>
+<p>Sebuah <span data-term="graf">graf</span> terdiri dari <span data-term="simpul">simpul</span> (vertex) dan <span data-term="sisi">sisi</span> (edge) yang menghubungkan pasangan simpul. Pada graf <em>berarah</em>, setiap sisi punya arah. Sebuah <em>path</em> adalah urutan simpul yang tersambung searah. <em>Siklus</em> adalah path yang kembali ke simpul awalnya. Graf berarah tanpa siklus disebut <span data-term="dag">DAG</span> (directed acyclic graph).</p>
+<p>Rangkaian kombinasional adalah DAG: gerbang sebagai simpul, kawat sebagai sisi dari keluaran ke masukan, dan tidak ada lingkaran umpan balik. Dua algoritma pada DAG mendasari banyak tool:</p>
+<ul>
+<li><strong><span data-term="topo">Urutan topologis</span>:</strong> susunan semua simpul sehingga setiap sisi mengarah dari simpul yang lebih awal ke yang lebih akhir. Caranya (algoritma Kahn): ambil simpul yang tidak punya sisi masuk, keluarkan, hapus sisi-sisinya, ulangi. Jika pada suatu saat tidak ada simpul yang bisa diambil padahal masih ada sisa, graf itu memuat siklus.</li>
+<li><strong>Path terpanjang:</strong> proses simpul menurut urutan topologis; waktu tiba di sebuah simpul adalah waktu tiba terbesar di antara pendahulunya, ditambah delay simpul itu sendiri. Karena pendahulu selalu diproses lebih dulu, satu kali lewat sudah cukup.</li>
+</ul>
+<p>Yang kedua adalah inti static timing analysis (M22): waktu tiba terlama di keluaran menentukan periode clock minimum, dan path yang menghasilkannya disebut <span data-term="critpath">critical path</span>.</p>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Sistem persamaan linear</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Beberapa persamaan dengan beberapa yang tidak diketahui bisa disusun rapi sebagai tabel angka. Caranya menyelesaikan: kurangi satu persamaan dari yang lain sampai tiap persamaan menyisakan satu yang tidak diketahui. Bila dua persamaan sebenarnya mengatakan hal yang sama, informasinya kurang dan tidak ada jawaban tunggal.</p></div>
+<div data-level="engineer"><p>Analisis nodal menghasilkan <i>G</i><b>v</b> = <b>i</b>: matriks konduktansi kali tegangan simpul sama dengan arus yang disuntikkan. Elemen diagonal adalah jumlah konduktansi yang menempel di simpul itu; elemen di luar diagonal adalah minus konduktansi antar dua simpul. Matriksnya simetris, dan singular bila ada bagian rangkaian yang tidak punya jalur ke ground: itulah arti pesan "singular matrix" atau "floating node" di SPICE. Dalam kode, jangan menghitung invers; pakai penyelesai (<code>numpy.linalg.solve</code>).</p></div>
+<div data-level="pakar"><p>Matriks rangkaian sangat jarang (sparse): tiap simpul hanya terhubung ke beberapa tetangga, sehingga hampir semua elemennya nol. Penyelesai sparse menyusun ulang urutan eliminasi untuk meminimalkan elemen baru yang muncul (fill-in) dan mencapai biaya yang jauh di bawah <i>n</i>³. Untuk jaringan daya berukuran miliaran simpul dipakai metode iteratif seperti conjugate gradient dengan prekondisi multigrid. Bilangan kondisi matriks menentukan seberapa besar galat pembulatan diperbesar; rangkaian dengan rentang konduktansi sangat lebar (10<sup>−12</sup> sampai 10<sup>3</sup> S) berkondisi buruk, dan itulah fungsi parameter <code>gmin</code> di SPICE.</p></div>
+</div>
+<h3>2. Sebaran dan sigma</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Tidak ada dua transistor yang persis sama. Nilai-nilainya mengumpul di sekitar rata-rata, dan σ mengukur lebar sebarannya. Makin jauh dari rata-rata (diukur dalam berapa σ), makin jarang terjadi: di luar 3σ hanya sekitar 3 dari 1 000.</p></div>
+<div data-level="engineer"><p>Kebiasaan kerja: ubah setiap batas spesifikasi menjadi jumlah sigma, lalu menjadi ppm. Untuk blok yang diulang <i>N</i> kali, sigma yang dibutuhkan naik perlahan terhadap <i>N</i>: sekitar 4.3σ untuk seribu sel, 5.6σ untuk sejuta sel, 6.7σ untuk semiliar sel pada target yield 99% (satu sisi). Saat menggabungkan variasi yang bebas, pakai RSS; saat menggabungkan variasi yang berkorelasi penuh, jumlahkan langsung.</p></div>
+<div data-level="pakar"><p>Mismatch tegangan ambang dua transistor berdekatan mengikuti hukum Pelgrom: σ(Δ<i>V</i><sub>th</sub>) = <i>A</i><sub>VT</sub>/√(<i>WL</i>), turun dengan akar luas gate, konsekuensi langsung dari perata-rataan jumlah dopan yang lebih banyak. Format LVF di Liberty menyimpan σ delay tiap sel per kondisi slew dan beban, dan tool STA menggabungkannya sepanjang path secara statistik. Ekor sebaran nyata menyimpang dari normal, sehingga "6σ" di industri memori berarti peluang ekor setara 6σ normal, yang diverifikasi dengan metode ekor khusus, bukan dengan menaksir σ lalu mengalikan enam.</p></div>
+</div>
+<h3>3. Monte Carlo</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Coba berkali-kali dengan nilai acak, lalu hitung berapa kali hasilnya buruk. Makin banyak percobaan, makin tepat jawabannya, tetapi kemajuannya lambat: seratus kali lebih banyak percobaan hanya memberi sepuluh kali lebih teliti.</p></div>
+<div data-level="engineer"><p>Di SPICE, model devais dari PDK memuat sebaran statistik; analisis Monte Carlo menjalankan simulasi berulang dengan parameter acak. Beberapa ratus sampai beberapa ribu sampel cukup untuk menaksir μ dan σ sebuah offset atau delay. Selalu catat benih (seed) agar hasil bisa diulang, dan laporkan selang kepercayaan, bukan hanya angka tunggal: 0 gagal dari 1 000 sampel hanya membuktikan <i>p</i> di bawah kira-kira 0.3%.</p></div>
+<div data-level="pakar"><p>Untuk peluang 10<sup>−9</sup>, Monte Carlo biasa butuh sekitar 10<sup>11</sup> simulasi. Importance sampling menggeser sebaran pembangkit ke arah daerah gagal lalu mengoreksi setiap sampel dengan bobot rasio kerapatan, sehingga jumlah sampel turun banyak orde besaran; variasinya (mean-shift, minimum-norm, statistical blockade, scaled-sigma sampling) adalah alat baku karakterisasi sel SRAM. Urutan kuasi-acak (Sobol, Latin hypercube) mempercepat konvergensi rata-rata mendekati 1/<i>N</i> pada dimensi rendah.</p></div>
+</div>
+<h3>4. Graf dan urutan topologis</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Graf adalah titik-titik dan panah di antaranya. Urutan topologis adalah urutan mengerjakan titik sehingga setiap titik dikerjakan setelah semua yang menunjuk kepadanya, seperti memakai kaus kaki sebelum sepatu.</p></div>
+<div data-level="engineer"><p>Simulator dan tool sintesis melevelkan netlist kombinasional dengan urutan topologis agar tiap gerbang dievaluasi sekali. STA menjalankan dua lintasan: maju untuk waktu tiba (maksimum untuk setup, minimum untuk hold) dan mundur untuk waktu yang diwajibkan; selisihnya adalah slack. Siklus pada logika kombinasional (combinational loop) merusak semua ini, sehingga lint menandainya sebagai galat.</p></div>
+<div data-level="pakar"><p>Path terpanjang pada graf umum bersifat NP-hard; ia menjadi linear hanya karena grafnya DAG. Itulah sebabnya tool memutus loop dan memperlakukan flip-flop sebagai titik awal dan akhir. Banyak masalah EDA lain memang NP-hard (partisi, placement, routing, technology mapping optimal), sehingga tool memakai heuristik dan hasilnya bergantung pada benih serta urutan; perubahan kecil pada masukan bisa menggeser hasil beberapa persen. Enumerasi <i>k</i> path terburuk dan analisis berbasis path (PBA) mengurangi pesimisme analisis berbasis graf dengan biaya waktu hitung.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Eliminasi Gauss langkah demi langkah</h3></header>
+  <div class="stage"><div id="v1-mat" style="overflow-x:auto"></div><p id="v1-desc" style="margin:8px 0 0" aria-live="polite"></p></div>
+  <div class="params">
+    <label class="icd-field">Sistem<select class="icd-select" id="v1-pre"><option value="node">Rangkaian tiga simpul</option><option value="swap">Butuh tukar baris</option><option value="sing">Baris kedua = 2 × baris pertama</option></select></label>
+    <label class="icd-field"><span>Konduktansi simpul 1 ke 2 = <b id="v1-gv"></b></span><input type="range" id="v1-g" min="0" max="5" step="0.5" value="1"></label>
+    <label class="icd-field"><span>Arus ke simpul 1 = <b id="v1-iv"></b></span><input type="range" id="v1-i" min="0" max="6" step="0.5" value="2"></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Rangkaian tiga simpul: tiap simpul terhubung ke ground lewat 1 mS dan ke simpul 3 lewat 1 mS; konduktansi antara simpul 1 dan 2 bisa diubah. Satuan mS, mA, V. Eliminasi memakai pivot parsial (baris ditukar agar pivot adalah elemen terbesar di kolomnya). Angka ditampilkan dengan empat angka penting; perhitungan memakai ketelitian penuh.</div>
+</div>
+<div class="icd-guide" data-id="v1-sing" data-answer="1">
+  <p>Sebuah sistem tiga persamaan punya baris kedua yang persis dua kali baris pertama. Apa yang terjadi saat eliminasi?</p>
+  <ul><li>Tidak ada masalah; hasilnya tetap satu solusi</li><li>Muncul baris yang seluruhnya nol, pivot menjadi nol, dan tidak ada solusi tunggal</li><li>Solusinya menjadi dua kali lebih besar</li><li>Eliminasi selesai satu langkah lebih cepat dengan satu solusi</li></ul>
+  <div class="explain"><p>Baris kedua tidak membawa informasi baru: Anda hanya punya dua persamaan untuk tiga yang tidak diketahui. Eliminasi mengungkapnya sebagai baris nol; pivotnya nol dan determinan nol. Pilih sistem ketiga dan langkahkan untuk melihatnya. Pada rangkaian, hal serupa terjadi bila sebuah simpul tidak punya jalur ke ground.</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Distribusi normal: dari sigma ke yield</h3></header>
+  <div class="stage"><div id="v2-svg" style="overflow-x:auto"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Rata-rata μ = <b id="v2-mv"></b></span><input type="range" id="v2-m" min="80" max="120" step="1" value="100"></label>
+    <label class="icd-field"><span>Simpangan baku σ = <b id="v2-sv"></b></span><input type="range" id="v2-s" min="2" max="12" step="0.5" value="5"></label>
+    <label class="icd-field"><span>Batas = μ ± <b id="v2-kv"></b></span><input type="range" id="v2-k" min="0.5" max="7" step="0.1" value="3"></label>
+    <label class="icd-field">Jumlah sel yang semuanya harus di dalam batas<select class="icd-select" id="v2-n"><option value="1">1</option><option value="100">100</option><option value="10000">10 ribu</option><option value="1000000" selected>1 juta</option><option value="1000000000">1 miliar</option></select></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Kurva adalah kerapatan normal eksak; luas dihitung dari fungsi galat komplementer (pendekatan numerik dengan galat relatif sekitar 10<sup>−7</sup>). Sumbu mendatar diberi satuan ps sebagai contoh delay. Yield mengandaikan semua sel saling bebas dan gagal bila berada di luar batas di sisi mana pun. Sebaran devais nyata menyimpang dari normal di ekornya.</div>
+</div>
+<div class="icd-guide" data-id="v2-juta" data-answer="2">
+  <p>Satu juta sel, masing-masing harus berada dalam ±3σ. Kira-kira berapa sel yang berada di luar batas?</p>
+  <ul><li>Tidak ada; 3σ sudah mencakup "hampir semua"</li><li>Sekitar 3</li><li>Sekitar 2 700</li><li>Sekitar 270 000</li></ul>
+  <div class="explain"><p>Di luar ±3σ ada 0.27%, yaitu 2 700 per sejuta. "Hampir semua" untuk satu sel berarti ribuan kegagalan untuk sejuta sel, dan yield chipnya praktis nol. Geser batas ke 5σ dan 6σ dan perhatikan jumlah sel gagal turun ke bawah satu; baru di situ yield chip menjadi tinggi.</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Monte Carlo: delay sebuah path</h3></header>
+  <div class="stage"><div id="v3-svg" style="overflow-x:auto"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Jumlah gerbang n = <b id="v3-nv"></b></span><input type="range" id="v3-n" min="1" max="64" step="1" value="16"></label>
+    <label class="icd-field"><span>σ tiap gerbang = <b id="v3-sv"></b></span><input type="range" id="v3-s" min="0.5" max="4" step="0.5" value="2"></label>
+    <label class="icd-field"><span>Batas periode = rata-rata + <b id="v3-kv"></b></span><input type="range" id="v3-k" min="0" max="4" step="0.25" value="2.5"></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model">Setiap sampel adalah jumlah n delay gerbang yang saling bebas, masing-masing normal dengan rata-rata 20 ps. Tiap langkah menambah 200 sampel, sampai 20 000. Bilangan acak dibangkitkan dengan xorshift 32 bit berbenih 1 dan transformasi Box-Muller, sama persis dengan skrip di bagian Kode, sehingga hasilnya bisa diulang. Kurva adalah sebaran teoretis normal dengan σ = σ<sub>gerbang</sub>·√n.</div>
+</div>
+<div class="icd-guide" data-id="v3-rss" data-answer="1">
+  <p>Path berisi 16 gerbang yang saling bebas, masing-masing dengan σ = 2 ps. Berapa σ delay path?</p>
+  <ul><li>2 ps, sama dengan satu gerbang</li><li>8 ps</li><li>32 ps</li><li>0.5 ps</li></ul>
+  <div class="explain"><p>Variansi dijumlahkan: 16 × 2² = 64 ps², akarnya 8 ps. Jawaban 32 ps (16 × 2) hanya benar bila semua gerbang berubah bersama-sama. Jawaban 0.5 ps adalah σ <em>rata-rata</em> delay per gerbang (2/√16), bukan jumlahnya. Jalankan simulasi dan bandingkan σ sampel dengan 8 ps; lalu ubah n menjadi 64 dan perhatikan σ hanya naik dua kali.</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Graf timing: urutan topologis dan path terpanjang</h3></header>
+  <div class="stage"><div id="v4-svg" style="overflow-x:auto"></div><p id="v4-desc" style="margin:6px 0 0" aria-live="polite"></p></div>
+  <div class="params">
+    <label class="icd-field"><span>Delay G1 = <b id="v4-d1v"></b></span><input type="range" id="v4-d1" min="10" max="80" step="5" value="30"></label>
+    <label class="icd-field"><span>Delay G4 = <b id="v4-d4v"></b></span><input type="range" id="v4-d4" min="10" max="80" step="5" value="20"></label>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Lima gerbang dan tiga masukan; delay gerbang lain tetap (G2 45 ps, G3 25 ps, G5 15 ps), masukan tiba pada t = 0, dan delay kawat diabaikan. Waktu tiba = waktu tiba terbesar di antara pendahulu + delay gerbang. Ini model STA paling sederhana; STA nyata memisahkan tepi naik dan turun serta memperhitungkan slew dan beban.</div>
+</div>
+<div class="icd-guide" data-id="v4-slack" data-answer="0">
+  <p>Pada pengaturan awal, waktu tiba di keluaran adalah 85 ps. Jika delay G1 naik dari 30 ps menjadi 40 ps, berapa waktu tiba di keluaran?</p>
+  <ul><li>Tetap 85 ps</li><li>95 ps</li><li>90 ps</li><li>75 ps</li></ul>
+  <div class="explain"><p>G1 tidak berada di critical path. Di masukan G3, sinyal dari G2 tiba pada 45 ps sedangkan dari G1 pada 30 ps, jadi G1 punya kelonggaran 15 ps sebelum mulai menentukan. Kelonggaran itu disebut slack. Naikkan G1 sampai 50 ps dan perhatikan critical path berpindah.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+<h3>Contoh 1: invers 2 × 2</h3>
+<p><strong>Soal.</strong> Selesaikan 4<i>x</i> + 2<i>y</i> = 10 dan <i>x</i> + 3<i>y</i> = 5 dengan invers matriks.</p>
+<ol>
+<li><i>A</i> punya baris (4, 2) dan (1, 3); <b>b</b> = (10, 5).</li>
+<li>det <i>A</i> = 4 × 3 − 2 × 1 = 10. Tidak nol, jadi ada solusi tunggal.</li>
+<li><i>A</i><sup>−1</sup> = (1/10) × matriks berbaris (3, −2) dan (−1, 4).</li>
+<li><i>x</i> = (3 × 10 − 2 × 5)/10 = 2. <i>y</i> = (−1 × 10 + 4 × 5)/10 = 1.</li>
+<li>Periksa: 4 × 2 + 2 × 1 = 10 dan 2 + 3 × 1 = 5. Cocok.</li>
+</ol>
+
+<h3>Contoh 2: statistik sebuah path</h3>
+<p><strong>Soal.</strong> Path berisi 25 gerbang; tiap gerbang 12 ps dengan σ = 1.5 ps, saling bebas. (a) Berapa rata-rata dan σ delay path? (b) Bandingkan batas 3σ statistik dengan kasus terburuk "semua gerbang +3σ". (c) Berapa peluang delay melampaui 315 ps?</p>
+<ol>
+<li>(a) Rata-rata = 25 × 12 = 300 ps. σ = 1.5 × √25 = 7.5 ps.</li>
+<li>(b) Statistik: 300 + 3 × 7.5 = 322.5 ps. Kasus terburuk: 25 × (12 + 4.5) = 412.5 ps.</li>
+<li>(c) <i>z</i> = (315 − 300)/7.5 = 2. Peluang satu sisi di atas 2σ = 2.28%.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Merancang untuk 412.5 ps padahal 322.5 ps sudah mencakup 99.87% chip berarti membuang 28% kecepatan. Sebaliknya, bila sebagian variasi ternyata berkorelasi, 322.5 ps terlalu optimis. Menentukan campuran yang tepat adalah pekerjaan signoff.</p>
+
+<h3>Contoh 3: yield sebuah memori</h3>
+<p><strong>Soal.</strong> Memori 1 Mbit. Sebuah sel gagal bila sebuah parameternya melampaui batas di satu sisi. Berapa yield memori bila batas itu berada di 4σ, 5σ, dan 6σ? (Tanpa perbaikan atau ECC.)</p>
+<ol>
+<li>Peluang gagal satu sel dari tabel: 3.17 × 10<sup>−5</sup>, 2.87 × 10<sup>−7</sup>, 9.87 × 10<sup>−10</sup>.</li>
+<li>Rata-rata jumlah sel gagal λ = 10<sup>6</sup> × <i>p</i>: 31.7, 0.287, dan 0.000987.</li>
+<li>Yield = <i>e</i><sup>−λ</sup>: praktis 0%, 75.1%, dan 99.90%.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Dari 4σ ke 5σ, yield melompat dari nol ke tiga perempat. Karena itulah memori nyata menyediakan baris dan kolom cadangan serta ECC (M29): keduanya mengizinkan beberapa sel gagal tanpa membuang chip.</p>
+
+<h3>Contoh 4: mengapa tidak semua masukan bisa dicoba</h3>
+<p><strong>Soal.</strong> Adder 32 bit punya dua masukan 32 bit. Jika simulator mencoba satu miliar kombinasi per detik, berapa lama untuk mencoba semuanya?</p>
+<ol>
+<li>Jumlah kombinasi: 2<sup>32</sup> × 2<sup>32</sup> = 2<sup>64</sup> (aturan perkalian).</li>
+<li>Taksir: 2<sup>64</sup> = 2<sup>4</sup> × 2<sup>60</sup> ≈ 16 × 10<sup>18</sup> = 1.6 × 10<sup>19</sup> (tepatnya 1.84 × 10<sup>19</sup>).</li>
+<li>Waktu: 1.84 × 10<sup>19</sup> / 10<sup>9</sup> = 1.84 × 10<sup>10</sup> detik.</li>
+<li>Satu tahun ≈ 3.16 × 10<sup>7</sup> detik, jadi sekitar 585 tahun.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Itu baru adder tanpa penyimpan. Blok dengan register punya ruang keadaan yang jauh lebih besar. Verifikasi tidak pernah mencoba semuanya; ia memilih dengan cerdas dan membuktikan secara matematis.</p>
+
+<h3>Contoh 5: penunjuk FIFO yang berputar</h3>
+<p><strong>Soal.</strong> FIFO dengan penunjuk 4 bit (nilai 0 sampai 15). Penunjuk tulis berada di 1 setelah berputar, penunjuk baca di 14. Berapa isi FIFO?</p>
+<ol>
+<li>Isi = (tulis − baca) mod 16 = (1 − 14) mod 16 = −13 mod 16.</li>
+<li>Tambah 16 sampai tidak negatif: −13 + 16 = 3.</li>
+<li>Periksa dengan menghitung: dari 14 ke 15, ke 0, ke 1 adalah tiga langkah.</li>
+</ol>
+<p><strong>Pelajaran.</strong> Di hardware Anda tidak perlu melakukan apa pun: pengurang 4 bit otomatis membuang bit pinjaman, yang sama dengan mengambil mod 16.</p>
+
+<h3>Contoh 6: urutan topologis dan waktu tiba</h3>
+<p><strong>Soal.</strong> Gerbang G1 (30 ps) menerima masukan a dan b. G2 (45 ps) menerima a dan c. G3 (20 ps) menerima keluaran G1 dan G2. Semua masukan tiba pada <i>t</i> = 0. Cari urutan topologis dan waktu tiba di G3.</p>
+<ol>
+<li>Simpul tanpa sisi masuk: a, b, c. Keluarkan ketiganya.</li>
+<li>Sekarang G1 dan G2 tidak punya pendahulu tersisa. Keluarkan G1, lalu G2.</li>
+<li>Tersisa G3. Urutan: a, b, c, G1, G2, G3.</li>
+<li>Waktu tiba: G1 = max(0, 0) + 30 = 30. G2 = 0 + 45 = 45. G3 = max(30, 45) + 20 = 65 ps.</li>
+<li>Critical path: lewat G2 lalu G3. G1 punya slack 15 ps.</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Skrip ini memuat satu fungsi untuk tiap alat di modul: penyelesai sistem linear, statistik dasar, pembangkit bilangan acak, Monte Carlo, dan dua algoritma graf. Pembangkit acaknya ditulis sendiri agar keluaran di halaman ini sama persis dengan yang Anda dapatkan di komputer mana pun.</p>
+<pre class="icd-src" data-lang="py">
+"""mc.py : aljabar linear, statistik, Monte Carlo, dan graf untuk engineer chip."""
+import math
+
+
+def solve(A, b):
+    """Selesaikan A x = b dengan eliminasi Gauss dan pivot parsial."""
+    n = len(A)
+    M = [row[:] + [bi] for row, bi in zip(A, b)]          # matriks diperluas
+    for c in range(n):
+        p = max(range(c, n), key=lambda r: abs(M[r][c]))  # baris pivot terbesar
+        if abs(M[p][c]) &lt; 1e-12:
+            raise ValueError("matriks singular")
+        M[c], M[p] = M[p], M[c]
+        for r in range(c + 1, n):
+            f = M[r][c] / M[c][c]
+            M[r] = [x - f * y for x, y in zip(M[r], M[c])]
+    x = [0.0] * n
+    for r in range(n - 1, -1, -1):                        # substitusi mundur
+        x[r] = (M[r][n] - sum(M[r][k] * x[k] for k in range(r + 1, n))) / M[r][r]
+    return x
+
+
+def mean(xs):
+    return sum(xs) / len(xs)
+
+
+def std(xs):
+    """Simpangan baku sampel (pembagi n - 1)."""
+    m = mean(xs)
+    return math.sqrt(sum((x - m) ** 2 for x in xs) / (len(xs) - 1))
+
+
+def tail(k):
+    """Peluang variabel normal melebihi k sigma di satu sisi."""
+    return 0.5 * math.erfc(k / math.sqrt(2))
+
+
+class Rng:
+    """Pembangkit bilangan acak xorshift 32 bit: hasil sama di semua komputer."""
+
+    def __init__(self, seed=1):
+        self.s = (seed &amp; 0xFFFFFFFF) or 1
+
+    def u32(self):
+        x = self.s
+        x ^= (x &lt;&lt; 13) &amp; 0xFFFFFFFF
+        x ^= x &gt;&gt; 17
+        x ^= (x &lt;&lt; 5) &amp; 0xFFFFFFFF
+        self.s = x
+        return x
+
+    def uniform(self):
+        """Bilangan seragam di antara 0 dan 1."""
+        return (self.u32() + 0.5) / 2 ** 32
+
+    def gauss(self, mu, sigma):
+        """Bilangan berdistribusi normal lewat transformasi Box-Muller."""
+        u1, u2 = self.uniform(), self.uniform()
+        return mu + sigma * math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
+
+
+def path_mc(n_gates, mu, sigma, trials, seed=1):
+    """Monte Carlo delay path: jumlah n_gates delay gerbang yang saling bebas."""
+    rng = Rng(seed)
+    return [sum(rng.gauss(mu, sigma) for _ in range(n_gates)) for _ in range(trials)]
+
+
+def topo_order(succ):
+    """Urutan topologis graf berarah tanpa siklus (algoritma Kahn)."""
+    indeg = {v: 0 for v in succ}
+    for v in succ:
+        for w in succ[v]:
+            indeg[w] += 1
+    ready = sorted(v for v in succ if indeg[v] == 0)
+    order = []
+    while ready:
+        v = ready.pop(0)
+        order.append(v)
+        for w in succ[v]:
+            indeg[w] -= 1
+            if indeg[w] == 0:
+                ready.append(w)
+    if len(order) != len(succ):
+        raise ValueError("graf memuat siklus")
+    return order
+
+
+def arrival(succ, delay):
+    """Waktu tiba terlama di setiap simpul (path terpanjang)."""
+    at = {v: delay[v] for v in succ}
+    for v in topo_order(succ):
+        for w in succ[v]:
+            at[w] = max(at[w], at[v] + delay[w])
+    return at
+
+
+def close(a, b, tol=1e-9):
+    return abs(a - b) &lt;= tol * max(1.0, abs(a), abs(b))
+
+
+if __name__ == "__main__":
+    # 1. Aljabar linear
+    x = solve([[3, -1, -1], [-1, 3, -1], [-1, -1, 3]], [2, 0, 0])
+    assert all(close(a, b) for a, b in zip(x, [1, 0.5, 0.5]))
+    assert all(close(a, b) for a, b in zip(solve([[4, 2], [1, 3]], [10, 5]), [2, 1]))
+    assert all(close(a, b) for a, b in zip(solve([[0, 1], [1, 0]], [7, 9]), [9, 7]))  # butuh pivot
+    try:
+        solve([[1, 2], [2, 4]], [3, 6])
+        raise AssertionError("seharusnya singular")
+    except ValueError:
+        pass
+
+    # 2. Distribusi normal
+    assert close(1 - 2 * tail(1), 0.6826894921)
+    assert close(1 - 2 * tail(2), 0.9544997361)
+    assert close(1 - 2 * tail(3), 0.9973002039)
+    assert close(tail(3), 1.349898e-3, 1e-6)
+
+    # 3. Monte Carlo: path 16 gerbang, tiap gerbang 20 ps dengan sigma 2 ps
+    d = path_mc(16, 20.0, 2.0, 20000, seed=1)
+    assert abs(mean(d) - 320) &lt; 0.2 and abs(std(d) - 8) &lt; 0.2
+    frac = sum(v &gt; 340 for v in d) / len(d)
+    assert abs(frac - tail(2.5)) &lt; 0.002
+
+    # 4. Graf: urutan topologis dan path terpanjang
+    succ = {"a": ["g1", "g2"], "b": ["g1"], "c": ["g2"], "g1": ["g3"], "g2": ["g3"], "g3": []}
+    delay = {"a": 0, "b": 0, "c": 0, "g1": 30, "g2": 45, "g3": 20}
+    order = topo_order(succ)
+    assert order.index("g1") &lt; order.index("g3") and order.index("a") &lt; order.index("g2")
+    assert arrival(succ, delay)["g3"] == 65
+    try:
+        topo_order({"p": ["q"], "q": ["p"]})
+        raise AssertionError("seharusnya ada siklus")
+    except ValueError:
+        pass
+
+    # 5. Hitung dan aritmetika modular
+    assert math.comb(8, 3) == 56 and math.factorial(5) == 120
+    assert (250 + 10) % 256 == 4 and (3 - 250) % 256 == 9
+    assert 0b1011 ^ 0b0110 == 0b1101
+    print("Semua uji lulus.")
+
+    print("tegangan simpul      =", [round(v, 6) for v in x])
+    print(f"dalam 1, 2, 3 sigma  = {1 - 2 * tail(1):.4%}, {1 - 2 * tail(2):.4%}, {1 - 2 * tail(3):.4%}")
+    print(f"path 16 gerbang      : rata-rata {mean(d):.2f} ps, sigma {std(d):.2f} ps (teori 320 dan 8)")
+    print(f"P(delay &gt; 340 ps)    : Monte Carlo {frac:.4%}, teori {tail(2.5):.4%}")
+    print(" sampel   rata-rata    galat")
+    for n in (100, 1000, 10000, 100000):
+        m = mean(path_mc(16, 20.0, 2.0, n, seed=7))
+        print(f" {n:&gt;6}   {m:9.4f}   {abs(m - 320):.4f}")
+    print("urutan topologis     =", order)
+    print("waktu tiba           =", arrival(succ, delay))
+    for k in (3, 4, 5, 6):
+        p = tail(k)
+        print(f" {k} sigma: p = {p:.3e}, yield 1 Mbit = {math.exp(-1e6 * p):.4%}")
+</pre>
+<ul>
+<li><strong>Baris 5 sampai 20, <code>solve</code>:</strong> eliminasi Gauss bagian 4.3. Baris 10 mencari pivot terbesar di kolom; baris 13 menukar baris; baris 14 sampai 16 menolkan elemen di bawah pivot; baris 18 sampai 19 substitusi mundur. Matriks singular dilaporkan sebagai galat, bukan dibagi nol secara diam-diam.</li>
+<li><strong>Baris 23 sampai 30, <code>mean</code> dan <code>std</code>:</strong> rumus bagian 4.5 dengan pembagi <i>N</i> − 1 untuk sampel.</li>
+<li><strong>Baris 33 sampai 35, <code>tail</code>:</strong> peluang ekor satu sisi distribusi normal. Memakai <code>erfc</code>, bukan 1 − <code>erf</code>, karena pada 6σ hasilnya 10<sup>−9</sup> dan pengurangan dua bilangan dekat 1 akan kehilangan hampir semua angka pentingnya.</li>
+<li><strong>Baris 38 sampai 59, <code>Rng</code>:</strong> pembangkit xorshift: tiga geseran dan XOR pada bilangan 32 bit, yang di hardware hanya berupa kawat dan gerbang XOR. <code>gauss</code> mengubah dua bilangan seragam menjadi satu bilangan normal dengan transformasi Box-Muller.</li>
+<li><strong>Baris 62 sampai 65, <code>path_mc</code>:</strong> Monte Carlo bagian 4.8 dalam dua baris: setiap percobaan menjumlahkan <code>n_gates</code> delay acak.</li>
+<li><strong>Baris 68 sampai 85, <code>topo_order</code>:</strong> algoritma Kahn. <code>indeg</code> menghitung sisi masuk tiap simpul; simpul dengan hitungan nol siap dikeluarkan. Bila hasilnya lebih pendek dari jumlah simpul, ada siklus.</li>
+<li><strong>Baris 88 sampai 94, <code>arrival</code>:</strong> path terpanjang dalam satu lintasan menurut urutan topologis, yaitu inti STA.</li>
+<li><strong>Baris 101 sampai 141:</strong> uji. Perhatikan uji ketiga <code>solve</code> yang pivot pertamanya nol sehingga memaksa pertukaran baris, serta dua uji yang memastikan galat <em>memang</em> muncul untuk matriks singular dan graf bersiklus. Menguji jalur galat sama pentingnya dengan menguji jalur normal.</li>
+<li><strong>Baris 143 sampai 155:</strong> mencetak hasil contoh soal, tabel konvergensi Monte Carlo, dan tabel yield.</li>
+</ul>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif, bug sengaja, dan solusi perluasan dijalankan dengan Python 3 sebelum modul ditulis; keluaran di bagian Lab disalin apa adanya. Visualisasi 3 memakai pembangkit yang sama dan diuji menghasilkan angka yang sama dengan skrip.</div>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>Miskonsepsi</b>"<i>AB</i> = <i>BA</i>." Perkalian matriks tidak komutatif. Urutan menentukan hasil, dan sering salah satunya bahkan tidak terdefinisi.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Menyelesaikan <i>A</i><b>x</b> = <b>b</b> berarti menghitung invers." Invers lebih mahal dan kurang teliti. Penyelesai memakai eliminasi (faktorisasi LU) tanpa pernah membentuk invers.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Simpangan baku dijumlahkan." Untuk besaran yang saling bebas, variansi yang dijumlahkan. σ dari jumlah 16 gerbang ber-σ 2 ps adalah 8 ps, bukan 32 ps.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"3σ berarti aman." Untuk satu benda, ya. Untuk sejuta benda yang semuanya harus bekerja, 3σ berarti ribuan kegagalan.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Rata-ratanya memenuhi spesifikasi, jadi desainnya baik." Rata-rata tidak berkata apa pun tentang ekor sebaran. Dua desain dengan rata-rata sama bisa punya yield 99% dan 50%.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Nol kegagalan dari 1 000 sampel Monte Carlo berarti tidak akan gagal." Itu hanya menunjukkan peluang gagal kemungkinan besar di bawah sekitar 0.3%. Untuk mengklaim satu per sejuta, seribu sampel tidak membuktikan apa-apa.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Kejadian saling bebas sama dengan kejadian yang tidak mungkin bersamaan." Justru sebaliknya: dua kejadian yang tidak mungkin bersamaan sangat bergantung, karena terjadinya satu memastikan yang lain tidak terjadi.</div>
+<div class="icd-box trap"><b>Jebakan industri: menganggap variasi saling bebas</b>RSS hanya sah untuk bagian variasi yang acak dan lokal. Variasi global (antar wafer, antar lot) menggeser semua transistor bersama-sama dan harus dijumlahkan langsung. Memakai RSS untuk semuanya menghasilkan margin yang terlalu tipis; menjumlahkan langsung semuanya menghasilkan margin yang terlalu tebal.</div>
+<div class="icd-box trap"><b>Jebakan industri: combinational loop</b>Umpan balik tanpa flip-flop di logika kombinasional membuat graf bersiklus. Tool STA terpaksa memutus loop di tempat yang dipilihnya sendiri, sehingga sebagian path tidak dianalisis. Lint yang melaporkan combinational loop bukan peringatan gaya; itu lubang di signoff.</div>
+<div class="icd-box trap"><b>Jebakan industri: selisih satu pada penunjuk</b>Dengan penunjuk <i>n</i> bit, FIFO berisi 2<sup><i>n</i></sup> elemen dan FIFO kosong sama-sama memberi selisih 0 mod 2<sup><i>n</i></sup>. Solusi bakunya menambah satu bit pada penunjuk (M17a). Lupa hal ini menghasilkan FIFO yang melaporkan kosong padahal penuh.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Konsep modul ini</th><th scope="col">Muncul sebagai</th><th scope="col">Tool dan format</th></tr></thead>
+<tbody>
+<tr><th scope="row">Sistem linear <i>A</i><b>x</b> = <b>b</b></th><td>Titik kerja DC, tiap langkah transien, analisis IR drop</td><td>ngspice, Xyce; HSPICE, Spectre, AFS; penganalisis jaringan daya dalam alur physical design</td></tr>
+<tr><th scope="row">Monte Carlo</th><td>Analisis mismatch dan yield sel analog dan memori</td><td>Model statistik di PDK; pernyataan Monte Carlo pada simulator SPICE</td></tr>
+<tr><th scope="row">Sigma dan RSS</th><td>Derating timing: OCV, AOCV, POCV</td><td>Tabel sigma LVF di Liberty (<code>.lib</code>); OpenSTA, PrimeTime, Tempus</td></tr>
+<tr><th scope="row">Binomial dan Poisson</th><td>Model yield, laju soft error, perencanaan redundansi memori</td><td>Model yield foundry; M26, M29, M30</td></tr>
+<tr><th scope="row">Kombinatorik</th><td>Ukuran ruang keadaan, bin coverage, cross coverage</td><td>Covergroup SystemVerilog (M18b)</td></tr>
+<tr><th scope="row">Aritmetika modular</th><td>Counter, penunjuk FIFO, CRC, LFSR</td><td>RTL (M17), kode deteksi galat (M03b), BIST (M26b)</td></tr>
+<tr><th scope="row">Graf, urutan topologis, path terpanjang</th><td>Levelisasi simulasi, STA, placement, routing</td><td>Netlist Verilog, DEF; Yosys, OpenROAD, OpenSTA</td></tr>
+</tbody></table></div>
+<p>Untuk hitungan sehari-hari, engineer memakai Python dengan NumPy (<code>numpy.linalg.solve</code>, <code>numpy.random</code>) dan SciPy (<code>scipy.stats.norm</code>), serta pustaka graf seperti NetworkX untuk menganalisis netlist. Skrip di bagian 8 sengaja tidak memakai pustaka agar setiap langkah terlihat; di pekerjaan nyata pakailah pustaka yang sudah teruji.</p>
+<p>Dalam alur RTL-to-GDSII, statistik paling terasa di karakterisasi library dan signoff timing; graf di sintesis, STA, placement, dan routing; aljabar linear di semua simulasi rangkaian dan analisis jaringan daya.</p>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Hitung determinan matriks berbaris (2, 1) dan (1, 3), lalu selesaikan 2<i>x</i> + <i>y</i> = 5, <i>x</i> + 3<i>y</i> = 10.</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p>det = 2 × 3 − 1 × 1 = 5. Invers = (1/5) × baris (3, −1) dan (−1, 2). <i>x</i> = (15 − 10)/5 = 1; <i>y</i> = (−5 + 20)/5 = 3. Periksa: 2 + 3 = 5 dan 1 + 9 = 10.</p></details>
+<p><strong>1.2</strong> Hitung: (a) 6!, (b) C(5, 2), (c) (13 + 7) mod 16, (d) (17 − 30) mod 16, (e) 0xF0 XOR 0x3C.</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p>(a) 720. (b) 10. (c) 20 mod 16 = 4. (d) −13 mod 16 = 3. (e) 1111 0000 XOR 0011 1100 = 1100 1100 = 0xCC.</p></details>
+<p><strong>1.3</strong> Data lima pengukuran delay: 98, 100, 101, 103, 98 ps. Hitung rata-rata dan simpangan baku sampelnya.</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>Rata-rata = 500/5 = 100 ps. Simpangan: −2, 0, 1, 3, −2; kuadratnya 4, 0, 1, 9, 4, jumlah 18. Variansi sampel = 18/4 = 4.5 ps². σ = √4.5 = 2.12 ps.</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Offset masukan sebuah penguat berasal dari dua pasang transistor yang saling bebas, masing-masing menyumbang σ = 5 mV. Berapa σ offset total, dan berapa rentang ±3σ-nya?</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p>σ total = √(5² + 5²) = 7.07 mV. Rentang ±3σ = ±21.2 mV. Menjumlahkan langsung (10 mV) akan melebih-lebihkan.</p></details>
+<p><strong>2.2</strong> Sebuah lot berisi 10 chip; tiap chip gagal dengan peluang 0.1 secara saling bebas. Hitung peluang (a) tidak ada yang gagal, (b) tepat satu gagal, (c) paling sedikit satu gagal.</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>(a) 0.9<sup>10</sup> = 0.349. (b) C(10, 1) × 0.1 × 0.9<sup>9</sup> = 10 × 0.1 × 0.387 = 0.387. (c) 1 − 0.349 = 0.651.</p></details>
+<p><strong>2.3</strong> Delay sebuah blok berdistribusi normal dengan μ = 500 ps dan σ = 20 ps. Berapa periode clock agar tidak lebih dari 1 350 dari sejuta chip gagal karena blok ini?</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p>1 350 ppm satu sisi berpadanan dengan 3σ. Periode = 500 + 3 × 20 = 560 ps.</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Anda menjalankan Monte Carlo 2 000 sampel dan menemukan 12 gagal. Taksir peluang gagal beserta simpangan baku taksirannya. Berapa sampel dibutuhkan agar simpangan baku itu turun menjadi sepersepuluhnya?</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p><i>p</i> ≈ 12/2 000 = 0.006. Simpangan baku = √(0.006 × 0.994/2 000) = 0.0017. Jadi taksirannya 0.6% ± 0.17%: galat relatif hampir 30%. Agar turun sepuluh kali, sampel harus seratus kali lebih banyak: 200 000.</p></details>
+<p><strong>3.2</strong> Dua path menuju flip-flop yang sama: path A μ = 300 ps, σ = 10 ps; path B μ = 310 ps, σ = 2 ps. Mana yang lebih berbahaya untuk periode clock 325 ps? Apa pelajarannya untuk memilih "critical path"?</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Path A: <i>z</i> = (325 − 300)/10 = 2.5, peluang gagal 0.62%. Path B: <i>z</i> = (325 − 310)/2 = 7.5, peluang gagal praktis nol. Path A lebih berbahaya walaupun rata-ratanya lebih cepat. Pelajaran: critical path secara statistik bukan yang rata-ratanya terlama, melainkan yang jarak ke batasnya paling sedikit dalam satuan sigma. STA statistik mengurutkan path menurut ukuran ini.</p></details>
+<p><strong>3.3</strong> Buktikan dengan induksi bahwa 1 + 2 + … + <i>n</i> = <i>n</i>(<i>n</i> + 1)/2, lalu pakai hasilnya: berapa pasangan berbeda yang bisa dibentuk dari <i>n</i> sinyal, dan mengapa analisis crosstalk berpasangan mahal?</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>Dasar: untuk <i>n</i> = 1, ruas kiri 1 dan ruas kanan 1 × 2/2 = 1. Langkah: andaikan benar untuk <i>n</i>. Maka 1 + … + <i>n</i> + (<i>n</i> + 1) = <i>n</i>(<i>n</i> + 1)/2 + (<i>n</i> + 1) = (<i>n</i> + 1)(<i>n</i> + 2)/2, yaitu rumus untuk <i>n</i> + 1. Jadi benar untuk semua <i>n</i>. Jumlah pasangan dari <i>n</i> sinyal: sinyal kedua berpasangan dengan 1 sinyal sebelumnya, ketiga dengan 2, dan seterusnya: 1 + 2 + … + (<i>n</i> − 1) = <i>n</i>(<i>n</i> − 1)/2 = C(<i>n</i>, 2). Jumlah ini tumbuh sebanding <i>n</i>²: sejuta net punya sekitar 5 × 10<sup>11</sup> pasangan. Karena itu tool hanya memeriksa pasangan yang benar-benar berdekatan secara fisik.</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Mengapa memori dirancang sampai 6 sigma sedangkan logika biasa cukup 3 sigma?"</summary>
+<p><strong>Kerangka jawaban:</strong> Karena jumlah salinan. Yield = <i>e</i><sup>−<i>Np</i></sup>; dengan <i>N</i> jutaan sampai miliaran sel, <i>p</i> per sel harus sangat kecil. Beri angka: sejuta sel pada 3σ berarti ribuan sel gagal; pada 6σ berarti sekitar seperseribu sel gagal per chip. Sebut bahwa redundansi dan ECC melonggarkan syarat ini, dan bahwa pada logika sebuah path gagal hanya bila seluruh rantainya lambat sehingga perata-rataan membantu.</p></details>
+<details class="icd-sol"><summary>"Bagaimana variasi delay digabungkan sepanjang sebuah path?"</summary>
+<p><strong>Kerangka jawaban:</strong> Rata-rata dijumlahkan. Bagian variasi yang acak dan saling bebas digabung dengan akar jumlah kuadrat sehingga tumbuh sebanding √<i>n</i>; bagian yang berkorelasi (global) dijumlahkan langsung. Hubungkan dengan praktik: OCV memakai satu faktor derating pukul rata; AOCV membuat faktor itu mengecil untuk path yang lebih dalam; POCV dan LVF membawa σ tiap sel dan menggabungkannya secara statistik.</p></details>
+<details class="icd-sol"><summary>"Apa itu urutan topologis dan di mana dipakai?"</summary>
+<p><strong>Kerangka jawaban:</strong> Susunan simpul DAG sehingga setiap sisi mengarah maju. Dihitung dengan algoritma Kahn atau penelusuran mendalam dalam waktu sebanding jumlah simpul ditambah sisi. Dipakai di levelisasi simulasi, STA (propagasi waktu tiba), dan urutan kompilasi. Sebut syaratnya: tidak ada siklus, dan apa yang dilakukan tool bila ada combinational loop.</p></details>
+<details class="icd-sol"><summary>"Berapa sampel Monte Carlo yang Anda perlukan?"</summary>
+<p><strong>Kerangka jawaban:</strong> Tergantung apa yang ditaksir. Untuk μ dan σ, ratusan sampai ribuan cukup; galat rata-rata σ/√<i>N</i>. Untuk peluang gagal <i>p</i>, butuh kira-kira 100/<i>p</i> sampel untuk galat relatif 10%. Untuk peristiwa di ekor (5σ ke atas) Monte Carlo biasa tidak layak; pakai importance sampling atau metode ekor lain. Kandidat yang menyebut angka tanpa bertanya "untuk menaksir apa?" kehilangan nilai.</p></details>
+<details class="icd-sol"><summary>"Matriks rangkaian Anda singular. Apa kemungkinan penyebabnya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Persamaannya tidak saling bebas. Secara fisik: simpul mengambang tanpa jalur DC ke ground (misalnya di antara dua kapasitor), loop sumber tegangan atau induktor ideal, atau potongan rangkaian yang terpisah. Perbaikan: beri jalur DC (resistor besar), periksa sambungan, atau andalkan <code>gmin</code>. Tunjukkan bahwa Anda menghubungkan matematika dengan rangkaian.</p></details>
+<details class="icd-sol"><summary>"Counter n bit berisi nilai maksimum lalu ditambah satu. Apa yang terjadi, dan kapan itu berguna?"</summary>
+<p><strong>Kerangka jawaban:</strong> Kembali ke nol, karena hardware menghitung mod 2<sup><i>n</i></sup>. Berguna: penunjuk FIFO melingkar tidak butuh logika khusus saat berputar, dan selisih dua penunjuk tetap benar selama jaraknya di bawah 2<sup><i>n</i></sup>. Berbahaya: counter waktu yang berputar tanpa disadari, atau perbandingan "lebih besar" antara nilai yang sudah berputar. Sebut bit tambahan pada penunjuk FIFO untuk membedakan penuh dari kosong.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: Monte Carlo dan graf dengan Python</h2>
+<p><strong>Tujuan:</strong> menjalankan <code>mc.py</code>, melihat konvergensi 1/√<i>N</i>, merasakan beda variasi bebas dan berkorelasi lewat bug sengaja, lalu menulis fungsi yang menjawab "berapa sigma yang saya butuhkan?". Waktu: sekitar 75 menit. Tool: Python 3 tanpa pustaka tambahan.</p>
+<h3>Langkah 1: jalankan</h3>
+<pre class="icd-src" data-lang="sh">
+mkdir -p ~/icd/m01c &amp;&amp; cd ~/icd/m01c
+nano mc.py                 # tempel kode dari bagian 8, atau salin lab/m01c/mc.py
+python3 mc.py
+</pre>
+<p>Keluaran yang benar (butuh satu sampai beberapa detik):</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+Semua uji lulus.
+tegangan simpul      = [1.0, 0.5, 0.5]
+dalam 1, 2, 3 sigma  = 68.2689%, 95.4500%, 99.7300%
+path 16 gerbang      : rata-rata 320.05 ps, sigma 8.05 ps (teori 320 dan 8)
+P(delay &gt; 340 ps)    : Monte Carlo 0.6400%, teori 0.6210%
+ sampel   rata-rata    galat
+    100    320.4128   0.4128
+   1000    320.2121   0.2121
+  10000    319.9312   0.0688
+ 100000    319.9546   0.0454
+urutan topologis     = ['a', 'b', 'c', 'g1', 'g2', 'g3']
+waktu tiba           = {'a': 0, 'b': 0, 'c': 0, 'g1': 30, 'g2': 45, 'g3': 65}
+ 3 sigma: p = 1.350e-03, yield 1 Mbit = 0.0000%
+ 4 sigma: p = 3.167e-05, yield 1 Mbit = 0.0000%
+ 5 sigma: p = 2.867e-07, yield 1 Mbit = 75.0773%
+ 6 sigma: p = 9.866e-10, yield 1 Mbit = 99.9014%
+</pre>
+<p><strong>Baca hasilnya.</strong> Monte Carlo memberi 0.64% untuk peluang yang teorinya 0.62%: selisih 0.02% itu sesuai dengan simpangan baku taksiran √(0.0062 × 0.9938/20 000) ≈ 0.06%. Pada tabel konvergensi, galat rata-rata secara umum mengecil seiring jumlah sampel, tetapi tidak mulus: setiap baris adalah satu percobaan acak, dan teori hanya menjanjikan galat <em>khas</em> 8/√<i>N</i> (0.8, 0.25, 0.08, 0.025 ps). Baris terakhir sedikit di atas nilai khasnya; itu wajar.</p>
+<h3>Langkah 2: jelajahi secara interaktif</h3>
+<pre class="icd-src" data-lang="sh">
+python3 -i mc.py
+</pre>
+<pre class="icd-src" data-lang="py" data-ln="off">
+solve([[2, 1], [1, 3]], [5, 10])                 # latihan 1.1
+tail(4.5) * 1e6                                  # ppm di atas 4.5 sigma
+d = path_mc(25, 12.0, 1.5, 20000, seed=3)        # Contoh 2
+mean(d), std(d)
+sum(v &gt; 315 for v in d) / len(d)                 # bandingkan dengan tail(2)
+tail(2)
+arrival(succ, {**delay, "g1": 50})               # G1 diperlambat
+(3 - 250) % 256                                  # isi FIFO
+</pre>
+<details class="icd-sol"><summary>Hasil yang diharapkan</summary>
+<pre class="icd-src" data-lang="text" data-ln="off">
+[1.0, 3.0]
+3.3976731247300616
+(300.10397665708297, 7.503097092735564)
+0.0232
+0.02275013194817922
+{'a': 0, 'b': 0, 'c': 0, 'g1': 50, 'g2': 45, 'g3': 70}
+9
+</pre>
+<p>Dengan G1 diperlambat menjadi 50 ps, critical path berpindah ke G1 dan waktu tiba naik dari 65 ke 70 ps. Angka 3.4 ppm pada 4.5σ adalah asal semboyan mutu "enam sigma" di industri manufaktur, yang mengizinkan rata-rata bergeser 1.5σ. Keluar dengan <code>exit()</code>.</p></details>
+<h3>Langkah 3: rusak dengan sengaja</h3>
+<p>Di <code>path_mc</code>, ganti <code>sum(rng.gauss(mu, sigma) for _ in range(n_gates))</code> menjadi <code>n_gates * rng.gauss(mu, sigma)</code>. Perubahan ini berarti semua gerbang di satu chip memakai satu nilai acak yang sama: variasi berkorelasi sempurna. Tebak dulu: rata-rata dan σ path menjadi berapa?</p>
+<details class="icd-sol"><summary>Hasil yang diharapkan</summary>
+<p>Program berhenti dengan <code>AssertionError</code> pada baris <code>assert abs(mean(d) - 320) &lt; 0.2 and abs(std(d) - 8) &lt; 0.2</code>. Bila dihitung, rata-ratanya tetap sekitar 320 ps tetapi σ menjadi 32.0 ps, empat kali lipat. Rata-rata tidak peduli korelasi; simpangan baku sangat peduli. Inilah beda antara variasi lokal (acak per transistor, tumbuh sebanding √<i>n</i>) dan variasi global (menggeser semuanya bersama, tumbuh sebanding <i>n</i>). Kembalikan setelah selesai.</p></details>
+<h3>Langkah 4: perluas</h3>
+<p>Tulis <code>sigma_needed(n_cells, target_yield)</code> yang mengembalikan jumlah sigma satu sisi per sel agar yield <i>n</i> sel mencapai target. Petunjuk: <code>tail(k)</code> selalu turun saat <i>k</i> naik, jadi cari <i>k</i> dengan membagi dua selang (bisection) antara 0 dan 10. Uji: untuk satu sel dan target 1 − <code>tail(3)</code>, jawabannya harus 3.</p>
+<details class="icd-sol"><summary>Solusi</summary>
+<pre class="icd-src" data-lang="py">
+def sigma_needed(n_cells, target_yield):
+    """Berapa sigma (satu sisi) per sel agar yield n_cells sel mencapai target."""
+    lo, hi = 0.0, 10.0
+    for _ in range(60):                       # bagi dua: tail() turun saat k naik
+        k = (lo + hi) / 2
+        if math.exp(-n_cells * tail(k)) &lt; target_yield:
+            lo = k
+        else:
+            hi = k
+    return hi
+
+assert abs(sigma_needed(1, 1 - tail(3)) - 3) &lt; 1e-3
+for n in (1e3, 1e6, 1e9):
+    print(f"{n:.0e} sel, yield 99%: {sigma_needed(n, 0.99):.2f} sigma")
+</pre>
+<p>Keluaran yang benar:</p>
+<pre class="icd-src" data-lang="text" data-ln="off">
+1e+03 sel, yield 99%: 4.26 sigma
+1e+06 sel, yield 99%: 5.61 sigma
+1e+09 sel, yield 99%: 6.71 sigma
+</pre>
+<p>Menambah jumlah sel sejuta kali hanya menaikkan syarat dari 4.3σ ke 6.7σ. Ekor distribusi normal turun begitu cepat sehingga beberapa sigma tambahan membeli banyak orde besaran.</p></details>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Sistem persamaan linear ditulis <i>A</i><b>x</b> = <b>b</b> dan diselesaikan dengan eliminasi Gauss; determinan nol berarti tidak ada solusi tunggal.</li>
+<li>Sebaran dirangkum oleh μ dan σ. Besaran bebas digabung dengan akar jumlah kuadrat; besaran berkorelasi penuh dijumlahkan langsung.</li>
+<li>Distribusi normal mengubah "berapa sigma" menjadi peluang; untuk <i>N</i> salinan, yield = <i>e</i><sup>−<i>Np</i></sup>.</li>
+<li>Monte Carlo menaksir apa pun dengan mencoba, dengan galat sebanding 1/√<i>N</i>.</li>
+<li>Kombinatorik menunjukkan mengapa ruang masukan tidak bisa dicoba habis; aritmetika modular adalah aritmetika asli register.</li>
+<li>Netlist adalah graf; urutan topologis dan path terpanjang adalah inti analisis timing.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Matriks</h4>(A·x)ᵢ = baris i · x<br>AB ≠ BA<br>2×2: det = ad − bc<br>A⁻¹ = 1/det · [[d, −b], [−c, a]]<br>det = 0 → singular<br>eliminasi: biaya ≈ n³/3</div>
+<div class="icd-card"><h4>Peluang</h4>P(tidak A) = 1 − P(A)<br>bebas: P(A dan B) = P(A)·P(B)<br>semua N baik: (1 − p)ᴺ ≈ e^(−Np)<br>binomial: C(n,k)·pᵏ·(1−p)ⁿ⁻ᵏ<br>Poisson: P(0) = e^(−λ)</div>
+<div class="icd-card"><h4>Statistik</h4>μ = Σx/N · σ² = Σ(x−μ)²/N<br>bebas: σ = √(σ₁² + σ₂²)<br>jumlah n: σ√n · rata-rata n: σ/√n<br>z = (x − μ)/σ</div>
+<div class="icd-card"><h4>Sigma</h4>±1σ 68.3% · ±2σ 95.4% · ±3σ 99.73%<br>di luar 3σ: 2 700 ppm (satu sisi 1 350)<br>4σ: 32 ppm · 5σ: 0.29 ppm · 6σ: 1 ppb (satu sisi)<br>1 Mbit, 99%: 5.6σ</div>
+<div class="icd-card"><h4>Monte Carlo</h4>galat rata-rata: σ/√N<br>galat peluang: √(p(1−p)/N)<br>N ≈ 1/(p·ε²)<br>10× lebih teliti = 100× sampel</div>
+<div class="icd-card"><h4>Diskrit</h4>n bit → 2ⁿ nilai · n! urutan<br>C(n,k) = n!/(k!(n−k)!)<br>register n bit: mod 2ⁿ · XOR = + mod 2<br>DAG → urutan topologis<br>tiba = max(pendahulu) + delay</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>G. Strang, <i>Introduction to Linear Algebra</i> (Wellesley-Cambridge Press), Bab 1 dan 2: vektor, perkalian matriks, eliminasi, dan invers; Bab 5 untuk determinan. Kuliah videonya tersedia bebas di MIT OpenCourseWare (18.06).</li>
+<li>E. Kreyszig, <i>Advanced Engineering Mathematics</i>, Bab 7 (sistem linear dan eliminasi Gauss), Bab 20 (aljabar linear numerik), Bab 24 dan 25 (probabilitas dan statistik).</li>
+<li>D. Montgomery &amp; G. Runger, <i>Applied Statistics and Probability for Engineers</i>: bab tentang variabel acak diskret (binomial, Poisson) dan kontinu (normal). Rujukan statistik yang ditulis untuk engineer.</li>
+<li>K. Rosen, <i>Discrete Mathematics and Its Applications</i>: bab logika dan pembuktian, kombinatorik, dan graf.</li>
+<li>T. Cormen dkk., <i>Introduction to Algorithms</i>, bab algoritma graf dasar: urutan topologis dan path pada DAG. Akan dipakai lagi di M04d.</li>
+<li>M. Pelgrom, A. Duinmaijer &amp; A. Welbers, "Matching Properties of MOS Transistors," <i>IEEE Journal of Solid-State Circuits</i>, 1989: asal hukum mismatch. Simpan untuk setelah M06.</li>
+<li>Weste &amp; Harris, <i>CMOS VLSI Design</i>, edisi ke-4, Bab 7 ("Robustness"): variasi, yield, dan desain statistik dari sudut pandang VLSI.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut ke <a href="m01d-transformasi-sinyal.html">M01d</a>: Fourier, Laplace, Z, sinyal dan sistem.</p>
+</section>
+</main>
+
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, svg = ICD.svg, q = ICD.q, num = ICD.fmt.num;
+
+ICD.gloss.add([
+{ id: 'vektor', en: 'vector', idn: 'vektor', def: 'Daftar bilangan berurutan; misalnya tegangan semua simpul sebuah rangkaian.', mod: 'M01c' },
+{ id: 'matriks', en: 'matrix', idn: 'matriks', def: 'Tabel bilangan berbaris dan berkolom dengan aturan penjumlahan dan perkalian.', mod: 'M01c' },
+{ id: 'dot', en: 'dot product', idn: 'hasil kali titik', def: 'Jumlah hasil kali elemen-elemen bersesuaian dua vektor.', mod: 'M01c' },
+{ id: 'identitas', en: 'identity matrix', idn: 'matriks identitas', def: 'Matriks dengan 1 di diagonal dan 0 di tempat lain; A·I = A.', mod: 'M01c' },
+{ id: 'invers', en: 'inverse matrix', idn: 'matriks invers', def: 'Matriks A⁻¹ yang memenuhi A⁻¹·A = I.', mod: 'M01c' },
+{ id: 'det', en: 'determinant', idn: 'determinan', def: 'Bilangan yang menyatakan faktor perbesaran luas atau volume sebuah matriks; nol berarti singular.', mod: 'M01c' },
+{ id: 'singular', en: 'singular matrix', idn: 'matriks singular', def: 'Matriks berdeterminan nol; tidak punya invers dan sistemnya tidak punya solusi tunggal.', mod: 'M01c' },
+{ id: 'gauss', en: 'Gaussian elimination', idn: 'eliminasi Gauss', def: 'Penyelesaian sistem linear dengan menolkan elemen di bawah diagonal lalu substitusi mundur.', mod: 'M01c' },
+{ id: 'pivot', en: 'pivot', idn: 'pivot', def: 'Elemen diagonal yang dipakai sebagai pembagi pada satu tahap eliminasi.', mod: 'M01c' },
+{ id: 'prob', en: 'probability', idn: 'peluang', def: 'Bilangan dari 0 sampai 1 yang menyatakan seberapa sering sebuah kejadian terjadi.', mod: 'M01c' },
+{ id: 'bebas', en: 'independent', idn: 'saling bebas', def: 'Dua kejadian yang terjadinya satu tidak mengubah peluang yang lain.', mod: 'M01c' },
+{ id: 'rv', en: 'random variable', idn: 'variabel acak', def: 'Besaran yang nilainya ditentukan oleh hasil sesuatu yang acak.', mod: 'M01c' },
+{ id: 'mean', en: 'mean', idn: 'rata-rata', def: 'Pusat sebuah sebaran; jumlah nilai dibagi banyaknya.', mod: 'M01c' },
+{ id: 'var', en: 'variance', idn: 'variansi', def: 'Rata-rata kuadrat jarak dari rata-rata; kuadrat simpangan baku.', mod: 'M01c' },
+{ id: 'sigma', en: 'standard deviation', idn: 'simpangan baku', def: 'Akar variansi; ukuran lebar sebaran, ditulis σ.', mod: 'M01c' },
+{ id: 'rss', en: 'root sum of squares (RSS)', idn: 'akar jumlah kuadrat', def: 'Cara menggabungkan simpangan baku besaran yang saling bebas: √(σ₁² + σ₂²).', mod: 'M01c' },
+{ id: 'korelasi', en: 'correlation', idn: 'korelasi', def: 'Kecenderungan dua besaran acak naik dan turun bersama.', mod: 'M01c' },
+{ id: 'normal', en: 'normal distribution', idn: 'distribusi normal', def: 'Sebaran berbentuk lonceng yang ditentukan oleh μ dan σ; disebut juga Gaussian.', mod: 'M01c' },
+{ id: 'clt', en: 'central limit theorem', idn: 'teorema limit pusat', def: 'Jumlah banyak pengaruh kecil yang saling bebas mendekati distribusi normal.', mod: 'M01c' },
+{ id: 'binom', en: 'binomial distribution', idn: 'distribusi binomial', def: 'Sebaran jumlah keberhasilan dalam n percobaan bebas berpeluang p.', mod: 'M01c' },
+{ id: 'poisson', en: 'Poisson distribution', idn: 'distribusi Poisson', def: 'Sebaran jumlah kejadian langka dengan rata-rata λ; P(0) = e^(−λ).', mod: 'M01c' },
+{ id: 'mc', en: 'Monte Carlo', idn: 'Monte Carlo', def: 'Menaksir statistik sebuah sistem dengan mengulang perhitungan pada masukan acak.', mod: 'M01c' },
+{ id: 'faktorial', en: 'factorial', idn: 'faktorial', def: 'n! = n·(n−1)·…·1; banyaknya cara mengurutkan n benda.', mod: 'M01c' },
+{ id: 'kombinasi', en: 'combination', idn: 'kombinasi', def: 'Banyaknya cara memilih k dari n tanpa urutan: n!/(k!(n−k)!).', mod: 'M01c' },
+{ id: 'himpunan', en: 'set', idn: 'himpunan', def: 'Kumpulan benda tanpa urutan dan tanpa pengulangan.', mod: 'M01c' },
+{ id: 'mod', en: 'modular arithmetic', idn: 'aritmetika modular', def: 'Aritmetika pada sisa pembagian; register n bit menghitung mod 2ⁿ.', mod: 'M01c' },
+{ id: 'graf', en: 'graph', idn: 'graf', def: 'Struktur yang terdiri dari simpul dan sisi yang menghubungkannya.', mod: 'M01c' },
+{ id: 'simpul', en: 'vertex', idn: 'simpul', def: 'Titik pada sebuah graf; juga disebut node.', mod: 'M01c' },
+{ id: 'sisi', en: 'edge', idn: 'sisi', def: 'Sambungan antara dua simpul pada graf.', mod: 'M01c' },
+{ id: 'dag', en: 'DAG', idn: 'graf berarah tanpa siklus', def: 'Directed acyclic graph; bentuk graf rangkaian kombinasional.', mod: 'M01c' },
+{ id: 'topo', en: 'topological order', idn: 'urutan topologis', def: 'Susunan simpul DAG sehingga setiap sisi mengarah dari yang lebih awal ke yang lebih akhir.', mod: 'M01c' },
+{ id: 'critpath', en: 'critical path', idn: 'path kritis', def: 'Path dengan delay terlama; menentukan periode clock minimum.', mod: 'M01c, M22' }
+]);
+
+/* ---------- util statistik ---------- */
+function erfc(z){
+  var a = Math.abs(z), t = 1 / (1 + 0.5 * a);
+  var r = t * Math.exp(-a * a - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+  return z >= 0 ? r : 2 - r;
+}
+function tail(k){ return 0.5 * erfc(k / Math.SQRT2); }
+function pct(p){ return p >= 0.9999 ? (p * 100).toFixed(7) + '%' : p >= 0.001 ? (p * 100).toFixed(3) + '%' : p >= 1e-9 ? num(p * 1e6, 3) + ' ppm' : num(p, 3); }
+function Rng(seed){ this.s = (seed >>> 0) || 1; }
+Rng.prototype.u32 = function(){ var x = this.s; x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; this.s = x; return x; };
+Rng.prototype.uniform = function(){ return (this.u32() + 0.5) / 4294967296; };
+Rng.prototype.gauss = function(mu, sg){ var u1 = this.uniform(), u2 = this.uniform(); return mu + sg * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2); };
+window.M01C = { tail: tail, Rng: Rng };
+
+/* ---------- 1. eliminasi Gauss ---------- */
+var v1steps = [], v1ctl;
+function v1Build(){
+  var pre = q('#v1-pre').value, g = +q('#v1-g').value, I = +q('#v1-i').value, M, names;
+  if (pre === 'node'){ M = [[2 + g, -g, -1, I], [-g, 2 + g, -1, 0], [-1, -1, 3, 0]]; names = ['v₁', 'v₂', 'v₃']; }
+  else if (pre === 'swap'){ M = [[0, 2, 1, 5], [1, 1, 1, 6], [2, 1, 0, 5]]; names = ['x', 'y', 'z']; }
+  else { M = [[1, 2, 3, 6], [2, 4, 6, 12], [1, 1, 1, 3]]; names = ['x', 'y', 'z']; }
+  var S = [], n = 3, det = 1, c, r, k;
+  function snap(desc, chg, piv, sol){ S.push({ M: M.map(function(row){ return row.slice(); }), desc: desc, chg: chg || [], piv: piv, sol: sol || null, det: null }); }
+  snap('Matriks diperluas [A | b]. Tujuan: menolkan semua elemen di bawah diagonal.', [], null);
+  var ok = true;
+  for (c = 0; c < n && ok; c++){
+    var p = c; for (r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-12){ snap('Kolom ' + (c + 1) + ' tidak punya pivot bukan nol: matriks singular, determinan 0. Tidak ada solusi tunggal.', [], [c, c]); S[S.length - 1].det = 0; ok = false; break; }
+    if (p !== c){ var tmp = M[c]; M[c] = M[p]; M[p] = tmp; det = -det; snap('Tukar baris ' + (c + 1) + ' dan baris ' + (p + 1) + ' agar pivot kolom ' + (c + 1) + ' adalah elemen terbesarnya (' + num(M[c][c], 4) + ').', [c, p], [c, c]); }
+    det *= M[c][c];
+    for (r = c + 1; r < n; r++){
+      var f = M[r][c] / M[c][c]; if (Math.abs(f) < 1e-14) continue;
+      for (k = 0; k <= n; k++) M[r][k] -= f * M[c][k]; M[r][c] = 0;
+      snap('Baris ' + (r + 1) + ' ← baris ' + (r + 1) + (f < 0 ? ' + ' : ' − ') + num(Math.abs(f), 4) + ' × baris ' + (c + 1) + '. Elemen di bawah pivot ' + num(M[c][c], 4) + ' menjadi nol.', [r], [c, c]);
+    }
+  }
+  if (ok){
+    var x = [null, null, null];
+    for (r = n - 1; r >= 0; r--){
+      var s = M[r][n], parts = num(M[r][n], 4);
+      for (k = r + 1; k < n; k++){ s -= M[r][k] * x[k]; parts += ' − (' + num(M[r][k], 4) + ')(' + num(x[k], 4) + ')'; }
+      x[r] = s / M[r][r];
+      snap('Substitusi mundur: ' + names[r] + ' = (' + parts + ') / ' + num(M[r][r], 4) + ' = ' + num(x[r], 5) + '.', [r], [r, r], x.slice());
+    }
+    S[S.length - 1].det = det; S[S.length - 1].desc += ' Selesai. Determinan = hasil kali pivot = ' + num(det, 5) + '.';
+  }
+  v1steps = S; v1steps.names = names;
+}
+function v1Draw(st){
+  var s = v1steps[Math.min(st.i, v1steps.length - 1)], names = v1steps.names, t = el('table', { class: 'mat', 'aria-label': 'Matriks diperluas' });
+  t.appendChild(el('tr', null, [el('th')].concat(names.map(function(nm){ return el('th', { text: nm }); })).concat([el('th', { text: 'b' })])));
+  s.M.forEach(function(row, r){
+    var tr = el('tr', { class: s.chg.indexOf(r) >= 0 ? 'chg' : null }, [el('th', { text: 'baris ' + (r + 1) })]);
+    row.forEach(function(v, k){ tr.appendChild(el('td', { class: (k === 3 ? 'rhs ' : '') + (s.piv && s.piv[0] === r && s.piv[1] === k ? 'piv' : ''), text: num(Math.abs(v) < 5e-13 ? 0 : v, 4) })); });
+    t.appendChild(tr);
+  });
+  var host = q('#v1-mat'); host.textContent = ''; host.appendChild(t);
+  q('#v1-desc').textContent = s.desc;
+  var pre = q('#v1-pre').value; q('#v1-g').disabled = q('#v1-i').disabled = pre !== 'node';
+  q('#v1-gv').textContent = (+q('#v1-g').value).toFixed(1) + ' mS'; q('#v1-iv').textContent = (+q('#v1-i').value).toFixed(1) + ' mA';
+  var last = v1steps[v1steps.length - 1];
+  q('#v1-out').textContent = 'langkah ' + Math.min(st.i, v1steps.length - 1) + ' dari ' + (v1steps.length - 1) + (s.sol ? '  ·  ' + names.map(function(nm, k){ return nm + ' = ' + (s.sol[k] == null ? '?' : num(s.sol[k], 5)); }).join('  ·  ') : '') +
+    '  ·  hasil akhir: ' + (last.sol ? names.map(function(nm, k){ return nm + ' = ' + num(last.sol[k], 5) + (pre === 'node' ? ' V' : ''); }).join(', ') + '; det = ' + num(last.det, 5) : 'singular (det = 0)');
+}
+function v1Init(){
+  v1Build();
+  v1ctl = ICD.sim.mount('#v1', { fps: 0.7, unit: 'langkah', label: 'Kontrol eliminasi', init: function(){ return { i: 0 }; }, step: function(s){ return s.i < v1steps.length - 1 ? { i: s.i + 1 } : null; }, draw: v1Draw });
+  ['#v1-pre', '#v1-g', '#v1-i'].forEach(function(id){ q(id).addEventListener('input', function(){ v1Build(); v1ctl.reset(); }); });
+}
+
+/* ---------- 2. distribusi normal ---------- */
+function v2Draw(){
+  var mu = +q('#v2-m').value, sg = +q('#v2-s').value, k = +q('#v2-k').value, N = +q('#v2-n').value;
+  var W = 690, H = 250, L = 16, R = 16, T = 14, B = 44, x0 = 40, x1 = 160, peak = 1 / (2 * Math.sqrt(2 * Math.PI));
+  var X = function(x){ return L + (x - x0) / (x1 - x0) * (W - L - R); }, Y = function(f){ return T + (1 - f / (peak * 1.08)) * (H - T - B); };
+  var pdf = function(x){ return Math.exp(-(x - mu) * (x - mu) / (2 * sg * sg)) / (sg * Math.sqrt(2 * Math.PI)); };
+  var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Kurva distribusi normal dengan daerah di dalam batas diarsir' });
+  var lo = Math.max(x0, mu - k * sg), hi = Math.min(x1, mu + k * sg), d = 'M' + X(lo) + ' ' + Y(0), i, xx;
+  for (i = 0; i <= 200; i++){ xx = lo + (hi - lo) * i / 200; d += ' L' + X(xx).toFixed(1) + ' ' + Y(pdf(xx)).toFixed(1); }
+  d += ' L' + X(hi) + ' ' + Y(0) + 'Z';
+  s.appendChild(svg('path', { d: d, fill: 'var(--s-data)', 'fill-opacity': 0.28 }));
+  [[x0, lo], [hi, x1]].forEach(function(seg){ if (seg[1] - seg[0] < 0.01) return; var dd = 'M' + X(seg[0]) + ' ' + Y(0); for (i = 0; i <= 80; i++){ xx = seg[0] + (seg[1] - seg[0]) * i / 80; dd += ' L' + X(xx).toFixed(1) + ' ' + Y(pdf(xx)).toFixed(1); } dd += ' L' + X(seg[1]) + ' ' + Y(0) + 'Z'; s.appendChild(svg('path', { d: dd, fill: 'var(--s-x)', 'fill-opacity': 0.5 })); });
+  var c = ''; for (i = 0; i <= 400; i++){ xx = x0 + (x1 - x0) * i / 400; c += (i ? ' L' : 'M') + X(xx).toFixed(1) + ' ' + Y(pdf(xx)).toFixed(1); }
+  s.appendChild(svg('path', { d: c, fill: 'none', stroke: 'var(--s-analog)', 'stroke-width': 2.2 }));
+  s.appendChild(svg('line', { x1: L, y1: Y(0), x2: W - R, y2: Y(0), stroke: 'var(--ink2)' }));
+  for (xx = 40; xx <= 160; xx += 20){ s.appendChild(svg('line', { x1: X(xx), y1: Y(0), x2: X(xx), y2: Y(0) + 5, stroke: 'var(--ink2)' })); s.appendChild(svg('text', { x: X(xx), y: Y(0) + 17, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink2)', text: xx + ' ps' })); }
+  [[mu, 'μ', 'var(--ink)'], [mu - k * sg, 'μ − ' + k.toFixed(1) + 'σ', 'var(--s-x)'], [mu + k * sg, 'μ + ' + k.toFixed(1) + 'σ', 'var(--s-x)']].forEach(function(m, n){
+    if (m[0] < x0 || m[0] > x1) return;
+    s.appendChild(svg('line', { x1: X(m[0]), y1: T, x2: X(m[0]), y2: Y(0), stroke: m[2], 'stroke-width': 1.4, 'stroke-dasharray': n ? '5 3' : '2 3' }));
+    s.appendChild(svg('text', { x: X(m[0]), y: H - 8, 'text-anchor': n === 1 ? 'end' : n === 2 ? 'start' : 'middle', 'font-size': 10.5, 'font-weight': 600, fill: 'var(--ink)', text: m[1] + ' = ' + num(m[0], 4) }));
+  });
+  var host = q('#v2-svg'); host.textContent = ''; host.appendChild(s);
+  var pout = 2 * tail(k), pin = 1 - pout, lam = N * pout, y = Math.exp(N * Math.log1p(-pout));
+  q('#v2-mv').textContent = mu + ' ps'; q('#v2-sv').textContent = sg.toFixed(1) + ' ps'; q('#v2-kv').textContent = k.toFixed(1) + ' σ';
+  q('#v2-out').textContent = 'batas = ' + num(mu - k * sg, 4) + ' sampai ' + num(mu + k * sg, 4) + ' ps  ·  di dalam = ' + pct(pin) + '  ·  di luar (dua sisi) = ' + pct(pout) + '  ·  di luar satu sisi = ' + pct(tail(k)) +
+    '  ·  dari ' + num(N, 3) + ' sel, rata-rata ' + num(lam, 3) + ' sel di luar batas  ·  peluang semua sel di dalam (yield) = ' + (y > 0.9999 ? (y * 100).toFixed(5) : y < 1e-4 ? num(y * 100, 2) : (y * 100).toFixed(2)) + '%';
+}
+
+/* ---------- 3. Monte Carlo ---------- */
+var v3ctl, NB = 36, BATCH = 200, MAXS = 100;
+function v3Par(){ var n = +q('#v3-n').value, sg = +q('#v3-s').value, k = +q('#v3-k').value; return { n: n, sg: sg, k: k, mu: 20 * n, st: sg * Math.sqrt(n), T: 20 * n + k * sg * Math.sqrt(n) }; }
+function v3Draw(st){
+  var p = v3Par(), W = 690, H = 250, L = 34, R = 12, T0 = 12, B = 34, lo = p.mu - 4.5 * p.st, hi = p.mu + 4.5 * p.st, bw = (hi - lo) / NB;
+  var X = function(x){ return L + (x - lo) / (hi - lo) * (W - L - R); }, ymax = Math.max(1, st.cnt) * bw / (p.st * Math.sqrt(2 * Math.PI)) * 1.25, Y = function(c){ return T0 + (1 - c / ymax) * (H - T0 - B); };
+  var s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Histogram delay path dari ' + st.cnt + ' sampel dengan kurva teori' });
+  st.bins.forEach(function(c, i){ if (!c) return; var xa = lo + i * bw, over = xa + bw / 2 > p.T; s.appendChild(svg('rect', { x: X(xa) + 0.5, y: Y(c), width: Math.max(1, X(xa + bw) - X(xa) - 1), height: Y(0) - Y(c), fill: over ? 'var(--s-x)' : 'var(--s-data)', 'fill-opacity': 0.5, stroke: over ? 'var(--s-x)' : 'var(--s-data)', 'stroke-width': 0.8 })); });
+  var d = '', i, xx; for (i = 0; i <= 240; i++){ xx = lo + (hi - lo) * i / 240; d += (i ? ' L' : 'M') + X(xx).toFixed(1) + ' ' + Y(Math.max(1, st.cnt) * bw * Math.exp(-(xx - p.mu) * (xx - p.mu) / (2 * p.st * p.st)) / (p.st * Math.sqrt(2 * Math.PI))).toFixed(1); }
+  s.appendChild(svg('path', { d: d, fill: 'none', stroke: 'var(--s-analog)', 'stroke-width': 2, 'stroke-dasharray': st.cnt ? null : '5 4' }));
+  s.appendChild(svg('line', { x1: L, y1: Y(0), x2: W - R, y2: Y(0), stroke: 'var(--ink2)' }));
+  for (i = -4; i <= 4; i += 2){ xx = p.mu + i * p.st; s.appendChild(svg('line', { x1: X(xx), y1: Y(0), x2: X(xx), y2: Y(0) + 5, stroke: 'var(--ink2)' })); s.appendChild(svg('text', { x: X(xx), y: Y(0) + 17, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--ink2)', text: num(xx, 4) + ' ps' })); }
+  s.appendChild(svg('line', { x1: X(p.T), y1: T0, x2: X(p.T), y2: Y(0), stroke: 'var(--s-x)', 'stroke-width': 1.6, 'stroke-dasharray': '6 3' }));
+  s.appendChild(svg('text', { x: X(p.T) + 4, y: T0 + 10, 'font-size': 10.5, 'font-weight': 600, fill: 'var(--ink)', text: 'batas ' + num(p.T, 4) + ' ps' }));
+  var host = q('#v3-svg'); host.textContent = ''; host.appendChild(s);
+  var m = st.cnt ? st.sum / st.cnt : NaN, sd = st.cnt > 1 ? Math.sqrt((st.sq - st.cnt * m * m) / (st.cnt - 1)) : NaN, fr = st.cnt ? st.over / st.cnt : NaN, pt = tail(p.k);
+  q('#v3-nv').textContent = p.n; q('#v3-sv').textContent = p.sg.toFixed(1) + ' ps'; q('#v3-kv').textContent = p.k.toFixed(2) + ' σ';
+  q('#v3-out').textContent = 'sampel N = ' + st.cnt + '  ·  rata-rata = ' + (st.cnt ? m.toFixed(2) : '—') + ' ps (teori ' + num(p.mu, 5) + ')  ·  σ = ' + (st.cnt > 1 ? sd.toFixed(2) : '—') + ' ps (teori ' + num(p.st, 4) + ' = ' + p.sg + '·√' + p.n + ')  ·  melampaui batas: ' +
+    (st.cnt ? (fr * 100).toFixed(2) + '%' : '—') + ' (teori ' + (pt * 100).toFixed(2) + '%, galat khas ±' + (st.cnt ? (Math.sqrt(pt * (1 - pt) / st.cnt) * 100).toFixed(2) : '—') + '%)  ·  batas 3σ statistik = ' + num(p.mu + 3 * p.st, 5) + ' ps  ·  kasus terburuk n·(μ+3σ) = ' + num(p.n * (20 + 3 * p.sg), 5) + ' ps';
+}
+function v3Init(){
+  v3ctl = ICD.sim.mount('#v3', { fps: 8, max: MAXS + 2, unit: 'kelompok', label: 'Kontrol Monte Carlo',
+    init: function(){ var b = []; for (var i = 0; i < NB; i++) b.push(0); return { k: 0, cnt: 0, sum: 0, sq: 0, over: 0, bins: b, seed: 1 }; },
+    step: function(s){
+      if (s.k >= MAXS) return null;
+      var p = v3Par(), rng = new Rng(s.seed), lo = p.mu - 4.5 * p.st, bw = 9 * p.st / NB, b = s.bins.slice(), sum = s.sum, sq = s.sq, over = s.over, i, j, v, bi;
+      for (i = 0; i < BATCH; i++){ v = 0; for (j = 0; j < p.n; j++) v += rng.gauss(20, p.sg); sum += v; sq += v * v; if (v > p.T) over++; bi = Math.floor((v - lo) / bw); if (bi >= 0 && bi < NB) b[bi]++; }
+      return { k: s.k + 1, cnt: s.cnt + BATCH, sum: sum, sq: sq, over: over, bins: b, seed: rng.s };
+    }, draw: v3Draw });
+  ['#v3-n', '#v3-s'].forEach(function(id){ q(id).addEventListener('input', function(){ v3ctl.reset(); }); });
+  q('#v3-k').addEventListener('input', function(){ v3ctl.reset(); });
+}
+
+/* ---------- 4. graf timing ---------- */
+var ND = { A: { x: 50, y: 50, pre: [] }, B: { x: 50, y: 130, pre: [] }, C: { x: 50, y: 210, pre: [] }, G1: { x: 230, y: 70, pre: ['A', 'B'] }, G2: { x: 230, y: 180, pre: ['B', 'C'] }, G3: { x: 410, y: 90, pre: ['G1', 'G2'] }, G4: { x: 410, y: 200, pre: ['G2', 'C'] }, G5: { x: 590, y: 140, pre: ['G3', 'G4'] } };
+var ORD = ['A', 'B', 'C', 'G1', 'G2', 'G3', 'G4', 'G5'], v4ctl;
+function v4Delay(){ return { A: 0, B: 0, C: 0, G1: +q('#v4-d1').value, G2: 45, G3: 25, G4: +q('#v4-d4').value, G5: 15 }; }
+function v4Calc(){ var d = v4Delay(), at = {}, from = {}; ORD.forEach(function(v){ var best = 0, bf = null; ND[v].pre.forEach(function(u){ if (bf === null || at[u] > best){ best = at[u]; bf = u; } }); at[v] = best + d[v]; from[v] = bf; }); return { d: d, at: at, from: from }; }
+function v4Draw(st){
+  var r = v4Calc(), done = {}, i; for (i = 0; i < st.i; i++) done[ORD[i]] = 1;
+  var cur = st.i > 0 ? ORD[st.i - 1] : null, fin = st.i >= ORD.length, crit = {}, ce = {};
+  if (fin){ var v = 'G5'; while (v){ crit[v] = 1; if (r.from[v]) ce[r.from[v] + '>' + v] = 1; v = r.from[v]; } }
+  var W = 690, H = 260, s = svg('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Graf timing delapan simpul' });
+  s.appendChild(svg('defs', null, [['v4a', 'var(--ink2)'], ['v4c', 'var(--s-x)']].map(function(m){ return svg('marker', { id: m[0], viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto' }, [svg('path', { d: 'M0 0L10 5L0 10z', fill: m[1] })]); })));
+  ORD.forEach(function(v){ ND[v].pre.forEach(function(u){ var a = ND[u], b = ND[v], hot = ce[u + '>' + v], x1 = a.x + (u[0] === 'G' ? 46 : 20), x2 = b.x - 46; s.appendChild(svg('line', { x1: x1, y1: a.y, x2: x2, y2: b.y, stroke: hot ? 'var(--s-x)' : 'var(--ink2)', 'stroke-width': hot ? 3 : 1.3, 'marker-end': 'url(#' + (hot ? 'v4c' : 'v4a') + ')' })); }); });
+  ORD.forEach(function(v, n){
+    var nd = ND[v], isG = v[0] === 'G', d = !!done[v], g = svg('g', { class: 'nd' });
+    var stroke = crit[v] ? 'var(--s-x)' : v === cur ? 'var(--s-hi)' : d ? 'var(--s-data)' : 'var(--ink2)', sw = crit[v] || v === cur ? 3 : 1.5;
+    if (isG) g.appendChild(svg('rect', { x: nd.x - 46, y: nd.y - 26, width: 92, height: 52, rx: 8, fill: d ? 'var(--tint)' : 'var(--card)', stroke: stroke, 'stroke-width': sw }));
+    else g.appendChild(svg('circle', { cx: nd.x, cy: nd.y, r: 20, fill: d ? 'var(--tint)' : 'var(--card)', stroke: stroke, 'stroke-width': sw }));
+    g.appendChild(svg('text', { x: nd.x, y: nd.y + (isG ? -8 : 4), 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 700, fill: 'var(--ink)', text: v + (isG ? ' · ' + r.d[v] + ' ps' : '') }));
+    if (isG) g.appendChild(svg('text', { x: nd.x, y: nd.y + 12, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink)', text: d ? 'tiba ' + r.at[v] + ' ps' : 'tiba ?' }));
+    g.appendChild(svg('text', { x: nd.x + (isG ? 40 : 16), y: nd.y - (isG ? 30 : 22), 'text-anchor': 'end', 'font-size': 9.5, fill: 'var(--ink2)', text: '#' + (n + 1) }));
+    s.appendChild(g);
+  });
+  var host = q('#v4-svg'); host.textContent = ''; host.appendChild(s);
+  var desc;
+  if (!cur) desc = 'Urutan topologis: ' + ORD.join(', ') + '. Setiap simpul diproses setelah semua pendahulunya. Tekan Maju.';
+  else if (!ND[cur].pre.length) desc = 'Simpul ' + cur + ' adalah masukan: tidak punya pendahulu, tiba pada 0 ps.';
+  else desc = 'Tiba(' + cur + ') = max(' + ND[cur].pre.map(function(u){ return 'tiba(' + u + ') = ' + r.at[u]; }).join(', ') + ') + ' + r.d[cur] + ' = ' + r.at[cur] + ' ps. Pendahulu yang menentukan: ' + r.from[cur] + '.';
+  if (fin){ var path = [], w = 'G5'; while (w){ path.unshift(w); w = r.from[w]; } desc += ' Critical path: ' + path.join(' → ') + ', total ' + r.at.G5 + ' ps.'; }
+  q('#v4-desc').textContent = desc;
+  q('#v4-d1v').textContent = r.d.G1 + ' ps'; q('#v4-d4v').textContent = r.d.G4 + ' ps';
+  var sl3 = Math.abs(r.at.G1 - r.at.G2), sl5 = Math.abs(r.at.G3 - r.at.G4);
+  q('#v4-out').textContent = 'simpul diproses: ' + st.i + ' dari ' + ORD.length + '  ·  waktu tiba di keluaran G5 = ' + r.at.G5 + ' ps  ·  frekuensi maksimum ≈ ' + num(1000 / r.at.G5, 3) + ' GHz  ·  selisih tiba di masukan G3: ' + sl3 + ' ps  ·  di masukan G5: ' + sl5 + ' ps';
+}
+function v4Init(){
+  v4ctl = ICD.sim.mount('#v4', { fps: 1, unit: 'langkah', label: 'Kontrol penelusuran graf', init: function(){ return { i: 0 }; }, step: function(s){ return s.i < ORD.length ? { i: s.i + 1 } : null; }, draw: v4Draw });
+  ['#v4-d1', '#v4-d4'].forEach(function(id){ q(id).addEventListener('input', function(){ v4ctl.redraw(); }); });
+}
+
+/* ---------- kuis ---------- */
+function quiz(){
+ICD.quiz.mount('#kuis', { id: 'm01c', title: 'Kuis M01c', questions: [
+{ q: 'Berapa determinan matriks berbaris (3, 2) dan (6, 4)?', o: [
+  { t: '0', ok: true, w: '3 × 4 − 2 × 6 = 0. Baris kedua adalah dua kali baris pertama, jadi matriksnya singular.' },
+  { t: '24', w: 'Ini 3 × 4 + 2 × 6. Rumusnya ad − bc, dengan tanda kurang.' },
+  { t: '12', w: 'Ini hanya ad; suku bc belum dikurangkan.' },
+  { t: '−6', w: 'Periksa perkaliannya: ad = 12 dan bc = 12, selisihnya nol.' }] },
+{ q: 'Matriks <i>A</i> berukuran 2 × 3 dan <i>B</i> berukuran 3 × 4. Mana yang benar?', o: [
+  { t: '<i>AB</i> terdefinisi dan berukuran 2 × 4; <i>BA</i> tidak terdefinisi', ok: true, w: 'Jumlah kolom A (3) sama dengan jumlah baris B (3). Untuk BA, kolom B (4) tidak sama dengan baris A (2).' },
+  { t: '<i>AB</i> dan <i>BA</i> sama-sama terdefinisi dan sama nilainya', w: 'Perkalian matriks tidak komutatif, dan di sini BA bahkan tidak terdefinisi.' },
+  { t: '<i>AB</i> berukuran 3 × 3', w: 'Ukuran hasil adalah baris matriks pertama kali kolom matriks kedua: 2 × 4.' },
+  { t: 'Keduanya tidak terdefinisi karena ukurannya berbeda', w: 'Ukuran tidak perlu sama; yang perlu cocok adalah kolom matriks kiri dengan baris matriks kanan.' }] },
+{ q: 'Saat eliminasi Gauss, pivot di sebuah kolom bernilai nol dan semua elemen di bawahnya juga nol. Artinya?', o: [
+  { t: 'Matriks singular; sistem tidak punya solusi tunggal', ok: true, w: 'Tidak ada baris yang bisa ditukar untuk mendapat pivot; persamaannya tidak saling bebas.' },
+  { t: 'Tukar baris lalu lanjutkan seperti biasa', w: 'Menukar baris hanya menolong bila ada elemen bukan nol di bawah pivot.' },
+  { t: 'Solusinya semua nol', w: 'Solusi nol adalah kasus khusus saat b = 0; pivot nol menyatakan hal lain, yaitu kekurangan informasi.' },
+  { t: 'Galat pembulatan; ulangi dengan ketelitian lebih tinggi', w: 'Bisa saja pada angka yang sangat kecil, tetapi nol yang tepat menandakan struktur persamaan itu sendiri.' }] },
+{ q: 'Dua sumber variasi saling bebas dengan σ = 3 ps dan σ = 4 ps. Berapa σ gabungannya?', o: [
+  { t: '5 ps', ok: true, w: 'Akar jumlah kuadrat: √(3² + 4²) = √25 = 5 ps.' },
+  { t: '7 ps', w: 'Penjumlahan langsung hanya berlaku bila keduanya berkorelasi sempurna.' },
+  { t: '3.5 ps', w: 'Ini rata-rata keduanya; variasi gabungan tidak pernah lebih kecil dari yang terbesar.' },
+  { t: '25 ps', w: 'Ini variansi gabungan (ps²); akarnya belum diambil.' }] },
+{ q: 'Path berisi 100 gerbang yang saling bebas, masing-masing σ = 1 ps. Berapa σ delay path?', o: [
+  { t: '10 ps', ok: true, w: 'Variansi dijumlahkan: σ√n = 1 × √100 = 10 ps.' },
+  { t: '100 ps', w: 'Itu berlaku bila semua gerbang naik-turun bersama (berkorelasi penuh).' },
+  { t: '1 ps', w: 'Variasi menumpuk sepanjang path, walaupun lebih lambat daripada penjumlahan langsung.' },
+  { t: '0.1 ps', w: 'Ini σ/√n, yaitu σ dari rata-rata delay per gerbang, bukan dari jumlahnya.' }] },
+{ q: 'Berapa bagian distribusi normal yang berada di luar ±3σ?', o: [
+  { t: 'Sekitar 0.27%', ok: true, w: 'Di dalam ±3σ ada 99.73%; sisanya 2 700 ppm.' },
+  { t: 'Sekitar 5%', w: 'Sekitar 4.55% adalah bagian di luar ±2σ.' },
+  { t: 'Sekitar 32%', w: 'Itu bagian di luar ±1σ.' },
+  { t: 'Nol', w: 'Ekor distribusi normal tidak pernah benar-benar nol, dan untuk banyak salinan ekor itu menentukan yield.' }] },
+{ q: 'Delay sebuah path berdistribusi normal, μ = 200 ps, σ = 5 ps. Periode clock 210 ps. Kira-kira berapa peluang path ini gagal?', o: [
+  { t: '2.3%', ok: true, w: 'z = (210 − 200)/5 = 2; ekor satu sisi di atas 2σ adalah 2.28%.' },
+  { t: '4.6%', w: 'Itu ekor dua sisi. Delay yang terlalu cepat tidak melanggar batas setup ini.' },
+  { t: '5%', w: 'Angka 5 adalah σ dalam ps, bukan peluang.' },
+  { t: '0.13%', w: 'Itu ekor satu sisi di atas 3σ, yaitu untuk periode 215 ps.' }] },
+{ q: 'Sebuah sel gagal dengan peluang 10<sup>−6</sup>. Chip memuat 10<sup>6</sup> sel yang semuanya harus bekerja. Berapa yield chip?', o: [
+  { t: 'Sekitar 37%', ok: true, w: 'Rata-rata sel gagal λ = Np = 1, dan yield = e⁻¹ = 0.368.' },
+  { t: 'Sekitar 99.9999%', w: 'Itu yield satu sel. Untuk sejuta sel, peluangnya dipangkatkan sejuta.' },
+  { t: '0%', w: 'Rata-rata memang satu sel gagal per chip, tetapi sekitar 37% chip kebetulan tidak punya sel gagal sama sekali.' },
+  { t: '50%', w: 'Tebakan yang wajar, tetapi sebaran Poisson dengan rata-rata 1 memberi P(0) = e⁻¹.' }] },
+{ q: 'Monte Carlo dengan 1 000 sampel memberi galat tertentu pada taksiran rata-rata. Berapa sampel agar galatnya menjadi sepersepuluh?', o: [
+  { t: '100 000', ok: true, w: 'Galat sebanding 1/√N, jadi N harus naik 10² = 100 kali.' },
+  { t: '10 000', w: 'Sepuluh kali sampel hanya memperbaiki galat √10 ≈ 3.2 kali.' },
+  { t: '1 000 000', w: 'Seribu kali sampel memperbaiki galat sekitar 32 kali; lebih dari yang diminta.' },
+  { t: '2 000', w: 'Dua kali sampel hanya memperbaiki galat sekitar 1.4 kali.' }] },
+{ q: 'Berapa banyak kata 6 bit yang memuat tepat dua bit 1?', o: [
+  { t: '15', ok: true, w: 'Memilih dua posisi dari enam: C(6, 2) = 6 × 5 / 2 = 15.' },
+  { t: '30', w: 'Ini 6 × 5, yang membedakan urutan pemilihan kedua posisi; setiap pasangan terhitung dua kali.' },
+  { t: '12', w: 'Ini 6 × 2; bukan cara menghitung pilihan dua posisi dari enam.' },
+  { t: '64', w: 'Itu jumlah seluruh kata 6 bit, 2⁶.' }] },
+{ q: 'Counter 8 bit berisi 200 lalu ditambah 100. Berapa isinya?', o: [
+  { t: '44', ok: true, w: 'Register 8 bit menghitung mod 256: 300 mod 256 = 44.' },
+  { t: '300', w: 'Register 8 bit hanya memuat 0 sampai 255.' },
+  { t: '255', w: 'Itu terjadi pada counter yang jenuh (saturating); counter biasa berputar.' },
+  { t: '0', w: 'Counter kembali melewati nol, tetapi tidak berhenti di sana; sisanya 44.' }] },
+{ q: 'Operasi logika mana yang sama dengan penjumlahan mod 2?', o: [
+  { t: 'XOR', ok: true, w: '0+0 = 0, 0+1 = 1, 1+0 = 1, 1+1 = 2 mod 2 = 0: tabel kebenaran XOR.' },
+  { t: 'OR', w: 'OR memberi 1 untuk 1 dan 1, sedangkan 1 + 1 mod 2 = 0.' },
+  { t: 'AND', w: 'AND adalah perkalian mod 2, bukan penjumlahan.' },
+  { t: 'NAND', w: 'NAND adalah kebalikan AND; tidak berpadanan dengan penjumlahan mod 2.' }] },
+{ q: 'Mana syarat agar sebuah graf berarah punya urutan topologis?', o: [
+  { t: 'Tidak memuat siklus', ok: true, w: 'Pada siklus, setiap simpul harus mendahului dirinya sendiri, yang mustahil.' },
+  { t: 'Semua simpul tersambung', w: 'Graf yang terpisah-pisah tetap bisa diurutkan; bagian-bagiannya cukup disusun berdampingan.' },
+  { t: 'Hanya punya satu simpul awal', w: 'Boleh ada banyak simpul tanpa sisi masuk, seperti banyak masukan pada sebuah rangkaian.' },
+  { t: 'Jumlah sisi sama dengan jumlah simpul', w: 'Tidak ada hubungan seperti itu; DAG boleh punya sisi lebih sedikit atau lebih banyak dari simpulnya.' }] },
+{ q: 'Gerbang G (delay 20 ps) punya dua masukan yang tiba pada 50 ps dan 70 ps. Kapan keluarannya tiba (analisis setup)?', o: [
+  { t: '90 ps', ok: true, w: 'max(50, 70) + 20: keluaran baru pasti setelah masukan terakhir tiba.' },
+  { t: '70 ps', w: 'Ini mengambil masukan tercepat (50 + 20); untuk setup dipakai yang terlambat.' },
+  { t: '140 ps', w: 'Waktu tiba tidak dijumlahkan; kedua masukan berjalan bersamaan, bukan berurutan.' },
+  { t: '80 ps', w: 'Ini rata-rata kedua waktu tiba ditambah delay; yang menentukan adalah maksimumnya.' }] }
+] });
+}
+function cards(){
+ICD.cards.register('m01c-linear-probabilitas-diskrit', [
+{ id: 'axb', f: 'Bagaimana elemen ke-i dari A·x dihitung?', b: 'Hasil kali titik baris ke-i matriks A dengan vektor x.' },
+{ id: 'det2', f: 'Determinan dan invers matriks 2×2 [[a, b], [c, d]]?', b: 'det = ad − bc. Invers = 1/det · [[d, −b], [−c, a]].' },
+{ id: 'sing', f: 'Apa arti matriks singular?', b: 'Determinan nol; tidak punya invers; sistemnya tidak punya solusi tunggal karena persamaannya tidak saling bebas.' },
+{ id: 'gauss', f: 'Dua tahap eliminasi Gauss?', b: 'Menolkan elemen di bawah diagonal (bentuk segitiga atas), lalu substitusi mundur dari bawah.' },
+{ id: 'pivot', f: 'Untuk apa pivot parsial?', b: 'Menukar baris agar pivot adalah elemen terbesar di kolomnya: menghindari pembagian dengan nol dan memperkecil galat pembulatan.' },
+{ id: 'indep', f: 'Peluang A dan B bila saling bebas? Peluang semua N sel baik?', b: 'P(A)·P(B). (1 − p)ᴺ ≈ e^(−Np).' },
+{ id: 'musig', f: 'Rumus rata-rata dan variansi?', b: 'μ = Σx/N. σ² = Σ(x − μ)²/N (pembagi N − 1 untuk sampel).' },
+{ id: 'rss', f: 'Menggabungkan σ dua besaran yang saling bebas?', b: 'σ = √(σ₁² + σ₂²). Variansi yang dijumlahkan, bukan simpangan baku.' },
+{ id: 'sqrtn', f: 'σ jumlah n besaran bebas? σ rata-rata n pengukuran?', b: 'σ√n dan σ/√n.' },
+{ id: 'z', f: 'Apa itu nilai-z?', b: 'z = (x − μ)/σ: jarak dari rata-rata dalam satuan sigma.' },
+{ id: '123', f: 'Persen di dalam ±1σ, ±2σ, ±3σ?', b: '68.3%, 95.4%, 99.73%.' },
+{ id: 'ppm', f: 'Di luar 3σ: dua sisi dan satu sisi, dalam ppm?', b: '2 700 ppm dan 1 350 ppm.' },
+{ id: 'clt', f: 'Mengapa distribusi normal begitu sering muncul?', b: 'Teorema limit pusat: jumlah banyak pengaruh kecil yang saling bebas mendekati normal.' },
+{ id: 'poisson', f: 'P(0) untuk distribusi Poisson, dan hubungannya dengan yield?', b: 'e^(−λ). Dengan λ = D₀·A cacat per die, yield = e^(−D₀A).' },
+{ id: 'mcerr', f: 'Bagaimana galat Monte Carlo bergantung pada jumlah sampel?', b: 'Sebanding 1/√N: sepuluh kali lebih teliti butuh seratus kali sampel.' },
+{ id: 'comb', f: 'Rumus kombinasi C(n, k)?', b: 'n! / (k!·(n − k)!)' },
+{ id: 'mod', f: 'Mengapa register n bit menghitung mod 2ⁿ, dan apa XOR?', b: 'Bit di atas n terbuang. XOR adalah penjumlahan mod 2.' },
+{ id: 'topo', f: 'Apa itu urutan topologis dan syaratnya?', b: 'Susunan simpul sehingga setiap sisi mengarah maju; hanya ada bila graf tidak bersiklus (DAG).' },
+{ id: 'arr', f: 'Rumus waktu tiba di keluaran sebuah gerbang (setup)?', b: 'max(waktu tiba semua masukan) + delay gerbang.' }
+]);
+ICD.cards.mount('#kartu', { file: 'm01c-linear-probabilitas-diskrit' });
+}
+
+ICD.ready(function(){
+  v1Init();
+  ['#v2-m', '#v2-s', '#v2-k', '#v2-n'].forEach(function(id){ q(id).addEventListener('input', v2Draw); }); v2Draw();
+  v3Init(); v4Init();
+  quiz(); cards();
+});
+})();
+</script>
+</body>
+</html>
