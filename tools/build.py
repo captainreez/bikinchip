@@ -8,7 +8,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 css = (ROOT/'src'/'core.css').read_text(encoding='utf-8')
 js = (ROOT/'src'/'core.js').read_text(encoding='utf-8')
 import json
-cfgp = ROOT/'src'/'config.json'
+import os
+cfgp = pathlib.Path(os.environ['CONFIG']) if os.environ.get('CONFIG') else ROOT/'src'/'config.json'
 cfg = json.loads(cfgp.read_text(encoding='utf-8')) if cfgp.exists() else {}
 js = js.replace('/*@@CONFIG@@*/{}', json.dumps(cfg, ensure_ascii=False))
 ver = re.search(r"version: '([\d.]+)'", js).group(1)
