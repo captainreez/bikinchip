@@ -213,7 +213,7 @@ dialog.icd-dialog::backdrop{background:rgba(0,0,0,.45)}
 /* ICD-Core JS — disalin identik ke setiap file. Jangan diubah per file. */
 (function(){
 'use strict';
-var ICD = window.ICD = { version: '1.4.0', brand: 'bikinchip', config: {"supabaseUrl": "https://vcctqnmkdltopyrjrdel.supabase.co", "supabaseKey": "sb_publishable_waF_6-kQLxEvumDdQ_HU2w_CBbpggBz", "repo": "captainreez/bikinchip"} };
+var ICD = window.ICD = { version: '1.4.0', brand: 'bikinchip', config: {"supabaseUrl": "https://vcctqnmkdltopyrjrdel.supabase.co", "supabaseKey": "sb_publishable_waF_6-kQLxEvumDdQ_HU2w_CBbpggBz", "repo": "captainreez/bikinchip", "google": true} };
 /* gerbang masuk: hanya saat online, akun dikonfigurasi, dan requireLogin aktif; halaman publik dikecualikan */
 (function gate(){
   var C = ICD.config || {}, page = (window.location.pathname.split('/').pop() || 'index.html');
