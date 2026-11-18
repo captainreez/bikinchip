@@ -24,7 +24,9 @@ def main():
             if n != t: p.write_text(n, encoding='utf-8'); print('diperbarui', p.name)
         return
     out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ROOT/'dist'); out.mkdir(parents=True, exist_ok=True)
-    for src in sorted((ROOT/'src').glob('*.src.html')):
+    srcs = sorted((ROOT/'src').glob('*.src.html'))
+    if os.environ.get('WITH_TEST_PAGES'): srcs += sorted((ROOT/'tools'/'pages').glob('*.src.html'))  # halaman uji internal, tidak pernah masuk docs/
+    for src in srcs:
         t = src.read_text(encoding='utf-8'); assert '<!--CORE-->' in t, src
         name = src.name.replace('.src.html', '.html')
         (out/name).write_text(t.replace('<!--CORE-->', BLOCK), encoding='utf-8')

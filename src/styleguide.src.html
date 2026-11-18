@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Styleguide · bikinchip</title>
+<meta name="description" content="Token desain dan komponen bersama bikinchip: warna, tipografi, spacing, tombol, badge, kartu, tabs, callout.">
+<!--CORE-->
+<style>
+.sg h2{margin-top:2em;padding-top:.6em;border-top:1px solid var(--line)}
+.sg-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-3)}
+.sg-sw>div{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface-1);font-size:var(--fs-14)}
+.sg-sw .chip{height:52px;display:flex;align-items:flex-end;padding:4px 8px;font-family:var(--f-mono);font-size:.78rem}
+.sg-sw .meta{padding:6px 8px;display:flex;flex-direction:column;gap:2px}
+.sg-sw code{font-size:.78rem;background:none;padding:0}
+.sg-type>*{margin-block:.4em}
+.sg-sp{display:flex;align-items:end;gap:var(--sp-3);flex-wrap:wrap}
+.sg-sp i{display:block;background:var(--accent);border-radius:2px}
+.sg-demo{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-3)}
+.sg-box{width:96px;height:64px;background:var(--surface-1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-family:var(--f-mono)}
+.sg-sig{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:var(--sp-2)}
+.sg-sig span{display:flex;align-items:center;gap:8px;font-size:var(--fs-14)}
+.sg-sig i{width:26px;height:0;border-top:4px solid}
+</style>
+</head>
+<body data-file="styleguide">
+<main class="wide sg">
+<h1>Styleguide</h1>
+<p>Token dan komponen yang dipakai di seluruh bikinchip. Kontributor: pakai token ini, jangan menulis warna atau ukuran mentah di modul. Ganti tema dengan tombol ◐ di kanan atas untuk melihat versi terang dan gelap.</p>
+
+<h2 id="warna">Warna</h2>
+<p class="icd-muted">Rasio kontras dihitung langsung dari nilai yang sedang aktif. Teks normal butuh minimal 4,5:1 (WCAG 2.2 AA).</p>
+<h3>Permukaan dan teks</h3>
+<div class="sg-sw" id="sw-core"></div>
+<h3>Status</h3>
+<div class="sg-sw" id="sw-status"></div>
+<h3>Warna sinyal</h3>
+<p class="icd-muted">Konvensi yang sama di semua diagram. Warna tidak pernah jadi satu-satunya pembeda: label dan bentuk garis ikut berubah.</p>
+<div class="sg-sig" id="sw-sig"></div>
+
+<h2 id="tipografi">Tipografi</h2>
+<div class="sg-type">
+  <p style="font-size:var(--fs-48);line-height:1.1;margin:0"><b>48</b> <span class="icd-muted icd-small">hero</span></p>
+  <p style="font-size:var(--fs-36);line-height:1.15;margin:0"><b>36</b> <span class="icd-muted icd-small">judul halaman besar</span></p>
+  <p style="font-size:var(--fs-28);line-height:1.2;margin:0"><b>28</b> <span class="icd-muted icd-small">h1</span></p>
+  <p style="font-size:var(--fs-22);margin:0"><b>22</b> <span class="icd-muted icd-small">h2</span></p>
+  <p style="font-size:var(--fs-18);margin:0"><b>18</b> <span class="icd-muted icd-small">h3, lead</span></p>
+  <p style="font-size:var(--fs-16);margin:0"><b>16</b> <span class="icd-muted icd-small">isi</span></p>
+  <p style="font-size:var(--fs-14);margin:0"><b>14</b> <span class="icd-muted icd-small">keterangan, label</span></p>
+  <p>Body memakai font sistem. Angka, satuan, dan kode memakai monospace: <code>0xA5</code>, <code>3,3 V</code>, <code>1,2 GHz</code>, <kbd>Ctrl</kbd> + <kbd>K</kbd>.</p>
+</div>
+
+<h2 id="spacing">Spacing, radius, shadow</h2>
+<div class="sg-sp" aria-label="Skala spacing"><span><i style="width:4px;height:24px"></i> 4</span><span><i style="width:8px;height:24px"></i> 8</span><span><i style="width:12px;height:24px"></i> 12</span><span><i style="width:16px;height:24px"></i> 16</span><span><i style="width:24px;height:24px"></i> 24</span><span><i style="width:32px;height:24px"></i> 32</span><span><i style="width:48px;height:24px"></i> 48</span><span><i style="width:64px;height:24px"></i> 64</span></div>
+<div class="sg-demo" style="margin-top:var(--sp-4)">
+  <div class="sg-box" style="border-radius:var(--r-sm)">r-sm 6</div>
+  <div class="sg-box" style="border-radius:var(--r)">r 8</div>
+  <div class="sg-box" style="border-radius:var(--r-lg)">r-lg 12</div>
+  <div class="sg-box" style="border-radius:var(--r-pill)">pill</div>
+  <div class="sg-box" style="box-shadow:var(--shadow-1);border-color:transparent;border-radius:var(--r)">shadow-1</div>
+  <div class="sg-box" style="box-shadow:var(--shadow-2);border-color:transparent;border-radius:var(--r)">shadow-2</div>
+</div>
+
+<h2 id="tombol">Tombol</h2>
+<p>Satu tombol primary per tampilan. Target sentuh minimal 44 px.</p>
+<div class="sg-demo">
+  <button type="button" class="icd-btn primary">Primary</button>
+  <button type="button" class="icd-btn">Secondary</button>
+  <button type="button" class="icd-btn ghost">Ghost</button>
+  <button type="button" class="icd-btn danger">Danger</button>
+  <button type="button" class="icd-btn danger outline">Danger outline</button>
+  <button type="button" class="icd-btn" disabled>Disabled</button>
+  <button type="button" class="icd-btn small">Kecil</button>
+</div>
+
+<h2 id="badge">Badge status</h2>
+<div class="sg-demo">
+  <span class="icd-badge st-todo">Belum mulai</span>
+  <span class="icd-badge st-doing">Berjalan</span>
+  <span class="icd-badge st-done">Selesai</span>
+  <span class="icd-badge st-soon">Segera</span>
+  <span class="icd-badge st-new">Baru</span>
+</div>
+<p class="icd-muted icd-small">"Baru" hanya untuk konten yang terbit dalam 30 hari terakhir. Lesson yang belum terbit memakai "Segera".</p>
+
+<h2 id="kartu">Card dan hierarki</h2>
+<div class="icd-grid">
+  <div class="icd-card"><h3>Card biasa</h3><p>Untuk isi utama.</p></div>
+  <div class="icd-card raised"><h3>Raised</h3><p>Untuk satu hal yang paling penting di halaman, misalnya "Lanjutkan belajar".</p></div>
+  <div class="icd-card flat"><h3>Flat</h3><p>Untuk isi sekunder yang tidak perlu menonjol.</p></div>
+  <div class="icd-card accent"><h3>Accent</h3><p>Untuk ajakan atau pilihan yang sedang aktif.</p></div>
+</div>
+
+<h2 id="progress">Progress bar</h2>
+<div style="display:grid;gap:var(--sp-3);max-width:420px">
+  <div><div class="icd-small">Part 1 · 35%</div><div class="icd-progress" role="progressbar" aria-label="Part 1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35"><i style="width:35%"></i></div></div>
+  <div><div class="icd-small">Selesai · 100%</div><div class="icd-progress ok" role="progressbar" aria-label="Selesai" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i style="width:100%"></i></div></div>
+</div>
+
+<h2 id="tabs">Tabs</h2>
+<div id="sg-tabs"></div>
+<p id="sg-tabs-out" class="icd-muted icd-small" aria-live="polite"></p>
+
+<h2 id="callout">Callout</h2>
+<div class="icd-box info"><b>Info</b>Penjelasan tambahan yang tidak wajib dibaca.</div>
+<div class="icd-box tip"><b>Tip</b>Cara kerja yang lebih cepat atau lebih aman.</div>
+<div class="icd-box warn"><b>Hati-hati</b>Hal yang sering salah di industri.</div>
+<div class="icd-box mis"><b>Kesalahan umum</b>Miskonsepsi yang perlu dibetulkan.</div>
+<div class="icd-box model"><b>Model buku teks vs kenyataan</b>Buku teks menyederhanakan ini; di silikon nyata hasilnya berbeda karena variasi proses.</div>
+
+<h2 id="empty">Empty state</h2>
+<div class="icd-empty">
+  <svg viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="18" y="18" width="36" height="36" rx="5"/><path d="M26 18v-8M36 18v-8M46 18v-8M26 62v-8M36 62v-8M46 62v-8M18 26h-8M18 36h-8M18 46h-8M62 26h-8M62 36h-8M62 46h-8"/><path d="M29 38l5 5 9-11"/></svg>
+  <h3>Belum ada progres</h3>
+  <p>Mulai dari M00. Setiap section yang selesai kamu baca akan tercatat di sini.</p>
+  <a class="icd-btn primary" href="index.html">Mulai dari M00</a>
+</div>
+
+<h2 id="dialog">Toast dan dialog</h2>
+<div class="sg-demo">
+  <button type="button" class="icd-btn" id="sg-toast">Tampilkan toast</button>
+  <button type="button" class="icd-btn danger outline" id="sg-dialog">Dialog konfirmasi</button>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q, el = ICD.el;
+function hex(c){ var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0]; }
+function lum(a){ var c = a.map(function(x){ x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
+function ratio(a, b){ var x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+function val(name){ var d = el('i', { style: 'color:var(--' + name + ');display:none' }); document.body.appendChild(d); var c = getComputedStyle(d).color; d.remove(); return hex(c); }
+function sw(box, items, bg){
+  box.textContent = '';
+  items.forEach(function(it){
+    var fg = val(it[0]), b = val(it[1] || bg), r = ratio(fg, b);
+    var chip = el('div', { class: 'chip', style: 'background:var(--' + it[0] + ');color:var(--' + (it[2] || 'accent-ink') + ')', text: it[1] ? 'Aa' : '' });
+    box.appendChild(el('div', null, [chip, el('div', { class: 'meta' }, [el('code', { text: '--' + it[0] }),
+      el('span', { class: 'icd-muted', text: it[3] || ('kontras ' + r.toFixed(1) + ':1 ' + (r >= 4.5 ? '✓ AA' : r >= 3 ? '· UI saja' : '✗')) })])]));
+  });
+}
+function paint(){
+  var surf = [['surface-0', 'text'], ['surface-1', 'text'], ['surface-2', 'text'], ['surface-3', 'text']];
+  var core = [];
+  surf.forEach(function(s){ core.push([s[0], null, 'text', 'latar halaman, kartu, isian, aksen lembut'.split(', ')[surf.indexOf(s)]]); });
+  [['text', 'surface-1'], ['text-2', 'surface-1'], ['text-3', 'surface-1'], ['accent', 'surface-1']].forEach(function(t){
+    var fg = val(t[0]), b = val(t[1]), r = ratio(fg, b);
+    core.push([t[0], t[1], t[0] === 'accent' ? 'accent-ink' : 'surface-1', 'di atas surface-1: ' + r.toFixed(1) + ':1 ' + (r >= 4.5 ? '✓ AA' : '✗')]);
+  });
+  var box = q('#sw-core'); box.textContent = '';
+  core.forEach(function(it){
+    var chip = el('div', { class: 'chip', style: 'background:var(--' + it[0] + ');color:' + (it[1] ? 'var(--' + it[2] + ')' : 'var(--text)'), text: it[1] ? 'Aa' : '' });
+    box.appendChild(el('div', null, [chip, el('div', { class: 'meta' }, [el('code', { text: '--' + it[0] }), el('span', { class: 'icd-muted', text: it[3] })])]));
+  });
+  var st = q('#sw-status'); st.textContent = '';
+  [['success', 'success-bg'], ['warning', 'warning-bg'], ['danger', 'danger-bg']].forEach(function(p){
+    var r = ratio(val(p[0]), val(p[1]));
+    st.appendChild(el('div', null, [el('div', { class: 'chip', style: 'background:var(--' + p[1] + ');color:var(--' + p[0] + ')', text: 'Aa ' + p[0] }),
+      el('div', { class: 'meta' }, [el('code', { text: '--' + p[0] + ' / --' + p[1] }), el('span', { class: 'icd-muted', text: r.toFixed(1) + ':1 ' + (r >= 4.5 ? '✓ AA' : '✗') })])]));
+  });
+  var sg = q('#sw-sig'); sg.textContent = '';
+  [['clock', 'clock'], ['data', 'data'], ['ctrl', 'kontrol'], ['reset', 'reset'], ['vdd', 'VDD'], ['vss', 'VSS/GND'], ['analog', 'analog'], ['hi', 'logika 1 / aktif'], ['x', 'X (tak dikenal)'], ['z', 'Z (high-impedance)']].forEach(function(s){
+    sg.appendChild(el('span', null, [el('i', { style: 'border-color:var(--s-' + s[0] + ')' }), s[1]]));
+  });
+}
+ICD.ready(function(){
+  paint(); document.addEventListener('icd:theme', function(){ setTimeout(paint, 30); });
+  var panels = { 'Tab satu': 'Isi tab pertama.', 'Tab dua': 'Isi tab kedua.', 'Tab tiga': 'Isi tab ketiga.' };
+  q('#sg-tabs').appendChild(ICD.ui.tabs(Object.keys(panels), function(i, name){ q('#sg-tabs-out').textContent = panels[name]; }, { label: 'Contoh tabs' }));
+  q('#sg-tabs-out').textContent = panels['Tab satu'];
+  q('#sg-toast').addEventListener('click', function(){ ICD.toast('Ini contoh toast.'); });
+  q('#sg-dialog').addEventListener('click', function(){ ICD.ui.confirm({ title: 'Hapus semua progres?', body: 'Tindakan ini tidak bisa dibatalkan. Ekspor dulu jika perlu.', word: 'hapus', danger: true, action: 'Hapus', run: function(){ ICD.toast('Contoh saja, tidak ada yang dihapus.'); } }); });
+});
+})();
+</script>
+</body>
+</html>

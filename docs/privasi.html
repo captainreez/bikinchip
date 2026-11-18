@@ -8,34 +8,56 @@
 <!-- ICD-CORE 1.4.0 BEGIN (identik di semua file; jangan disunting per file) -->
 <style id="icd-core-css">
 /* ICD-Core CSS — disalin identik ke setiap file. Jangan diubah per file. */
+/* ===== Design tokens (sumber kebenaran; nama lama di bawah hanya alias supaya modul yang ada tidak pecah) ===== */
 :root{
-  --bg:#F7F6F2;--card:#FFFFFF;--ink:#1F2328;--ink2:#57606A;--line:#D8D5CC;--accent:#0B5C7A;--accent-ink:#FFFFFF;
-  --tint:#E6F0F4;--ok:#176F31;--warn:#855700;--bad:#CF222E;--code-bg:#F0EEE8;
+  /* permukaan: 0 = latar halaman, 1 = kartu, 2 = isian halus (kode, tabel), 3 = aksen lembut (hover, terpilih) */
+  --surface-0:#F7F6F2;--surface-1:#FFFFFF;--surface-2:#F0EEE8;--surface-3:#E6F0F4;
+  --text:#1F2328;--text-2:#57606A;--text-3:#656D76;
+  --line:#D8D5CC;--line-strong:#B9B5A9;
+  --accent:#0B5C7A;--accent-ink:#FFFFFF;--accent-hover:#084A63;
+  --success:#176F31;--success-bg:#E3F4E7;--warning:#855700;--warning-bg:#FBEFD0;--danger:#C4161F;--danger-bg:#FDE7E9;
+  /* warna sinyal (konvensi di semua diagram) */
   --s-clock:#1F6FEB;--s-data:#0F7B6C;--s-ctrl:#7A3FD1;--s-reset:#B45309;--s-vdd:#C0392B;--s-vss:#4A5568;
   --s-analog:#B8256E;--s-hi:#946200;--s-x:#D1242F;--s-z:#8A6D1B;
+  --brand-red:#D7263D;
+  /* spacing 4/8 px */
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;--sp-7:48px;--sp-8:64px;
+  /* skala tipe */
+  --fs-14:.875rem;--fs-16:1rem;--fs-18:1.125rem;--fs-22:1.375rem;--fs-28:1.75rem;--fs-36:2.25rem;--fs-48:3rem;
   --f-text:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
   --f-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
-  --r:8px;--top:52px;--brand-red:#D7263D;
+  /* bentuk */
+  --r-sm:6px;--r:8px;--r-lg:12px;--r-pill:999px;
+  --shadow-1:0 1px 2px rgba(20,24,30,.08);--shadow-2:0 6px 20px rgba(20,24,30,.14);
+  --ring:2px solid var(--accent);--ring-offset:2px;
+  --top:56px;--bottom-nav:0px;
+  /* alias nama lama */
+  --bg:var(--surface-0);--card:var(--surface-1);--ink:var(--text);--ink2:var(--text-2);--tint:var(--surface-3);
+  --ok:var(--success);--warn:var(--warning);--bad:var(--danger);--code-bg:var(--surface-2);
   color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#14171C;--card:#1C2027;--ink:#E6E3DC;--ink2:#9BA3AD;--line:#2E343D;--accent:#5CC1E0;--accent-ink:#0B1A20;
-  --tint:#1D2D35;--ok:#56D364;--warn:#E3B341;--bad:#FF7B72;--code-bg:#12151A;
+  --surface-0:#14171C;--surface-1:#1C2027;--surface-2:#12151A;--surface-3:#1D2D35;
+  --text:#E6E3DC;--text-2:#A3ABB5;--text-3:#98A1AB;
+  --line:#2E343D;--line-strong:#4A525D;
+  --accent:#5CC1E0;--accent-ink:#0B1A20;--accent-hover:#82D2EB;
+  --success:#56D364;--success-bg:#12301B;--warning:#E3B341;--warning-bg:#3A2D0A;--danger:#FF7B72;--danger-bg:#3F1A1E;
   --s-clock:#6CB6FF;--s-data:#4FD1B5;--s-ctrl:#B794F6;--s-reset:#F6AD55;--s-vdd:#FF7B72;--s-vss:#A0AEC0;
   --s-analog:#F687B3;--s-hi:#F6E05E;--s-x:#FF6B6B;--s-z:#D9B84A;
   --brand-red:#FF6B7A;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4);--shadow-2:0 6px 20px rgba(0,0,0,.5);
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
-html{font-size:17px;scroll-padding-top:calc(var(--top) + 12px);-webkit-text-size-adjust:100%}
+html{font-size:16px;scroll-padding-top:calc(var(--top) + 12px);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-text);line-height:1.65}
 h1,h2,h3,h4{line-height:1.25;margin:1.6em 0 .5em;text-wrap:balance}
-h1{font-size:1.76rem;margin-top:.4em}h2{font-size:1.41rem}h3{font-size:1.18rem}h4{font-size:1rem}
+h1{font-size:var(--fs-28);margin-top:.4em}h2{font-size:var(--fs-22)}h3{font-size:var(--fs-18)}h4{font-size:var(--fs-16)}
 p,ul,ol,table,pre,figure{margin:0 0 1em}
 a{color:var(--accent);text-underline-offset:2px}
 code,kbd,samp,pre{font-family:var(--f-mono);font-size:.88em}
 :not(pre)>code{background:var(--code-bg);padding:.1em .35em;border-radius:4px}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+:focus-visible{outline:var(--ring);outline-offset:var(--ring-offset);border-radius:3px}
 button,input,select,textarea{font:inherit;color:inherit}
 .icd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .icd-skip{position:absolute;left:8px;top:-60px;background:var(--accent);color:var(--accent-ink);padding:8px 12px;border-radius:var(--r);z-index:50}
@@ -47,6 +69,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .icd-btn:hover{border-color:var(--accent)}
 .icd-btn[disabled]{opacity:.45;cursor:not-allowed}
 .icd-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.icd-btn:hover{border-color:var(--accent)}
+.icd-btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.icd-btn.ghost{background:transparent;border-color:transparent;color:var(--accent)}
+.icd-btn.ghost:hover{background:var(--surface-3);border-color:transparent}
+.icd-btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+:root[data-theme="dark"] .icd-btn.danger{color:#1A0709}
+.icd-btn.danger.outline{background:transparent;color:var(--danger)}
+.icd-btn.danger.outline:hover{background:var(--danger-bg)}
 .icd-btn.small{min-height:36px;min-width:36px;padding:2px 10px;font-size:.88rem}
 .icd-btn[aria-pressed="true"]{background:var(--tint);border-color:var(--accent)}
 .icd-input,.icd-select,textarea.icd-input{min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);max-width:100%}
@@ -184,11 +214,38 @@ math{font-size:1.08em}
 /* glosarium */
 .icd-term{border:0;background:none;padding:0;cursor:help;border-bottom:1px dotted var(--accent);color:inherit;font:inherit}
 .icd-tip{position:absolute;z-index:40;max-width:min(320px,calc(100vw - 24px));background:var(--card);border:1px solid var(--accent);border-radius:var(--r);
-  padding:10px 12px;font-size:.88rem;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  padding:10px 12px;font-size:.88rem;box-shadow:var(--shadow-2)}
 .icd-tip b{display:block}.icd-tip i{color:var(--ink2)}
 dialog.icd-dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);max-width:min(520px,calc(100vw - 24px));padding:18px}
 dialog.icd-dialog::backdrop{background:rgba(0,0,0,.45)}
 .icd-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:var(--r);z-index:60;font-size:.88rem;max-width:calc(100vw - 24px)}
+
+/* ===== komponen standar ===== */
+.icd-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 9px;border-radius:var(--r-pill);font-size:.78rem;line-height:1.5;font-weight:600;border:1px solid var(--line);color:var(--text-2);background:var(--surface-1);white-space:nowrap;vertical-align:middle}
+.icd-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.9}
+.icd-badge.st-todo{color:var(--text-2)}
+.icd-badge.st-doing{color:var(--accent);background:var(--surface-3);border-color:transparent}
+.icd-badge.st-done{color:var(--success);background:var(--success-bg);border-color:transparent}
+.icd-badge.st-soon{color:var(--warning);background:var(--warning-bg);border-color:transparent}
+.icd-badge.st-soon::before{background:none;border:1.5px solid currentColor;width:6px;height:6px}
+.icd-badge.st-new{color:var(--accent-ink);background:var(--accent);border-color:transparent}
+.icd-badge.st-new::before{display:none}
+.icd-progress{height:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden}
+.icd-progress>i{display:block;height:100%;background:var(--accent);border-radius:inherit;transition:width .3s}
+.icd-progress.ok>i{background:var(--success)}
+.icd-tabs{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);max-width:100%;overflow-x:auto}
+.icd-tabs [role=tab]{min-height:40px;padding:4px 14px;border:0;border-radius:var(--r-sm);background:none;color:var(--text-2);cursor:pointer;white-space:nowrap}
+.icd-tabs [role=tab]:hover{color:var(--text)}
+.icd-tabs [role=tab][aria-selected=true]{background:var(--surface-1);color:var(--text);font-weight:600;box-shadow:var(--shadow-1)}
+.icd-box.info{border-left-color:var(--accent)}.icd-box.tip{border-left-color:var(--success)}.icd-box.warn{border-left-color:var(--warning)}
+.icd-box.warn>b:first-child{color:var(--warning)}.icd-box.mis>b:first-child{color:var(--danger)}.icd-box.tip>b:first-child{color:var(--success)}.icd-box.info>b:first-child{color:var(--accent)}
+.icd-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-2);padding:var(--sp-6) var(--sp-4);border:1px dashed var(--line-strong);border-radius:var(--r-lg);background:var(--surface-1)}
+.icd-empty svg{width:72px;height:72px;color:var(--accent)}
+.icd-empty h3{margin:0}.icd-empty p{margin:0;max-width:46ch;color:var(--text-2)}
+.icd-card.flat{background:transparent;border-style:dashed}
+.icd-card.raised{box-shadow:var(--shadow-2);border-color:transparent}
+.icd-card.accent{border-color:var(--accent);background:var(--surface-3)}
+.icd-kbd,kbd{display:inline-block;min-width:1.6em;padding:0 .4em;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:var(--r-sm);background:var(--surface-1);font-size:.78rem;text-align:center}
 
 @media(max-width:520px){
   html{font-size:16px}
@@ -365,7 +422,7 @@ reg.file = function(id){ return fileById[id] || null; };
 reg.module = function(id){ return modById[id] || null; };
 ICD.reg = reg;
 /* File yang sudah dibuat, urut rilis. Halaman lama mempelajari daftar yang lebih baru lewat penyimpanan (lihat avail). */
-var BUILT_LIST = ['uji-komponen', 'm00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
+var BUILT_LIST = ['m00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
   'm02a-rangkaian-dc', 'm02b-transien-ac', 'm02c-bode-filter-tline', 'm03a-bilangan', 'm03b-kode-deteksi-koreksi', 'm04a-c-pointer', 'm04b-assembly-toolchain-os', 'm04c-linux-git-make'];
 
 /* ---------- store: localStorage dengan cadangan memori ---------- */
@@ -542,7 +599,7 @@ function dialog(opts){
   add(d, [el('h3', { text: opts.title, style: 'margin-top:0' }), typeof opts.body === 'string' ? el('p', { text: opts.body }) : opts.body]);
   var row = el('div', { class: 'icd-row', style: 'justify-content:flex-end;margin-top:12px' });
   (opts.actions || [{ label: 'Tutup' }]).forEach(function(a){
-    row.appendChild(el('button', { class: 'icd-btn' + (a.primary ? ' primary' : ''), type: 'button', text: a.label,
+    row.appendChild(el('button', { class: 'icd-btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger' : ''), type: 'button', text: a.label,
       onclick: function(){ var keep = a.run && a.run() === false; if (!keep) close(); } }));
   });
   d.appendChild(row);
@@ -553,6 +610,45 @@ function dialog(opts){
   return { close: close, el: d };
 }
 ICD.say = say; ICD.toast = toast; ICD.dialog = dialog;
+
+/* ---------- ui: tabs dan dialog konfirmasi ---------- */
+ICD.ui = {
+  /* tabs(['A','B'], function(index, label){}, {label, selected}) -> elemen role=tablist; panah kiri/kanan, Home, End */
+  tabs: function(items, onchange, opts){
+    opts = opts || {};
+    var bar = el('div', { class: 'icd-tabs', role: 'tablist', 'aria-label': opts.label || 'Tab' }), btns = [];
+    function pick(i, focus){
+      btns.forEach(function(b, k){ b.setAttribute('aria-selected', k === i ? 'true' : 'false'); b.tabIndex = k === i ? 0 : -1; });
+      if (focus) btns[i].focus();
+      if (onchange) onchange(i, items[i]);
+    }
+    items.forEach(function(label, i){
+      var b = el('button', { type: 'button', role: 'tab', text: label, onclick: function(){ pick(i); } });
+      b.addEventListener('keydown', function(e){
+        var n = btns.length, k = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+        if (k >= 0){ e.preventDefault(); pick(k, true); }
+      });
+      btns.push(b); bar.appendChild(b);
+    });
+    bar.select = function(i){ pick(i); };
+    var start = opts.selected || 0;
+    btns.forEach(function(b, k){ b.setAttribute('aria-selected', k === start ? 'true' : 'false'); b.tabIndex = k === start ? 0 : -1; });
+    return bar;
+  },
+  /* confirm({title, body, word, danger, action, run}): jika word diisi, tombol hanya berlaku bila kata itu diketik */
+  confirm: function(o){
+    var inp = null, kids = [el('p', { text: o.body || '' })];
+    if (o.word){
+      inp = el('input', { type: 'text', class: 'icd-input', autocomplete: 'off', 'aria-label': 'Ketik "' + o.word + '" untuk melanjutkan', placeholder: o.word });
+      kids.push(el('label', { class: 'icd-field' }, [el('span', { text: 'Ketik "' + o.word + '" untuk melanjutkan' }), inp]));
+    }
+    return dialog({ title: o.title, body: el('div', null, kids), actions: [{ label: o.cancel || 'Batal' },
+      { label: o.action || 'Lanjut', danger: !!o.danger, primary: !o.danger, run: function(){
+        if (inp && inp.value.trim().toLowerCase() !== o.word.toLowerCase()){ inp.focus(); inp.setAttribute('aria-invalid', 'true'); return false; }
+        if (o.run) o.run();
+      } }] });
+  }
+};
 
 /* ---------- hl: penyorot sintaks ---------- */
 function words(s){ var o = {}; s.split(/\s+/).forEach(function(w){ if (w) o[w] = 1; }); return o; }

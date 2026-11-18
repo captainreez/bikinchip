@@ -5,7 +5,7 @@ const { chromium } = require(process.env.PLAYWRIGHT || 'playwright');
   let fail = 0;
   for (const [w, h] of [[1280, 900], [360, 740]]) for (const scheme of ['light', 'dark']) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, colorScheme: scheme });
-    for (const pg of (process.argv[2] || 'uji-komponen.html,index.html').split(',')) {
+    for (const pg of (process.argv[2] || 'index.html').split(',')) {
       const p = await ctx.newPage(); const errs = [];
       p.on('pageerror', e => errs.push('PAGEERROR ' + e.message)); p.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text()); });
       await p.goto(dir + pg); await p.waitForTimeout(400);

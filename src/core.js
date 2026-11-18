@@ -157,7 +157,7 @@ reg.file = function(id){ return fileById[id] || null; };
 reg.module = function(id){ return modById[id] || null; };
 ICD.reg = reg;
 /* File yang sudah dibuat, urut rilis. Halaman lama mempelajari daftar yang lebih baru lewat penyimpanan (lihat avail). */
-var BUILT_LIST = ['uji-komponen', 'm00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
+var BUILT_LIST = ['m00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
   'm02a-rangkaian-dc', 'm02b-transien-ac', 'm02c-bode-filter-tline', 'm03a-bilangan', 'm03b-kode-deteksi-koreksi', 'm04a-c-pointer', 'm04b-assembly-toolchain-os', 'm04c-linux-git-make'];
 
 /* ---------- store: localStorage dengan cadangan memori ---------- */
@@ -334,7 +334,7 @@ function dialog(opts){
   add(d, [el('h3', { text: opts.title, style: 'margin-top:0' }), typeof opts.body === 'string' ? el('p', { text: opts.body }) : opts.body]);
   var row = el('div', { class: 'icd-row', style: 'justify-content:flex-end;margin-top:12px' });
   (opts.actions || [{ label: 'Tutup' }]).forEach(function(a){
-    row.appendChild(el('button', { class: 'icd-btn' + (a.primary ? ' primary' : ''), type: 'button', text: a.label,
+    row.appendChild(el('button', { class: 'icd-btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger' : ''), type: 'button', text: a.label,
       onclick: function(){ var keep = a.run && a.run() === false; if (!keep) close(); } }));
   });
   d.appendChild(row);
@@ -345,6 +345,45 @@ function dialog(opts){
   return { close: close, el: d };
 }
 ICD.say = say; ICD.toast = toast; ICD.dialog = dialog;
+
+/* ---------- ui: tabs dan dialog konfirmasi ---------- */
+ICD.ui = {
+  /* tabs(['A','B'], function(index, label){}, {label, selected}) -> elemen role=tablist; panah kiri/kanan, Home, End */
+  tabs: function(items, onchange, opts){
+    opts = opts || {};
+    var bar = el('div', { class: 'icd-tabs', role: 'tablist', 'aria-label': opts.label || 'Tab' }), btns = [];
+    function pick(i, focus){
+      btns.forEach(function(b, k){ b.setAttribute('aria-selected', k === i ? 'true' : 'false'); b.tabIndex = k === i ? 0 : -1; });
+      if (focus) btns[i].focus();
+      if (onchange) onchange(i, items[i]);
+    }
+    items.forEach(function(label, i){
+      var b = el('button', { type: 'button', role: 'tab', text: label, onclick: function(){ pick(i); } });
+      b.addEventListener('keydown', function(e){
+        var n = btns.length, k = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+        if (k >= 0){ e.preventDefault(); pick(k, true); }
+      });
+      btns.push(b); bar.appendChild(b);
+    });
+    bar.select = function(i){ pick(i); };
+    var start = opts.selected || 0;
+    btns.forEach(function(b, k){ b.setAttribute('aria-selected', k === start ? 'true' : 'false'); b.tabIndex = k === start ? 0 : -1; });
+    return bar;
+  },
+  /* confirm({title, body, word, danger, action, run}): jika word diisi, tombol hanya berlaku bila kata itu diketik */
+  confirm: function(o){
+    var inp = null, kids = [el('p', { text: o.body || '' })];
+    if (o.word){
+      inp = el('input', { type: 'text', class: 'icd-input', autocomplete: 'off', 'aria-label': 'Ketik "' + o.word + '" untuk melanjutkan', placeholder: o.word });
+      kids.push(el('label', { class: 'icd-field' }, [el('span', { text: 'Ketik "' + o.word + '" untuk melanjutkan' }), inp]));
+    }
+    return dialog({ title: o.title, body: el('div', null, kids), actions: [{ label: o.cancel || 'Batal' },
+      { label: o.action || 'Lanjut', danger: !!o.danger, primary: !o.danger, run: function(){
+        if (inp && inp.value.trim().toLowerCase() !== o.word.toLowerCase()){ inp.focus(); inp.setAttribute('aria-invalid', 'true'); return false; }
+        if (o.run) o.run();
+      } }] });
+  }
+};
 
 /* ---------- hl: penyorot sintaks ---------- */
 function words(s){ var o = {}; s.split(/\s+/).forEach(function(w){ if (w) o[w] = 1; }); return o; }
