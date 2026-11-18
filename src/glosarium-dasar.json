@@ -1,0 +1,317 @@
+[
+ {
+  "id": "g0",
+  "en": "voltage",
+  "idn": "tegangan",
+  "def": "Beda energi potensial listrik per satuan muatan antara dua titik; satuannya volt (V).",
+  "mod": "M02"
+ },
+ {
+  "id": "g1",
+  "en": "current",
+  "idn": "arus",
+  "def": "Laju aliran muatan listrik melewati suatu penampang; satuannya ampere (A).",
+  "mod": "M02"
+ },
+ {
+  "id": "g2",
+  "en": "two's complement",
+  "idn": "komplemen dua",
+  "def": "Cara menyandikan bilangan bulat bertanda dalam biner; bit paling kiri berbobot negatif.",
+  "mod": "M03"
+ },
+ {
+  "id": "g3",
+  "en": "threshold voltage",
+  "idn": "tegangan ambang",
+  "def": "Tegangan gate-source saat kanal MOSFET mulai menghantar secara berarti; ditulis Vth.",
+  "mod": "M06"
+ },
+ {
+  "id": "g4",
+  "en": "leakage",
+  "idn": "arus bocor",
+  "def": "Arus yang tetap mengalir saat transistor seharusnya mati.",
+  "mod": "M06"
+ },
+ {
+  "id": "g5",
+  "en": "PVT corner",
+  "idn": "sudut PVT",
+  "def": "Kombinasi ekstrem process, voltage, dan temperature yang dipakai untuk memastikan chip bekerja di semua kondisi.",
+  "mod": "M06"
+ },
+ {
+  "id": "g6",
+  "en": "FinFET",
+  "idn": "transistor sirip",
+  "def": "Transistor dengan kanal berbentuk sirip tegak yang dibungkus gate di tiga sisi.",
+  "mod": "M06"
+ },
+ {
+  "id": "g7",
+  "en": "GAA",
+  "idn": "gate-all-around",
+  "def": "Transistor yang gate-nya membungkus kanal di semua sisi, misalnya nanosheet.",
+  "mod": "M06"
+ },
+ {
+  "id": "g8",
+  "en": "latch",
+  "idn": "latch",
+  "def": "Elemen memori yang transparan selama sinyal enable aktif (level-sensitive).",
+  "mod": "M09"
+ },
+ {
+  "id": "g9",
+  "en": "flip-flop",
+  "idn": "flip-flop",
+  "def": "Elemen memori yang menangkap data hanya pada tepi clock (edge-triggered).",
+  "mod": "M09"
+ },
+ {
+  "id": "g10",
+  "en": "setup time",
+  "idn": "waktu setup",
+  "def": "Lama data harus stabil sebelum tepi clock agar tertangkap dengan benar.",
+  "mod": "M09"
+ },
+ {
+  "id": "g11",
+  "en": "hold time",
+  "idn": "waktu hold",
+  "def": "Lama data harus tetap stabil setelah tepi clock.",
+  "mod": "M09"
+ },
+ {
+  "id": "g12",
+  "en": "metastability",
+  "idn": "metastabilitas",
+  "def": "Keadaan tak tentu sementara pada flip-flop ketika data berubah terlalu dekat dengan tepi clock.",
+  "mod": "M09"
+ },
+ {
+  "id": "g13",
+  "en": "FSM",
+  "idn": "mesin keadaan hingga",
+  "def": "Rangkaian sekuensial yang berpindah antar sejumlah keadaan terbatas berdasarkan masukan.",
+  "mod": "M09"
+ },
+ {
+  "id": "g14",
+  "en": "standard cell",
+  "idn": "sel standar",
+  "def": "Gerbang atau flip-flop siap pakai dengan tinggi seragam, bahan dasar implementasi digital.",
+  "mod": "M10"
+ },
+ {
+  "id": "g15",
+  "en": "pipeline",
+  "idn": "pipeline",
+  "def": "Pembagian pekerjaan menjadi tahap berurutan yang dipisah register agar beberapa operasi berjalan bersamaan.",
+  "mod": "M12"
+ },
+ {
+  "id": "g16",
+  "en": "hazard",
+  "idn": "hazard",
+  "def": "Pada prosesor: situasi ketika instruksi berikutnya tidak bisa langsung dijalankan dengan benar di pipeline.",
+  "mod": "M12"
+ },
+ {
+  "id": "g17",
+  "en": "cache",
+  "idn": "cache",
+  "def": "Memori kecil dan cepat yang menyimpan salinan data yang sering diakses.",
+  "mod": "M13"
+ },
+ {
+  "id": "g18",
+  "en": "RTL",
+  "idn": "register-transfer level",
+  "def": "Tingkat deskripsi hardware berupa register dan logika di antaranya, ditulis dalam HDL.",
+  "mod": "M16"
+ },
+ {
+  "id": "g19",
+  "en": "handshake",
+  "idn": "jabat tangan",
+  "def": "Protokol dua sinyal (misalnya valid dan ready) agar pengirim dan penerima sepakat kapan data berpindah.",
+  "mod": "M17"
+ },
+ {
+  "id": "g20",
+  "en": "FIFO",
+  "idn": "antrean first-in first-out",
+  "def": "Penyangga yang mengeluarkan data dalam urutan yang sama dengan urutan masuk.",
+  "mod": "M17"
+ },
+ {
+  "id": "g21",
+  "en": "CDC",
+  "idn": "clock domain crossing",
+  "def": "Perpindahan sinyal antara dua domain clock yang tidak sinkron; memerlukan synchronizer.",
+  "mod": "M17"
+ },
+ {
+  "id": "g22",
+  "en": "testbench",
+  "idn": "bangku uji",
+  "def": "Kode yang membangkitkan stimulus dan memeriksa keluaran desain saat simulasi.",
+  "mod": "M18"
+ },
+ {
+  "id": "g23",
+  "en": "coverage",
+  "idn": "cakupan",
+  "def": "Ukuran seberapa banyak kode atau skenario yang sudah teruji.",
+  "mod": "M18"
+ },
+ {
+  "id": "g24",
+  "en": "UVM",
+  "idn": "Universal Verification Methodology",
+  "def": "Pustaka dan metodologi standar berbasis SystemVerilog untuk membangun testbench.",
+  "mod": "M18"
+ },
+ {
+  "id": "g25",
+  "en": "logic synthesis",
+  "idn": "sintesis logika",
+  "def": "Penerjemahan RTL menjadi netlist gerbang dari library tertentu.",
+  "mod": "M21"
+ },
+ {
+  "id": "g26",
+  "en": "netlist",
+  "idn": "netlist",
+  "def": "Daftar komponen beserta sambungan antar pin.",
+  "mod": "M21"
+ },
+ {
+  "id": "g27",
+  "en": "STA",
+  "idn": "static timing analysis",
+  "def": "Pemeriksaan timing semua path tanpa simulasi, dengan menjumlahkan delay.",
+  "mod": "M22"
+ },
+ {
+  "id": "g28",
+  "en": "slack",
+  "idn": "slack",
+  "def": "Selisih antara waktu yang diwajibkan dan waktu tiba sinyal; negatif berarti pelanggaran.",
+  "mod": "M22"
+ },
+ {
+  "id": "g29",
+  "en": "clock skew",
+  "idn": "skew clock",
+  "def": "Selisih waktu tiba clock di dua flip-flop.",
+  "mod": "M22"
+ },
+ {
+  "id": "g30",
+  "en": "floorplan",
+  "idn": "denah chip",
+  "def": "Penataan awal area die: posisi macro, I/O, dan jalur daya.",
+  "mod": "M23"
+ },
+ {
+  "id": "g31",
+  "en": "clock tree synthesis",
+  "idn": "sintesis pohon clock",
+  "def": "Pembangunan jaringan buffer yang mengantar clock ke semua flip-flop dengan skew terkendali.",
+  "mod": "M23"
+ },
+ {
+  "id": "g32",
+  "en": "IR drop",
+  "idn": "jatuh tegangan IR",
+  "def": "Penurunan tegangan suplai akibat arus melewati resistansi jaringan daya.",
+  "mod": "M23"
+ },
+ {
+  "id": "g33",
+  "en": "PDK",
+  "idn": "process design kit",
+  "def": "Paket dari foundry berisi model devais, design rules, dan file teknologi.",
+  "mod": "M23"
+ },
+ {
+  "id": "g34",
+  "en": "DRC",
+  "idn": "design rule check",
+  "def": "Pemeriksaan layout terhadap aturan geometri proses.",
+  "mod": "M24"
+ },
+ {
+  "id": "g35",
+  "en": "LVS",
+  "idn": "layout versus schematic",
+  "def": "Pemeriksaan bahwa layout secara listrik sama dengan netlist.",
+  "mod": "M24"
+ },
+ {
+  "id": "g36",
+  "en": "GDSII",
+  "idn": "GDSII",
+  "def": "Format file layout akhir yang dikirim ke foundry.",
+  "mod": "M24"
+ },
+ {
+  "id": "g37",
+  "en": "tapeout",
+  "idn": "tapeout",
+  "def": "Penyerahan layout final ke foundry untuk dibuat mask dan diproduksi.",
+  "mod": "M24"
+ },
+ {
+  "id": "g38",
+  "en": "scan chain",
+  "idn": "rantai scan",
+  "def": "Flip-flop yang dirangkai menjadi shift register saat mode test agar keadaan internal bisa dikendalikan dan diamati.",
+  "mod": "M26"
+ },
+ {
+  "id": "g39",
+  "en": "fault model",
+  "idn": "model kesalahan",
+  "def": "Abstraksi cacat fisik, misalnya stuck-at, yang dipakai untuk membangkitkan pola test.",
+  "mod": "M26"
+ },
+ {
+  "id": "g40",
+  "en": "ADC",
+  "idn": "konverter analog ke digital",
+  "def": "Rangkaian yang mengubah tegangan analog menjadi bilangan digital.",
+  "mod": "M28"
+ },
+ {
+  "id": "g41",
+  "en": "PLL",
+  "idn": "phase-locked loop",
+  "def": "Loop umpan balik yang mengunci fase osilator ke clock referensi; dipakai untuk membangkitkan clock.",
+  "mod": "M28"
+ },
+ {
+  "id": "g42",
+  "en": "SRAM",
+  "idn": "static RAM",
+  "def": "Memori yang menyimpan bit dalam pasangan inverter silang selama ada daya.",
+  "mod": "M29"
+ },
+ {
+  "id": "g43",
+  "en": "yield",
+  "idn": "rendemen",
+  "def": "Persentase die yang berfungsi dari seluruh die yang diproduksi.",
+  "mod": "M30"
+ },
+ {
+  "id": "g44",
+  "en": "process node",
+  "idn": "node proses",
+  "def": "Nama generasi teknologi fabrikasi; pada node modern ini label pemasaran, bukan ukuran fisik.",
+  "mod": "M30"
+ }
+]

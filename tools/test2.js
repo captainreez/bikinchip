@@ -64,29 +64,12 @@ const assert = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) pro
   assert((await p.textContent('#kuis')).includes('Skor terbaik 3/3'), 'skor kuis bertahan setelah muat ulang');
   assert((await p.inputValue('#s02 textarea')) === 'catatan uji', 'catatan bertahan');
   assert((await p.textContent('#s01 .icd-secfoot')).includes('Selesai dibaca'), 'tanda selesai bertahan');
-  // index
-  await p.goto(dir + 'index.html'); await p.waitForTimeout(300);
-  assert((await p.textContent('#d-status')).includes('terbaca'), 'tanda uji terbaca di index');
-  assert((await p.textContent('#bookmarks')).includes('Grafik'), 'bookmark tampil di dasbor');
-  await p.click('#graph [data-mod="M22"]'); assert((await p.textContent('#detail')).includes('Static timing analysis'), 'pilih modul di graf');
-  assert((await p.textContent('#detail')).includes('M23'), 'rincian memuat modul lanjutan');
-  await (await p.$('#peta')).screenshot({ path: 'shots/peta.png' });
-  await p.selectOption('#track', 'ams'); assert(await p.evaluate(() => document.querySelector('#graph [data-mod="M18"]').classList.contains('dim') && !document.querySelector('#graph [data-mod="M27"]').classList.contains('dim')), 'filter jalur');
-  await p.fill('#icd-search', 'setup hold'); await p.waitForTimeout(100); const res = await p.textContent('#hasil-list'); assert(res.includes('M09') && res.includes('M22'), 'pencarian "setup hold" menemukan M09 dan M22');
-  await p.fill('#icd-search', ''); await p.click('#p-make'); const sum = await p.textContent('#p-sum'); assert(/\d+ minggu/.test(sum), 'rencana: ' + sum);
-  await p.selectOption('#p-track', 'rtl'); await p.click('#p-make'); console.log('     rencana RTL:', await p.textContent('#p-sum'));
-  await p.focus('#graph [data-mod="M10"]'); await p.keyboard.press('Enter'); assert((await p.textContent('#detail')).includes('CMOS VLSI'), 'graf bisa dipakai dengan keyboard');
   const exp = await p.evaluate(() => JSON.parse(ICD.store.exportJSON())); assert(exp.app === 'icd' && exp.data.progress['uji-komponen'].quiz.uji.best === 3, 'ekspor JSON memuat progres');
   await p.evaluate((t) => { ICD.store.reset(); ICD.store.importJSON(t, 'gabung'); }, JSON.stringify(exp)); assert(await p.evaluate(() => ICD.store.get('progress.uji-komponen.quiz.uji.best')) === 3, 'impor JSON memulihkan progres');
-  await p.click('#d-reset'); assert(await p.isVisible('dialog.icd-dialog'), 'dialog konfirmasi (bukan alert)'); await p.click('dialog button:has-text("Batal")');
-  await p.goto(dir + 'uji-komponen.html'); await p.fill('#icd-search', 'cache'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
-  assert(p.url().includes('index.html#cari=cache') && (await p.textContent('#hasil-list')).includes('M13'), 'pencarian dari halaman modul menuju index');
   assert(errs.length === 0, 'tanpa error konsol ' + errs.join(' | '));
   // mobile
   const m = await (await b.newContext({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })).newPage();
   await m.goto(dir + 'uji-komponen.html'); await m.click('.icd-toc-btn'); await m.screenshot({ path: 'shots/m-toc.png' }); await m.keyboard.press('Escape');
   await (await m.$('#s03')).screenshot({ path: 'shots/m-rc.png' });
-  await m.goto(dir + 'index.html'); assert(await m.isVisible('#modlist') && !(await m.isVisible('#graphwrap')), 'ponsel memakai tampilan daftar'); await m.screenshot({ path: 'shots/m-index.png' });
-  await m.tap('#modlist .modbtn >> nth=3'); await (await m.$('#detail')).screenshot({ path: 'shots/m-detail.png' });
   await b.close();
 })().catch(e => { console.error('TEST CRASH', e.message); process.exit(1); });

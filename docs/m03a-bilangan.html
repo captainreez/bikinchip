@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>M03a Bilangan: biner, two's complement, fixed-point, IEEE 754 — IC Design dari Nol sampai Silikon</title>
-<!-- ICD-CORE 1.4.0 BEGIN (identik di semua file; jangan disunting per file) -->
+<!-- ICD-CORE 1.5.0 BEGIN (identik di semua file; jangan disunting per file) -->
 <style id="icd-core-css">
 /* ICD-Core CSS — disalin identik ke setiap file. Jangan diubah per file. */
 /* ===== Design tokens (sumber kebenaran; nama lama di bawah hanya alias supaya modul yang ada tidak pecah) ===== */
@@ -93,9 +93,6 @@ input[type=range]{width:100%;min-height:32px;accent-color:var(--accent)}
 .icd-logo .pin{fill:var(--ink2)}.icd-logo .body{fill:var(--accent)}.icd-logo .b{fill:none;stroke:var(--accent-ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.icd-logo .dot{fill:var(--brand-red)}
 .wm{font-family:var(--f-mono);letter-spacing:-.02em}.wm b{color:var(--accent)}
 .icd-acct{white-space:nowrap;max-width:9rem;overflow:hidden;text-overflow:ellipsis}
-.icd-top .title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2);font-size:.88rem}
-.icd-top form{display:flex;min-width:0}
-.icd-top input[type=search]{width:11rem;min-height:36px;max-width:38vw}
 .icd-bar{height:3px;background:var(--line);position:sticky;top:var(--top);z-index:29}
 .icd-bar>i{display:block;height:100%;background:var(--accent);width:0}
 .icd-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:1180px;margin:0 auto;padding:16px 14px 64px}
@@ -246,14 +243,64 @@ dialog.icd-dialog::backdrop{background:rgba(0,0,0,.45)}
 .icd-card.accent{border-color:var(--accent);background:var(--surface-3)}
 .icd-kbd,kbd{display:inline-block;min-width:1.6em;padding:0 .4em;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:var(--r-sm);background:var(--surface-1);font-size:.78rem;text-align:center}
 
+
+/* ===== shell: header, nav, breadcrumb, footer, palet ===== */
+.icd-top .sp{flex:1}
+.icd-top{gap:var(--sp-3);padding:0 var(--sp-4)}
+.icd-mainnav{display:none;gap:2px;margin-left:var(--sp-3)}
+.icd-mainnav a{display:inline-flex;align-items:center;min-height:40px;padding:0 var(--sp-3);border-radius:var(--r);color:var(--text-2);text-decoration:none;font-size:var(--fs-14);font-weight:500}
+.icd-mainnav a:hover{color:var(--text);background:var(--surface-2)}
+.icd-mainnav a[aria-current=page]{color:var(--accent);background:var(--surface-3);font-weight:600}
+.icd-searchbtn{gap:8px;color:var(--text-2)}
+.icd-searchbtn kbd{font-size:.72rem;border-bottom-width:1px}
+.icd-searchbtn .lbl{display:none}
+.icd-bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:35;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface-1);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.icd-bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--text-2);text-decoration:none;font-size:.72rem}
+.icd-bottomnav a[aria-current=page]{color:var(--accent);font-weight:600}
+.icd-bottomnav a[aria-current=page]::before{content:"";position:absolute;margin-top:-54px;width:32px;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
+body{padding-bottom:calc(56px + env(safe-area-inset-bottom))}
+.icd-crumbs{max-width:1180px;margin:0 auto;padding:var(--sp-3) var(--sp-4) 0;font-size:var(--fs-14)}
+.icd-crumbs ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.icd-crumbs li{flex:none}
+.icd-crumbs li{display:inline-flex;align-items:center;color:var(--text-2)}
+.icd-crumbs li+li::before{content:"›";margin:0 var(--sp-2);color:var(--text-3)}
+.icd-crumbs a{color:var(--text-2);text-decoration:none;padding:6px 0}
+.icd-crumbs a:hover{color:var(--accent);text-decoration:underline}
+.icd-crumbs [aria-current]{color:var(--text);font-weight:600}
+.icd-footer{margin-top:var(--sp-7);border-top:1px solid var(--line);background:var(--surface-1);padding:var(--sp-6) var(--sp-4) var(--sp-5);font-size:var(--fs-14)}
+.icd-footer .in{max-width:1180px;margin:0 auto;display:grid;gap:var(--sp-5);grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}
+.icd-footer .about{grid-column:1/-1;max-width:46ch}
+.icd-footer h2{font-size:var(--fs-14);margin:0 0 var(--sp-2);color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.icd-footer ul{list-style:none;margin:0;padding:0}
+.icd-footer li a{display:inline-block;padding:6px 0;color:var(--text);text-decoration:none}
+.icd-footer li a:hover{color:var(--accent);text-decoration:underline}
+.icd-footer .brand{display:inline-flex;gap:6px;align-items:center;font-weight:700;text-decoration:none;color:var(--text)}
+.icd-footer .about p{color:var(--text-2);margin:var(--sp-2) 0 0}
+.icd-footer .legal{max-width:1180px;margin:var(--sp-5) auto 0;color:var(--text-3);font-size:.78rem}
+dialog.icd-palette{width:min(640px,calc(100vw - 24px));margin-top:12vh;padding:var(--sp-3)}
+.icd-palette input{width:100%}
+.icd-pal-list{list-style:none;margin:var(--sp-2) 0 0;padding:0;max-height:min(50vh,420px);overflow:auto}
+.icd-pal-list li{display:grid;grid-template-columns:74px 1fr;gap:0 var(--sp-3);padding:8px var(--sp-3);border-radius:var(--r);cursor:pointer;min-height:44px;align-content:center}
+.icd-pal-list li[aria-selected=true]{background:var(--surface-3);outline:1px solid var(--accent)}
+.icd-pal-list .k{grid-row:span 2;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2);align-self:center}
+.icd-pal-list .t{display:flex;align-items:center;flex-wrap:wrap}
+.icd-pal-list .s{font-size:.78rem;color:var(--text-2)}
+@media(min-width:900px){
+  .icd-mainnav{display:flex}
+  .icd-bottomnav{display:none}
+  body{padding-bottom:0}
+  .icd-searchbtn .lbl{display:inline}
+  .icd-top .sp{flex:1}
+}
+@media(max-width:899px){.icd-searchbtn kbd{display:none}}
+@media(max-width:520px){.icd-top .brand .wm{display:none}.icd-acct{max-width:6rem}}
+[id]{scroll-margin-top:calc(var(--top) + 16px)}
 @media(max-width:520px){
   html{font-size:16px}
-  .icd-top .title{display:none}
-  .icd-top input[type=search]{width:100%}
-  .icd-top form{flex:1}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{
+  .icd-bottomnav,.icd-footer,.icd-crumbs{display:none!important}
   :root{--bg:#fff;--card:#fff;--ink:#000;--ink2:#333;--line:#999;--tint:#fff;--code-bg:#fff}
   .icd-top,.icd-bar,.icd-toc,.icd-nav,.icd-simctl,.icd-secfoot,.icd-code .copy,.icd-toast,.icd-skip,.no-print{display:none!important}
   .icd-wrap{display:block;padding:0}.icd-main{max-width:none}
@@ -265,7 +312,7 @@ dialog.icd-dialog::backdrop{background:rgba(0,0,0,.45)}
 /* ICD-Core JS — disalin identik ke setiap file. Jangan diubah per file. */
 (function(){
 'use strict';
-var ICD = window.ICD = { version: '1.4.0', brand: 'bikinchip', config: {"supabaseUrl": "https://vcctqnmkdltopyrjrdel.supabase.co", "supabaseKey": "sb_publishable_waF_6-kQLxEvumDdQ_HU2w_CBbpggBz", "repo": "captainreez/bikinchip", "google": true} };
+var ICD = window.ICD = { version: '1.5.0', brand: 'bikinchip', config: {"supabaseUrl": "https://vcctqnmkdltopyrjrdel.supabase.co", "supabaseKey": "sb_publishable_waF_6-kQLxEvumDdQ_HU2w_CBbpggBz", "repo": "captainreez/bikinchip", "google": true} };
 /* gerbang masuk: hanya saat online, akun dikonfigurasi, dan requireLogin aktif; halaman publik dikecualikan */
 (function gate(){
   var C = ICD.config || {}, page = (window.location.pathname.split('/').pop() || 'index.html');
@@ -352,7 +399,7 @@ function parse(str){
 ICD.fmt = { num: num, si: si, parse: parse };
 
 /* ---------- registry kurikulum ---------- */
-var PARTS = ['', 'Fondasi', 'Devais dan elektronika', 'Rangkaian digital', 'Arsitektur komputer', 'Desain front-end',
+var PARTS = ['', 'Fondasi', 'Device dan elektronika', 'Rangkaian digital', 'Arsitektur komputer', 'Desain front-end',
   'Implementasi fisik', 'Analog, mixed-signal, dan memori', 'Manufaktur, keandalan, keamanan', 'Frontier dan karier'];
 var MODS = [
 ['M00',1,'Orientasi',4,'','m00-orientasi|Orientasi: dari ide sampai silikon'],
@@ -562,6 +609,19 @@ var progress = {
     return { hours: h, hoursDone: hd, files: n, filesDone: nd, frac: h ? hd / h : 0 };
   }
 };
+/* hari belajar (aditif di meta.days): dipakai untuk streak */
+function isoDay(d){ d = d || new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+progress.touchDay = function(){
+  var t = isoDay(), a = store.get('meta.days', []);
+  if (a[a.length - 1] === t) return;
+  store.update('meta.days', function(x){ x = x || []; if (x[x.length - 1] !== t) x.push(t); return x.slice(-400); });
+};
+progress.streak = function(){
+  var a = store.get('meta.days', []), set = {}, n = 0, d = new Date(); a.forEach(function(x){ set[x] = 1; });
+  if (!set[isoDay(d)]) d = new Date(d.getTime() - 864e5);
+  while (set[isoDay(d)]){ n++; d = new Date(d.getTime() - 864e5); }
+  return n;
+};
 ICD.progress = progress;
 var STATUS_MARK = { belum: '○', berjalan: '◐', selesai: '●' };
 ICD.STATUS_MARK = STATUS_MARK;
@@ -636,7 +696,7 @@ ICD.ui = {
   },
   /* confirm({title, body, word, danger, action, run}): jika word diisi, tombol hanya berlaku bila kata itu diketik */
   confirm: function(o){
-    var inp = null, kids = [el('p', { text: o.body || '' })];
+    var inp = null, kids = [typeof o.body === 'string' || !o.body ? el('p', { text: o.body || '' }) : o.body];
     if (o.word){
       inp = el('input', { type: 'text', class: 'icd-input', autocomplete: 'off', 'aria-label': 'Ketik "' + o.word + '" untuk melanjutkan', placeholder: o.word });
       kids.push(el('label', { class: 'icd-field' }, [el('span', { text: 'Ketik "' + o.word + '" untuk melanjutkan' }), inp]));
@@ -750,11 +810,15 @@ ICD.enhanceLayers = enhanceLayers;
 /* ---------- gloss: glosarium dan tooltip ---------- */
 var terms = {}, tip = null, tipFor = null;
 function closeTip(){ if (tip){ tip.remove(); tip = null; if (tipFor) tipFor.setAttribute('aria-expanded', 'false'); tipFor = null; } }
+var hoverT;
+function slug(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
 function openTip(btn, t){
   closeTip();
   tip = el('div', { class: 'icd-tip', role: 'tooltip', id: uid('tip') }, [
     el('b', { text: t.en }), t.idn ? el('i', { text: t.idn }) : null, el('div', { text: t.def }),
-    t.mod ? el('div', { class: 'icd-small icd-muted', text: 'Dibahas di ' + t.mod }) : null ]);
+    el('div', { class: 'icd-small icd-muted' }, [t.mod ? 'Dibahas di ' + t.mod + ' · ' : '', el('a', { href: 'glosarium.html#istilah-' + slug(t.en), text: 'Lihat di glosarium' })]) ]);
+  tip.addEventListener('mouseenter', function(){ clearTimeout(hoverT); });
+  tip.addEventListener('mouseleave', function(){ hoverT = setTimeout(closeTip, 250); });
   doc.body.appendChild(tip);
   var r = btn.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
   var x = clamp(r.left + window.scrollX, 12 + window.scrollX, window.scrollX + root.clientWidth - tw - 12);
@@ -772,7 +836,9 @@ function enhanceTerms(ctx){
     while (s.firstChild) b.appendChild(s.firstChild);
     s.parentNode.replaceChild(b, s);
     b.addEventListener('click', function(e){ e.stopPropagation(); if (tipFor === b) closeTip(); else openTip(b, t); });
-    b.addEventListener('blur', function(){ setTimeout(function(){ if (tipFor === b) closeTip(); }, 150); });
+    b.addEventListener('blur', function(){ setTimeout(function(){ if (tipFor === b && !(tip && tip.contains(doc.activeElement))) closeTip(); }, 150); });
+    b.addEventListener('mouseenter', function(){ clearTimeout(hoverT); hoverT = setTimeout(function(){ if (tipFor !== b) openTip(b, t); }, 200); });
+    b.addEventListener('mouseleave', function(){ clearTimeout(hoverT); hoverT = setTimeout(function(){ if (tipFor === b) closeTip(); }, 250); });
   });
 }
 doc.addEventListener('click', function(e){ if (tip && !tip.contains(e.target)) closeTip(); });
@@ -781,7 +847,8 @@ ICD.gloss = {
   add: function(list){ list.forEach(function(t){ terms[t.id] = t; }); ready(function(){ enhanceTerms(); }); },
   get: function(id){ return terms[id]; },
   all: function(){ return Object.keys(terms).map(function(k){ return terms[k]; }).sort(function(a, b){ return a.en.toLowerCase() < b.en.toLowerCase() ? -1 : 1; }); },
-  enhance: enhanceTerms
+  enhance: enhanceTerms,
+  slug: slug
 };
 
 /* ---------- wave: penampil waveform ---------- */
@@ -1218,7 +1285,7 @@ var cards = {
         back.hidden = false; showBtn.remove();
         [['Lupa', 1], ['Sulit', 3], ['Baik', 4], ['Mudah', 5]].forEach(function(g){
           row.appendChild(el('button', { type: 'button', class: 'icd-btn', text: g[0], onclick: function(){
-            if (!cram){ store.update('cards', function(all){ if (all[cur]) sm2(all[cur], g[1]); return all; }); if (g[1] < 3) queue.push(cur); emit('icd:progress'); }
+            if (!cram){ progress.touchDay(); store.update('cards', function(all){ if (all[cur]) sm2(all[cur], g[1]); return all; }); if (g[1] < 3) queue.push(cur); emit('icd:progress'); }
             next();
           } }));
         });
@@ -1298,20 +1365,37 @@ var CALCS = [
 function calcMount(tgt, id){
   tgt = target(tgt);
   var c = CALCS.filter(function(x){ return x.id === id; })[0]; if (!c) return;
-  var vals = {}, grid = el('div', { class: 'icd-grid' }), out = el('table', { class: 'icd', 'aria-live': 'polite' });
+  var vals = {}, fields = {}, errs = {}, grid = el('div', { class: 'icd-grid' }), out = el('table', { class: 'icd', 'aria-live': 'polite' }), last = [];
+  var note = el('p', { class: 'icd-small', role: 'alert' });
   function run(){
-    var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
-    out.textContent = ''; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
+    var bad = 0;
+    c.inputs.forEach(function(inp){
+      var numeric = !inp.type, v = vals[inp.k], ok = !numeric || !isNaN(parse(v)) && String(v).trim() !== '';
+      fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
+    });
+    out.textContent = ''; last = [];
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
-    vals[inp.k] = inp.def; var f;
+    vals[inp.k] = inp.def; var f, eid = uid('err');
     if (inp.type === 'select') f = el('select', { class: 'icd-select' }, inp.opts.map(function(o){ return el('option', { value: o[0], text: o[1], selected: o[0] === inp.def }); }));
-    else f = el('input', { class: 'icd-input', type: 'text', value: inp.def, inputmode: inp.type === 'text' ? null : 'decimal', autocomplete: 'off', spellcheck: 'false' });
+    else f = el('input', { class: 'icd-input', type: 'text', value: inp.def, inputmode: inp.type === 'text' ? null : 'decimal', autocomplete: 'off', spellcheck: 'false', 'aria-describedby': eid });
+    var er = el('span', { id: eid, class: 'icd-small', style: 'color:var(--danger)' });
+    fields[inp.k] = f; errs[inp.k] = er;
     f.addEventListener('input', function(){ vals[inp.k] = f.value; run(); });
-    grid.appendChild(el('label', { class: 'icd-field' }, [el('span', { text: inp.label }), f]));
+    grid.appendChild(el('label', { class: 'icd-field' }, [el('span', { text: inp.label }), f, er]));
   });
+  var copy = el('button', { type: 'button', class: 'icd-btn small no-print', text: 'Salin hasil', onclick: function(){
+    if (!last.length){ toast('Belum ada hasil untuk disalin.'); return; }
+    var txt = c.title + '\n' + last.map(function(r){ return r[0] + ': ' + r[1]; }).join('\n');
+    function done(){ toast('Hasil disalin.'); }
+    function fallback(){ var ta = el('textarea', { style: 'position:fixed;left:-999px', 'aria-hidden': 'true' }); ta.value = txt; doc.body.appendChild(ta); ta.select(); try { doc.execCommand('copy'); done(); } catch (e) { toast('Tidak bisa menyalin otomatis.'); } ta.remove(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  } });
   tgt.textContent = '';
-  add(tgt, [el('h4', { text: c.title, style: 'margin-top:0' }), grid, el('div', { class: 'icd-tablewrap', style: 'margin-top:10px' }, [out]), el('p', { class: 'icd-small icd-muted', text: c.note })]);
+  add(tgt, [el('h4', { text: c.title, style: 'margin-top:0' }), grid, note, el('div', { class: 'icd-tablewrap', style: 'margin-top:10px' }, [out]), el('div', { class: 'icd-row' }, [copy]), el('p', { class: 'icd-small icd-muted', text: c.note })]);
   run();
 }
 ICD.calc = { list: CALCS.map(function(c){ return { id: c.id, title: c.title }; }), mount: calcMount, run: function(id, v){ return CALCS.filter(function(x){ return x.id === id; })[0].run(v); } };
@@ -1456,36 +1540,176 @@ var sync = (function(){
 })();
 ICD.sync = sync;
 
+
+/* ---------- palette: pencarian global (Ctrl/⌘+K) ---------- */
+ICD.index = [];
+var indexState = 0; /* 0 belum, 1 memuat, 2 selesai/gagal */
+function loadIndex(cb){
+  if (indexState === 2) return cb();
+  if (indexState === 1) return;
+  indexState = 1;
+  var s = doc.createElement('script'); s.src = 'search-index.js';
+  s.onload = function(){ ICD.index = window.ICD_INDEX || []; indexState = 2; cb(); };
+  s.onerror = function(){ indexState = 2; cb(); };
+  doc.head.appendChild(s);
+}
+ICD.palette = (function(){
+  var dlg = null;
+  function norm(s){ return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function items(){
+    var out = [];
+    NAV.forEach(function(n){ out.push({ k: 'Halaman', title: n.title, sub: '', href: n.href }); });
+    FOOT_PAGES.forEach(function(n){ out.push({ k: 'Halaman', title: n[1], sub: '', href: n[2] }); });
+    reg.files.forEach(function(f){
+      var ok = avail.has(f.id);
+      out.push({ k: 'Lesson', title: f.code + ' · ' + f.title, sub: 'Part ' + f.part + ' · ' + reg.module(f.mod).title, href: f.id + '.html', soon: !ok, hay: f.code + ' ' + f.title + ' ' + reg.module(f.mod).title });
+    });
+    (ICD.index || []).forEach(function(x){ out.push({ k: x.t === 'istilah' ? 'Istilah' : x.t === 'modul' ? 'Modul' : 'Section', title: x.title, sub: x.sub || '', href: x.href, hay: x.title + ' ' + (x.sub || '') + ' ' + (x.alt || '') }); });
+    return out;
+  }
+  function search(qs){
+    var toks = norm(qs).split(/\s+/).filter(Boolean); if (!toks.length) return [];
+    var res = [];
+    items().forEach(function(it){
+      var h = norm(it.hay || it.title + ' ' + it.sub), ti = norm(it.title), score = 0;
+      for (var i = 0; i < toks.length; i++){ var at = h.indexOf(toks[i]); if (at < 0) return; score += (ti.indexOf(toks[i]) === 0 ? 0 : ti.indexOf(toks[i]) > 0 ? 2 : 5) + at / 1000; }
+      var kr = { Halaman: 0, Modul: 1, Lesson: 2, Istilah: 3, Section: 4 }[it.k]; res.push({ it: it, s: score + kr * .5 });
+    });
+    res.sort(function(a, b){ return a.s - b.s; });
+    return res.slice(0, 40).map(function(r){ return r.it; });
+  }
+  function open(initial){
+    if (dlg) return; var sel = 0, list = [];
+    var inp = el('input', { type: 'search', class: 'icd-input', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'icd-pal-list', 'aria-autocomplete': 'list', placeholder: 'Cari lesson, section, istilah…', 'aria-label': 'Cari di seluruh materi', autocomplete: 'off' });
+    var ul = el('ul', { id: 'icd-pal-list', role: 'listbox', class: 'icd-pal-list', 'aria-label': 'Hasil pencarian' });
+    var info = el('p', { class: 'icd-small icd-muted', role: 'status' });
+    dlg = el('dialog', { class: 'icd-dialog icd-palette', 'aria-label': 'Pencarian' }, [inp, info, ul]);
+    function draw(){
+      var v = inp.value.trim();
+      list = v ? search(v) : items().filter(function(i){ return i.k === 'Halaman' && NAV.some(function(n){ return n.href === i.href; }); });
+      sel = Math.min(sel, Math.max(list.length - 1, 0)); ul.textContent = '';
+      list.forEach(function(it, i){
+        var li = el('li', { role: 'option', id: 'icd-pal-' + i, 'aria-selected': i === sel ? 'true' : 'false' }, [
+          el('span', { class: 'k', text: it.k }), el('span', { class: 't' }, [it.title, it.soon ? el('span', { class: 'icd-badge st-soon', text: 'Segera', style: 'margin-left:8px' }) : null]), it.sub ? el('span', { class: 's', text: it.sub }) : null]);
+        li.addEventListener('mousedown', function(e){ e.preventDefault(); go(it); });
+        ul.appendChild(li);
+      });
+      inp.setAttribute('aria-activedescendant', list.length ? 'icd-pal-' + sel : '');
+      info.textContent = v ? (list.length ? list.length + ' hasil' : 'Tidak ada hasil untuk "' + v + '"') : 'Ketik untuk mencari. Pintasan halaman:';
+      var cur = ul.children[sel]; if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+    }
+    function go(it){ close(); if (it.soon){ toast(it.title + ' belum terbit; sedang dibuat.'); return; } window.location.href = it.href; }
+    function close(){ if (!dlg) return; var d = dlg; dlg = null; if (d.close) d.close(); d.remove(); }
+    inp.addEventListener('input', function(){ sel = 0; draw(); });
+    inp.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowDown'){ e.preventDefault(); sel = Math.min(sel + 1, list.length - 1); draw(); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); sel = Math.max(sel - 1, 0); draw(); }
+      else if (e.key === 'Enter'){ e.preventDefault(); if (list[sel]) go(list[sel]); }
+      else if (e.key === 'Escape'){ e.preventDefault(); close(); }
+    });
+    dlg.addEventListener('close', function(){ if (dlg){ dlg.remove(); dlg = null; } });
+    dlg.addEventListener('click', function(e){ if (e.target === dlg) close(); });
+    doc.body.appendChild(dlg); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    if (initial) inp.value = initial; draw(); inp.focus(); loadIndex(function(){ if (dlg) draw(); });
+  }
+  doc.addEventListener('keydown', function(e){
+    var tag = (e.target && e.target.tagName) || '';
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')){ e.preventDefault(); open(); }
+    else if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(tag) && !(e.target && e.target.isContentEditable) && !dlg){ e.preventDefault(); open(); }
+  });
+  return { open: open, search: search };
+})();
+
 /* ---------- shell: kerangka halaman ---------- */
+/* statistik: satu sumber untuk semua halaman */
+ICD.stats = function(){
+  var hours = 0, built = 0;
+  reg.modules.forEach(function(m){ hours += m.hours; });
+  reg.files.forEach(function(f){ if (avail.has(f.id)) built++; });
+  var h10 = Math.round(hours / 10) * 10;
+  return { modules: reg.modules.length, lessons: reg.files.length, parts: reg.parts.length - 1, tracks: Object.keys(reg.tracks).length,
+    hours: hours, hoursLabel: '±' + h10.toLocaleString('id-ID'), built: built, soon: reg.files.length - built };
+};
+ICD.repoUrl = function(p){ return ICD.config.repo ? 'https://github.com/' + ICD.config.repo + (p || '') : null; };
+
+/* halaman utama (maks. 5 di nav) dan sisanya di footer */
+var NAV = [
+  { id: 'kurikulum', title: 'Kurikulum', href: 'kurikulum.html', icon: 'M4 6h16M4 12h16M4 18h10' },
+  { id: 'belajar', title: 'Belajar', href: 'belajar.html', icon: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11' },
+  { id: 'glosarium', title: 'Glosarium', href: 'glosarium.html', icon: 'M5 19l5-14 5 14M7 14h6M17 8h3M17 12h3M17 16h3' },
+  { id: 'tools', title: 'Tools', href: 'tools.html', icon: 'M6 3h12v18H6zM9 7h6M9 12h2M13 12h2M9 16h2M13 16h2' },
+  { id: 'tentang', title: 'Tentang', href: 'tentang.html', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5' }
+];
+var FOOT_PAGES = [['referensi', 'Referensi', 'referensi.html'], ['pengaturan', 'Pengaturan dan backup', 'pengaturan.html'], ['privasi', 'Privasi', 'privasi.html'], ['styleguide', 'Styleguide', 'styleguide.html']];
+ICD.nav = NAV;
+function icon(d){ return svg('svg', { viewBox: '0 0 24 24', width: 20, height: 20, fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' }, [svg('path', { d: d })]); }
+var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+function activeNav(file, f){
+  if (f) return 'kurikulum';
+  var m = { index: '', kurikulum: 'kurikulum', belajar: 'belajar', glosarium: 'glosarium', tools: 'tools', tentang: 'tentang', referensi: 'tentang', pengaturan: 'belajar' };
+  return m[file] || '';
+}
 function topbar(file, f){
-  var isIndex = file === 'index';
-  var tocBtn = (!isIndex && q('.icd-sec')) ? el('button', { type: 'button', class: 'icd-btn small icd-toc-btn', 'aria-label': 'Daftar isi', 'aria-expanded': 'false', text: '☰' }) : null;
-  var search = el('input', { type: 'search', class: 'icd-input', placeholder: 'Cari…', 'aria-label': 'Cari di seluruh materi', id: 'icd-search' });
-  var form = el('form', { role: 'search', onsubmit: function(e){
-    e.preventDefault(); var v = search.value.trim();
-    if (isIndex) emit('icd:search', { q: v }); else if (v) window.location.href = 'index.html#cari=' + encodeURIComponent(v);
-  } }, [search]);
-  if (isIndex) search.addEventListener('input', function(){ emit('icd:search', { q: search.value.trim() }); });
-  var th = el('button', { type: 'button', class: 'icd-btn small', 'aria-label': ICD.theme.label(), title: ICD.theme.label(), text: '◐',
+  var act = activeNav(file, f);
+  var links = NAV.map(function(n){ var a = el('a', { href: n.href, text: n.title }); if (n.id === act) a.setAttribute('aria-current', 'page'); return a; });
+  var nav = el('nav', { class: 'icd-mainnav', 'aria-label': 'Menu utama' }, links);
+  var sb = el('button', { type: 'button', class: 'icd-btn small icd-searchbtn', 'aria-label': 'Cari di seluruh materi', 'aria-keyshortcuts': 'Control+K Meta+K', onclick: function(){ ICD.palette.open(); } },
+    [icon('M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5'), el('span', { class: 'lbl', text: 'Cari' }), el('kbd', { text: isMac ? '⌘K' : 'Ctrl K' })]);
+  var th = el('button', { type: 'button', class: 'icd-btn small', 'aria-label': ICD.theme.label(), title: ICD.theme.label(),
     onclick: function(){ ICD.theme.cycle(); th.setAttribute('aria-label', ICD.theme.label()); th.title = ICD.theme.label(); toast(ICD.theme.label()); } });
+  th.appendChild(icon('M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M12 7h3M12 12h5M12 17h3'));
   var acct = null;
   if (sync.enabled()){
     acct = el('button', { type: 'button', class: 'icd-btn small icd-acct', onclick: function(){ if (sync.user()) sync.account(); else sync.login(); } });
-    var paintAcct = function(){ var u = sync.user(), st = sync.state(); acct.textContent = u ? ((st.busy ? '⟳ ' : st.err ? '⚠ ' : '● ') + ((u.name || u.email || 'Akun').split(/[ @]/)[0])) : 'Masuk'; acct.title = u ? 'Akun dan sinkron' : 'Masuk untuk menyinkronkan progres'; };
+    var paintAcct = function(){ var u = sync.user(), st = sync.state(); acct.textContent = u ? ((st.busy ? '⟳ ' : st.err ? '⚠ ' : '● ') + ((u.name || u.email || 'Akun').split(/[ @]/)[0])) : 'Masuk'; acct.title = u ? 'Akun dan sinkronisasi' : 'Masuk untuk menyimpan progres di semua device'; };
     paintAcct(); doc.addEventListener('icd:auth', paintAcct); doc.addEventListener('icd:sync', paintAcct);
   }
-  var bar = el('header', { class: 'icd-top no-print' }, [tocBtn,
+  var bar = el('header', { class: 'icd-top no-print' }, [
     el('a', { class: 'brand', href: 'index.html', title: 'Beranda ' + ICD.brand, 'aria-label': ICD.brand + ': ke beranda' }, [ICD.logo(22), el('span', { class: 'wm' }, [el('span', { text: 'bikin' }), el('b', { text: 'chip' })])]),
-    el('span', { class: 'title', text: f ? f.code + ' · ' + f.title : (doc.title || '') }), form, th, acct]);
+    nav, el('span', { class: 'sp' }), sb, th, acct]);
   doc.body.insertBefore(bar, doc.body.firstChild);
   doc.body.insertBefore(el('a', { class: 'icd-skip', href: '#icd-main', text: 'Lewati ke isi' }), doc.body.firstChild);
-  return tocBtn;
+  var bn = el('nav', { class: 'icd-bottomnav no-print', 'aria-label': 'Menu utama (ponsel)' }, NAV.map(function(n){
+    var a = el('a', { href: n.href }, [icon(n.icon), el('span', { text: n.title })]); if (n.id === act) a.setAttribute('aria-current', 'page'); return a; }));
+  doc.body.appendChild(bn);
+  return bar;
 }
+function crumbs(f, main){
+  var m = reg.module(f.mod), nav = el('nav', { class: 'icd-crumbs no-print', 'aria-label': 'Breadcrumb' }), ol = el('ol');
+  [[ 'Part ' + f.part + ' · ' + reg.parts[f.part], 'kurikulum.html?part=' + f.part], [m.id + ' · ' + m.title, 'kurikulum.html?modul=' + m.id], [f.code + ' · ' + f.title, null]].forEach(function(c, i, all){
+    var li = el('li'); if (c[1]) li.appendChild(el('a', { href: c[1], text: c[0] })); else { li.appendChild(el('span', { text: c[0], 'aria-current': 'page' })); }
+    ol.appendChild(li);
+  });
+  nav.appendChild(ol); main.parentNode.insertBefore(nav, main);
+}
+function footer(){
+  var r = ICD.repoUrl();
+  var col = function(h, items){ return el('div', null, [el('h2', { text: h }), el('ul', null, items.map(function(i){ return el('li', null, [el('a', Object.assign({ href: i[1], text: i[0] }, i[2] ? { target: '_blank', rel: 'noopener' } : {}))]); }))]); };
+  var proj = r ? [['GitHub', r, 1], ['Cara berkontribusi', r + '/blob/main/CONTRIBUTING.md', 1], ['Laporkan masalah', r + '/issues', 1], ['Lisensi materi', r + '/blob/main/LICENSE-MATERI.md', 1]] : [['Cara berkontribusi', 'tentang.html#kontribusi']];
+  var f = el('footer', { class: 'icd-footer no-print' }, [el('div', { class: 'in' }, [
+    el('div', { class: 'about' }, [el('a', { class: 'brand', href: 'index.html' }, [ICD.logo(20), el('span', { class: 'wm' }, [el('span', { text: 'bikin' }), el('b', { text: 'chip' })])]),
+      el('p', { text: 'Kurikulum IC design gratis dalam Bahasa Indonesia, dari nol sampai tapeout. Ayo jadi chip designer Indonesia.' })]),
+    col('Belajar', [['Kurikulum', 'kurikulum.html'], ['Glosarium', 'glosarium.html'], ['Tools', 'tools.html'], ['Referensi', 'referensi.html']]),
+    col('Proyek', proj),
+    col('Lainnya', [['Pengaturan dan backup', 'pengaturan.html'], ['Privasi', 'privasi.html'], ['Styleguide', 'styleguide.html']])]),
+    el('p', { class: 'legal' }, ['Kode berlisensi MIT, materi CC BY-SA 4.0 · v' + ICD.version + (store.persistent() ? '' : ' · penyimpanan browser tidak tersedia, progres hanya bertahan selama tab ini terbuka')])]);
+  doc.body.appendChild(f);
+}
+function frame(){
+  if (!doc.body || doc.body.dataset.bare != null) return;
+  var main = q('main'); if (!main) return;
+  main.id = 'icd-main'; main.classList.add('icd-main');
+  var file = fileId(), f = reg.file(file);
+  topbar(file, f); footer();
+  if (f){ crumbs(f, main); var h1 = q('h1', main); if (h1) doc.title = h1.textContent.replace(/\s+/g, ' ').trim() + ' · ' + ICD.brand; }
+}
+
 function shell(){
   var file = fileId(), f = reg.file(file), main = q('main');
   if (!main) return;
   main.id = 'icd-main'; main.classList.add('icd-main');
-  var tocBtn = topbar(file, f), secs = qa('section.icd-sec', main);
+  var secs = qa('section.icd-sec', main), tocBtn = null;
+  if (secs.length){ tocBtn = el('button', { type: 'button', class: 'icd-btn small icd-toc-btn', 'aria-label': 'Daftar isi', 'aria-expanded': 'false', text: '☰' }); var hd = q('.icd-top'); if (hd) hd.insertBefore(tocBtn, hd.firstChild); }
   var wrap = el('div', { class: 'icd-wrap' }); main.parentNode.insertBefore(wrap, main); wrap.appendChild(main);
   if (!secs.length) return;
   var progBar = el('div', { class: 'icd-bar no-print', role: 'progressbar', 'aria-label': 'Bagian selesai', 'aria-valuemin': 0, 'aria-valuemax': secs.length }, [el('i')]);
@@ -1493,6 +1717,7 @@ function shell(){
   var toc = el('nav', { class: 'icd-toc no-print', 'aria-label': 'Daftar isi' }), ol = el('ol'); toc.appendChild(ol);
   wrap.classList.add('has-toc'); wrap.insertBefore(toc, main);
   var base = 'progress.' + file, links = {}, marks = {};
+  progress.touchDay();
   store.update(base, function(p){ p = p || {}; p.visited = Date.now(); p.nsec = secs.length; p.sections = p.sections || {}; return p; });
   secs.forEach(function(s, i){
     var h = q('h2', s), sid = s.id || (s.id = 's' + ('0' + (i + 1)).slice(-2)), title = h ? h.textContent : 'Bagian ' + (i + 1);
@@ -1570,13 +1795,12 @@ function shell(){
   }
   if (f){
     var prev = reg.files[f.idx - 1], next = reg.files[f.idx + 1], nav = el('nav', { class: 'icd-nav no-print', 'aria-label': 'Navigasi modul' });
-    nav.appendChild(prev ? el('a', { href: prev.id + '.html', rel: 'prev' }, [el('small', { text: '← Sebelumnya · ' + prev.code }), prev.title]) : el('a', { href: 'index.html' }, [el('small', { text: '← Kembali' }), 'Peta kurikulum']));
+    nav.appendChild(prev ? el('a', { href: prev.id + '.html', rel: 'prev' }, [el('small', { text: '← Sebelumnya · ' + prev.code }), prev.title]) : el('a', { href: 'kurikulum.html' }, [el('small', { text: '← Kembali' }), 'Kurikulum']));
     if (next && avail.has(next.id)) nav.appendChild(el('a', { class: 'next', href: next.id + '.html', rel: 'next' }, [el('small', { text: 'Berikutnya · ' + next.code + ' →' }), next.title]));
-    else if (next) nav.appendChild(el('a', { class: 'next soon', href: 'index.html#belajar' }, [el('small', { text: 'Berikutnya · ' + next.code + ' · segera hadir' }), next.title + ' — sementara itu: ulangi flashcard dan kuis di beranda']));
-    else nav.appendChild(el('a', { class: 'next', href: 'index.html' }, [el('small', { text: 'Selesai →' }), 'Peta kurikulum']));
+    else if (next) nav.appendChild(el('a', { class: 'next soon', href: 'belajar.html#kartu' }, [el('small', null, ['Berikutnya · ' + next.code + ' ', el('span', { class: 'icd-badge st-soon', text: 'Segera' })]), next.title + ' (sementara itu, ulangi flashcard di Belajar)']));
+    else nav.appendChild(el('a', { class: 'next', href: 'kurikulum.html' }, [el('small', { text: 'Selesai →' }), 'Kurikulum']));
     main.appendChild(nav);
   }
-  main.appendChild(el('p', { class: 'icd-foot', text: ICD.brand + ' · ICD-Core ' + ICD.version + ' · kode MIT, materi CC BY-SA 4.0 · ' + (store.persistent() ? 'progres tersimpan di perangkat ini' : 'penyimpanan browser tidak tersedia; progres hanya bertahan selama halaman terbuka') }));
 }
 window.addEventListener('beforeprint', function(){ qa('details').forEach(function(d){ if (!d.open){ d.open = true; d.dataset.printOpened = '1'; } }); qa('.icd-layers [role=tabpanel]').forEach(function(p){ if (p.hidden){ p.hidden = false; p.dataset.printShown = '1'; } }); });
 window.addEventListener('afterprint', function(){ qa('details[data-print-opened]').forEach(function(d){ d.open = false; delete d.dataset.printOpened; }); qa('[data-print-shown]').forEach(function(p){ p.hidden = true; delete p.dataset.printShown; }); });
@@ -1588,12 +1812,12 @@ function enhanceLinks(ctx){
     var f = reg.file(m[1]); a.dataset.soonDone = '1';
     if (!f || avail.has(f.id)) return;
     a.classList.add('icd-soon'); a.setAttribute('aria-disabled', 'true'); a.title = f.code + ' segera hadir';
-    a.appendChild(el('span', { class: 'icd-chip', text: 'segera' }));
-    a.addEventListener('click', function(e){ e.preventDefault(); toast(f.code + ' · ' + f.title + ' belum tersedia; sedang dibuat. Daftar materi yang sudah ada ada di beranda.'); });
+    a.appendChild(document.createTextNode(' ')); a.appendChild(el('span', { class: 'icd-badge st-soon', text: 'Segera' }));
+    a.addEventListener('click', function(e){ e.preventDefault(); toast(f.code + ' · ' + f.title + ' belum terbit; sedang dibuat. Lihat lesson yang sudah ada di halaman Kurikulum.'); });
   });
 }
 ICD.enhance = function(ctx){ enhanceCode(ctx); enhanceLayers(ctx); enhanceGuides(ctx); enhanceTerms(ctx); enhanceLinks(ctx); };
-ready(function(){ mathCheck(); shell(); ICD.enhance(); sync.init(); emit('icd:ready'); });
+ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emit('icd:ready'); });
 })();
 </script>
 <!-- ICD-CORE END -->

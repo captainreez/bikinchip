@@ -12,10 +12,21 @@ import os
 cfgp = pathlib.Path(os.environ['CONFIG']) if os.environ.get('CONFIG') else ROOT/'src'/'config.json'
 cfg = json.loads(cfgp.read_text(encoding='utf-8')) if cfgp.exists() else {}
 js = js.replace('/*@@CONFIG@@*/{}', json.dumps(cfg, ensure_ascii=False))
+idxp = ROOT/'src'/'search-index.json'
+idx = json.loads(idxp.read_text(encoding='utf-8')) if idxp.exists() else []
 ver = re.search(r"version: '([\d.]+)'", js).group(1)
 assert '</script' not in js.lower() and '</style' not in css.lower()
 BLOCK = ('<!-- ICD-CORE %s BEGIN (identik di semua file; jangan disunting per file) -->\n'
          '<style id="icd-core-css">\n%s</style>\n<script id="icd-core-js">\n%s</script>\n<!-- ICD-CORE END -->') % (ver, css, js)
+def data_block(m):
+    names = [n for n in m.group(1).split(',') if n]
+    obj = {n: json.loads((ROOT/'src'/(n+'.json')).read_text(encoding='utf-8')) for n in names}
+    s = json.dumps(obj, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
+    return '<script>window.ICD_DATA=Object.assign(window.ICD_DATA||{},%s);</script>' % s
+pcss = (ROOT/'src'/'pages.css').read_text(encoding='utf-8')
+pjs = (ROOT/'src'/'pages.js').read_text(encoding='utf-8') if (ROOT/'src'/'pages.js').exists() else ''
+PAGES = '<style id="icd-pages-css">\n%s</style>\n<script id="icd-pages-js">\n%s</script>' % (pcss, pjs)
+DATA = re.compile(r'<!--DATA:([a-z0-9,-]+)-->')
 PAT = re.compile(r'<!-- ICD-CORE [\d.]+ BEGIN.*?<!-- ICD-CORE END -->', re.S)
 def main():
     if len(sys.argv) > 2 and sys.argv[1] == '--update':
@@ -26,9 +37,10 @@ def main():
     out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ROOT/'dist'); out.mkdir(parents=True, exist_ok=True)
     srcs = sorted((ROOT/'src').glob('*.src.html'))
     if os.environ.get('WITH_TEST_PAGES'): srcs += sorted((ROOT/'tools'/'pages').glob('*.src.html'))  # halaman uji internal, tidak pernah masuk docs/
+    if idx: (out/'search-index.js').write_text('window.ICD_INDEX=' + json.dumps(idx, ensure_ascii=False, separators=(',', ':')) + ';', encoding='utf-8')
     for src in srcs:
         t = src.read_text(encoding='utf-8'); assert '<!--CORE-->' in t, src
         name = src.name.replace('.src.html', '.html')
-        (out/name).write_text(t.replace('<!--CORE-->', BLOCK), encoding='utf-8')
+        (out/name).write_text(DATA.sub(data_block, t.replace('<!--CORE-->', BLOCK).replace('<!--PAGES-->', PAGES)), encoding='utf-8')
         print(name, round((out/name).stat().st_size/1024), 'KB')
 main()

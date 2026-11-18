@@ -1,0 +1,192 @@
+[
+ {
+  "t": "Harris & Harris, <i>Digital Design and Computer Architecture, RISC-V Edition</i>",
+  "mods": [
+   "M03",
+   "M08",
+   "M09",
+   "M11",
+   "M12",
+   "M16"
+  ]
+ },
+ {
+  "t": "Weste & Harris, <i>CMOS VLSI Design: A Circuits and Systems Perspective</i>",
+  "mods": [
+   "M06",
+   "M10",
+   "M25",
+   "M29"
+  ]
+ },
+ {
+  "t": "Rabaey, Chandrakasan & Nikolić, <i>Digital Integrated Circuits: A Design Perspective</i>",
+  "mods": [
+   "M10",
+   "M29"
+  ]
+ },
+ {
+  "t": "Sutherland, Sproull & Harris, <i>Logical Effort: Designing Fast CMOS Circuits</i>",
+  "mods": [
+   "M10"
+  ]
+ },
+ {
+  "t": "Patterson & Hennessy, <i>Computer Organization and Design, RISC-V Edition</i>",
+  "mods": [
+   "M11",
+   "M12",
+   "M13"
+  ]
+ },
+ {
+  "t": "Hennessy & Patterson, <i>Computer Architecture: A Quantitative Approach</i>",
+  "mods": [
+   "M12",
+   "M13",
+   "M14"
+  ]
+ },
+ {
+  "t": "Patterson & Waterman, <i>The RISC-V Reader</i>",
+  "mods": [
+   "M11"
+  ]
+ },
+ {
+  "t": "Razavi, <i>Fundamentals of Microelectronics</i>",
+  "mods": [
+   "M05",
+   "M06",
+   "M07"
+  ]
+ },
+ {
+  "t": "Sedra & Smith, <i>Microelectronic Circuits</i>",
+  "mods": [
+   "M05",
+   "M06",
+   "M07"
+  ]
+ },
+ {
+  "t": "Razavi, <i>Design of Analog CMOS Integrated Circuits</i>",
+  "mods": [
+   "M07",
+   "M27",
+   "M28"
+  ]
+ },
+ {
+  "t": "Jespers & Murmann, <i>Systematic Design of Analog CMOS Circuits</i>",
+  "mods": [
+   "M27"
+  ]
+ },
+ {
+  "t": "Pelgrom, <i>Analog-to-Digital Conversion</i>",
+  "mods": [
+   "M28"
+  ]
+ },
+ {
+  "t": "Hu, <i>Modern Semiconductor Devices for Integrated Circuits</i>",
+  "mods": [
+   "M05",
+   "M06",
+   "M30"
+  ]
+ },
+ {
+  "t": "Plummer, Deal & Griffin, <i>Silicon VLSI Technology</i>",
+  "mods": [
+   "M30"
+  ]
+ },
+ {
+  "t": "Nilsson & Riedel, <i>Electric Circuits</i>",
+  "mods": [
+   "M02"
+  ]
+ },
+ {
+  "t": "Oppenheim & Willsky, <i>Signals and Systems</i>",
+  "mods": [
+   "M01"
+  ]
+ },
+ {
+  "t": "Kernighan & Ritchie, <i>The C Programming Language</i>",
+  "mods": [
+   "M04"
+  ]
+ },
+ {
+  "t": "Bryant & O'Hallaron, <i>Computer Systems: A Programmer's Perspective</i>",
+  "mods": [
+   "M04"
+  ]
+ },
+ {
+  "t": "Spear & Tumbush, <i>SystemVerilog for Verification</i>",
+  "mods": [
+   "M18"
+  ]
+ },
+ {
+  "t": "Mehta, <i>SystemVerilog Assertions and Functional Coverage</i>",
+  "mods": [
+   "M18"
+  ]
+ },
+ {
+  "t": "Seligman, Schubert & Kumar, <i>Formal Verification: An Essential Toolkit for Modern VLSI Design</i>",
+  "mods": [
+   "M19"
+  ]
+ },
+ {
+  "t": "Bhasker & Chadha, <i>Static Timing Analysis for Nanometer Designs</i>",
+  "mods": [
+   "M21",
+   "M22"
+  ]
+ },
+ {
+  "t": "Kahng, Lienig, Markov & Hu, <i>VLSI Physical Design: From Graph Partitioning to Timing Closure</i>",
+  "mods": [
+   "M23"
+  ]
+ },
+ {
+  "t": "Chadha & Bhasker, <i>An ASIC Low Power Primer</i>",
+  "mods": [
+   "M25"
+  ]
+ },
+ {
+  "t": "Bushnell & Agrawal, <i>Essentials of Electronic Testing</i>",
+  "mods": [
+   "M26"
+  ]
+ },
+ {
+  "t": "Cummings, \"Nonblocking Assignments in Verilog Synthesis, Coding Styles That Kill!\" (SNUG 2000)",
+  "mods": [
+   "M16"
+  ]
+ },
+ {
+  "t": "Cummings, \"Simulation and Synthesis Techniques for Asynchronous FIFO Design\" (SNUG 2002)",
+  "mods": [
+   "M17"
+  ]
+ },
+ {
+  "t": "Cummings, \"Clock Domain Crossing (CDC) Design & Verification Techniques Using SystemVerilog\" (SNUG 2008)",
+  "mods": [
+   "M17"
+  ]
+ }
+]

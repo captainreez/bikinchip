@@ -27,12 +27,12 @@ const state = () => fetch(M + '/__state', { headers: { apikey: 'anon-test-key' }
   await B.click('#s01 .icd-secfoot button:has-text("Tandai")');
   await B.evaluate(() => ICD.store.update('cards', a => { a = a || {}; a['m04c-linux-git-make:perm'] = { file: 'm04c-linux-git-make', ef: 2.6, n: 3, iv: 6, due: 9, seen: 4 }; return a; }));
   await B.goto(S + 'index.html'); await B.waitForTimeout(300);
-  assert(await B.locator('#resume button:has-text("Masuk untuk sinkron")').count() === 1 && await B.locator('#resume a.gh').count() === 1, 'beranda: ajakan masuk dan tautan GitHub');
+  assert(await B.locator('#acct-card button:has-text("Masuk")').isVisible() && await B.locator('.icd-footer a[href*="github.com/captainreez/bikinchip"]').count() >= 1, 'beranda: ajakan masuk dan tautan GitHub di footer');
   await B.click('.icd-acct'); await B.waitForURL(/masuk\.html/); await B.click('#g-btn'); await B.waitForURL(/index\.html$/); await B.waitForTimeout(1500);
   const bp = await B.evaluate(() => [ICD.store.get('progress.m04c-linux-git-make.sections.s03'), ICD.store.get('progress.m04c-linux-git-make.sections.s05'), ICD.store.get('progress.m00-orientasi.sections.s01'), ICD.store.get('cards', {})['m04c-linux-git-make:perm'].seen]);
   assert(bp.join() === 'true,true,true,4', 'B: gabungan progres A + lokal B, kartu yang lebih sering diulang menang: ' + bp.join());
-  assert((await B.textContent('#b-avail')).includes('2/16'), 'dasbor B memperlihatkan progres dari A');
-  assert(await B.locator('#resume .acct').count() === 0, 'ajakan masuk hilang setelah login');
+  assert(await B.evaluate(() => ICD.progress.secDone('m04c-linux-git-make')) === 2, 'B memiliki progres dari A (2 section)');
+  assert(!(await B.locator('#acct-card').isVisible()), 'ajakan masuk hilang setelah login');
   // A menarik progres B
   await A.reload(); await A.waitForTimeout(1500);
   const ap = await A.evaluate(() => [ICD.store.get('progress.m00-orientasi.sections.s01'), ICD.store.get('cards', {})['m04c-linux-git-make:perm'].seen]);

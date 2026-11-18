@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tentang · bikinchip</title>
+<meta name="description" content="Tentang bikinchip: misi, cara belajar, konvensi warna sinyal dan notasi angka, lisensi, dan cara berkontribusi.">
+<!--CORE-->
+<!--PAGES-->
+<style>
+.prose{max-width:68ch}
+.prose h2{margin-top:var(--sp-7)}
+.legend{display:grid;gap:var(--sp-2) var(--sp-5);grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin:var(--sp-3) 0;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-14)}
+.legend i{flex:none;width:34px;height:0;border-top:4px solid}
+.pg .prose section{margin-top:0}
+</style>
+</head>
+<body data-file="tentang">
+<main class="wide">
+<div class="pg">
+  <h1>Tentang bikinchip</h1>
+  <p class="lead">Kurikulum IC design gratis dalam Bahasa Indonesia, dari tegangan dan bilangan biner sampai tapeout. Dibuat supaya lebih banyak orang Indonesia bisa jadi chip designer.</p>
+  <div class="prose">
+    <h2 id="cara-belajar">Cara belajar</h2>
+    <ul>
+      <li><b>Pilih jalurmu.</b> Mulai dari M00 dan ikuti urutan Part, atau pilih salah satu dari enam Track spesialisasi di halaman <a href="kurikulum.html">Kurikulum</a>.</li>
+      <li><b>Satu lesson, 16 section yang sama.</b> Dari "kenapa ini penting" sampai rujukan, lengkap dengan visualisasi interaktif, contoh soal, kuis, pertanyaan interview, lab, dan flashcard.</li>
+      <li><b>Tebak dulu, baru lihat.</b> Visualisasi meminta prediksimu sebelum menampilkan hasil.</li>
+      <li><b>Ulangi dengan flashcard.</b> Jadwal SM-2 mengulang kartu tepat sebelum kamu lupa. Lihat di <a href="belajar.html">Belajar</a>.</li>
+      <li><b>Praktik dengan tool open-source.</b> Setiap modul punya lab yang bisa dijalankan di Linux atau WSL2.</li>
+    </ul>
+
+    <h2 id="istilah">Istilah dan bahasa</h2>
+    <p>Penjelasan memakai Bahasa Indonesia dengan sapaan "kamu". Istilah teknis tetap bahasa Inggris aslinya, karena itulah yang kamu temui di tool, dokumen, dan ruang rapat. Padanan Indonesia ditulis sekali dalam kurung saat istilah pertama muncul, hanya jika padanan itu memang dipakai orang. Kata umum seperti tegangan, arus, dan daya tetap bahasa Indonesia. Semua istilah ada di <a href="glosarium.html">Glosarium</a>.</p>
+
+    <h2 id="konvensi">Konvensi</h2>
+    <h3>Warna sinyal</h3>
+    <p>Sama di semua diagram. Warna tidak pernah jadi satu-satunya pembeda: label dan gaya garis ikut berubah.</p>
+    <ul class="legend">
+      <li><i style="border-color:var(--s-clock)"></i>clock</li><li><i style="border-color:var(--s-data)"></i>data</li>
+      <li><i style="border-color:var(--s-ctrl)"></i>kontrol</li><li><i style="border-color:var(--s-reset);border-top-style:dashed"></i>reset</li>
+      <li><i style="border-color:var(--s-vdd)"></i>VDD</li><li><i style="border-color:var(--s-vss)"></i>VSS / GND</li>
+      <li><i style="border-color:var(--s-analog)"></i>analog</li><li><i style="border-color:var(--s-hi);border-top-style:double"></i>sorotan</li>
+      <li><i style="border-color:var(--s-x)"></i>pelanggaran / X</li><li><i style="border-color:var(--s-z);border-top-style:dotted"></i>Z (high-impedance)</li>
+    </ul>
+    <h3>Notasi angka</h3>
+    <p>Pemisah desimal memakai titik (<code>3.3 V</code>), sama seperti tool EDA. Awalan SI boleh ditulis di kalkulator: <code>10k</code>, <code>4.7n</code>, <code>100p</code>, <code>2.5G</code>. Bilangan biner dan heksadesimal ditulis dengan awalan <code>0b</code> dan <code>0x</code>, atau gaya Verilog <code>8'hFF</code> di dalam kode.</p>
+
+    <h2 id="lisensi">Lisensi</h2>
+    <p>Kode situs berlisensi <b>MIT</b>. Materi (teks, gambar, kuis, lab) berlisensi <b>Creative Commons BY-SA 4.0</b>: boleh dipakai, diubah, dan dibagikan ulang, termasuk untuk kelas dan kampus, asalkan menyebut sumber dan turunannya memakai lisensi yang sama.</p>
+
+    <h2 id="kontribusi">Cara berkontribusi</h2>
+    <p>Menemukan salah ketik, konsep yang kurang pas, atau ingin menulis modul? Semua kontribusi diterima lewat GitHub.</p>
+    <ul>
+      <li>Laporkan masalah atau usul perbaikan lewat <a href="#" id="l-issues">Issues</a>.</li>
+      <li>Kirim perubahan lewat pull request. Panduan lengkap, termasuk daftar istilah dan gaya bahasa, ada di <a href="#" id="l-contrib">CONTRIBUTING.md</a>.</li>
+      <li>Kode ada di <a href="#" id="l-repo">repositori GitHub</a>.</li>
+    </ul>
+    <p class="icd-small icd-muted" id="ver"></p>
+  </div>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q;
+ICD.ready(function(){
+  var r = ICD.repoUrl();
+  [['#l-issues', '/issues'], ['#l-contrib', '/blob/main/CONTRIBUTING.md'], ['#l-repo', '']].forEach(function(x){ var a = q(x[0]); if (r){ a.href = r + x[1]; a.target = '_blank'; a.rel = 'noopener'; } else { a.removeAttribute('href'); } });
+  var s = ICD.stats(); q('#ver').textContent = s.modules + ' modul · ' + s.lessons + ' lesson · ' + s.parts + ' Part · ' + s.hoursLabel + ' jam belajar · versi ' + ICD.version;
+});
+})();
+</script>
+</body>
+</html>

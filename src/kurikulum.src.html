@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurikulum · bikinchip</title>
+<meta name="description" content="Peta kurikulum IC design bikinchip: 35 modul dalam 9 Part, prasyarat antar modul, dan enam Track spesialisasi.">
+<!--CORE-->
+<!--PAGES-->
+<style>
+.filters{display:grid;gap:var(--sp-3);margin:0 0 var(--sp-4)}
+.filters .row{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:end}
+.chips button{display:inline-flex;align-items:center;min-height:36px;padding:0 var(--sp-3);border:1px solid var(--line);border-radius:var(--r-pill);background:var(--surface-1);color:var(--text);font-size:var(--fs-14);cursor:pointer}
+.chips button:hover{border-color:var(--accent)}
+.chips button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.layout{display:grid;gap:var(--sp-4);align-items:start}
+@media(min-width:1000px){.layout.graph{grid-template-columns:minmax(0,1fr) 340px}.layout.graph #detail{position:sticky;top:calc(var(--top) + 12px);max-height:calc(100vh - var(--top) - 24px);overflow:auto}}
+#graphwrap{position:relative;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-1);overflow:hidden}
+#gscroll{overflow:auto;max-height:76vh}
+#gscroll:focus-visible{outline-offset:-2px}
+.zoom{display:flex;gap:4px;justify-content:flex-end;padding:var(--sp-2);border-bottom:1px solid var(--line)}
+#graph{display:block}
+#graph .node{cursor:pointer}
+#graph .node rect{fill:var(--surface-1);stroke:var(--text-3);stroke-width:1.2}
+#graph .node.berjalan rect{fill:var(--surface-3);stroke:var(--accent)}
+#graph .node.selesai rect{stroke:var(--success);stroke-width:2.4}
+#graph .node.soon rect{stroke-dasharray:4 3;stroke:var(--line-strong)}
+#graph .node.sel rect{stroke:var(--accent);stroke-width:3.2}
+#graph .node.up rect,#graph .node.down rect{stroke:var(--accent);stroke-dasharray:5 3;stroke-width:2}
+#graph .node.dim{opacity:.25}
+#graph .node text{fill:var(--text);font-family:var(--f-mono)}
+#graph .node .t2{fill:var(--text-2);font-family:var(--f-text)}
+#graph .node:focus{outline:none}
+#graph .node:focus-visible rect{stroke:var(--accent);stroke-width:3.5;filter:drop-shadow(0 0 3px var(--accent))}
+#graph .edge{fill:none;stroke:var(--line-strong);stroke-width:1.3}
+#graph .edge.hot{stroke:var(--accent);stroke-width:2.2}
+#graph .edge.dim{opacity:.25}
+#graph .colhead{fill:var(--text-2);font-size:11px;font-family:var(--f-mono)}
+.modlist h3{font-size:var(--fs-16);margin:var(--sp-5) 0 var(--sp-2)}
+.modbtn{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--sp-3);align-items:center;width:100%;text-align:left;min-height:48px;padding:var(--sp-2) var(--sp-3);border:1px solid var(--line);border-radius:var(--r);background:var(--surface-1);cursor:pointer;margin-bottom:var(--sp-2)}
+.modbtn.dim{opacity:.45}
+.modbtn[aria-pressed=true]{border-color:var(--accent);border-width:2px}
+.modbtn .c{font-family:var(--f-mono);font-weight:600}
+.modbtn .h{font-family:var(--f-mono);color:var(--text-2);font-size:var(--fs-14)}
+#detail h2{font-size:var(--fs-22);margin:0 0 var(--sp-1)}
+#detail h3{font-size:var(--fs-14);text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin:var(--sp-4) 0 var(--sp-2)}
+.empty-note{color:var(--text-2)}
+</style>
+</head>
+<body data-file="kurikulum">
+<main class="wide">
+<div class="pg">
+  <h1>Kurikulum</h1>
+  <p class="lead" id="lead"></p>
+
+  <div class="filters no-print">
+    <div><div class="icd-small icd-muted" id="l-part" style="margin-bottom:var(--sp-2)">Part</div><div class="chips" id="part-chips" role="group" aria-labelledby="l-part"></div></div>
+    <div class="row">
+      <label class="icd-field">Track<select class="icd-select" id="track"></select></label>
+      <div><div class="icd-small icd-muted" id="l-view" style="margin-bottom:4px">Tampilan</div><div id="view-tabs"></div></div>
+      <span class="icd-small icd-muted" id="count" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <div class="layout" id="layout">
+    <div>
+      <div id="graphwrap">
+        <div class="zoom no-print" role="group" aria-label="Zoom graf">
+          <button type="button" class="icd-btn small" id="z-out" aria-label="Perkecil">−</button>
+          <button type="button" class="icd-btn small" id="z-fit" aria-label="Pas ke layar">Pas</button>
+          <button type="button" class="icd-btn small" id="z-in" aria-label="Perbesar">+</button>
+        </div>
+        <div id="gscroll" tabindex="0" role="region" aria-label="Graf prasyarat antar modul. Tab ke node, panah untuk pindah, Enter untuk memilih.">
+          <svg id="graph" role="group" aria-label="Graf prasyarat"></svg>
+        </div>
+      </div>
+      <div id="modlist" class="modlist" hidden></div>
+    </div>
+    <aside class="icd-card" id="detail" aria-live="polite" aria-label="Detail modul"></aside>
+  </div>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, svg = ICD.svg, q = ICD.q, reg = ICD.reg, P = ICD.progress, G = ICD.pg, store = ICD.store;
+var state = { sel: null, track: '', part: 0, view: 'graf', scale: 1 };
+
+/* ---------- data graf ---------- */
+var depth = {}, redEdges = [], dependents = {}, pos = {}, order = [];
+(function prep(){
+  reg.modules.forEach(function(m){ dependents[m.id] = []; });
+  reg.modules.forEach(function(m){ var d = 0; m.pre.forEach(function(p){ d = Math.max(d, depth[p] + 1); dependents[p].push(m.id); }); depth[m.id] = d; });
+  function reach(from, to, skip){
+    var stack = reg.module(to).pre.filter(function(p){ return p !== skip; }), seen = {};
+    while (stack.length){ var x = stack.pop(); if (x === from) return true; if (seen[x]) continue; seen[x] = 1; reg.module(x).pre.forEach(function(p){ stack.push(p); }); }
+    return false;
+  }
+  reg.modules.forEach(function(m){ m.pre.forEach(function(p){ if (!reach(p, m.id, p)) redEdges.push([p, m.id]); }); });
+})();
+function ancestors(id){ var out = {}, st = reg.module(id).pre.slice(); while (st.length){ var x = st.pop(); if (out[x]) continue; out[x] = 1; reg.module(x).pre.forEach(function(p){ st.push(p); }); } return out; }
+function modStatus(m){ if (!m.files.some(function(f){ return ICD.avail.has(f.id); })) return 'soon'; return P.moduleStatus(m.id); }
+function inTrack(m){ if (!state.track) return true; var s = reg.tracks[state.track].files; return m.files.some(function(f){ return s[f.id]; }); }
+function inPart(m){ return !state.part || m.part === state.part; }
+function visible(m){ return inTrack(m) && inPart(m); }
+function wrap(s, n){ var w = s.split(' '), lines = [], cur = ''; w.forEach(function(x){ if ((cur + ' ' + x).trim().length > n && cur){ lines.push(cur); cur = x; } else cur = (cur + ' ' + x).trim(); }); if (cur) lines.push(cur); return lines; }
+
+/* ---------- graf ---------- */
+var NW = 168, NH = 60, CG = 40, RG = 12, W0 = 0, H0 = 0, cols = [];
+function renderGraph(){
+  var g = q('#graph'); g.textContent = ''; cols = [];
+  reg.modules.forEach(function(m){ (cols[depth[m.id]] = cols[depth[m.id]] || []).push(m); });
+  var maxRows = 0; cols.forEach(function(c){ maxRows = Math.max(maxRows, c.length); });
+  W0 = 16 + cols.length * (NW + CG) - CG + 16; H0 = 30 + maxRows * (NH + RG) + 8;
+  g.setAttribute('viewBox', '0 0 ' + W0 + ' ' + H0); g.setAttribute('width', W0 * state.scale); g.setAttribute('height', H0 * state.scale);
+  cols.forEach(function(c, ci){
+    var x = 16 + ci * (NW + CG), off = 30 + (maxRows - c.length) * (NH + RG) / 2;
+    g.appendChild(svg('text', { class: 'colhead', x: x, y: 16, text: 'Tahap ' + (ci + 1) }));
+    c.forEach(function(m, ri){ pos[m.id] = { x: x, y: off + ri * (NH + RG), col: ci, row: ri }; });
+  });
+  var anc = state.sel ? ancestors(state.sel) : {}, dep = {};
+  if (state.sel) dependents[state.sel].forEach(function(d){ dep[d] = 1; });
+  redEdges.forEach(function(e){
+    var a = pos[e[0]], b = pos[e[1]], x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
+    var hot = state.sel && ((e[1] === state.sel) || (anc[e[1]] && anc[e[0]]) || (e[0] === state.sel));
+    var dim = !(visible(reg.module(e[0])) && visible(reg.module(e[1])));
+    g.appendChild(svg('path', { class: 'edge' + (hot ? ' hot' : '') + (dim ? ' dim' : ''), d: 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2 }));
+  });
+  var focusId = state.sel || reg.modules[0].id;
+  reg.modules.forEach(function(m){
+    var p = pos[m.id], st = modStatus(m), cls = 'node ' + st + (m.id === state.sel ? ' sel' : anc[m.id] ? ' up' : dep[m.id] ? ' down' : '') + (visible(m) ? '' : ' dim');
+    var lines = wrap(m.title, 24).slice(0, 2); if (wrap(m.title, 24).length > 2) lines[1] = lines[1].slice(0, 22) + '…';
+    var kids = [svg('title', { text: m.id + ' · ' + m.title }), svg('rect', { width: NW, height: NH, rx: 8 }),
+      svg('text', { x: 10, y: 19, 'font-size': 13, 'font-weight': 700, text: m.id }),
+      svg('text', { x: NW - 10, y: 19, 'font-size': 11, 'text-anchor': 'end', text: m.hours + ' jam' })];
+    lines.forEach(function(l, i){ kids.push(svg('text', { class: 't2', x: 10, y: 36 + i * 15, 'font-size': 12.5, text: l })); });
+    var n = svg('g', { class: cls, tabindex: m.id === focusId ? 0 : -1, role: 'button', transform: 'translate(' + p.x + ',' + p.y + ')',
+      'aria-label': m.id + ' ' + m.title + ', ' + m.hours + ' jam, ' + (st === 'soon' ? 'segera' : st) + (m.id === state.sel ? ', terpilih' : '') + (visible(m) ? '' : ', di luar filter') }, kids);
+    n.addEventListener('click', function(){ select(m.id); });
+    n.addEventListener('keydown', function(e){ nodeKey(e, m); });
+    n.dataset.mod = m.id; g.appendChild(n);
+  });
+}
+function nodeKey(e, m){
+  var k = e.key, p = pos[m.id], tgt = null;
+  if (k === 'Enter' || k === ' '){ e.preventDefault(); select(m.id, true); return; }
+  if (k === 'ArrowDown' || k === 'ArrowUp'){ var c = cols[p.col], i = p.row + (k === 'ArrowDown' ? 1 : -1); tgt = c[i]; }
+  if (k === 'ArrowRight' || k === 'ArrowLeft'){
+    var cc = cols[p.col + (k === 'ArrowRight' ? 1 : -1)]; if (cc){ var cy = p.y, best = 1e9; cc.forEach(function(x){ var d = Math.abs(pos[x.id].y - cy); if (d < best){ best = d; tgt = x; } }); }
+  }
+  if (tgt){ e.preventDefault(); var all = document.querySelectorAll('#graph .node'); all.forEach(function(n){ n.tabIndex = -1; }); var node = q('#graph [data-mod="' + tgt.id + '"]'); node.tabIndex = 0; node.focus(); node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+}
+function setScale(s){ state.scale = ICD.clamp(s, 0.4, 1.6); var g = q('#graph'); g.setAttribute('width', W0 * state.scale); g.setAttribute('height', H0 * state.scale); }
+function fit(){ var w = q('#gscroll').clientWidth; setScale(Math.min(1, (w - 2) / W0)); }
+
+/* ---------- daftar ---------- */
+function renderList(){
+  var box = q('#modlist'); box.textContent = '';
+  var n = 0;
+  reg.parts.forEach(function(name, i){
+    if (!i || (state.part && state.part !== i)) return;
+    var mods = reg.modules.filter(function(m){ return m.part === i && inTrack(m); }); if (!mods.length) return;
+    box.appendChild(el('h3', { text: 'Part ' + i + ' · ' + name }));
+    mods.forEach(function(m){
+      var st = modStatus(m); n++;
+      box.appendChild(el('button', { type: 'button', class: 'modbtn', 'aria-pressed': m.id === state.sel ? 'true' : 'false', 'aria-label': m.id + ' ' + m.title + ', ' + G.LABEL[st],
+        onclick: function(){ select(m.id); if (window.innerWidth < 1000) q('#detail').scrollIntoView({ block: 'start' }); } },
+        [el('span', { class: 'c', text: m.id }), el('span', null, [m.title, ' ', G.badge(st === 'soon' ? 'belum' : st, st !== 'soon')]), el('span', { class: 'h', text: m.hours + ' jam' })]));
+    });
+  });
+  if (!n) box.appendChild(el('p', { class: 'empty-note', text: 'Tidak ada modul untuk kombinasi filter ini.' }));
+}
+
+/* ---------- detail ---------- */
+function renderDetail(){
+  var d = q('#detail'); d.textContent = '';
+  if (!state.sel){
+    d.appendChild(el('p', { class: 'empty-note', text: 'Pilih sebuah modul untuk melihat prasyarat, lesson, dan tombol Mulai.' })); return;
+  }
+  var m = reg.module(state.sel), st = modStatus(m), anc = Object.keys(ancestors(m.id)).sort();
+  function btns(ids){ return ids.length ? ids.map(function(id){ return el('button', { type: 'button', class: 'icd-btn small', text: id, title: reg.module(id).title, onclick: function(){ select(id); } }); }) : [el('span', { class: 'icd-muted icd-small', text: 'tidak ada' })]; }
+  d.appendChild(el('h2', { text: m.id + ' · ' + m.title }));
+  d.appendChild(el('p', { class: 'icd-small icd-muted', style: 'margin:0 0 var(--sp-2)' }, ['Part ' + m.part + ' · ' + reg.parts[m.part] + ' · ' + G.hrs(m.hours) + ' · ' + m.files.length + ' lesson ', G.badge(st === 'soon' ? 'belum' : st, st !== 'soon')]));
+  var ul = el('ul', { class: 'lessonlist' });
+  var first = null;
+  m.files.forEach(function(f){
+    var ok = ICD.avail.has(f.id), s = G.lessonStatus(f), fr = Math.round(P.fileFrac(f.id) * 100); if (ok && !first && P.fileStatus(f.id) !== 'selesai') first = f;
+    var nm = ok ? el('a', { href: f.id + '.html', text: f.title }) : el('span', { class: 'soon-t', text: f.title });
+    ul.appendChild(el('li', null, [el('span', { class: 'c', text: f.code }), el('span', null, [nm, el('span', { class: 'd', text: G.hrs(f.hours) + (fr ? ' · ' + fr + '%' : '') })]), G.badge(ok ? P.fileStatus(f.id) : 'belum', ok)]));
+  });
+  d.appendChild(ul);
+  var avail = m.files.filter(function(f){ return ICD.avail.has(f.id); });
+  if (first) d.appendChild(el('p', { style: 'margin:var(--sp-3) 0 0' }, [el('a', { class: 'icd-btn primary', href: first.id + '.html' + (P.fileStatus(first.id) === 'belum' ? '' : (store.get('progress.' + first.id + '.last') ? '#' + store.get('progress.' + first.id + '.last') : '')), text: P.fileStatus(first.id) === 'belum' ? 'Mulai ' + first.code : 'Lanjutkan ' + first.code })]));
+  else if (!avail.length) d.appendChild(el('p', { class: 'icd-small icd-muted', style: 'margin-top:var(--sp-3)', text: 'Modul ini sedang disusun. Kalau kamu ingin ikut menulis, lihat halaman Tentang.' }));
+  d.appendChild(el('h3', { text: 'Prasyarat' })); d.appendChild(el('div', { class: 'icd-row' }, btns(m.pre)));
+  if (anc.length > m.pre.length) d.appendChild(el('p', { class: 'icd-small icd-muted', style: 'margin:var(--sp-2) 0 0', text: 'Rantai lengkap: ' + anc.join(', ') + '.' }));
+  d.appendChild(el('h3', { text: 'Membuka' })); d.appendChild(el('div', { class: 'icd-row' }, btns(dependents[m.id])));
+  var tr = Object.keys(reg.tracks).filter(function(k){ return m.files.some(function(f){ return reg.tracks[k].files[f.id]; }); });
+  if (tr.length){ d.appendChild(el('h3', { text: 'Termasuk Track' })); d.appendChild(el('div', { class: 'icd-row' }, tr.map(function(k){ return el('button', { type: 'button', class: 'icd-btn small', text: reg.tracks[k].title, onclick: function(){ setTrack(k); } }); }))); }
+}
+
+/* ---------- kendali ---------- */
+function syncURL(){
+  var u = new URLSearchParams(); if (state.part) u.set('part', state.part); if (state.track) u.set('track', state.track); if (state.sel) u.set('modul', state.sel);
+  try { history.replaceState(null, '', window.location.pathname + (u.toString() ? '?' + u : '')); } catch (e) {}
+}
+function select(id, keepFocus){
+  state.sel = id; renderAll(); syncURL();
+  if (keepFocus){ var n = q('#graph [data-mod="' + id + '"]'); if (n) n.focus(); }
+}
+function setTrack(k){ state.track = k; q('#track').value = k; renderAll(); syncURL(); }
+function setPart(i){ state.part = i; renderChips(); renderAll(); syncURL(); }
+function renderChips(){
+  var box = q('#part-chips'); box.textContent = '';
+  [[0, 'Semua']].concat(reg.parts.slice(1).map(function(n, i){ return [i + 1, (i + 1) + ' · ' + n]; })).forEach(function(c){
+    box.appendChild(el('button', { type: 'button', 'aria-pressed': state.part === c[0] ? 'true' : 'false', text: c[1], onclick: function(){ setPart(c[0]); } }));
+  });
+}
+function renderAll(){
+  var s = ICD.stats(), n = reg.modules.filter(visible).length;
+  q('#count').textContent = n + ' dari ' + s.modules + ' modul sesuai filter';
+  renderGraph(); renderList(); renderDetail();
+}
+function setView(v){
+  state.view = v; q('#graphwrap').hidden = v !== 'graf'; q('#modlist').hidden = v !== 'daftar';
+  q('#layout').className = 'layout' + (v === 'graf' ? ' graph' : '');
+}
+ICD.ready(function(){
+  var s = ICD.stats();
+  q('#lead').textContent = s.modules + ' modul dalam ' + s.parts + ' Part, dari fondasi sampai tapeout. Pilih modul untuk melihat prasyarat dan lesson di dalamnya.';
+  var opts = [['', 'Semua Track']].concat(Object.keys(reg.tracks).map(function(k){ return [k, reg.tracks[k].title]; }));
+  opts.forEach(function(o){ q('#track').appendChild(el('option', { value: o[0], text: o[1] })); });
+  q('#track').addEventListener('change', function(e){ state.track = e.target.value; renderAll(); syncURL(); });
+  var u = new URLSearchParams(window.location.search);
+  var part = parseInt(u.get('part'), 10); if (part >= 1 && part <= 9) state.part = part;
+  if (u.get('track') && reg.tracks[u.get('track')]){ state.track = u.get('track'); q('#track').value = state.track; }
+  if (u.get('modul') && reg.module(u.get('modul'))) state.sel = u.get('modul');
+  renderChips();
+  var wide = window.innerWidth >= 900;
+  var tabs = ICD.ui.tabs(['Graf', 'Daftar'], function(i){ setView(i === 0 ? 'graf' : 'daftar'); }, { label: 'Tampilan kurikulum', selected: wide ? 0 : 1 });
+  q('#view-tabs').appendChild(tabs);
+  renderAll(); setView(wide ? 'graf' : 'daftar');
+  q('#z-in').addEventListener('click', function(){ setScale(state.scale + .15); });
+  q('#z-out').addEventListener('click', function(){ setScale(state.scale - .15); });
+  q('#z-fit').addEventListener('click', fit);
+  if (state.sel){ var m = reg.module(state.sel); if (!state.part && wide){ var p = pos[state.sel]; var sc = q('#gscroll'); sc.scrollLeft = Math.max(0, (p.x - 80) * state.scale); } }
+  document.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) renderAll(); });
+  document.addEventListener('icd:progress', renderAll);
+});
+})();
+</script>
+</body>
+</html>

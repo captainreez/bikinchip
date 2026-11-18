@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belajar · bikinchip</title>
+<meta name="description" content="Dashboard belajar pribadi: progres, flashcard hari ini, rencana mingguan, bookmark, dan catatan.">
+<!--CORE-->
+<!--PAGES-->
+<style>
+.stats4{display:grid;gap:var(--sp-3);grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));margin:var(--sp-5) 0 0}
+.stats4 .icd-card{margin:0}
+.steps{counter-reset:s;list-style:none;margin:var(--sp-4) 0 0;padding:0;display:grid;gap:var(--sp-3);text-align:left;width:100%;max-width:560px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:auto 1fr auto;gap:var(--sp-3);align-items:center;padding:var(--sp-3) var(--sp-4);border:1px solid var(--line);border-radius:var(--r);background:var(--surface-0)}
+.steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:var(--fs-14)}
+.wk{margin:0;padding-left:1.2em}.wk li{margin:.3em 0}
+.note-item{display:block;padding:var(--sp-3);border:1px solid var(--line);border-radius:var(--r);background:var(--surface-1);margin-bottom:var(--sp-2);text-decoration:none;color:var(--text)}
+.note-item:hover{border-color:var(--accent)}.note-item small{display:block;color:var(--text-2)}
+.note-item p{margin:var(--sp-1) 0 0;white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body data-file="belajar">
+<main class="wide">
+<div class="pg">
+  <h1>Belajar</h1>
+  <p class="lead" id="lead">Progres, flashcard, dan rencana belajarmu ada di sini.</p>
+
+  <div id="resume"></div>
+
+  <div id="empty" hidden>
+    <div class="icd-empty">
+      <svg viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="18" y="18" width="36" height="36" rx="5"/><path d="M26 18v-8M36 18v-8M46 18v-8M26 62v-8M36 62v-8M46 62v-8M18 26h-8M18 36h-8M18 46h-8M62 26h-8M62 36h-8M62 46h-8"/><path d="M29 38l5 5 9-11"/></svg>
+      <h2 style="margin:0;font-size:var(--fs-22)">Belum ada progres</h2>
+      <p>Progresmu muncul di sini begitu kamu membuka lesson pertama. Tiga langkah awal:</p>
+      <ol class="steps">
+        <li><span>Mulai dari M00, pengantar dari ide sampai silikon.</span><a class="icd-btn small primary" href="m00-orientasi.html">Mulai</a><span hidden></span></li>
+        <li><span>Atur rencana mingguan sesuai waktu yang kamu punya.</span><a class="icd-btn small" href="#rencana">Atur rencana</a><span hidden></span></li>
+        <li><span>Coba flashcard. Kartu muncul setelah kamu membuka lesson.</span><a class="icd-btn small" href="tentang.html#cara-belajar">Pelajari</a><span hidden></span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div id="dash" hidden>
+    <div class="stats4" id="stats"></div>
+
+    <section id="kartu" aria-labelledby="h-kartu">
+      <h2 id="h-kartu">Flashcard hari ini</h2>
+      <p class="sub">Kartu dari semua lesson yang pernah kamu buka. Jawaban benar muncul lagi setelah 1 hari, 6 hari, lalu makin jarang.</p>
+      <div id="cards"></div>
+    </section>
+
+    <section id="part" aria-labelledby="h-part">
+      <h2 id="h-part">Progres per Part</h2>
+      <div class="two"><div class="icd-card" id="parts"></div><div class="icd-card" id="exams-box"><h3 style="margin-top:0">Ujian</h3><div id="exams"></div></div></div>
+    </section>
+
+    <section id="bookmark" aria-labelledby="h-bm">
+      <h2 id="h-bm">Bookmark dan catatan</h2>
+      <div class="two"><div><h3 style="margin-top:0;font-size:var(--fs-16)">Bookmark</h3><div id="bookmarks"></div></div><div><h3 style="margin-top:0;font-size:var(--fs-16)">Catatan</h3><div id="notes"></div></div></div>
+    </section>
+  </div>
+
+  <section id="rencana" aria-labelledby="h-rencana">
+    <h2 id="h-rencana">Rencana mingguan</h2>
+    <div class="icd-card" id="b-week"></div>
+    <details class="icd-sol" id="plan-form" style="margin-top:var(--sp-3)">
+      <summary>Atur atau ubah rencana</summary>
+      <div class="icd-grid" style="margin-top:var(--sp-3)">
+        <label class="icd-field">Jam belajar per minggu<input class="icd-input" id="p-hours" type="number" min="1" max="80" step="1" value="10" inputmode="numeric"></label>
+        <label class="icd-field">Track<select class="icd-select" id="p-track"></select></label>
+        <label class="icd-field">Tanggal mulai<input class="icd-input" id="p-start" type="date"></label>
+      </div>
+      <label class="icd-row" style="margin-top:var(--sp-3)"><input type="checkbox" id="p-skip" checked> Kurangi bagian yang sudah selesai</label>
+      <div class="icd-row" style="margin:var(--sp-3) 0"><button type="button" class="icd-btn primary" id="p-make">Buat rencana</button><span id="p-sum" class="icd-small" aria-live="polite"></span></div>
+      <div class="icd-tablewrap" id="p-out"></div>
+    </details>
+  </section>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, q = ICD.q, reg = ICD.reg, P = ICD.progress, G = ICD.pg, store = ICD.store;
+var cardsUI = null;
+
+function stat(v, label){ return el('div', { class: 'icd-card statcard' }, [el('b', { text: v }), el('span', { text: label })]); }
+function renderResume(){
+  var box = q('#resume'); box.textContent = '';
+  var t = G.nextTarget(); if (!t || !G.hasProgress()) return;
+  var nsec = store.get('progress.' + t.f.id + '.nsec', 16), done = P.secDone(t.f.id), st = t.section ? G.sectionTitle(t.f.id, t.section) : '';
+  box.appendChild(el('div', { class: 'resume' }, [
+    el('h2', { text: 'Lanjutkan' }), el('p', { class: 't', text: t.f.code + ' · ' + t.f.title }),
+    el('p', { class: 'm', text: done + ' dari ' + nsec + ' section selesai' + (st ? ' · terakhir di "' + st + '"' : '') }),
+    el('div', { class: 'icd-progress', role: 'progressbar', 'aria-label': 'Progres ' + t.f.code, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(done / nsec * 100) }, [el('i', { style: 'width:' + (done / nsec * 100) + '%' })]),
+    el('div', null, [el('a', { class: 'icd-btn primary', href: t.href, text: 'Lanjutkan' })])]));
+}
+function renderDash(){
+  var has = G.hasProgress(); q('#empty').hidden = has; q('#dash').hidden = !has; renderResume();
+  if (!has) return;
+  var t = P.totals(), due = ICD.cards.due().length, sk = P.streak(), s = ICD.stats(), box = q('#stats'); box.textContent = '';
+  box.appendChild(stat(sk + ' hari', sk ? 'beruntun belajar' : 'belum ada streak'));
+  box.appendChild(stat(String(due), 'flashcard jatuh tempo'));
+  box.appendChild(stat(G.pct(t.frac), 'kurikulum selesai'));
+  box.appendChild(stat(t.filesDone + ' / ' + s.lessons, 'lesson selesai'));
+  var parts = q('#parts'); parts.textContent = '';
+  reg.parts.forEach(function(name, i){
+    if (!i) return; var set = {}; reg.files.forEach(function(f){ if (f.part === i) set[f.id] = 1; });
+    var pt = P.totals(set), pc = Math.round(pt.frac * 100);
+    parts.appendChild(el('div', { class: 'partrow' }, [el('a', { href: 'kurikulum.html?part=' + i, text: 'Part ' + i + ' · ' + name }), el('span', { class: 'v', text: G.pct(pt.frac) }),
+      el('div', { class: 'icd-progress', role: 'progressbar', 'aria-label': 'Part ' + i, 'aria-valuenow': pc, 'aria-valuemin': 0, 'aria-valuemax': 100 }, [el('i', { style: 'width:' + pt.frac * 100 + '%' })])]));
+  });
+  var ex = q('#exams'), exams = store.get('exams', {}), ks = Object.keys(exams); ex.textContent = '';
+  if (!ks.length) ex.appendChild(el('p', { class: 'icd-muted icd-small', text: 'Belum ada ujian yang dikerjakan.' }));
+  ks.forEach(function(k){ var a = exams[k], last = a[a.length - 1]; ex.appendChild(el('p', { class: 'icd-small', text: k + ': ' + last.score + '/' + last.total + (last.pass ? ' (lulus)' : ' (belum lulus)') + ', ' + a.length + ' percobaan' })); });
+  var bm = q('#bookmarks'), list = store.get('bookmarks', []); bm.textContent = '';
+  if (!list.length) bm.appendChild(el('p', { class: 'icd-muted icd-small', text: 'Belum ada bookmark. Tombol bookmark muncul di setiap section lesson saat kamu mengarahkan kursor atau fokus ke sana.' }));
+  list.slice().reverse().slice(0, 12).forEach(function(b){ var f = reg.file(b.file); bm.appendChild(el('a', { class: 'result', href: b.file + '.html#' + b.sec }, [b.title || b.sec, el('small', { text: f ? f.code + ' · ' + f.title : b.file })])); });
+  var nt = q('#notes'), notes = store.get('notes', {}), items = []; nt.textContent = '';
+  Object.keys(notes).forEach(function(file){ Object.keys(notes[file] || {}).forEach(function(sid){ if (notes[file][sid]) items.push([file, sid, notes[file][sid]]); }); });
+  if (!items.length) nt.appendChild(el('p', { class: 'icd-muted icd-small', text: 'Belum ada catatan. Tulis catatan di section lesson mana pun; tersimpan otomatis.' }));
+  items.slice(0, 12).forEach(function(it){ var f = reg.file(it[0]); nt.appendChild(el('a', { class: 'note-item', href: it[0] + '.html#' + it[1] }, [el('small', { text: (f ? f.code : it[0]) + ' · ' + (G.sectionTitle(it[0], it[1]) || it[1]) }), el('p', { text: it[2].length > 180 ? it[2].slice(0, 180) + '…' : it[2] })])); });
+}
+
+/* ---------- rencana ---------- */
+function makePlan(save){
+  var h = ICD.clamp(parseFloat(q('#p-hours').value) || 10, 1, 80), tk = q('#p-track').value, skip = q('#p-skip').checked;
+  var start = q('#p-start').value ? new Date(q('#p-start').value + 'T00:00:00') : new Date();
+  var set = tk ? reg.tracks[tk].files : null, weeks = [], cur = { items: [], left: h }, total = 0;
+  reg.files.forEach(function(f){
+    if (set && !set[f.id]) return;
+    var need = f.hours * (skip ? 1 - P.fileFrac(f.id) : 1); if (need < 0.05) return; total += need;
+    while (need > 0.049){ var take = Math.min(need, cur.left); cur.items.push([f, take]); cur.left -= take; need -= take; if (cur.left < 0.05){ weeks.push(cur); cur = { items: [], left: h }; } }
+  });
+  if (cur.items.length) weeks.push(cur);
+  if (save) store.set('plan', { hours: h, track: tk, start: q('#p-start').value, skip: skip, at: Date.now() });
+  var out = q('#p-out'); out.textContent = '';
+  var end = new Date(start.getTime() + weeks.length * 7 * 864e5);
+  q('#p-sum').textContent = weeks.length ? Math.round(total) + ' jam tersisa · ' + weeks.length + ' minggu · selesai sekitar ' + G.fmtDate(end) : 'Tidak ada yang tersisa untuk Track ini.';
+  if (!weeks.length) return;
+  var tb = el('tbody'), table = el('table', { class: 'icd' }, [el('thead', null, [el('tr', null, [el('th', { scope: 'col', text: 'Minggu' }), el('th', { scope: 'col', text: 'Mulai' }), el('th', { scope: 'col', text: 'Dipelajari' })])]), tb]);
+  var LIMIT = 12, showAll = false;
+  function rows(){
+    tb.textContent = '';
+    weeks.slice(0, showAll ? weeks.length : LIMIT).forEach(function(w, i){
+      var cell = el('td'); w.items.forEach(function(it, k){ if (k) cell.appendChild(document.createTextNode('; ')); cell.appendChild(el('span', { text: it[0].code + ' ' + it[0].title + ' (' + G.hrs(it[1]) + ')' + (ICD.avail.has(it[0].id) ? '' : ' · segera'), style: ICD.avail.has(it[0].id) ? null : 'color:var(--text-2)' })); });
+      tb.appendChild(el('tr', null, [el('th', { scope: 'row', text: String(i + 1) }), el('td', { text: G.fmtDate(new Date(start.getTime() + i * 7 * 864e5)), style: 'white-space:nowrap' }), cell]));
+    });
+  }
+  rows(); out.appendChild(table);
+  if (weeks.length > LIMIT) out.appendChild(el('button', { type: 'button', class: 'icd-btn small no-print', style: 'margin-top:8px', text: 'Tampilkan semua ' + weeks.length + ' minggu', onclick: function(e){ showAll = !showAll; rows(); e.target.textContent = showAll ? 'Ringkas menjadi ' + LIMIT + ' minggu' : 'Tampilkan semua ' + weeks.length + ' minggu'; } }));
+}
+function renderWeek(){
+  var box = q('#b-week'), plan = store.get('plan', null), w = G.weekOf(plan); box.textContent = '';
+  if (!w){ box.appendChild(el('p', { style: 'margin:0', text: 'Belum ada rencana. Tentukan jam belajar per minggu dan Track, lalu daftar lesson per minggu muncul di sini.' })); box.appendChild(el('p', { style: 'margin:var(--sp-3) 0 0' }, [el('button', { type: 'button', class: 'icd-btn primary', text: 'Buat rencana', onclick: function(){ q('#plan-form').open = true; q('#p-hours').focus(); } })])); return; }
+  box.appendChild(el('h3', { style: 'margin-top:0', text: 'Minggu ke-' + w.n + ' dari ' + w.weeks }));
+  box.appendChild(el('p', { class: 'icd-small icd-muted', text: 'Mulai ' + G.fmtDate(w.start) + ' · ' + plan.hours + ' jam per minggu' + (plan.track ? ' · Track ' + reg.tracks[plan.track].title : '') }));
+  var ul = el('ul', { class: 'wk' });
+  w.items.forEach(function(f){ var ok = ICD.avail.has(f.id); ul.appendChild(el('li', null, [ok ? el('a', { href: f.id + '.html', text: f.code + ' · ' + f.title }) : el('span', { class: 'icd-muted', text: f.code + ' · ' + f.title }), ' ', G.badge(ok ? P.fileStatus(f.id) : 'belum', ok)])); });
+  if (!w.items.length) ul.appendChild(el('li', { text: 'Rencana sudah berakhir.' }));
+  box.appendChild(ul);
+  if (w.items.some(function(f){ return !ICD.avail.has(f.id); })) box.appendChild(el('p', { class: 'icd-small icd-muted', text: 'Sebagian lesson minggu ini belum terbit. Kerjakan yang ada dan ulangi flashcard; rencana tidak perlu diubah.' }));
+}
+function refresh(){ renderDash(); renderWeek(); if (cardsUI && cardsUI.reload) cardsUI.reload(); }
+ICD.ready(function(){
+  var opts = [['', 'Semua Track']].concat(Object.keys(reg.tracks).map(function(k){ return [k, reg.tracks[k].title]; }));
+  opts.forEach(function(o){ q('#p-track').appendChild(el('option', { value: o[0], text: o[1] })); });
+  var plan = store.get('plan', null), d = new Date();
+  q('#p-start').value = (plan && plan.start) || new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (plan){ q('#p-hours').value = plan.hours; q('#p-track').value = plan.track || ''; q('#p-skip').checked = plan.skip !== false; makePlan(false); }
+  q('#p-make').addEventListener('click', function(){ makePlan(true); renderWeek(); ICD.say('Rencana dibuat.'); });
+  cardsUI = ICD.cards.mount('#cards', { limit: 30 });
+  renderDash(); renderWeek();
+  if (window.location.hash === '#rencana') q('#plan-form').open = true;
+  window.addEventListener('hashchange', function(){ if (window.location.hash === '#rencana') q('#plan-form').open = true; });
+  document.addEventListener('icd:store', function(e){ if (e.detail && e.detail.remote) refresh(); });
+  document.addEventListener('icd:progress', function(){ renderDash(); renderWeek(); });
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Referensi · bikinchip</title>
+<meta name="description" content="Buku dan makalah rujukan untuk setiap modul kurikulum IC design bikinchip.">
+<!--CORE-->
+<!--PAGES-->
+<!--DATA:referensi-->
+<style>
+.pg section.refmod{margin-top:var(--sp-5)}
+.refmod h2{font-size:var(--fs-18);margin:0 0 var(--sp-2)}
+.refmod h2 a{color:var(--text);text-decoration:none}.refmod h2 a:hover{color:var(--accent);text-decoration:underline}
+.refmod ul{margin:0;padding-left:1.2em}.refmod li{margin:.3em 0}
+</style>
+</head>
+<body data-file="referensi">
+<main class="wide">
+<div class="pg">
+  <h1>Referensi</h1>
+  <p class="lead">Buku dan makalah rujukan per modul. Bab spesifik dicantumkan di bagian Rujukan setiap lesson.</p>
+  <div class="toolbar no-print"><label class="icd-field" style="flex:1 1 260px">Cari buku atau penulis<input class="icd-input" id="r-q" type="search" autocomplete="off"></label><span class="icd-small icd-muted" id="r-count" role="status"></span></div>
+  <div id="r-list"></div>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, q = ICD.q, reg = ICD.reg, B = ICD_DATA.referensi;
+function plain(s){ return s.replace(/<[^>]+>/g, ''); }
+function render(){
+  var f = q('#r-q').value.trim().toLowerCase(), box = q('#r-list'); box.textContent = ''; var n = 0;
+  reg.modules.forEach(function(m){
+    var items = B.filter(function(b){ return b.mods.indexOf(m.id) >= 0 && (!f || plain(b.t).toLowerCase().indexOf(f) >= 0); }); if (!items.length) return; n += items.length;
+    var ul = el('ul'); items.forEach(function(b){ ul.appendChild(el('li', { html: b.t })); });
+    box.appendChild(el('section', { class: 'refmod' }, [el('h2', null, [el('a', { href: 'kurikulum.html?modul=' + m.id, text: m.id + ' · ' + m.title })]), ul]));
+  });
+  if (!n) box.appendChild(el('div', { class: 'icd-empty' }, [el('h3', { text: 'Tidak ada yang cocok' }), el('p', { text: 'Coba nama penulis atau kata dari judul buku.' })]));
+  q('#r-count').textContent = n + ' rujukan';
+}
+ICD.ready(function(){ q('#r-q').addEventListener('input', render); render(); });
+})();
+</script>
+</body>
+</html>

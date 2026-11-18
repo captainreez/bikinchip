@@ -8,7 +8,7 @@ const assert = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) pro
   const s = await p.evaluate(() => ({ secs: document.querySelectorAll('section.icd-sec').length, viz: document.querySelectorAll('.icd-viz').length, guides: document.querySelectorAll('.icd-guide').length,
     terms: document.querySelectorAll('.icd-term').length, rawTerms: document.querySelectorAll('span[data-term]').length, code: document.querySelectorAll('.icd-code').length, layers: document.querySelectorAll('.icd-layers').length,
     math: document.querySelectorAll('math').length, sols: document.querySelectorAll('details.icd-sol').length, nav: [...document.querySelectorAll('.icd-nav a')].map(a => a.getAttribute('href')),
-    links: [...document.querySelectorAll('main a[href$=".html"], main a[href*=".html#"]')].map(a => a.getAttribute('href').split('#')[0]).filter(h => h !== 'index.html' && !ICD.reg.file(h.replace('.html', ''))),
+    links: [...document.querySelectorAll('main a[href$=".html"], main a[href*=".html#"]')].map(a => a.getAttribute('href').split('#')[0]).filter(h => !/^(index|kurikulum|belajar|glosarium|tools|referensi|pengaturan|tentang|privasi|masuk|styleguide)\.html$/.test(h) && !ICD.reg.file(h.replace('.html', ''))),
     codes: [...document.querySelectorAll('#s08 pre')].map(pre => [...pre.querySelectorAll('code')].map(c => { const k = c.cloneNode(true); k.querySelectorAll('.ln').forEach(x => x.remove()); return k.textContent; }).join('')) }));
   console.log(JSON.stringify({ ...s, codes: undefined }));
   assert(s.secs === 16, '16 bagian'); assert(s.viz >= 3 && s.guides === 4, s.viz + ' visualisasi, 4 eksperimen terpandu'); assert(s.rawTerms === 0, 'semua istilah punya entri glosarium'); assert(s.links.length === 0, 'tautan antar modul sah ' + s.links);
@@ -44,6 +44,6 @@ const assert = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) pro
   assert(errs.length === 0, 'tanpa error konsol ' + errs.join('|'));
   const m = await (await b.newContext({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true })).newPage();
   await m.goto(require('url').pathToFileURL(require('path').resolve(process.env.SITE || 'docs', 'm00-orientasi.html')).href); await (await m.$('#vflow')).screenshot({ path: 'shots/m00-m-flow.png' }); await (await m.$('#s04')).screenshot({ path: 'shots/m00-m-s04.png' });
-  await p.goto(require('url').pathToFileURL(require('path').resolve(process.env.SITE || 'docs', 'index.html')).href); await p.click('#graph [data-mod="M00"]'); assert(await p.isVisible('#detail a[href="m00-orientasi.html"]'), 'index menautkan M00'); assert((await p.textContent('#resume')).includes('M00'), 'tombol lanjutkan menunjuk M00');
+  await p.goto(require('url').pathToFileURL(require('path').resolve(process.env.SITE || 'docs', 'kurikulum.html')).href + '?modul=M00'); await p.waitForTimeout(300); assert(await p.isVisible('#detail a[href="m00-orientasi.html"]'), 'kurikulum menautkan M00'); assert(/Mulai|Lanjutkan/.test(await p.textContent('#detail')), 'tombol Mulai/Lanjutkan di detail M00');
   await b.close();
 })().catch(e => { console.error('CRASH', e.message); process.exit(1); });

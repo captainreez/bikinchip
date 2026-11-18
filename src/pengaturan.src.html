@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengaturan · bikinchip</title>
+<meta name="description" content="Pengaturan tampilan, penandaan otomatis, serta ekspor, impor, dan reset data belajar bikinchip.">
+<!--CORE-->
+<!--PAGES-->
+<style>
+.set-grid{display:grid;gap:var(--sp-4);max-width:720px;grid-template-columns:minmax(0,1fr)}
+.set-grid .icd-card{margin:0}
+.set-grid h2{margin:0 0 var(--sp-1);font-size:var(--fs-18)}
+.set-grid .d{margin:0 0 var(--sp-3);color:var(--text-2);font-size:var(--fs-14)}
+.danger-zone{border-color:var(--danger)!important}
+.danger-zone h2{color:var(--danger)}
+.fb{margin:var(--sp-3) 0 0;padding:var(--sp-2) var(--sp-3);border-radius:var(--r);font-size:var(--fs-14)}
+.fb.ok{background:var(--success-bg);color:var(--success)}.fb.err{background:var(--danger-bg);color:var(--danger)}
+.radios{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.radios label{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 var(--sp-4);border:1px solid var(--line);border-radius:var(--r);background:var(--surface-1);cursor:pointer}
+.radios input:checked+span{font-weight:600}
+.radios label:has(input:checked){border-color:var(--accent);background:var(--surface-3)}
+.radios label:has(input:focus-visible){outline:var(--ring);outline-offset:2px}
+</style>
+</head>
+<body data-file="pengaturan">
+<main class="wide">
+<div class="pg">
+  <h1>Pengaturan</h1>
+  <p class="lead">Tampilan, penandaan otomatis, serta backup data belajarmu.</p>
+  <div class="set-grid">
+    <section class="icd-card" id="tampilan" aria-labelledby="h-tema">
+      <h2 id="h-tema">Tampilan</h2>
+      <p class="d">Pilihanmu disimpan di browser ini.</p>
+      <div class="radios" role="radiogroup" aria-label="Tema" id="tema"></div>
+    </section>
+
+    <section class="icd-card" id="belajar-set" aria-labelledby="h-auto">
+      <h2 id="h-auto">Belajar</h2>
+      <label class="icd-row" style="min-height:44px"><input type="checkbox" id="d-auto" style="width:20px;height:20px"> Tandai section selesai otomatis setelah dibaca sampai ujungnya</label>
+      <p class="d" style="margin:0">Kalau dimatikan, kamu menandai selesai lewat tombol di akhir tiap section.</p>
+    </section>
+
+    <section class="icd-card" id="data" aria-labelledby="h-data">
+      <h2 id="h-data">Data dan backup</h2>
+      <p class="d" id="d-status"></p>
+      <div class="icd-row">
+        <button type="button" class="icd-btn" id="d-export">Ekspor progres (.json)</button>
+      </div>
+      <div style="margin-top:var(--sp-4)">
+        <label class="icd-field" for="d-file">Impor dari berkas ekspor (.json)</label>
+        <input class="icd-input" type="file" id="d-file" accept="application/json,.json">
+      </div>
+      <div id="imp" hidden style="margin-top:var(--sp-3)">
+        <p id="imp-sum" class="icd-small"></p>
+        <div class="icd-row"><button type="button" class="icd-btn primary" id="imp-merge">Gabung dengan data sekarang</button><button type="button" class="icd-btn" id="imp-replace">Ganti data sekarang</button><button type="button" class="icd-btn ghost" id="imp-cancel">Batal</button></div>
+        <p class="d" style="margin:var(--sp-2) 0 0">Gabung menyatukan keduanya dan mempertahankan skor terbaik. Ganti menghapus data sekarang lebih dulu.</p>
+      </div>
+      <div id="fb" role="status" aria-live="polite"></div>
+      <details class="icd-sol" style="margin-top:var(--sp-4)"><summary>Progres tidak muncul di halaman lain?</summary>
+        <p class="icd-small">Jika kamu membuka berkas langsung dari folder komputer (bukan lewat situs), sebagian browser memberi setiap berkas penyimpanan terpisah. Ekspor dari satu halaman lalu impor di halaman yang kosong, atau buka lewat situs bikinchip.</p></details>
+    </section>
+
+    <section class="icd-card" id="akun" aria-labelledby="h-akun" hidden>
+      <h2 id="h-akun">Akun dan sinkronisasi</h2>
+      <p class="d" id="akun-s"></p>
+      <div class="icd-row"><button type="button" class="icd-btn" id="akun-btn"></button><a class="icd-btn ghost" href="privasi.html">Kebijakan privasi</a></div>
+    </section>
+
+    <section class="icd-card danger-zone" id="reset" aria-labelledby="h-reset">
+      <h2 id="h-reset">Zona berbahaya</h2>
+      <p class="d">Menghapus progres, catatan, bookmark, jadwal flashcard, dan rencana di browser ini. Tindakan ini tidak bisa dibatalkan, jadi ekspor dulu kalau kamu ingin menyimpan cadangan.</p>
+      <button type="button" class="icd-btn danger" id="d-reset">Hapus semua progres</button>
+    </section>
+  </div>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, q = ICD.q, store = ICD.store, pending = null;
+function fb(kind, msg){ var b = q('#fb'); b.textContent = ''; if (msg) b.appendChild(el('p', { class: 'fb ' + kind, text: msg })); }
+function doExport(){
+  var blob = new Blob([store.exportJSON()], { type: 'application/json' }), a = el('a', { href: URL.createObjectURL(blob), download: 'bikinchip-progres-' + new Date().toISOString().slice(0, 10) + '.json' });
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000); fb('ok', 'Berkas ekspor dibuat. Simpan di tempat yang aman.'); return true;
+}
+function status(){
+  q('#d-status').textContent = store.persistent() ? 'Penyimpanan browser aktif. Progres tersimpan di perangkat ini.' : 'Penyimpanan browser tidak tersedia. Progres hanya bertahan selama halaman ini terbuka; ekspor sebelum menutupnya.';
+}
+function summary(d){
+  var prog = Object.keys(d.progress || {}).filter(function(k){ return ICD.reg.file(k); }).length, cards = Object.keys(d.cards || {}).length, notes = 0;
+  Object.keys(d.notes || {}).forEach(function(f){ notes += Object.keys(d.notes[f] || {}).length; });
+  return prog + ' lesson dengan progres, ' + cards + ' flashcard, ' + notes + ' catatan, ' + (d.bookmarks || []).length + ' bookmark';
+}
+ICD.ready(function(){
+  status();
+  var cur = ICD.theme.get(), box = q('#tema');
+  [['auto', 'Ikut sistem'], ['light', 'Terang'], ['dark', 'Gelap']].forEach(function(o){
+    var inp = el('input', { type: 'radio', name: 'tema', value: o[0] }); inp.checked = cur === o[0];
+    inp.addEventListener('change', function(){ ICD.theme.set(o[0]); });
+    box.appendChild(el('label', null, [inp, el('span', { text: o[1] })]));
+  });
+  q('#d-auto').checked = store.get('settings.autoRead', true) !== false;
+  q('#d-auto').addEventListener('change', function(e){ store.set('settings.autoRead', e.target.checked); ICD.toast(e.target.checked ? 'Penandaan otomatis aktif.' : 'Penandaan otomatis dimatikan.'); });
+  q('#d-export').addEventListener('click', doExport);
+  q('#d-file').addEventListener('change', function(e){
+    var file = e.target.files[0]; fb(); q('#imp').hidden = true; pending = null; if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      try { var o = JSON.parse(String(rd.result)); if (!o || o.app !== 'icd' || !o.data) throw new Error('Ini bukan berkas ekspor bikinchip.'); pending = String(rd.result);
+        q('#imp-sum').textContent = 'Berkas "' + file.name + '" berisi ' + summary(o.data) + '.'; q('#imp').hidden = false; }
+      catch (err) { fb('err', 'Impor gagal: ' + (err instanceof SyntaxError ? 'berkas bukan JSON yang valid.' : err.message)); }
+    };
+    rd.onerror = function(){ fb('err', 'Impor gagal: berkas tidak bisa dibaca.'); };
+    rd.readAsText(file);
+  });
+  function imp(mode){ try { store.importJSON(pending, mode); fb('ok', 'Impor berhasil (' + (mode === 'ganti' ? 'data diganti' : 'digabung') + ').'); } catch (err) { fb('err', 'Impor gagal: ' + err.message); } q('#imp').hidden = true; q('#d-file').value = ''; pending = null; }
+  q('#imp-merge').addEventListener('click', function(){ imp('gabung'); });
+  q('#imp-replace').addEventListener('click', function(){ ICD.ui.confirm({ title: 'Ganti data sekarang?', body: 'Data di browser ini diganti dengan isi berkas. Ekspor dulu kalau kamu ingin menyimpan data sekarang.', action: 'Ganti', danger: true, run: function(){ imp('ganti'); } }); });
+  q('#imp-cancel').addEventListener('click', function(){ q('#imp').hidden = true; q('#d-file').value = ''; pending = null; fb(); });
+  q('#d-reset').addEventListener('click', function(){
+    var body = el('div', null, [el('p', { text: 'Semua progres, catatan, bookmark, jadwal flashcard, dan rencana di browser ini akan dihapus. Tindakan ini tidak bisa dibatalkan.' }),
+      el('p', null, [el('button', { type: 'button', class: 'icd-btn small', text: 'Ekspor cadangan dulu', onclick: doExport })])]);
+    ICD.ui.confirm({ title: 'Hapus semua progres?', body: body, word: 'hapus', danger: true, action: 'Hapus semua', run: function(){ store.reset(); ICD.theme.set('auto'); q('input[name=tema][value=auto]').checked = true; fb('ok', 'Semua progres dihapus.'); ICD.toast('Semua progres dihapus.'); } });
+  });
+  if (ICD.sync.enabled()){
+    q('#akun').hidden = false;
+    var paint = function(){ var u = ICD.sync.user(); q('#akun-s').textContent = u ? 'Masuk sebagai ' + (u.name || u.email) + '. Progresmu tersinkron ke semua device.' : 'Masuk dengan Google atau email agar progres, catatan, dan flashcard tersimpan di semua device.'; q('#akun-btn').textContent = u ? 'Kelola akun' : 'Masuk'; };
+    paint(); document.addEventListener('icd:auth', paint);
+    q('#akun-btn').addEventListener('click', function(){ if (ICD.sync.user()) ICD.sync.account(); else ICD.sync.login(); });
+  }
+  document.addEventListener('icd:store', function(){ status(); });
+});
+})();
+</script>
+</body>
+</html>

@@ -10,7 +10,7 @@ const F = 'm01c-linear-probabilitas-diskrit';
   const s = await p.evaluate(() => { const txt = pre => [...pre.querySelectorAll('code')].map(c => { const k = c.cloneNode(true); k.querySelectorAll('.ln').forEach(x => x.remove()); return k.textContent; }).join('');
     return { secs: document.querySelectorAll('section.icd-sec').length, viz: document.querySelectorAll('.icd-viz').length, guides: document.querySelectorAll('.icd-guide').length, rawTerms: document.querySelectorAll('span[data-term]').length,
     layers: document.querySelectorAll('.icd-layers').length, math: document.querySelectorAll('math').length, nav: [...document.querySelectorAll('.icd-nav a')].map(a => a.getAttribute('href')),
-    links: [...document.querySelectorAll('main a[href*=".html"]')].map(a => a.getAttribute('href').split('#')[0]).filter(h => h !== 'index.html' && !ICD.reg.file(h.replace('.html', ''))),
+    links: [...document.querySelectorAll('main a[href*=".html"]')].map(a => a.getAttribute('href').split('#')[0]).filter(h => !/^(index|kurikulum|belajar|glosarium|tools|referensi|pengaturan|tentang|privasi|masuk|styleguide)\.html$/.test(h) && !ICD.reg.file(h.replace('.html', ''))),
     code: txt(document.querySelector('#s08 pre')), lab: [...document.querySelectorAll('#s14 pre')].map(txt),
     tails: [1, 2, 3, 4, 5, 6, 2.5].map(k => M01C.tail(k)) }; });
   console.log(JSON.stringify({ ...s, code: undefined, lab: s.lab.map(x => x.slice(0, 16)) }));

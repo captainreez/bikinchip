@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glosarium · bikinchip</title>
+<meta name="description" content="Glosarium istilah IC design dari semua modul bikinchip: indeks A–Z, pencarian, dan filter per modul atau Track.">
+<!--CORE-->
+<!--PAGES-->
+<!--DATA:glosarium-->
+<style>
+.az{position:sticky;top:var(--top);z-index:20;background:var(--surface-0);padding:var(--sp-2) 0;margin:0 0 var(--sp-4);border-bottom:1px solid var(--line)}
+.az ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px}
+.az a,.az span{display:inline-grid;place-items:center;min-width:36px;min-height:36px;border-radius:var(--r-sm);font-family:var(--f-mono);font-size:var(--fs-14);text-decoration:none}
+.az a{border:1px solid var(--line);background:var(--surface-1);color:var(--text)}
+.az a:hover{border-color:var(--accent);color:var(--accent)}
+.az span{color:var(--text-3);opacity:.6}
+.gl-h{font-family:var(--f-mono);font-size:var(--fs-22);color:var(--accent);margin:var(--sp-6) 0 var(--sp-2);scroll-margin-top:calc(var(--top) + 64px)}
+.term{padding:var(--sp-3) 0;border-bottom:1px solid var(--line);scroll-margin-top:calc(var(--top) + 64px)}
+.term:target,.term.flash{background:var(--surface-3);margin:0 calc(-1 * var(--sp-3));padding-left:var(--sp-3);padding-right:var(--sp-3);border-radius:var(--r)}
+.term dt{font-weight:600;display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:baseline}
+.term dt i{font-weight:400;color:var(--text-2)}
+.term dt a.anc{color:var(--text-3);text-decoration:none;font-weight:400;opacity:0}
+.term:hover dt a.anc,.term dt a.anc:focus,.term:target dt a.anc{opacity:1}
+.term dd{margin:var(--sp-1) 0 0}
+.term .mods{display:flex;flex-wrap:wrap;gap:4px;margin-top:var(--sp-2)}
+.term .mods a{font-family:var(--f-mono);font-size:.78rem;border:1px solid var(--line);border-radius:var(--r-pill);padding:0 8px;text-decoration:none;color:var(--text-2)}
+.term .mods a:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body data-file="glosarium">
+<main class="wide">
+<div class="pg">
+  <h1>Glosarium</h1>
+  <p class="lead" id="lead"></p>
+  <div class="toolbar no-print">
+    <label class="icd-field" style="flex:1 1 260px">Cari istilah<input class="icd-input" id="g-q" type="search" autocomplete="off" placeholder="mis. setup, slack, clock"></label>
+    <label class="icd-field">Modul<select class="icd-select" id="g-mod"></select></label>
+    <label class="icd-field">Track<select class="icd-select" id="g-track"></select></label>
+  </div>
+  <nav class="az no-print" aria-label="Indeks huruf"><ul id="az"></ul></nav>
+  <p class="icd-small icd-muted" id="g-count" role="status" aria-live="polite"></p>
+  <div id="g-list"></div>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, el = ICD.el, q = ICD.q, reg = ICD.reg, T = ICD_DATA.glosarium;
+function norm(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function letter(t){ var c = norm(t.en).charAt(0).toUpperCase(); return /[A-Z]/.test(c) ? c : '#'; }
+function mod3(m){ return String(m || '').slice(0, 3); }
+function hl(text, toks){
+  if (!toks.length) return [text];
+  var re = new RegExp('(' + toks.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'ig'), out = [], last = 0, m;
+  while ((m = re.exec(text))){ if (m.index > last) out.push(text.slice(last, m.index)); out.push(el('mark', { class: 'hit', text: m[0] })); last = m.index + m[0].length; if (m[0].length === 0) re.lastIndex++; }
+  if (last < text.length) out.push(text.slice(last)); return out;
+}
+function modsOfTrack(k){ var set = {}; reg.files.forEach(function(f){ if (reg.tracks[k].files[f.id]) set[f.mod] = 1; }); return set; }
+function render(){
+  var raw = q('#g-q').value.trim(), toks = norm(raw).split(/\s+/).filter(Boolean), mod = q('#g-mod').value, tk = q('#g-track').value, tset = tk ? modsOfTrack(tk) : null;
+  var list = T.filter(function(t){
+    if (mod && !t.mods.some(function(m){ return mod3(m) === mod; })) return false;
+    if (tset && !t.mods.some(function(m){ return tset[mod3(m)]; })) return false;
+    var h = norm(t.en + ' ' + t.idn + ' ' + t.def); return toks.every(function(x){ return h.indexOf(x) >= 0; });
+  });
+  var box = q('#g-list'); box.textContent = ''; var have = {}, cur = null, dl = null;
+  list.forEach(function(t){
+    var L = letter(t); have[L] = 1;
+    if (L !== cur){ cur = L; box.appendChild(el('h2', { class: 'gl-h', id: 'huruf-' + (L === '#' ? 'angka' : L.toLowerCase()), text: L })); dl = el('dl', { style: 'margin:0' }); box.appendChild(dl); }
+    dl.appendChild(el('div', { class: 'term', id: 'istilah-' + t.id }, [
+      el('dt', null, [el('span', null, hl(t.en, toks)), t.idn && norm(t.idn) !== norm(t.en) ? el('i', null, ['· '].concat(hl(t.idn, toks))) : null, el('a', { class: 'anc', href: '#istilah-' + t.id, 'aria-label': 'Tautan ke ' + t.en, text: '#' })]),
+      el('dd', null, hl(t.def, toks)),
+      t.mods.length ? el('div', { class: 'mods' }, t.mods.map(function(m){ return el('a', { href: 'kurikulum.html?modul=' + mod3(m), title: 'Lihat modul ' + mod3(m), text: m }); })) : null]));
+  });
+  if (!list.length) box.appendChild(el('div', { class: 'icd-empty' }, [el('h3', { text: 'Tidak ada istilah yang cocok' }), el('p', { text: 'Coba kata kunci lain, atau hapus filter modul dan Track.' })]));
+  q('#g-count').textContent = list.length + ' dari ' + T.length + ' istilah';
+  var az = q('#az'); az.textContent = '';
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').forEach(function(L){
+    var li = el('li'); if (have[L]) li.appendChild(el('a', { href: '#huruf-' + (L === '#' ? 'angka' : L.toLowerCase()), text: L, 'aria-label': 'Loncat ke huruf ' + L })); else li.appendChild(el('span', { text: L, 'aria-hidden': 'true' })); az.appendChild(li);
+  });
+  focusHash();
+}
+function focusHash(){ var h = window.location.hash; if (h.indexOf('#istilah-') === 0){ var t = document.getElementById(h.slice(1)); if (t){ t.scrollIntoView({ block: 'center' }); t.classList.add('flash'); setTimeout(function(){ t.classList.remove('flash'); }, 2500); } } }
+ICD.ready(function(){
+  q('#lead').textContent = T.length + ' istilah dari semua lesson yang sudah terbit. Istilah teknis memakai bahasa Inggris aslinya; padanan Indonesia ditulis di sebelahnya bila ada.';
+  var mods = {}; T.forEach(function(t){ t.mods.forEach(function(m){ mods[mod3(m)] = 1; }); });
+  q('#g-mod').appendChild(el('option', { value: '', text: 'Semua modul' }));
+  Object.keys(mods).sort().forEach(function(m){ var mm = reg.module(m); q('#g-mod').appendChild(el('option', { value: m, text: m + (mm ? ' · ' + mm.title : '') })); });
+  q('#g-track').appendChild(el('option', { value: '', text: 'Semua Track' })); Object.keys(reg.tracks).forEach(function(k){ q('#g-track').appendChild(el('option', { value: k, text: reg.tracks[k].title })); });
+  var u = new URLSearchParams(window.location.search); if (u.get('q')) q('#g-q').value = u.get('q'); if (u.get('modul')) q('#g-mod').value = u.get('modul');
+  ['input', 'change'].forEach(function(ev){ ['#g-q', '#g-mod', '#g-track'].forEach(function(s){ q(s).addEventListener(ev, render); }); });
+  render(); window.addEventListener('hashchange', focusHash);
+});
+})();
+</script>
+</body>
+</html>
