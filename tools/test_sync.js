@@ -12,15 +12,8 @@ const state = () => fetch(M + '/__state', { headers: { apikey: 'anon-test-key' }
   // progres lokal sebelum login
   await A.click('#s03 .icd-secfoot button:has-text("Tandai")');
   await A.evaluate(() => ICD.store.update('cards', a => { a = a || {}; a['m04c-linux-git-make:perm'] = { file: 'm04c-linux-git-make', ef: 2.5, n: 1, iv: 1, due: 1, seen: 1 }; return a; }));
-  // login email: dialog
-  await A.click('.icd-acct'); await A.waitForSelector('dialog.icd-dialog');
-  await A.fill('dialog input[type=email]', 'salah'); await A.click('dialog button:has-text("Kirim tautan")');
-  assert((await A.textContent('dialog')).includes('Alamat email belum benar'), 'validasi email');
-  await A.fill('dialog input[type=email]', 'ani@example.com'); await A.click('dialog button:has-text("Kirim tautan")'); await A.waitForTimeout(400);
-  assert((await A.textContent('dialog')).includes('Tautan masuk sudah dikirim ke ani@example.com'), 'tautan email terkirim');
-  let st = await state(); assert(st.otp.length === 1 && st.otp[0].redirect === S + 'm04c-linux-git-make.html', 'OTP dengan redirect ke halaman ini');
   // login Google (redirect)
-  await A.click('dialog button:has-text("Masuk dengan Google")'); await A.waitForURL(/m04c-linux-git-make\.html$/); await A.waitForTimeout(1200);
+  await A.click('.icd-acct'); await A.waitForURL(/masuk\.html/); await A.click('#g-btn'); await A.waitForURL(/m04c-linux-git-make\.html$/); await A.waitForTimeout(1200);
   assert(!A.url().includes('access_token'), 'token dihapus dari URL');
   assert((await A.textContent('.icd-acct')).includes('Ani'), 'nama pengguna tampil: ' + await A.textContent('.icd-acct'));
   st = await state(); const row = st.rows['11111111-1111-1111-1111-111111111111'];
@@ -35,7 +28,7 @@ const state = () => fetch(M + '/__state', { headers: { apikey: 'anon-test-key' }
   await B.evaluate(() => ICD.store.update('cards', a => { a = a || {}; a['m04c-linux-git-make:perm'] = { file: 'm04c-linux-git-make', ef: 2.6, n: 3, iv: 6, due: 9, seen: 4 }; return a; }));
   await B.goto(S + 'index.html'); await B.waitForTimeout(300);
   assert(await B.locator('#resume button:has-text("Masuk untuk sinkron")').count() === 1 && await B.locator('#resume a.gh').count() === 1, 'beranda: ajakan masuk dan tautan GitHub');
-  await B.click('.icd-acct'); await B.click('dialog button:has-text("Masuk dengan Google")'); await B.waitForURL(/index\.html$/); await B.waitForTimeout(1500);
+  await B.click('.icd-acct'); await B.waitForURL(/masuk\.html/); await B.click('#g-btn'); await B.waitForURL(/index\.html$/); await B.waitForTimeout(1500);
   const bp = await B.evaluate(() => [ICD.store.get('progress.m04c-linux-git-make.sections.s03'), ICD.store.get('progress.m04c-linux-git-make.sections.s05'), ICD.store.get('progress.m00-orientasi.sections.s01'), ICD.store.get('cards', {})['m04c-linux-git-make:perm'].seen]);
   assert(bp.join() === 'true,true,true,4', 'B: gabungan progres A + lokal B, kartu yang lebih sering diulang menang: ' + bp.join());
   assert((await B.textContent('#b-avail')).includes('2/16'), 'dasbor B memperlihatkan progres dari A');
@@ -50,7 +43,7 @@ const state = () => fetch(M + '/__state', { headers: { apikey: 'anon-test-key' }
   assert(await A.evaluate(() => JSON.parse(localStorage.getItem('icd.auth')).expires_at > Date.now() && !ICD.sync.state().err), 'token diperbarui otomatis');
   // akun & keluar
   await A.click('.icd-acct'); assert((await A.textContent('dialog')).includes('Ani Wijaya (ani@example.com)'), 'dialog akun');
-  await A.click('dialog button:has-text("Keluar")'); await A.waitForTimeout(200);
+  await A.click('dialog button:has-text("Keluar")'); await A.waitForTimeout(300);
   assert((await A.textContent('.icd-acct')) === 'Masuk' && await A.evaluate(() => ICD.store.get('progress.m00-orientasi.sections.s01')) === true, 'keluar: tombol Masuk, progres lokal tetap');
   // file:// tidak menampilkan login
   const F = await dev(); await F.goto(require('url').pathToFileURL(require('path').resolve(process.env.SITE || 'docs', 'index.html')).href); await F.waitForTimeout(300);

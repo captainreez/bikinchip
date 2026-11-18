@@ -1,11 +1,11 @@
 // Server tiruan Supabase (auth + PostgREST tabel progress) dan server statis untuk menguji sinkron.
 const http = require('http'), fs = require('fs'), path = require('path'), url = require('url');
 const SITE = process.argv[2] || (process.env.SITE || 'docs');
-const db = { rows: {}, otp: [], pushes: 0 };
+const db = { rows: {}, otp: [], pushes: 0, users: {}, mails: [] };
 let tokN = 0;
 const USER = { id: '11111111-1111-1111-1111-111111111111', email: 'ani@example.com', user_metadata: { full_name: 'Ani Wijaya' } };
-const valid = new Set();
-function cors(res){ res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'apikey, authorization, content-type, prefer'); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); }
+const valid = new Set(); const tokUser = {};
+function cors(res){ res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'apikey, authorization, content-type, prefer'); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); }
 function body(req){ return new Promise(r => { let b = ''; req.on('data', d => b += d); req.on('end', () => r(b ? JSON.parse(b) : null)); }); }
 function tok(){ const t = 'tok' + (++tokN); valid.add(t); return t; }
 http.createServer(async (req, res) => {
@@ -16,6 +16,18 @@ http.createServer(async (req, res) => {
   if (u.pathname === '/__state'){ res.writeHead(200); return res.end(JSON.stringify(db)); }
   if (u.pathname === '/auth/v1/otp' && req.method === 'POST'){ const b = await body(req); db.otp.push({ email: b.email, redirect: u.query.redirect_to }); res.writeHead(200); return res.end('{}'); }
   if (u.pathname === '/auth/v1/authorize'){ res.writeHead(302, { Location: u.query.redirect_to + '#access_token=' + tok() + '&refresh_token=r' + tokN + '&expires_in=3600&token_type=bearer' }); return res.end(); }
+  const J = (c, o) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
+  const sessFor = (email, type, redirect) => { const t = tok(); tokUser[t] = email; return redirect + '#access_token=' + t + '&refresh_token=r' + tokN + '&expires_in=3600&token_type=bearer' + (type ? '&type=' + type : ''); };
+  if (u.pathname === '/auth/v1/signup'){ const b = await body(req); if (!db.users[b.email]) db.users[b.email] = { pw: b.password, ok: false, name: b.data && b.data.full_name }; db.mails.push({ kind: 'signup', email: b.email, link: sessFor(b.email, 'signup', u.query.redirect_to) }); return J(200, { id: 'x', email: b.email }); }
+  if (u.pathname === '/auth/v1/resend'){ const b = await body(req); db.mails.push({ kind: 'signup', email: b.email, link: sessFor(b.email, 'signup', u.query.redirect_to) }); return J(200, {}); }
+  if (u.pathname === '/auth/v1/recover'){ const b = await body(req); if (db.users[b.email]) db.mails.push({ kind: 'recovery', email: b.email, link: sessFor(b.email, 'recovery', u.query.redirect_to) }); return J(200, {}); }
+  if (u.pathname === '/auth/v1/token' && u.query.grant_type === 'password'){ const b = await body(req); const x = db.users[b.email];
+    if (!x || x.pw !== b.password) return J(400, { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' });
+    if (!x.ok) return J(400, { code: 400, error_code: 'email_not_confirmed', msg: 'Email not confirmed' });
+    const t = tok(); tokUser[t] = b.email; return J(200, { access_token: t, refresh_token: 'r' + tokN, expires_in: 3600, user: { id: USER.id, email: b.email, user_metadata: { full_name: x.name } } }); }
+  if (u.pathname === '/auth/v1/user' && req.method === 'PUT'){ if (!valid.has(auth)) return J(401, {}); const b = await body(req); db.users[tokUser[auth]].pw = b.password; return J(200, USER); }
+  if (u.pathname === '/auth/v1/user'){ if (valid.has(auth) && tokUser[auth] && db.users[tokUser[auth]]) db.users[tokUser[auth]].ok = true; }
+  if (u.pathname === '/rest/v1/progress' && req.method === 'DELETE'){ if (!valid.has(auth)) return J(401, {}); delete db.rows[USER.id]; res.writeHead(204); return res.end(); }
   if (u.pathname === '/auth/v1/user'){ if (!valid.has(auth)){ res.writeHead(401); return res.end('{}'); } res.writeHead(200); return res.end(JSON.stringify(USER)); }
   if (u.pathname === '/auth/v1/token'){ await body(req); res.writeHead(200); return res.end(JSON.stringify({ access_token: tok(), refresh_token: 'r' + tokN, expires_in: 3600, user: USER })); }
   if (u.pathname === '/auth/v1/logout'){ valid.delete(auth); res.writeHead(204); return res.end(); }

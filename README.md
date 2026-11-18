@@ -69,10 +69,22 @@ mkdir -p shots && node tools/test.js && node tools/test_ui.js && node tools/test
    ```
 
    Kunci anon/publishable memang dirancang untuk publik; keamanan dijaga oleh RLS. **Jangan pernah** memasukkan kunci `service_role`/secret.
-5. Opsional: aktifkan Google di **Authentication → Providers**, lalu tambahkan `"google": true` ke `config.json`.
-6. Jalankan `python3 tools/build.py docs`, lalu commit.
+5. Aktifkan **Google** di **Authentication → Providers** (Client ID dan secret dari Google Cloud, redirect URI `https://<ref>.supabase.co/auth/v1/callback`), lalu tambahkan `"google": true` ke `config.json`.
+6. Pastikan **Email** aktif dengan **Confirm email** menyala. Konfirmasi hanya diminta sekali saat mendaftar; setelah itu pengguna masuk dengan email dan kata sandi.
+7. Untuk mewajibkan login, tambahkan `"requireLogin": true`. Halaman lain akan mengalihkan pengunjung yang belum masuk ke `masuk.html`; `masuk.html` dan `privasi.html` tetap publik.
+8. Jalankan `python3 tools/build.py docs`, lalu commit.
 
-Masuk lewat email (tautan ajaib) langsung berfungsi tanpa langkah 5. Versi offline (`file://`) tidak menampilkan tombol masuk.
+Catatan:
+- Login wajib hanya mengatur pengalaman pengguna, bukan keamanan materi. Materinya memang open source dan bisa dibaca di repositori.
+- Versi offline (`file://`) tidak memakai akun dan tidak dikunci.
+
+Menguji alur akun tanpa Supabase sungguhan (server tiruan):
+
+```sh
+echo '{"supabaseUrl":"http://127.0.0.1:8788","supabaseKey":"anon-test-key","google":true,"requireLogin":true}' > /tmp/cfg.json
+cp src/config.json /tmp/cfg.bak && cp /tmp/cfg.json src/config.json && python3 tools/build.py /tmp/site2 && cp /tmp/cfg.bak src/config.json
+node tools/mock_supabase.js /tmp/site2 &  node tools/test_auth.js
+```
 
 ## Kontribusi
 
