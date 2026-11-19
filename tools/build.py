@@ -38,7 +38,7 @@ PAT = re.compile(r'<!-- ICD-CORE [\d.]+ BEGIN.*?<!-- ICD-CORE END -->', re.S)
 
 import html as _h, shutil
 SITE = cfg.get('siteUrl', 'https://captainreez.github.io/bikinchip/').rstrip('/') + '/'
-NOINDEX = {'masuk.html', 'styleguide.html'}
+NOINDEX = {'styleguide.html'}
 def plain(s):
     s = re.sub(r'\s+', ' ', _h.unescape(re.sub(r'<[^>]+>', ' ', s))).strip()
     return re.sub(r'\(\s+', '(', re.sub(r'\s+([,.;:?!)])', r'\1', s))
