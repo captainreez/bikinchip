@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://captainreez.github.io/bikinchip/sitemap.xml

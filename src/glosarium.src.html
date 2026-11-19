@@ -70,8 +70,7 @@ function render(){
     if (L !== cur){ cur = L; box.appendChild(el('h2', { class: 'gl-h', id: 'huruf-' + (L === '#' ? 'angka' : L.toLowerCase()), text: L })); dl = el('dl', { style: 'margin:0' }); box.appendChild(dl); }
     dl.appendChild(el('div', { class: 'term', id: 'istilah-' + t.id }, [
       el('dt', null, [el('span', null, hl(t.en, toks)), t.idn && norm(t.idn) !== norm(t.en) ? el('i', null, ['· '].concat(hl(t.idn, toks))) : null, el('a', { class: 'anc', href: '#istilah-' + t.id, 'aria-label': 'Tautan ke ' + t.en, text: '#' })]),
-      el('dd', null, hl(t.def, toks)),
-      t.mods.length ? el('div', { class: 'mods' }, t.mods.map(function(m){ return el('a', { href: 'kurikulum.html?modul=' + mod3(m), title: 'Lihat modul ' + mod3(m), text: m }); })) : null]));
+      el('dd', null, hl(t.def, toks).concat([t.mods.length ? el('div', { class: 'mods' }, t.mods.map(function(m){ return el('a', { href: 'kurikulum.html?modul=' + mod3(m), title: 'Lihat modul ' + mod3(m), text: m }); })) : null]))]));
   });
   if (!list.length) box.appendChild(el('div', { class: 'icd-empty' }, [el('h3', { text: 'Tidak ada istilah yang cocok' }), el('p', { text: 'Coba kata kunci lain, atau hapus filter modul dan Track.' })]));
   q('#g-count').textContent = list.length + ' dari ' + T.length + ' istilah';

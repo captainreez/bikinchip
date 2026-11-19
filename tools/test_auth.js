@@ -43,7 +43,7 @@ const lastMail = async kind => (await st()).mails.filter(m => m.kind === kind).p
   await p.fill('#in-email', 'ani@example.com'); await p.fill('#in-pw', 'salah12345'); await p.click('#f-in button[type=submit]'); await p.waitForTimeout(400);
   assert((await msg()) === 'Email atau kata sandi salah.', 'sandi salah');
   const mailsBefore = (await st()).mails.length;
-  await p.fill('#in-pw', 'rahasia123'); await p.click('#f-in button[type=submit]'); await p.waitForURL(/index\.html$/, { timeout: 8000 });
+  await p.fill('#in-pw', 'rahasia123'); await p.click('#f-in button[type=submit]'); await p.waitForURL(/index\.html$/, { timeout: 8000 }); await p.waitForLoadState('load'); await p.waitForTimeout(300);
   assert((await st()).mails.length === mailsBefore, 'masuk dengan sandi → beranda, tanpa email baru');
   await p.goto(S + 'masuk.html'); await p.waitForURL(/index\.html$/); assert(true, 'sudah masuk: masuk.html langsung ke beranda');
   await p.click('.icd-acct'); await p.click('dialog button:has-text("Keluar")'); await p.waitForURL(/masuk\.html/);
@@ -85,4 +85,4 @@ const lastMail = async kind => (await st()).mails.filter(m => m.kind === kind).p
   await mo.emulateMedia({ colorScheme: 'dark' }); await mo.evaluate(() => ICD.theme.set('dark')); await mo.screenshot({ path: 'shots/masuk-m-dark.png' });
   assert(errs.length === 0, 'tanpa error halaman ' + errs.join('|'));
   await b.close();
-})().catch(e => { console.error('CRASH', e.message.split('\n')[0]); process.exit(1); });
+})().catch(e => { console.error('CRASH', (e.stack.split('\n').find(l => l.includes('test_auth.js')) || e.message.split('\n')[0])); process.exit(1); });

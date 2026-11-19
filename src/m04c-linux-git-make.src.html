@@ -25,9 +25,9 @@ table.icd td.mono{font-family:var(--f-mono);font-size:.82rem;word-break:break-al
 .dag .ed{stroke:var(--ink2);stroke-width:1.3;fill:none;opacity:.7}
 .trk{display:grid;grid-template-columns:5.5em 1fr;gap:6px;align-items:center;margin:3px 0;font:.82rem var(--f-mono)}
 .trk .tr{position:relative;height:22px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
-.trk .bar{position:absolute;top:0;bottom:0;background:var(--s-data);color:#fff;font-size:.72rem;display:flex;align-items:center;justify-content:center;opacity:.55}
-.trk .bar.on{opacity:1;background:var(--s-hi)}
-.trk .bar.fin{opacity:1;background:var(--s-data)}
+.trk .bar{position:absolute;top:0;bottom:0;background:var(--surface-3);color:var(--text);border:1px solid var(--s-data);box-sizing:border-box;font-size:.72rem;display:flex;align-items:center;justify-content:center}
+.trk .bar.on{background:var(--s-hi);color:var(--surface-0);border-color:var(--s-hi)}
+.trk .bar.fin{background:var(--s-data);color:var(--surface-0)}
 .trk .now{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
 .fdt td.arrow{font-family:var(--f-mono)}
 .rowlab{font:.78rem var(--f-mono);color:var(--ink2);margin-top:6px}

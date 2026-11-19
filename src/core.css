@@ -8,7 +8,7 @@
   --accent:#0B5C7A;--accent-ink:#FFFFFF;--accent-hover:#084A63;
   --success:#176F31;--success-bg:#E3F4E7;--warning:#855700;--warning-bg:#FBEFD0;--danger:#C4161F;--danger-bg:#FDE7E9;
   /* warna sinyal (konvensi di semua diagram) */
-  --s-clock:#1F6FEB;--s-data:#0F7B6C;--s-ctrl:#7A3FD1;--s-reset:#B45309;--s-vdd:#C0392B;--s-vss:#4A5568;
+  --s-clock:#1F6FEB;--s-data:#0D7262;--s-ctrl:#7A3FD1;--s-reset:#B45309;--s-vdd:#C0392B;--s-vss:#4A5568;--tk-t:#1859C4;--tk-n:#964308;
   --s-analog:#B8256E;--s-hi:#946200;--s-x:#D1242F;--s-z:#8A6D1B;
   --brand-red:#D7263D;
   /* spacing 4/8 px */
@@ -33,7 +33,7 @@
   --line:#2E343D;--line-strong:#4A525D;
   --accent:#5CC1E0;--accent-ink:#0B1A20;--accent-hover:#82D2EB;
   --success:#56D364;--success-bg:#12301B;--warning:#E3B341;--warning-bg:#3A2D0A;--danger:#FF7B72;--danger-bg:#3F1A1E;
-  --s-clock:#6CB6FF;--s-data:#4FD1B5;--s-ctrl:#B794F6;--s-reset:#F6AD55;--s-vdd:#FF7B72;--s-vss:#A0AEC0;
+  --s-clock:#6CB6FF;--s-data:#4FD1B5;--s-ctrl:#B794F6;--s-reset:#F6AD55;--s-vdd:#FF7B72;--s-vss:#A0AEC0;--tk-t:#6CB6FF;--tk-n:#F6AD55;
   --s-analog:#F687B3;--s-hi:#F6E05E;--s-x:#FF6B6B;--s-z:#D9B84A;
   --brand-red:#FF6B7A;
   --shadow-1:0 1px 2px rgba(0,0,0,.4);--shadow-2:0 6px 20px rgba(0,0,0,.5);
@@ -161,9 +161,9 @@ math{font-size:1.08em}
 .icd-code pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;overflow:auto;line-height:1.5;tab-size:2}
 .icd-code .lang{position:absolute;right:54px;top:6px;font-size:.72rem;color:var(--ink2);font-family:var(--f-mono)}
 .icd-code .copy{position:absolute;right:6px;top:4px}
-.icd-code .ln{display:inline-block;width:2.4em;margin-left:-.4em;padding-right:.9em;text-align:right;color:var(--ink2);opacity:.6;user-select:none}
+.icd-code .ln{display:inline-block;width:2.4em;margin-left:-.4em;padding-right:.9em;text-align:right;color:var(--ink2);user-select:none}
 .tk-k{color:var(--s-ctrl);font-weight:600}.tk-c{color:var(--ink2);font-style:italic}.tk-s{color:var(--s-data)}
-.tk-n{color:var(--s-reset)}.tk-t{color:var(--s-clock)}.tk-d{color:var(--s-analog)}
+.tk-n{color:var(--tk-n)}.tk-t{color:var(--tk-t)}.tk-d{color:var(--s-analog)}
 
 /* penjelasan berlapis */
 .icd-layers{border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin:0 0 1em}

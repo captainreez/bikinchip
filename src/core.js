@@ -453,10 +453,17 @@ function enhanceCode(ctx){
   qa('pre.icd-src', ctx).forEach(function(pre){
     if (pre.dataset.done) return; pre.dataset.done = '1';
     var lang = pre.dataset.lang || 'text', raw = pre.textContent.replace(/^\n/, '').replace(/\s+$/, '');
-    var lines = hl(raw, lang).split('\n'), html = '';
-    var numbered = pre.dataset.ln !== 'off' && lines.length > 3;
-    lines.forEach(function(l, i){ html += (numbered ? '<span class="ln" aria-hidden="true">' + (i + 1) + '</span>' : '') + l + '\n'; });
-    var code = el('code', { html: html });
+    var code = el('code', { text: raw + '\n' });
+    function paint(){
+      var lines = hl(raw, lang).split('\n'), html = '', numbered = pre.dataset.ln !== 'off' && lines.length > 3;
+      lines.forEach(function(l, i){ html += (numbered ? '<span class="ln" aria-hidden="true">' + (i + 1) + '</span>' : '') + l + '\n'; });
+      code.innerHTML = html;
+    }
+    // sorot sintaks lazy: blok di luar layar diwarnai saat mendekat (hemat waktu muat)
+    if (window.IntersectionObserver && !pre.closest('.icd-top')){
+      var io = new IntersectionObserver(function(es){ if (es.some(function(e){ return e.isIntersecting; })){ io.disconnect(); paint(); } }, { rootMargin: '600px' });
+      requestAnimationFrame(function(){ io.observe(pre); });
+    } else paint();
     pre.textContent = ''; pre.appendChild(code); pre.setAttribute('tabindex', '0');
     var wrap = el('div', { class: 'icd-code' });
     pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
@@ -669,7 +676,7 @@ function plot(tgt, opts){
     }
     return [lo, hi];
   }
-  function draw(){
+  function drawNow(){
     var o = st.o, dpr = window.devicePixelRatio || 1, W = box.clientWidth || 320, H = o.height || 260;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -761,6 +768,11 @@ function plot(tgt, opts){
   var pending = false; function later(){ if (pending) return; pending = true; requestAnimationFrame(function(){ pending = false; if (box.isConnected) draw(); }); }
   if (window.ResizeObserver) new ResizeObserver(later).observe(box); else window.addEventListener('resize', later);
   doc.addEventListener('icd:theme', later);
+  // gambar lazy: plot di luar layar baru digambar saat mendekat (hemat waktu muat halaman)
+  var vis = !window.IntersectionObserver, dirty = true;
+  function draw(){ if (!vis){ dirty = true; return; } dirty = false; drawNow(); }
+  box.style.minHeight = (st.o.height || 260) + 'px';
+  if (!vis){ var io = new IntersectionObserver(function(es){ if (es.some(function(e){ return e.isIntersecting; })){ vis = true; io.disconnect(); if (dirty) draw(); } }, { rootMargin: '400px' }); io.observe(box); }
   draw();
   return { set: function(o){ st.o = o; draw(); }, redraw: draw, el: tgt };
 }
@@ -1092,6 +1104,7 @@ ICD.calc = { list: CALCS.map(function(c){ return { id: c.id, title: c.title }; }
 /* ---------- math: deteksi MathML ---------- */
 function mathCheck(){
   try {
+    if (window.CSS && CSS.supports && CSS.supports('display', 'math')) return;  // MathML Core: tanpa probe layout
     var d = el('div', { style: 'position:absolute;left:-999px;top:0' });
     d.innerHTML = '<math xmlns="http://www.w3.org/1998/Math/MathML"><mspace height="23px" width="77px"></mspace></math>';
     doc.body.appendChild(d); var w = d.firstChild.firstChild.getBoundingClientRect().width; d.remove();
