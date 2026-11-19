@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M05b PN junction dan dioda — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+p code,li code,td code,summary code{overflow-wrap:anywhere}
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+table.icd td.r,table.icd th.r{text-align:right;font-family:var(--f-mono)}
+table.icd td.hl,table.icd th.hl{outline:2px solid var(--s-hi);outline-offset:-2px;font-weight:700}
+.rowlab{font:.78rem var(--f-mono);color:var(--ink2);margin-top:6px}
+.band{margin:6px 0}
+.band svg{width:100%;height:auto;max-height:300px}
+.band .bd{stroke:var(--ink);stroke-width:2.5}
+.band .ei{stroke:var(--ink2);stroke-width:1.2;stroke-dasharray:5 4}
+.band .ef{stroke:var(--s-hi);stroke-width:2.5}
+.band text{fill:var(--ink);font:12px var(--f-mono)}
+.band .gap{fill:var(--s-data);opacity:.1}
+.band .e{fill:var(--s-data)}.band .h{fill:none;stroke:var(--s-ctrl);stroke-width:2}
+.pbar{display:grid;grid-template-columns:7em 1fr 8em;gap:8px;align-items:center;font:.8rem var(--f-mono);margin:3px 0}
+.pbar .tr{height:12px;border-radius:6px;background:var(--surface-1,#eee);overflow:hidden;border:1px solid var(--line)}
+.pbar .fl{height:100%;background:var(--s-data)}
+.pnfig{margin:6px 0}
+.pnfig svg{width:100%;height:auto;max-height:380px}
+.pnfig .qp{fill:var(--s-ctrl);opacity:.22}.pnfig .qn{fill:var(--s-data);opacity:.22}
+.pnfig .ef{stroke:var(--s-hi);stroke-width:2.2}.pnfig .efp{stroke:var(--s-ctrl);stroke-width:2.2;stroke-dasharray:6 3}.pnfig .efn{stroke:var(--s-data);stroke-width:2.2;stroke-dasharray:6 3}
+.pnfig .fe{fill:none;stroke:var(--s-hi);stroke-width:2.2}
+.pnfig .ax{stroke:var(--ink2);stroke-width:1}
+.pnfig .bd{stroke:var(--ink);stroke-width:2.5}
+.pnfig text{fill:var(--ink);font:12px var(--f-mono)}
+</style>
+</head>
+<body data-file="m05b-pn-junction-dioda">
+<main>
+<p class="icd-small icd-muted">Bagian 2: Device dan elektronika · M05 bagian b dari 2 · sekitar 8 jam · prasyarat: <a href="m05a-pita-energi-pembawa.html">M05a</a> (pembawa, doping, drift, difusi, level Fermi), <a href="m02a-rangkaian-dc.html">M02a</a> (hukum Ohm, rangkaian DC), <a href="m02b-transien-ac.html">M02b</a> (RC dan respons transien), <a href="m01b-kompleks-kalkulus.html">M01b</a> (turunan, integral)</p>
+<h1>M05b PN junction dan dioda</h1>
+<p>Dua bahan yang sama tetapi berlawanan doping, disambung, menghasilkan komponen paling dasar di elektronika: dioda. Hampir semua yang ada di chip, dari sumur n dan p, source dan drain transistor, ESD protection, sensor suhu, sampai sel memori, adalah junction atau tersusun dari junction. Modul ini menurunkan potensial dan lebar daerah deplesi, arus dan kapasitansi dioda, dan batas breakdown-nya, lalu membandingkannya dengan dioda Schottky, merancang penyearah, dan membangun rangkaian bandgap reference. Semua angka dihitung oleh program Python yang dijalankan sungguhan dan dicocokkan dengan visualisasi di halaman ini.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<ul>
+<li><strong>Junction ada di setiap sudut chip CMOS.</strong> Source dan drain adalah daerah n+ di dalam substrat p (atau sebaliknya); sumur n berada di atas substrat p. Semua itu adalah PN junction yang harus tetap bias mundur supaya transistor terisolasi. Kapasitansi dan arus bocor junction masuk ke setiap delay dan setiap anggaran daya statis.</li>
+<li><strong>Dioda adalah pelindung dan pengatur.</strong> ESD protection, clamp tegangan, penyearah di power management, dan pengaman input memakai dioda. Memilih dioda dan ukurannya adalah keputusan desain sehari-hari.</li>
+<li><strong>Persamaan dioda adalah fondasi bipolar dan sensor suhu.</strong> Tegangan base-emitter turun sekitar 2 mV per kelvin dan selisih dua tegangan <i>V<sub>BE</sub></i> sebanding suhu mutlak; keduanya dipakai bandgap reference yang ada di hampir setiap ADC, PMIC, dan regulator.</li>
+<li><strong>Latch-up dan bocor adalah efek junction.</strong> Struktur parasit PNPN di CMOS (M10 dan M32a) dan lonjakan arus bocor pada suhu tinggi keduanya dijelaskan oleh model di modul ini.</li>
+<li><strong>Dasar untuk MOSFET.</strong> Kapasitor MOS (M06a) memakai daerah deplesi yang sama; tegangan ambang, body effect, dan kapasitansi junction source/drain bertumpu pada rumus <i>W</i>(<i>V</i>).</li>
+<li><strong>Wawancara.</strong> "Mengapa arus dioda naik eksponensial?", "mengapa tegangan maju turun saat panas?", "apa beda avalanche dan Zener?", "bagaimana bandgap reference bekerja?", dan "mengapa Schottky lebih cepat?" adalah pertanyaan standar.</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Junction membentuk daerah deplesi dengan potensial built-in <i>V<sub>bi</sub></i> = (<i>kT</i>/<i>q</i>) ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²) (0,799 V untuk 10<sup>17</sup> dan 10<sup>16</sup> pada 300 K). Bias maju memperkecil penghalang dan arus naik eksponensial, <i>I</i> = <i>I<sub>s</sub></i>(e<sup><i>V</i>/<i>nV<sub>t</sub></i></sup> − 1), sekitar 60 mV per dekade; bias mundur melebarkan deplesi (<i>W</i> ∝ √(<i>V<sub>bi</sub></i> − <i>V</i>)), menurunkan kapasitansi, dan hanya mengalirkan arus bocor kecil sampai breakdown. <i>I<sub>s</sub></i> naik sekitar 1.300 kali dari 300 ke 350 K, sehingga tegangan maju pada arus tetap turun kira-kira 1,7 mV per kelvin.</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> konsentrasi pembawa, hukum aksi massa, level Fermi, drift dan difusi, panjang difusi, dan umur pembawa (<a href="m05a-pita-energi-pembawa.html">M05a</a>); hukum Ohm dan rangkaian DC (<a href="m02a-rangkaian-dc.html">M02a</a>); respons RC dan sinyal sinus (<a href="m02b-transien-ac.html">M02b</a>); serta turunan dan integral (<a href="m01b-kompleks-kalkulus.html">M01b</a>). Python dipakai di lab (dasar di <a href="m04d-python-tcl-algoritma.html">M04d</a>).</p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
+<ol>
+<li>Menjelaskan terbentuknya <span data-term="pn-junction">PN junction</span> dan <span data-term="depletion">daerah deplesi</span> dari difusi pembawa dan medan listrik yang menyeimbangkannya, serta menggambar diagram pita junction pada kesetimbangan dan di bawah bias.</li>
+<li>Menghitung <span data-term="vbi">potensial built-in</span>, lebar deplesi (<i>W</i>, <i>x<sub>n</sub></i>, <i>x<sub>p</sub></i>), dan medan puncak untuk junction abrupt simetris maupun sepihak, dengan bias maju dan mundur.</li>
+<li>Menurunkan dan memakai persamaan dioda ideal: <span data-term="saturation-current">arus saturasi</span> <i>I<sub>s</sub></i>, <span data-term="vt">tegangan termal</span>, dan <span data-term="ideality">faktor idealitas</span>, serta menjelaskan kemiringan 60 mV per dekade.</li>
+<li>Menjelaskan penyimpangan dari model ideal: <span data-term="generation-current">arus generasi</span> dan rekombinasi, <span data-term="series-resistance">resistansi seri</span>, dan injeksi tinggi.</li>
+<li>Menghitung <span data-term="junction-cap">kapasitansi junction</span> dan <span data-term="diffusion-cap">kapasitansi difusi</span>, mengekstrak doping dari kurva 1/<i>C</i>² terhadap <i>V</i>, dan memperkirakan <span data-term="storage-time">waktu penyimpanan</span> saat switching.</li>
+<li>Membedakan <span data-term="avalanche">breakdown avalanche</span> dan <span data-term="zener">Zener</span>, dan memperkirakan tegangan breakdown dari doping.</li>
+<li>Membandingkan dioda <span data-term="schottky">Schottky</span> dengan PN, dan merancang <span data-term="rectifier">penyearah</span> setengah gelombang dengan kapasitor, termasuk ripple dan arus puncak.</li>
+<li>Menjelaskan dan menghitung <span data-term="bgr">bandgap reference</span> dari sifat <span data-term="ptat">CTAT dan PTAT</span> dioda.</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Dua kolam yang disekat: difusi lawan medan</h3>
+<p>Bayangkan dua kolam bersebelahan: kolam n penuh elektron, kolam p penuh hole. Begitu sekat dibuka, elektron mengalir ke kolam p dan hole ke kolam n karena perbedaan konsentrasi (difusi). Tetapi mereka meninggalkan ion tetap yang tak bergerak: ion donor positif di sisi n, ion akseptor negatif di sisi p. Muatan tetap itu membentuk medan listrik yang mendorong pembawa kembali. Difusi berhenti ketika dorongan medan (drift) persis menyeimbangkan dorongan difusi. Daerah tanpa pembawa bebas di antara dua sisi itulah daerah deplesi.</p>
+<h3>Bias maju: menurunkan tanggul</h3>
+<p>Potensial built-in adalah tanggul setinggi sekitar 0,8 V. Tegangan maju memperendah tanggul itu; pembawa yang punya energi lebih tinggi dari tanggul bertambah eksponensial, seperti air yang melimpah ketika tanggul diturunkan sedikit. Karena eksponensial, menurunkan tanggul 60 mV saja menaikkan arus sepuluh kali lipat.</p>
+<h3>Bias mundur: tanggul ditinggikan dan jalan mengosong</h3>
+<p>Tegangan mundur meninggikan tanggul dan melebarkan daerah kosong. Hanya sedikit pembawa minoritas yang menetes lewat, sehingga arusnya kecil dan hampir tak bergantung pada tegangan, sampai medan menjadi begitu kuat sehingga elektron dilepaskan dari ikatan atau tumbukannya membuat banjir (breakdown).</p>
+<h3>Kapasitor tanpa disengaja</h3>
+<p>Daerah deplesi adalah isolator tipis yang diapit dua sisi konduktif. Hasilnya kapasitor. Makin besar tegangan mundur, makin lebar isolatornya, makin kecil kapasitansinya. Itulah dasar varaktor dan alasan kapasitansi junction ikut menentukan kecepatan rangkaian.</p>
+<h3>Mengapa panas menurunkan tegangan maju</h3>
+<p>Arus saturasi bergantung pada <i>n<sub>i</sub></i>², yang naik sangat cepat dengan suhu. Untuk arus yang sama, tegangan yang diperlukan menjadi lebih kecil. Sifat inilah yang dimanfaatkan sensor suhu on-chip, sekaligus sebab thermal runaway pada dioda atau transistor bipolar yang dipasang paralel tanpa resistor ballast.</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Terbentuknya junction dan potensial built-in</h3>
+<p>Sambungkan bahan p (<i>N<sub>a</sub></i>) dan n (<i>N<sub>d</sub></i>) dengan batas tajam (<em>abrupt junction</em>). Elektron berdifusi dari n ke p, hole dari p ke n, meninggalkan ion tak bergerak. Pada kesetimbangan, arus drift dan difusi saling meniadakan untuk tiap jenis pembawa, dan karena itu level Fermi <i>E<sub>F</sub></i> datar di seluruh struktur. Pita energi harus membengkok sebesar beda posisi <i>E<sub>F</sub></i> di dua sisi netral. Dari M05a, <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>) di sisi n dan −<i>kT</i> ln(<i>p</i>/<i>n<sub>i</sub></i>) di sisi p, sehingga total pembengkokannya adalah <span data-term="vbi">potensial built-in</span>:</p>
+<div class="icd-eq"><math display="block"><msub><mi>V</mi><mi>b</mi><mi>i</mi></msub><mo>=</mo><mrow><mo>(</mo><mi>k</mi><mfrac><mrow><mi>T</mi></mrow><mrow><mi>q</mi></mrow></mfrac><mo>)</mo></mrow><mi>ln</mi><mrow><mo>(</mo><msub><mi>N</mi><mi>a</mi></msub><mfrac><mrow><msub><mi>N</mi><mi>d</mi></msub></mrow><mrow><msubsup><mi>n</mi><mi>i</mi><mn>2</mn></msubsup></mrow></mfrac><mo>)</mo></mrow><mo>=</mo><msub><mi>V</mi><mi>t</mi></msub><mi>ln</mi><mrow><mo>(</mo><msub><mi>N</mi><mi>a</mi></msub><mfrac><mrow><msub><mi>N</mi><mi>d</mi></msub></mrow><mrow><msubsup><mi>n</mi><mi>i</mi><mn>2</mn></msubsup></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">V_bi = (k T/q) ln(N_a N_d/n_i^2) = V_t ln(N_a N_d/n_i^2)</span></div>
+<p><i>V<sub>t</sub></i> = <i>kT</i>/<i>q</i> = 25,85 mV pada 300 K. Dengan <i>n<sub>i</sub></i> = 6,117 × 10<sup>9</sup> cm<sup>−3</sup> (model M05a), <i>V<sub>bi</sub></i> = 0,6207 V untuk 10<sup>15</sup>/10<sup>15</sup>; 0,7397 V untuk 10<sup>16</sup>/10<sup>16</sup>; 0,7993 V untuk <i>N<sub>a</sub></i> = 10<sup>17</sup> dan <i>N<sub>d</sub></i> = 10<sup>16</sup>; 0,8588 V untuk 10<sup>18</sup>/10<sup>16</sup>; dan 0,9778 V untuk 10<sup>18</sup>/10<sup>18</sup> (<code>vbi_w.py</code>). Karena logaritma, <i>V<sub>bi</sub></i> berubah lambat terhadap doping dan selalu di bawah <i>E<sub>g</sub></i>/<i>q</i> = 1,12 V. Pada 350 K, <i>V<sub>bi</sub></i> untuk 10<sup>17</sup>/10<sup>16</sup> turun menjadi 0,718 V karena <i>n<sub>i</sub></i> naik. <i>V<sub>bi</sub></i> tidak bisa diukur dengan voltmeter: kontak logam ke tiap sisi membentuk potensial kontaknya sendiri yang menghapus tegangan itu pada rangkaian tertutup.</p>
+
+<h3>4.2 Daerah deplesi: pendekatan deplesi penuh</h3>
+<p>Anggap daerah dengan lebar <i>x<sub>p</sub></i> di sisi p dan <i>x<sub>n</sub></i> di sisi n sepenuhnya kosong dari pembawa bebas dan hanya berisi ion tetap (<em>depletion approximation</em>), dan di luarnya netral. Netralitas total mensyaratkan muatan yang sama besar:</p>
+<div class="icd-eq"><math display="block"><msub><mi>N</mi><mi>a</mi></msub><msub><mi>x</mi><mi>p</mi></msub><mo>=</mo><msub><mi>N</mi><mi>d</mi></msub><msub><mi>x</mi><mi>n</mi></msub></math><span class="alt">N_a x_p = N_d x_n</span></div>
+<p>Persamaan Poisson, <i>d</i>²<i>ψ</i>/<i>dx</i>² = −<i>ρ</i>/<i>ε<sub>s</sub></i>, dengan <i>ρ</i> konstan di tiap sisi memberi medan yang naik linear ke puncak di batas metalurgi, dan potensial berbentuk parabola. Syarat total beda potensial <i>V<sub>bi</sub></i> − <i>V</i> menghasilkan:</p>
+<div class="icd-eq"><math display="block"><mi>W</mi><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>+</mo><msub><mi>x</mi><mi>p</mi></msub><mo>=</mo><msqrt><mn>2</mn><msub><mi>ε</mi><mi>s</mi></msub><mfrac><mrow><mrow><msub><mi>V</mi><mi>b</mi><mi>i</mi></msub><mo>&#x2212;</mo><mi>V</mi></mrow></mrow><mrow><mi>q</mi></mrow></mfrac><mrow><mo>(</mo><mfrac><mrow><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>a</mi></msub></mrow></mfrac><mo>+</mo><mfrac><mrow><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>d</mi></msub></mrow></mfrac><mo>)</mo></mrow></msqrt></math><span class="alt">W = x_n + x_p = sqrt(2 ε_s (V_bi - V)/q (1/N_a + 1/N_d))</span></div>
+<div class="icd-eq"><math display="block"><msub><mi>x</mi><mi>n</mi></msub><mo>=</mo><mi>W</mi><mfrac><mrow><msub><mi>N</mi><mi>a</mi></msub></mrow><mrow><mrow><msub><mi>N</mi><mi>a</mi></msub><mo>+</mo><msub><mi>N</mi><mi>d</mi></msub></mrow></mrow></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>x</mi><mi>p</mi></msub><mo>=</mo><mi>W</mi><mfrac><mrow><msub><mi>N</mi><mi>d</mi></msub></mrow><mrow><mrow><msub><mi>N</mi><mi>a</mi></msub><mo>+</mo><msub><mi>N</mi><mi>d</mi></msub></mrow></mrow></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>E</mi><mi>max</mi></msub><mo>=</mo><mi>q</mi><msub><mi>N</mi><mi>d</mi></msub><mfrac><mrow><msub><mi>x</mi><mi>n</mi></msub></mrow><mrow><msub><mi>ε</mi><mi>s</mi></msub></mrow></mfrac></math><span class="alt">x_n = W N_a/(N_a + N_d),  x_p = W N_d/(N_a + N_d),  E_max = q N_d x_n/ε_s</span></div>
+<p>dengan <i>ε<sub>s</sub></i> = 11,7 × 8,854 × 10<sup>−14</sup> = 1,036 × 10<sup>−12</sup> F/cm untuk silikon, dan <i>V</i> positif untuk bias maju. Besarnya <i>W</i> ditentukan oleh sisi yang lebih ringan doping: deplesi menembus lebih dalam ke sana. Untuk <i>N<sub>a</sub></i> = 10<sup>17</sup> dan <i>N<sub>d</sub></i> = 10<sup>16</sup> pada 0 V: <i>W</i> = 0,3372 µm, <i>x<sub>n</sub></i> = 0,3065 µm, <i>x<sub>p</sub></i> = 0,0307 µm, dan <i>E<sub>max</sub></i> = 4,74 × 10<sup>4</sup> V/cm. Pada <i>V</i> = −5 V, <i>W</i> = 0,9083 µm dan <i>E<sub>max</sub></i> = 1,28 × 10<sup>5</sup> V/cm; pada +0,4 V, <i>W</i> = 0,2383 µm. Pada junction sepihak (<em>one-sided</em>, <i>N<sub>a</sub></i> ≫ <i>N<sub>d</sub></i>) hampir seluruh <i>W</i> berada di sisi ringan; <i>W</i> ≈ √(2<i>ε<sub>s</sub></i>(<i>V<sub>bi</sub></i> − <i>V</i>)/(<i>qN<sub>d</sub></i>)). Pendekatan ini gagal dekat <i>V<sub>bi</sub></i> (bias maju besar), tempat pembawa tidak lagi absen.</p>
+
+<h3>4.3 Persamaan dioda ideal</h3>
+<p>Bias maju <i>V</i> menurunkan tanggul menjadi <i>V<sub>bi</sub></i> − <i>V</i>, sehingga pembawa minoritas yang diinjeksikan di tepi deplesi naik menjadi:</p>
+<div class="icd-eq"><math display="block"><msub><mi>p</mi><mi>n</mi></msub><mrow><mo>(</mo><msub><mi>x</mi><mi>n</mi></msub><mo>)</mo></mrow><mo>=</mo><msub><mi>p</mi><mi>n</mi><mn>0</mn></msub><mi>exp</mi><mrow><mo>(</mo><mfrac><mrow><mi>V</mi></mrow><mrow><msub><mi>V</mi><mi>t</mi></msub></mrow></mfrac><mo>)</mo></mrow><mo>,</mo><mspace width="1em"/><msub><mi>n</mi><mi>p</mi></msub><mrow><mo>(</mo><mo>&#x2212;</mo><msub><mi>x</mi><mi>p</mi></msub><mo>)</mo></mrow><mo>=</mo><msub><mi>n</mi><mi>p</mi><mn>0</mn></msub><mi>exp</mi><mrow><mo>(</mo><mfrac><mrow><mi>V</mi></mrow><mrow><msub><mi>V</mi><mi>t</mi></msub></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">p_n(x_n) = p_{n0} exp(V/V_t),  space n_p(-x_p) = n_{p0} exp(V/V_t)</span></div>
+<p>dengan <i>p<sub>n0</sub></i> = <i>n<sub>i</sub></i>²/<i>N<sub>d</sub></i> dan <i>n<sub>p0</sub></i> = <i>n<sub>i</sub></i>²/<i>N<sub>a</sub></i> (kesetimbangan, hukum aksi massa dari M05a). Kelebihan pembawa minoritas ini berdifusi ke sisi netral dan meluruh seperti e<sup>−<i>x</i>/<i>L</i></sup> (panjang difusi <i>L</i> = √(<i>Dτ</i>)). Arus difusi di tepi deplesi, dijumlahkan untuk kedua sisi, menghasilkan persamaan <em>Shockley</em>:</p>
+<div class="icd-eq"><math display="block"><mi>I</mi><mo>=</mo><msub><mi>I</mi><mi>s</mi></msub><mrow><mo>(</mo><mi>exp</mi><mrow><mo>(</mo><mfrac><mrow><mi>V</mi></mrow><mrow><mrow><mi>n</mi><msub><mi>V</mi><mi>t</mi></msub></mrow></mrow></mfrac><mo>)</mo></mrow><mo>&#x2212;</mo><mn>1</mn><mo>)</mo></mrow><mo>,</mo><mspace width="1em"/><msub><mi>I</mi><mi>s</mi></msub><mo>=</mo><mi>A</mi><mi>q</mi><msubsup><mi>n</mi><mi>i</mi><mn>2</mn></msubsup><mrow><mo>(</mo><mfrac><mrow><msub><mi>D</mi><mi>p</mi></msub></mrow><mrow><mrow><msub><mi>L</mi><mi>p</mi></msub><msub><mi>N</mi><mi>d</mi></msub></mrow></mrow></mfrac><mo>+</mo><mfrac><mrow><msub><mi>D</mi><mi>n</mi></msub></mrow><mrow><mrow><msub><mi>L</mi><mi>n</mi></msub><msub><mi>N</mi><mi>a</mi></msub></mrow></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">I = I_s (exp(V/(n V_t)) - 1),  space I_s = A q n_i^2 (D_p/(L_p N_d) + D_n/(L_n N_a))</span></div>
+<p>(dioda panjang: sisi netral jauh lebih panjang dari <i>L</i>; <i>n</i> = 1 untuk model ideal, <span data-term="ideality">faktor idealitas</span>). Untuk dioda p+/n dengan <i>N<sub>a</sub></i> = 10<sup>18</sup>, <i>N<sub>d</sub></i> = 10<sup>16</sup>, <i>τ</i> = 1 µs, dan luas 100 µm × 100 µm (<i>A</i> = 10<sup>−4</sup> cm²), model lab memberi <i>I<sub>s</sub></i> = 1,206 × 10<sup>−16</sup> A: suku sisi n (<i>D<sub>p</sub></i>/(<i>L<sub>p</sub>N<sub>d</sub></i>)) adalah 1,98 × 10<sup>−13</sup> sedangkan suku sisi p hanya 2,7 × 10<sup>−15</sup>, sehingga arus hampir seluruhnya adalah injeksi hole ke sisi ringan. Prinsipnya: sisi yang <em>lebih ringan</em> doping menentukan <i>I<sub>s</sub></i>. Dengan <i>I<sub>s</sub></i> itu, <i>V</i> = 0,4119 V pada 1 nA, 0,5904 V pada 1 µA, dan 0,7690 V pada 1 mA (<code>iv_curve.py</code>). Kemiringan semilog:</p>
+<div class="icd-eq"><math display="block"><mi>D</mi><mi>e</mi><mi>l</mi><mi>t</mi><mi>a</mi><mi>V</mi><mi>per dekade</mi><mo>=</mo><mi>n</mi><msub><mi>V</mi><mi>t</mi></msub><mi>ln</mi><mn>10</mn><mo>=</mo><mn>59,5</mn><mi>n</mi><mi>mV</mi><mrow><mo>(</mo><mn>300</mn><mi>K</mi><mo>)</mo></mrow></math><span class="alt">ΔV per dekade = n V_t ln 10 = 59,5 n mV (300 K)</span></div>
+<p>Pada bias mundur beberapa <i>V<sub>t</sub></i>, <i>I</i> → −<i>I<sub>s</sub></i>. Resistansi dinamis pada titik kerja: <i>r<sub>d</sub></i> = <i>dV</i>/<i>dI</i> = <i>nV<sub>t</sub></i>/<i>I</i>, yaitu 25,85 Ω pada 1 mA dan 258,5 Ω pada 100 µA.</p>
+
+<h3>4.4 Suhu dan penyimpangan dari model ideal</h3>
+<p><i>I<sub>s</sub></i> ∝ <i>n<sub>i</sub></i>² naik sangat cepat: model lab memberi <i>I<sub>s</sub></i> = 1,206 × 10<sup>−16</sup> A pada 300 K dan 1,605 × 10<sup>−13</sup> A pada 350 K (naik 1.331 kali). Pada arus tetap 1 mA tegangan turun dari 0,7690 V menjadi 0,6802 V, yaitu kira-kira −1,74 mV/K pada 300 K. Koefisien suhu ini hampir konstan dan dipakai sensor suhu (4.8).</p>
+<p>Tiga penyimpangan penting:</p>
+<ul>
+<li><strong>Generasi dan rekombinasi di daerah deplesi.</strong> Pada bias mundur, pasangan elektron-hole dibangkitkan di dalam deplesi oleh keadaan jebakan; arusnya <i>I<sub>gen</sub></i> = <i>qn<sub>i</sub>WA</i>/(2<i>τ<sub>g</sub></i>) tumbuh seiring <i>W</i> (jadi seiring √(<i>V<sub>bi</sub></i> − <i>V</i>)) dan hanya sebanding <i>n<sub>i</sub></i> (bukan <i>n<sub>i</sub></i>²). Dengan <i>τ<sub>g</sub></i> = 1 µs, dioda contoh mengalirkan 2,4 pA pada −1 V dan 4,3 pA pada −5 V, sekitar 20.000 sampai 36.000 kali <i>I<sub>s</sub></i> ideal. Arus bocor nyata karena itu jauh di atas <i>I<sub>s</sub></i>, tidak jenuh, dan naik 2,2 kali per 10 K (hanya satu kali <i>n<sub>i</sub></i>). Pada bias maju rendah, rekombinasi di deplesi menghasilkan komponen dengan <i>n</i> ≈ 2.</li>
+<li><strong>Resistansi seri.</strong> Badan netral dan kontak menambah <i>IR<sub>s</sub></i>: <i>V</i> = <i>nV<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i> + 1) + <i>IR<sub>s</sub></i>. Dengan <i>R<sub>s</sub></i> = 10 Ω, tegangan pada 10 mA naik dari 0,8285 V menjadi 0,9285 V dan kurva semilog melengkung di arus tinggi.</li>
+<li><strong>Injeksi tinggi.</strong> Bila pembawa minoritas yang diinjeksikan menyamai doping, kemiringan melonggar menjadi sekitar 2<i>V<sub>t</sub></i> per <i>e</i>-kali (<i>n</i> → 2). Model ideal berlaku di antara dua batas itu.</li>
+</ul>
+
+<h3>4.5 Kapasitansi: junction dan difusi</h3>
+<p>Perubahan tegangan mengubah muatan ion di tepi deplesi, sehingga ada kapasitansi per satuan luas seperti kapasitor pelat sejajar dengan jarak <i>W</i>:</p>
+<div class="icd-eq"><math display="block"><msub><mi>C</mi><mi>j</mi></msub><mo>=</mo><msub><mi>ε</mi><mi>s</mi></msub><mfrac><mrow><mi>A</mi></mrow><mrow><mi>W</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>j</mi><mn>0</mn></msub></mrow><mrow><msqrt><mn>1</mn><mo>&#x2212;</mo><mfrac><mrow><mi>V</mi></mrow><mrow><msub><mi>V</mi><mi>b</mi><mi>i</mi></msub></mrow></mfrac></msqrt></mrow></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>C</mi><mi>j</mi><mn>0</mn></msub><mo>=</mo><mi>A</mi><msqrt><mi>q</mi><msub><mi>ε</mi><mi>s</mi></msub><mfrac><mrow><msub><mi>N</mi><mi>e</mi><mi>f</mi><mi>f</mi></msub></mrow><mrow><mrow><mn>2</mn><msub><mi>V</mi><mi>b</mi><mi>i</mi></msub></mrow></mrow></mfrac></msqrt></math><span class="alt">C_j = ε_s A/W = C_{j0}/sqrt(1 - V/V_bi),  space C_{j0} = A sqrt(q ε_s N_{eff}/(2 V_bi))</span></div>
+<p>dengan <i>N<sub>eff</sub></i> = <i>N<sub>a</sub>N<sub>d</sub></i>/(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>). Untuk 10<sup>17</sup>/10<sup>16</sup>: <i>C<sub>j</sub></i>/<i>A</i> = 30,72 nF/cm² pada 0 V, 20,48 nF/cm² pada −1 V, 11,41 nF/cm² pada −5 V, dan 6,02 nF/cm² pada −20 V. Pada dioda 10<sup>−4</sup> cm² dengan 10<sup>18</sup>/10<sup>16</sup>, <i>C<sub>j0</sub></i> = 3,09 pF. Karena 1/<i>C</i>² linear terhadap <i>V</i>, kurva 1/<i>C</i>² memberi doping dan <i>V<sub>bi</sub></i>:</p>
+<div class="icd-eq"><math display="block"><mi>d</mi><mfrac><mrow><mrow><mfrac><mrow><mn>1</mn></mrow><mrow><msup><mi>C</mi><mn>2</mn></msup></mrow></mfrac></mrow></mrow><mrow><mi>d</mi></mrow></mfrac><mi>V</mi><mo>=</mo><mo>&#x2212;</mo><mfrac><mrow><mn>2</mn></mrow><mrow><mrow><mi>q</mi><msub><mi>ε</mi><mi>s</mi></msub><msup><mi>A</mi><mn>2</mn></msup><msub><mi>N</mi><mi>e</mi><mi>f</mi><mi>f</mi></msub></mrow></mrow></mfrac><mo>,</mo><mspace width="1em"/><mfrac><mrow><mn>1</mn></mrow><mrow><msup><mi>C</mi><mn>2</mn></msup></mrow></mfrac><mo>=</mo><mn>0</mn><mi>pada</mi><mi>V</mi><mo>=</mo><msub><mi>V</mi><mi>b</mi><mi>i</mi></msub></math><span class="alt">d(1/C^2)/dV = - 2/(q ε_s A^2 N_{eff}),  space 1/C^2 = 0 pada V = V_bi</span></div>
+<p><code>cv.py</code> mengekstrak <i>N<sub>eff</sub></i> = 9,901 × 10<sup>15</sup> cm<sup>−3</sup> dari lima titik (tepat <i>N<sub>a</sub>N<sub>d</sub></i>/(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>)) dan titik potong 0,8588 V (tepat <i>V<sub>bi</sub></i>). Ini metode C-V yang dipakai fab untuk profil doping. Pada bias maju besar ada kapasitansi kedua, <span data-term="diffusion-cap">kapasitansi difusi</span>, dari muatan minoritas yang tersimpan dalam badan:</p>
+<div class="icd-eq"><math display="block"><msub><mi>Q</mi><mi>s</mi></msub><mo>=</mo><mi>I</mi><mi>τ</mi><mo>,</mo><mspace width="1em"/><msub><mi>C</mi><mi>d</mi></msub><mo>=</mo><mi>τ</mi><mi>d</mi><mfrac><mrow><mi>I</mi></mrow><mrow><mi>d</mi></mrow></mfrac><mi>V</mi><mo>=</mo><mi>τ</mi><mfrac><mrow><mi>I</mi></mrow><mrow><mrow><mi>n</mi><msub><mi>V</mi><mi>t</mi></msub></mrow></mrow></mfrac></math><span class="alt">Q_s = I τ,  space C_d = τ dI/dV = τ I/(n V_t)</span></div>
+<p>(bentuk transit-time gaya SPICE; analisis admitansi dioda panjang memberi setengahnya). Pada 1 mA dan <i>τ</i> = 1 µs, <i>C<sub>d</sub></i> = 38,7 nF, ribuan kali <i>C<sub>j0</sub></i> = 3,09 pF. Karena itu dioda yang dibias maju itu lambat dan yang dibias mundur itu cepat.</p>
+
+<h3>4.6 Switching dan waktu penyimpanan</h3>
+<p>Dioda yang dialiri <i>I<sub>F</sub></i> menyimpan muatan <i>Q<sub>s</sub></i> = <i>I<sub>F</sub>τ</i>. Saat tegangan dibalik, arus mundur <i>I<sub>R</sub></i> mengalir sampai muatan itu terbuang; dengan model kendali muatan, waktu penyimpanan:</p>
+<div class="icd-eq"><math display="block"><msub><mi>t</mi><mi>s</mi></msub><mo>=</mo><mi>τ</mi><mi>ln</mi><mrow><mo>(</mo><mn>1</mn><mo>+</mo><mfrac><mrow><msub><mi>I</mi><mi>F</mi></msub></mrow><mrow><msub><mi>I</mi><mi>R</mi></msub></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">t_s = τ ln(1 + I_F/I_R)</span></div>
+<p>Untuk <i>I<sub>F</sub></i> = 10 mA, <i>I<sub>R</sub></i> = 5 mA, dan <i>τ</i> = 1 µs: <i>t<sub>s</sub></i> = 1,099 µs. Dioda pensaklaran cepat memakai <i>τ</i> pendek (doping emas atau platina) atau tanpa pembawa minoritas sama sekali (Schottky, 4.8).</p>
+
+<h3>4.7 Breakdown: avalanche dan Zener</h3>
+<p>Pada bias mundur cukup besar arus naik tajam. Ada dua mekanisme. <span data-term="avalanche">Avalanche</span>: medan kuat mempercepat pembawa sampai tabrakannya melepaskan pasangan baru (ionisasi tumbukan) dalam reaksi berantai; menguat pada medan sekitar 3 × 10<sup>5</sup> V/cm. <span data-term="zener">Zener</span>: pada doping tinggi deplesi begitu tipis (puluhan nm) sehingga elektron menerobos celah secara quantum tunneling pada medan sekitar 10<sup>6</sup> V/cm. Untuk junction sepihak abrupt dengan doping sisi ringan <i>N<sub>b</sub></i>, taksiran empiris (Sze) untuk avalanche:</p>
+<div class="icd-eq"><math display="block"><msub><mi>V</mi><mi>b</mi><mi>r</mi></msub><mo>≈</mo><mn>60</mn><msup><mrow><mo>(</mo><mfrac><mrow><msub><mi>E</mi><mi>g</mi></msub></mrow><mrow><mn>1,1</mn></mrow></mfrac><mo>)</mo></mrow><mfrac><mrow><mn>3</mn></mrow><mrow><mn>2</mn></mrow></mfrac></msup><msup><mrow><mo>(</mo><mfrac><mrow><msub><mi>N</mi><mi>b</mi></msub></mrow><mrow><msup><mn>10</mn><mn>16</mn></msup></mrow></mfrac><mo>)</mo></mrow><mo>&#x2212;</mo><mfrac><mrow><mn>3</mn></mrow><mrow><mn>4</mn></mrow></mfrac></msup><mi>V</mi></math><span class="alt">V_br ≈ 60 (E_g/1,1)^{3/2} (N_b/10^{16})^{-3/4}  V</span></div>
+<p>Hasilnya 346,6 V untuk 10<sup>15</sup>; 61,6 V untuk 10<sup>16</sup>; 11,0 V untuk 10<sup>17</sup> (<code>vbi_w.py</code>). Medan puncak pada breakdown dari rumus deplesi adalah 4,4 × 10<sup>5</sup> V/cm untuk 10<sup>16</sup> dan 6,0 × 10<sup>5</sup> V/cm untuk 10<sup>17</sup>, sesuai orde besar medan kritis. Untuk <i>N<sub>b</sub></i> = 10<sup>18</sup> rumus memberi 1,9 V, yang tidak realistis: pada doping setinggi itu mekanisme Zener mengambil alih dan rumus avalanche tidak berlaku. Aturan praktis: breakdown di bawah sekitar 4<i>E<sub>g</sub></i>/<i>q</i> (≈ 4,5 V) bersifat Zener, di atas sekitar 6<i>E<sub>g</sub></i>/<i>q</i> (≈ 6,7 V) bersifat avalanche, di antaranya campuran. Koefisien suhunya berlawanan: Zener negatif (breakdown turun saat panas), avalanche positif (naik, karena fonon lebih banyak menghambat pembawa); dioda referensi sekitar 5 sampai 6 V memanfaatkan keduanya saling meniadakan.</p>
+
+<h3>4.8 Dioda Schottky dan pemakaian: sensor, referensi, penyearah</h3>
+<p>Sambungan logam ke semikonduktor membentuk penghalang <i>φ<sub>B</sub></i> (<span data-term="schottky">Schottky</span>); arus dibawa pembawa mayoritas lewat emisi termionik, tanpa muatan minoritas tersimpan:</p>
+<div class="icd-eq"><math display="block"><msub><mi>I</mi><mi>s</mi></msub><mo>=</mo><mi>A</mi><msup><mi>A</mi><mo>&#xB7;</mo></msup><msup><mi>T</mi><mn>2</mn></msup><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><msub><mi>φ</mi><mi>B</mi></msub></mrow><mrow><msub><mi>V</mi><mi>t</mi></msub></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">I_s = A A^* T^2 exp(-φ_B/V_t)</span></div>
+<p>dengan <i>A</i><sup>*</sup> ≈ 112 A/(cm²·K²) untuk n-Si. Untuk <i>φ<sub>B</sub></i> = 0,55 / 0,70 / 0,85 V dan <i>A</i> = 10<sup>−4</sup> cm², <i>I<sub>s</sub></i> = 5,8 × 10<sup>−7</sup> / 1,75 × 10<sup>−9</sup> / 5,3 × 10<sup>−12</sup> A, dan tegangan maju pada 1 mA adalah 0,193 / 0,343 / 0,493 V, dibandingkan 0,769 V untuk PN pada arus yang sama (<code>schottky.py</code>). Tegangan maju yang rendah, tanpa waktu penyimpanan, membuat Schottky ideal untuk penyearah efisiensi tinggi, clamp, dan switching cepat; harganya adalah arus bocor mundur jauh lebih besar dan lebih sensitif suhu secara mutlak, walaupun naiknya relatif lebih landai: <i>I<sub>s</sub></i> Schottky 0,70 V naik 65 kali dari 300 ke 350 K, versus 1.331 kali untuk PN.</p>
+<p>Tiga pemakaian dasar dijelaskan lebih lanjut di s07: (1) <strong>sensor suhu dan bandgap reference</strong>, tegangan <i>V<sub>BE</sub></i> turun −2,28 mV/K (di model lab, pada 10 µA) sedangkan selisih <i>V<sub>BE</sub></i> dua dioda dengan rasio arus <i>N</i> adalah Δ<i>V<sub>BE</sub></i> = <i>V<sub>t</sub></i> ln <i>N</i> yang naik seiring suhu (0,179 mV/K untuk <i>N</i> = 8); jumlah berbobot <i>V<sub>ref</sub></i> = <i>V<sub>BE</sub></i> + <i>K</i>Δ<i>V<sub>BE</sub></i> dengan <i>K</i> = 12,71 membuat kemiringan nol, dan hasilnya sekitar 1,28 V di model ini (rumus dasar: <i>V<sub>ref</sub></i> ≈ <i>E<sub>g0</sub></i>/<i>q</i> + γ<i>V<sub>t</sub></i>, <i>E<sub>g0</sub></i> = 1,201 eV ekstrapolasi linear ke 0 K, γ = 3 di model; silikon nyata memberi sekitar 1,2 sampai 1,25 V); (2) <strong>penyearah</strong>, dioda memotong setengah gelombang negatif dan kapasitor menahan puncaknya; (3) <strong>pelindung</strong>, dioda ESD dan clamp.</p>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Junction dan deplesi</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Ketika bahan p dan n disambung, pembawa dari tiap sisi menyeberang dan meninggalkan lapisan tipis tanpa pembawa bebas di perbatasan. Lapisan itu menahan penyeberangan lebih lanjut, seperti tanggul. Tegangan mundur melebarkan lapisan; tegangan maju menyempitkannya.</p></div>
+<div data-level="engineer"><p>Hitung <i>V<sub>bi</sub></i> = <i>V<sub>t</sub></i> ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²) dan <i>W</i> = √(2<i>ε<sub>s</sub></i>(<i>V<sub>bi</sub></i> − <i>V</i>)(1/<i>N<sub>a</sub></i> + 1/<i>N<sub>d</sub></i>)/<i>q</i>). Hafalkan: deplesi menembus ke sisi yang lebih ringan; <i>W</i> ∝ √(<i>V<sub>bi</sub></i> − <i>V</i>); <i>E<sub>max</sub></i> = 2(<i>V<sub>bi</sub></i> − <i>V</i>)/<i>W</i>. Dari 0 ke −5 V, <i>W</i> naik 2,7 kali (0,337 ke 0,908 µm) untuk 10<sup>17</sup>/10<sup>16</sup>.</p></div>
+<div data-level="pakar"><p>Pendekatan deplesi penuh mengabaikan ekor pembawa selebar sekitar panjang Debye (≈ 0,04 µm pada 10<sup>16</sup>); untuk junction tipis dan sub-90 nm koreksi ini signifikan. Profil doping nyata (implantasi + anil) bergradasi (<em>graded</em>), sehingga <i>C</i>(<i>V</i>) ∝ (<i>V<sub>bi</sub></i> − <i>V</i>)<sup>−1/3</sup> untuk junction linear, bukan −1/2. Model SPICE memakai eksponen grading <i>M</i><sub>J</sub> dan kapasitansi linear di atas <i>F<sub>C</sub>V<sub>bi</sub></i> untuk menghindari divergensi pada <i>V</i> → <i>V<sub>bi</sub></i>. Potensial yang diukur C-V adalah <i>V<sub>bi</sub></i> efektif, termasuk efek Debye dan pembawa bebas.</p></div>
+</div>
+<h3>2. Arus dioda</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Arus dioda hampir nol pada tegangan kecil lalu menanjak sangat tajam: setiap kenaikan sekitar 60 mV membuat arus sepuluh kali lipat. Karena itu tegangan dioda silikon aktif hampir selalu dekat 0,6 sampai 0,8 V, apa pun arusnya. Panas membuat tegangan itu sedikit turun.</p></div>
+<div data-level="engineer"><p>Pakai <i>I</i> = <i>I<sub>s</sub></i>(e<sup><i>V</i>/<i>nV<sub>t</sub></i></sup> − 1), <i>r<sub>d</sub></i> = <i>nV<sub>t</sub></i>/<i>I</i>, dan <i>V</i> = <i>nV<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i>) + <i>IR<sub>s</sub></i>. Titik kerja dari dua pengukuran: kemiringan memberi <i>n</i>, satu titik memberi <i>I<sub>s</sub></i>. Ingat −1,7 sampai −2 mV/K dan 60 mV per dekade. Perhatikan bahwa bocor mundur nyata pada suhu kamar didominasi generasi (s04, 4.4), bukan <i>I<sub>s</sub></i> ideal.</p></div>
+<div data-level="pakar"><p>Persamaan Shockley adalah solusi drift-difusi dengan kondisi batas Boltzmann pada tepi deplesi dan pembawa minoritas rendah. Koreksi nyata: rekombinasi Sah-Noyce-Shockley dalam deplesi (<i>n</i> = 2 pada bias rendah), injeksi tinggi, ambipolar diffusion, bandgap narrowing pada sisi berdoping berat (menaikkan <i>n<sub>i,eff</sub></i> dan memperbesar <i>I<sub>s</sub></i>), emitter crowding, dan kontak hambat. Dioda pendek (sisi netral lebih pendek dari <i>L</i>) memakai lebar badan <i>W<sub>B</sub></i> menggantikan <i>L</i> pada <i>I<sub>s</sub></i>, dan inilah yang berlaku untuk basis BJT dan source/drain scaled.</p></div>
+</div>
+<h3>3. Breakdown dan referensi</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Bila tegangan mundur terlalu besar, medan di dalam junction cukup kuat untuk melepas banyak pembawa sekaligus dan arus melonjak. Itu bukan selalu kerusakan: dioda Zener sengaja memakainya untuk menahan tegangan tetap. Bandgap reference menggabungkan dua sifat suhu dioda yang berlawanan supaya tegangan output-nya hampir tidak bergantung suhu.</p></div>
+<div data-level="engineer"><p>Tegangan breakdown turun dengan doping (<i>V<sub>br</sub></i> ∝ <i>N<sub>b</sub></i><sup>−3/4</sup>); di bawah sekitar 4,5 V Zener (koefisien suhu negatif), di atas sekitar 6,7 V avalanche (positif). Rancang bandgap: pilih <i>N</i> dan <i>K</i> sehingga <i>K</i>·(<i>V<sub>t</sub></i>/<i>T</i>) ln <i>N</i> = −<i>dV<sub>BE</sub></i>/<i>dT</i>; <i>V<sub>ref</sub></i> berakhir di sekitar 1,2 V apa pun <i>N</i>-nya. Pada breakdown selalu batasi arus dengan resistor atau daya akan menghancurkan dioda.</p></div>
+<div data-level="pakar"><p>Avalanche dimodelkan dengan koefisien ionisasi tumbukan <i>α</i>(<i>E</i>) ∝ exp(−<i>b</i>/<i>E</i>) dan kriteria ∫<i>α</i> d<i>x</i> = 1; breakdown pada <i>V<sub>br</sub></i> memiliki faktor multiplikasi <i>M</i> = 1/(1 − (<i>V</i>/<i>V<sub>br</sub></i>)<sup><i>m</i></sup>). Pada geometri nyata, breakdown terjadi di tepi dengan kelengkungan tinggi (cylindrical/spherical junction) sehingga guard ring dan field plate dipakai. Curvature residual PTAT di bandgap, yang di model ini terlihat sebagai kurva Vref dengan puncak di 300 K (1,2785 V) dan turun ke 1,2725 V pada 400 K, dikoreksi dengan orde tinggi (curvature compensation).</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Junction PN: deplesi, medan, dan diagram pita</h3></header>
+  <div class="stage"><div class="pnfig" id="v1-fig"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Akseptor <i>N<sub>a</sub></i> = 10<sup><b id="v1-nav"></b></sup> cm<sup>−3</sup></span><input type="range" id="v1-na" min="15" max="19" step="0.5" value="17"></label>
+    <label class="icd-field"><span>Donor <i>N<sub>d</sub></i> = 10<sup><b id="v1-ndv"></b></sup> cm<sup>−3</sup></span><input type="range" id="v1-nd" min="15" max="19" step="0.5" value="16"></label>
+    <label class="icd-field"><span>Bias <i>V</i> = <b id="v1-vv"></b> V</span><input type="range" id="v1-v" min="-10" max="0.5" step="0.1" value="0"></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Pendekatan deplesi penuh, junction abrupt, 300 K (<code>pn.py</code>). Panel atas: muatan ion (kotak, p di kiri, n di kanan) dan medan <i>E</i>(<i>x</i>) yang berbentuk segitiga. Panel bawah: tepi pita <i>E<sub>c</sub></i> dan <i>E<sub>v</sub></i> membengkok sebesar <i>q</i>(<i>V<sub>bi</sub></i> − <i>V</i>); garis putus-putus pada bias adalah quasi-Fermi level elektron dan hole (terpisah sebesar <i>qV</i>). Deplesi digambar dengan lebar dinormalkan (skema, tidak berskala); angka sebenarnya ada di baris output. Bias maju dibatasi sampai 0,5 V karena deplesi penuh tak lagi berlaku mendekati <i>V<sub>bi</sub></i>.</div>
+</div>
+<div class="icd-guide" data-id="v1-5v" data-answer="1">
+  <p>Atur <i>N<sub>a</sub></i> = 10<sup>17</sup>, <i>N<sub>d</sub></i> = 10<sup>16</sup>, <i>V</i> = −5 V. Berapa lebar deplesi dan di sisi mana ia terutama berada?</p>
+  <ul><li>Sekitar 0,34 µm, terutama di sisi p</li><li>Sekitar 0,91 µm, hampir seluruhnya (10 kali lebih dalam) di sisi n</li><li>Sekitar 0,91 µm, hampir seluruhnya di sisi p</li><li>Sekitar 1,7 µm, sama di kedua sisi</li></ul>
+  <div class="explain"><p><i>V<sub>bi</sub></i> − <i>V</i> = 0,7993 + 5 = 5,7993 V, sehingga <i>W</i> = √(2<i>ε<sub>s</sub></i>(5,7993)(1/10<sup>17</sup> + 1/10<sup>16</sup>)/<i>q</i>) = 0,9083 µm. Karena <i>N<sub>a</sub></i>/<i>N<sub>d</sub></i> = 10, <i>x<sub>n</sub></i> = 0,8257 µm dan <i>x<sub>p</sub></i> = 0,0826 µm: deplesi menembus 10 kali lebih dalam ke sisi yang berdoping lebih ringan (n). 0,34 µm adalah lebar pada 0 V (0,3372 µm) dan 1,7 µm adalah lebar pada −20 V.</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Kurva I-V dioda: suhu, idealitas, dan resistansi seri</h3></header>
+  <div class="stage"><div id="v2-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Skala arus</span><select class="icd-select" id="v2-s"><option value="log" selected>logaritmik (dekade)</option><option value="lin">linear (mA)</option></select></label>
+    <label class="icd-field"><span>Suhu <i>T</i> = <b id="v2-tv"></b> K</span><input type="range" id="v2-t" min="250" max="400" step="10" value="300"></label>
+    <label class="icd-field"><span>Idealitas <i>n</i> = <b id="v2-nv"></b></span><input type="range" id="v2-n" min="1" max="2" step="0.1" value="1"></label>
+    <label class="icd-field"><span>Resistansi seri <i>R<sub>s</sub></i> = <b id="v2-rv"></b> Ω</span><input type="range" id="v2-rs" min="0" max="50" step="1" value="0"></label>
+    <label class="icd-field"><span>Titik kerja <i>V</i> = <b id="v2-vv"></b> V</span><input type="range" id="v2-v" min="0.3" max="0.9" step="0.01" value="0.65"></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Dioda p+/n dengan <i>N<sub>a</sub></i> = 10<sup>18</sup>, <i>N<sub>d</sub></i> = 10<sup>16</sup>, <i>τ</i> = 1 µs, <i>A</i> = 10<sup>−4</sup> cm²; <i>I<sub>s</sub></i>(<i>T</i>) dihitung dari <i>n<sub>i</sub></i>(<i>T</i>) dengan mobilitas 300 K (model sama dengan <code>pn.py</code>). Kurva: <i>V</i> = <i>nV<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i> + 1) + <i>IR<sub>s</sub></i>. Garis vertikal = titik kerja <i>V</i>. Sumbu: tegangan terminal (V) dan arus (log<sub>10</sub> <i>I</i> dalam A atau mA linear).</div>
+</div>
+<div class="icd-guide" data-id="v2-temp" data-answer="0">
+  <p>Dengan <i>n</i> = 1 dan <i>R<sub>s</sub></i> = 0, tegangan dioda pada 1 mA adalah 0,769 V di 300 K. Naikkan <i>T</i> ke 350 K. Berapa tegangan pada 1 mA sekarang?</p>
+  <ul><li>Sekitar 0,68 V (turun sekitar 89 mV)</li><li>Sekitar 0,85 V (naik)</li><li>Tetap 0,769 V</li><li>Sekitar 0,40 V</li></ul>
+  <div class="explain"><p><i>I<sub>s</sub></i> naik dari 1,206 × 10<sup>−16</sup> ke 1,605 × 10<sup>−13</sup> A (1.331 kali) dan <i>V<sub>t</sub></i> naik ke 30,16 mV, sehingga <i>V</i> = <i>V<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i>) = 0,03016 × ln(10<sup>−3</sup>/1,605 × 10<sup>−13</sup>) = 0,6802 V. Rata-rata −1,78 mV/K untuk 50 K (−1,74 mV/K tepat di 300 K).</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Kapasitansi junction dan ekstraksi doping dari kurva C-V</h3></header>
+  <div class="stage"><div id="v3-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Tampilan</span><select class="icd-select" id="v3-m"><option value="c" selected>C terhadap V</option><option value="ic">1/C² terhadap V</option></select></label>
+    <label class="icd-field"><span><i>N<sub>a</sub></i> = 10<sup><b id="v3-nav"></b></sup> cm<sup>−3</sup></span><input type="range" id="v3-na" min="15" max="19" step="0.5" value="18"></label>
+    <label class="icd-field"><span><i>N<sub>d</sub></i> = 10<sup><b id="v3-ndv"></b></sup> cm<sup>−3</sup></span><input type="range" id="v3-nd" min="15" max="18" step="0.5" value="16"></label>
+    <label class="icd-field"><span>Luas <i>A</i></span><select class="icd-select" id="v3-a"><option value="1e-6">10⁻⁶ cm² (10 µm × 10 µm)</option><option value="1e-5">10⁻⁵ cm²</option><option value="1e-4" selected>10⁻⁴ cm² (100 µm × 100 µm)</option><option value="1e-3">10⁻³ cm²</option></select></label>
+    <label class="icd-field"><span>Titik <i>V</i> = <b id="v3-vv"></b> V</span><input type="range" id="v3-v" min="-10" max="0.3" step="0.1" value="-2"></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model"><i>C<sub>j</sub></i> = <i>ε<sub>s</sub>A</i>/<i>W</i>(<i>V</i>) dari deplesi penuh. Pada tampilan 1/<i>C</i>², kurva adalah garis lurus: kemiringan −2/(<i>qε<sub>s</sub>A</i>²<i>N<sub>eff</sub></i>) memberi <i>N<sub>eff</sub></i> = <i>N<sub>a</sub>N<sub>d</sub></i>/(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>) dan titik potong sumbu <i>V</i> memberi <i>V<sub>bi</sub></i>. Baris output menghitung ekstraksi itu dari dua titik (−6 V dan −2 V) pada kurva, sebagaimana yang dikerjakan alat ukur C-V.</div>
+</div>
+<div class="icd-guide" data-id="v3-c8" data-answer="1">
+  <p>Atur <i>N<sub>a</sub></i> = 10<sup>18</sup>, <i>N<sub>d</sub></i> = 10<sup>16</sup>, <i>A</i> = 10<sup>−4</sup> cm², dan <i>V</i> = −8 V. Berapa kapasitansi junction?</p>
+  <ul><li>3,09 pF</li><li>0,96 pF</li><li>9,6 pF</li><li>0,096 pF</li></ul>
+  <div class="explain"><p>Pada −8 V, <i>W</i> = 1,0757 µm, sehingga <i>C<sub>j</sub></i> = <i>ε<sub>s</sub>A</i>/<i>W</i> = 1,036 × 10<sup>−12</sup> × 10<sup>−4</sup>/1,0757 × 10<sup>−4</sup> = 0,963 pF. Nilai 3,09 pF adalah pada 0 V; kapasitansi turun 3,2 kali ketika bias mundur 8 V ditambahkan karena <i>W</i> membesar √((0,8588 + 8)/0,8588) = 3,2 kali.</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Penyearah setengah gelombang dengan kapasitor</h3></header>
+  <div class="stage"><div id="v4-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span><i>V<sub>pk</sub></i> = <b id="v4-vv"></b> V</span><input type="range" id="v4-vpk" min="2" max="12" step="0.5" value="5"></label>
+    <label class="icd-field"><span>Frekuensi</span><select class="icd-select" id="v4-f"><option value="50" selected>50 Hz</option><option value="60">60 Hz</option><option value="400">400 Hz</option></select></label>
+    <label class="icd-field"><span>Kapasitor <i>C</i></span><select class="icd-select" id="v4-c"><option value="1e-4" selected>100 µF</option><option value="4.7e-4">470 µF</option><option value="1e-3">1000 µF</option><option value="3.3e-3">3300 µF</option></select></label>
+    <label class="icd-field"><span>Beban <i>R<sub>L</sub></i></span><select class="icd-select" id="v4-rl"><option value="100">100 Ω</option><option value="220">220 Ω</option><option value="1000" selected>1 kΩ</option><option value="10000">10 kΩ</option></select></label>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Dioda silikon 1 mm² (<i>I<sub>s</sub></i> = 1,206 × 10<sup>−14</sup> A dari <code>pn.py</code>) dan model eksponensial penuh, diselesaikan dengan metode Euler mundur 400 langkah per siklus selama 8 siklus (<code>rectifier.py</code>); grafik menampilkan dua siklus terakhir. Riak dari rumus = <i>V<sub>max</sub></i>/(<i>fR<sub>L</sub>C</i>), akurat hanya bila riak jauh lebih kecil dari <i>V<sub>max</sub></i>. Sudut hantar = bagian siklus dengan arus dioda lebih dari 0,1% dari puncaknya.</div>
+</div>
+<div class="icd-guide" data-id="v4-c" data-answer="0">
+  <p>Atur <i>V<sub>pk</sub></i> = 5 V, 50 Hz, <i>R<sub>L</sub></i> = 1 kΩ, <i>C</i> = 100 µF (riak 0,700 V, arus puncak 0,073 A). Naikkan <i>C</i> menjadi 1000 µF. Apa yang terjadi?</p>
+  <ul><li>Riak turun sekitar 9 kali (0,078 V) tetapi arus puncak dioda justru naik (0,137 A) dan sudut hantar menyempit (32°)</li><li>Riak dan arus puncak sama-sama turun</li><li>Riak tidak berubah karena ditentukan <i>V<sub>pk</sub></i></li><li>Tegangan output maksimum turun jauh di bawah 4 V</li></ul>
+  <div class="explain"><p>Riak ≈ <i>V<sub>max</sub></i>/(<i>fR<sub>L</sub>C</i>) turun hampir sebanding <i>C</i> (rumus 0,085 V, simulasi 0,078 V), tetapi kapasitor besar hanya diisi pada jendela sempit di dekat puncak sehingga arus pengisian harus sama dengan beban rata-rata dalam waktu lebih singkat: arus puncak 0,137 A, sekitar 32 kali arus beban rata-rata 4,2 mA. Itulah mengapa dioda penyearah dispesifikasi untuk arus puncak berulang, bukan arus rata-rata.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+
+<h3>Contoh 1. Deplesi junction 10<sup>17</sup>/10<sup>16</sup> pada 0 V dan −5 V</h3>
+<p>Diberikan <i>N<sub>a</sub></i> = 10<sup>17</sup>, <i>N<sub>d</sub></i> = 10<sup>16</sup> cm<sup>−3</sup>, 300 K. Langkah: (1) <i>V<sub>bi</sub></i> = <i>V<sub>t</sub></i> ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²) = 0,02585 × ln(10<sup>33</sup>/3,742 × 10<sup>19</sup>) = 0,02585 × 30,92 = 0,7993 V. (2) 1/<i>N<sub>a</sub></i> + 1/<i>N<sub>d</sub></i> = 1,1 × 10<sup>−16</sup> cm³, sehingga <i>W</i>(0) = √(2<i>ε<sub>s</sub></i><i>V<sub>bi</sub></i>(1/<i>N<sub>a</sub></i> + 1/<i>N<sub>d</sub></i>)/<i>q</i>) = √(2 × 1,036 × 10<sup>−12</sup> × 0,7993 × 1,1 × 10<sup>−16</sup>/1,602 × 10<sup>−19</sup>) = 3,372 × 10<sup>−5</sup> cm = 0,3372 µm. (3) <i>x<sub>n</sub></i> = <i>W N<sub>a</sub></i>/(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>) = 0,3372 × 10/11 = 0,3065 µm dan <i>x<sub>p</sub></i> = 0,0307 µm. (4) <i>E<sub>max</sub></i> = 2<i>V<sub>bi</sub></i>/<i>W</i> = 2 × 0,7993/3,372 × 10<sup>−5</sup> = 4,74 × 10<sup>4</sup> V/cm. (5) Pada −5 V, <i>V<sub>bi</sub></i> − <i>V</i> = 5,7993 V: <i>W</i> = 0,3372 × √(5,7993/0,7993) = 0,9083 µm, <i>E<sub>max</sub></i> = 1,277 × 10<sup>5</sup> V/cm, dan <i>C<sub>j</sub></i>/<i>A</i> = 11,41 nF/cm². Pengecekan: <i>x<sub>n</sub></i> = 0,8257 µm dan <i>x<sub>p</sub></i> = 0,0826 µm, perbandingan tepat 10.</p>
+
+<h3>Contoh 2. Tegangan dioda dan resistansi dinamis dari <i>I<sub>s</sub></i></h3>
+<p>Dioda p+/n (10<sup>18</sup>/10<sup>16</sup>, <i>A</i> = 10<sup>−4</sup> cm², <i>τ</i> = 1 µs) memiliki <i>I<sub>s</sub></i> = 1,206 × 10<sup>−16</sup> A. Pada 1 µA: <i>V</i> = <i>V<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i> + 1) = 0,02585 × ln(8,29 × 10<sup>9</sup>) = 0,02585 × 22,84 = 0,5904 V. Pada 1 mA: 0,7690 V. Selisih tiga dekade = 0,1786 V = 3 × 59,5 mV. Resistansi dinamis: <i>r<sub>d</sub></i> = <i>V<sub>t</sub></i>/<i>I</i> = 25.850 Ω pada 1 µA, 25,85 Ω pada 1 mA. Sinyal kecil 1 mV di sekitar 1 mA memberi perubahan arus 1 mV/25,85 Ω = 38,7 µA.</p>
+
+<h3>Contoh 3. Koefisien suhu tegangan maju</h3>
+<p>Dari <i>V</i> = <i>V<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i>) dan <i>I<sub>s</sub></i> ∝ <i>T</i><sup>γ</sup> exp(−<i>E<sub>g0</sub></i>/<i>qV<sub>t</sub></i>), diperoleh d<i>V</i>/d<i>T</i> = (<i>V</i> − <i>E<sub>g0</sub></i>/<i>q</i> − γ<i>V<sub>t</sub></i>)/<i>T</i>. Dengan <i>E<sub>g0</sub></i> = 1,201 eV (ekstrapolasi linear <i>E<sub>g</sub></i>(<i>T</i>) Varshni dari 300 K ke 0 K), <i>V</i> = 0,769 V, dan γ = 3,5 di model lab (3 dari <i>n<sub>i</sub></i>² ∝ <i>T</i>³ ditambah ½ dari <i>D</i>/<i>L</i> ∝ √<i>T</i> pada <i>I<sub>s</sub></i>): (0,769 − 1,201 − 0,0905)/300 = −1,74 mV/K, tepat seperti hasil numerik <code>iv_curve.py</code>. Konsekuensinya: makin besar <i>V</i> pada arus tinggi, makin kecil koefisiennya (−1,3 mV/K pada 0,9 V); makin kecil <i>V</i>, makin besar (−2,6 mV/K pada 0,5 V), keduanya dari rumus yang sama. Pengukuran suhu dengan dioda umumnya memakai arus tetap kecil dan kalibrasi satu titik.</p>
+
+<h3>Contoh 4. Mengekstrak doping dari data C-V</h3>
+<p>Diode 10<sup>−4</sup> cm² memberi <i>C</i> = 0,963; 1,095; 1,300; 1,695; 3,093 pF pada −8, −6, −4, −2, 0 V. Hitung 1/<i>C</i>²: 1,078 × 10<sup>24</sup>; 8,347 × 10<sup>23</sup>; 5,913 × 10<sup>23</sup>; 3,479 × 10<sup>23</sup>; 1,045 × 10<sup>23</sup> F<sup>−2</sup>. Regresi linear: kemiringan −1,217 × 10<sup>23</sup> F<sup>−2</sup>/V. <i>N<sub>eff</sub></i> = 2/(<i>qε<sub>s</sub>A</i>² × 1,217 × 10<sup>23</sup>) = 9,90 × 10<sup>15</sup> cm<sup>−3</sup>, yaitu doping sisi ringan (<i>N<sub>d</sub></i> = 10<sup>16</sup>) dikalikan 1/(1 + <i>N<sub>d</sub></i>/<i>N<sub>a</sub></i>) = 0,990 karena sisi p+ juga ikut terdeplesi sedikit. Titik potong 1/<i>C</i>² = 0 pada <i>V</i> = 0,8588 V = <i>V<sub>bi</sub></i>. Dalam pengukuran nyata, tambahkan koreksi kapasitansi parasit dan jangan memakai titik dekat 0 V.</p>
+
+<h3>Contoh 5. Memilih doping untuk breakdown 40 V</h3>
+<p>Dibutuhkan dioda p+/n dengan <i>V<sub>br</sub></i> = 40 V. Dari <i>V<sub>br</sub></i> = 60 (1,12/1,1)<sup>1,5</sup> (<i>N<sub>b</sub></i>/10<sup>16</sup>)<sup>−3/4</sup> = 61,6 (<i>N<sub>b</sub></i>/10<sup>16</sup>)<sup>−3/4</sup>: (<i>N<sub>b</sub></i>/10<sup>16</sup>)<sup>−3/4</sup> = 40/61,64 = 0,649, sehingga <i>N<sub>b</sub></i> = 10<sup>16</sup> × 0,649<sup>−4/3</sup> = 1,78 × 10<sup>16</sup> cm<sup>−3</sup>. Pengecekan dengan rumus deplesi untuk 10<sup>19</sup>/1,78 × 10<sup>16</sup> pada −40 V: <i>W</i> = 1,726 µm, <i>E<sub>max</sub></i> = 4,74 × 10<sup>5</sup> V/cm, dalam rentang medan kritis avalanche (3 sampai 6 × 10<sup>5</sup> V/cm). Karena 40 V jauh di atas 6<i>E<sub>g</sub></i>/<i>q</i> = 6,7 V, mekanismenya avalanche (koefisien suhu positif). Epitaksi yang lebih tipis dari <i>W</i> = 1,7 µm akan menyebabkan <em>punch-through</em> sebelum breakdown.</p>
+
+<h3>Contoh 6. Bandgap reference dengan <i>N</i> = 8</h3>
+<p>Dua dioda beraliran 10 µA, satu dengan luas 8 kali lebih besar. Di model lab, <i>V<sub>BE</sub></i> (10 µA) = 0,5953 V pada 300 K, dengan kemiringan −2,277 mV/K (CTAT). Selisih Δ<i>V<sub>BE</sub></i> = <i>V<sub>t</sub></i> ln 8 = 53,8 mV pada 300 K, kemiringan +0,179 mV/K (PTAT). Agar jumlah <i>V<sub>BE</sub></i> + <i>K</i>Δ<i>V<sub>BE</sub></i> datar, <i>K</i> = 2,277/0,179 = 12,71. <i>V<sub>ref</sub></i> = 0,5953 + 12,71 × 0,0538 = 1,2785 V. Hasil di suhu lain: 1,2767 (250 K), 1,2781 (325 K), 1,2769 (350 K), 1,2725 V (400 K): variasi 6 mV dari 250 ke 400 K (sekitar 31 ppm/K), bentuk parabola dengan puncak di dekat 300 K. Dengan <i>N</i> = 24, ln <i>N</i> lebih besar sehingga <i>K</i> turun menjadi 8,31 dan <i>V<sub>ref</sub></i> tetap sama: <i>V<sub>ref</sub></i> ≈ <i>E<sub>g0</sub></i>/<i>q</i> + γ<i>V<sub>t</sub></i> tidak bergantung <i>N</i> dan <i>K</i>.</p>
+
+<h3>Contoh 7. Dioda PN lawan Schottky pada 1 MHz</h3>
+<p>Dioda PN dengan <i>τ</i> = 1 µs yang menghantar 10 mA lalu dibalik dengan <i>I<sub>R</sub></i> = 5 mA menyimpan muatan <i>Q<sub>s</sub></i> = <i>I<sub>F</sub>τ</i> = 10 nC dan membutuhkan <i>t<sub>s</sub></i> = <i>τ</i> ln(1 + 2) = 1,099 µs untuk memadamkannya. Pada 1 MHz periode hanya 1 µs, jadi dioda ini tidak sempat padam: penyearah 1 MHz gagal. Pada 100 kHz (periode 10 µs) waktu penyimpanan memakan 11% siklus. Schottky 0,70 V tidak menyimpan pembawa minoritas (<i>t<sub>s</sub></i> ≈ 0), dan tegangan majunya 0,343 V pada 1 mA lawan 0,769 V, sehingga rugi hantar sekitar dua kali lebih kecil pada arus yang sama; kompromi: bocor mundurnya jauh lebih besar (<i>I<sub>s</sub></i> = 1,75 × 10<sup>−9</sup> A lawan 1,2 × 10<sup>−16</sup> A).</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Sembilan berkas Python (Python 3.12 ke atas, dijalankan sungguhan) ada di folder <code>lab/m05b</code>: <code>semi.py</code> (salinan model silikon dari M05a, tidak ditampilkan ulang), <code>pn.py</code> (model junction dan dioda), enam skrip yang mengimpornya, dan uji unit <code>test_pn.py</code>. Delapan berkas yang tampil di sini identik dengan isi folder; output di s14 adalah output sebenarnya.</p>
+<h3>8.1 pn.py</h3>
+<pre class="icd-src" data-lang="python">
+"""Model PN junction dan dioda silikon untuk lab M05b (cm, s, V, A, K).
+Memakai semi.py (salinan dari M05a): ni(T), mobility(N), einstein_d."""
+from math import exp, log, sqrt
+from semi import Q, EPS0, EPS_SI, kt, ni, mobility, einstein_d
+
+EPS = EPS_SI * EPS0          # permitivitas silikon, F/cm
+EG_SI = 1.12                 # celah pita (eV) untuk aturan Zener/avalanche
+
+
+def vt(T=300.0):
+    """Tegangan termal kT/q (V)."""
+    return kt(T)
+
+
+def vbi(na, nd, T=300.0):
+    """Built-in potential (V) = kT/q ln(Na Nd / ni^2)."""
+    return vt(T) * log(na * nd / ni(T) ** 2)
+
+
+def depletion(na, nd, v=0.0, T=300.0):
+    """Junction abrupt. v&gt;0 = bias maju, v&lt;0 = bias mundur.
+    Mengembalikan (W, xn, xp, Emax): lebar total, penetrasi ke sisi n dan p (cm), medan puncak (V/cm)."""
+    psi = vbi(na, nd, T) - v
+    if psi &lt;= 0:
+        raise ValueError("v harus lebih kecil dari Vbi")
+    w = sqrt(2.0 * EPS * psi / Q * (1.0 / na + 1.0 / nd))
+    xn = w * na / (na + nd)
+    xp = w * nd / (na + nd)
+    return w, xn, xp, Q * nd * xn / EPS
+
+
+def cj(na, nd, v=0.0, area=1.0, T=300.0):
+    """Kapasitansi depletion (F) = eps A / W."""
+    return EPS * area / depletion(na, nd, v, T)[0]
+
+
+def is_sat(na, nd, area=1e-4, tau=1e-6, T=300.0):
+    """Arus saturasi (A), dioda panjang: A q ni^2 (Dp/(Lp Nd) + Dn/(Ln Na)).
+    Mobilitas pada 300 K dipakai untuk semua T; D = mu kT/q; L = sqrt(D tau)."""
+    dp = einstein_d(mobility(nd + na, 'p'), T)
+    dn = einstein_d(mobility(nd + na, 'n'), T)
+    lp, ln_ = sqrt(dp * tau), sqrt(dn * tau)
+    return area * Q * ni(T) ** 2 * (dp / (lp * nd) + dn / (ln_ * na))
+
+
+def current(v, isat, n=1.0, T=300.0):
+    """Persamaan dioda Shockley."""
+    return isat * (exp(min(v / (n * vt(T)), 700.0)) - 1.0)
+
+
+def voltage(i, isat, n=1.0, rs=0.0, T=300.0):
+    """Tegangan terminal untuk arus i &gt; 0 dengan resistansi seri rs."""
+    return n * vt(T) * log(i / isat + 1.0) + i * rs
+
+
+def vbr(nb):
+    """Tegangan breakdown avalanche (V), junction sepihak abrupt, taksiran empiris Sze."""
+    return 60.0 * (EG_SI / 1.1) ** 1.5 * (nb / 1e16) ** -0.75
+
+
+def cdiff(i, tau, n=1.0, T=300.0):
+    """Kapasitansi difusi gaya SPICE (F) = tau * dI/dV = tau * I / (n Vt)."""
+    return tau * i / (n * vt(T))
+
+
+def storage_time(i_f, i_r, tau):
+    """Waktu penyimpanan (s) saat dioda dimatikan: ts = tau ln(1 + IF/IR), model kendali muatan."""
+    return tau * log(1.0 + i_f / i_r)
+
+
+def igen(na, nd, v, area=1e-4, tau_g=1e-6, T=300.0):
+    """Arus generasi bias mundur (A) di daerah deplesi: q ni W A / (2 tau_g). Nilai positif = besarnya."""
+    return Q * ni(T) * depletion(na, nd, v, T)[0] * area / (2.0 * tau_g)
+</pre>
+<h3>8.2 vbi_w.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import sqrt
+from pn import vbi, depletion, cj, vbr, vt
+from semi import ni
+
+print("kT/q = %.5f V, ni = %.4e cm^-3" % (vt(300.0), ni(300.0)))
+print("%8s %8s %7s %9s %9s %9s %11s %10s" % ("Na", "Nd", "Vbi", "W(0V)", "xp", "xn", "Emax(V/cm)", "Cj0 nF/cm2"))
+for na, nd in [(1e15, 1e15), (1e16, 1e16), (1e17, 1e16), (1e18, 1e16), (1e19, 1e17), (1e18, 1e18)]:
+    w, xn, xp, em = depletion(na, nd)
+    print("%8.0e %8.0e %7.4f %7.4f um %7.4f um %7.4f um %11.3e %10.2f" % (na, nd, vbi(na, nd), w * 1e4, xp * 1e4, xn * 1e4, em, cj(na, nd) * 1e9))
+print()
+na, nd = 1e17, 1e16
+print("Na=1e17, Nd=1e16 pada beberapa bias:")
+for v in (0.4, 0.0, -1.0, -5.0, -20.0):
+    w, xn, xp, em = depletion(na, nd, v)
+    print("  V=%6.1f  W=%.4f um  Emax=%.3e V/cm  Cj/A=%.2f nF/cm2" % (v, w * 1e4, em, cj(na, nd, v) * 1e9))
+print()
+print("Breakdown avalanche sepihak (Nb):")
+for nb in (1e15, 1e16, 1e17, 1e18):
+    print("  Nb=%.0e  Vbr=%.1f V" % (nb, vbr(nb)))
+</pre>
+<h3>8.3 iv_curve.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import log
+from pn import is_sat, current, voltage, vt, cdiff, cj, storage_time, igen
+
+NA, ND, AREA, TAU = 1e18, 1e16, 1e-4, 1e-6          # dioda p+/n, 100 um x 100 um
+for T in (300.0, 350.0):
+    isat = is_sat(NA, ND, AREA, TAU, T)
+    print("T=%.0f K  Is=%.4e A  Vt=%.4f V" % (T, isat, vt(T)))
+    for i in (1e-9, 1e-6, 1e-3):
+        print("   I=%.0e A -&gt; V=%.4f V   (Rs=0)" % (i, voltage(i, isat, 1.0, 0.0, T)))
+isat = is_sat(NA, ND, AREA, TAU)
+v1, v2 = voltage(1e-3, isat), voltage(1e-4, isat)
+print("kemiringan: %.1f mV/dekade (n=1), %.1f mV/dekade (n=2)" % ((v1 - v2) * 1e3, 2 * (v1 - v2) * 1e3))
+print("rd pada 1 mA: %.2f ohm" % (vt() / 1e-3))
+print("dV/dT pada 1 mA: %.2f mV/K" % ((voltage(1e-3, is_sat(NA, ND, AREA, TAU, 301.0), 1.0, 0.0, 301.0) - voltage(1e-3, is_sat(NA, ND, AREA, TAU, 299.0), 1.0, 0.0, 299.0)) / 2 * 1e3))
+print("bias mundur -1 V: I = %.3e A (= -Is)" % current(-1.0, isat))
+print("dengan Rs = 10 ohm, 10 mA: V = %.4f V (Rs=0: %.4f V)" % (voltage(1e-2, isat, 1.0, 10.0), voltage(1e-2, isat)))
+print("kapasitansi difusi pada 1 mA (tau = 1 us): %.2f nF; Cj(0 V) = %.2f pF" % (cdiff(1e-3, TAU) * 1e9, cj(NA, ND, 0.0, AREA) * 1e12))
+print("waktu penyimpanan: IF=10 mA, IR=5 mA -&gt; ts = %.3f us" % (storage_time(10e-3, 5e-3, TAU) * 1e6))
+for v in (-1.0, -5.0):
+    print("arus generasi pada %.0f V: %.3e A  (%.0f kali Is)" % (v, igen(NA, ND, v, AREA), igen(NA, ND, v, AREA) / isat))
+print("arus generasi: x%.2f dari 300 ke 310 K" % (igen(NA, ND, -5.0, AREA, 1e-6, 310.0) / igen(NA, ND, -5.0, AREA)))
+</pre>
+<h3>8.4 cv.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import sqrt
+from pn import depletion, cj, vbi, EPS
+from semi import Q
+
+NA, ND, AREA = 1e18, 1e16, 1e-4
+print("C-V (Na=%.0e, Nd=%.0e, A=%.0e cm2)" % (NA, ND, AREA))
+vs = [-8.0, -6.0, -4.0, -2.0, 0.0]
+cs = [cj(NA, ND, v, AREA) for v in vs]
+for v, c in zip(vs, cs):
+    print("  V=%5.1f  C=%.3f pF  1/C^2=%.4e F^-2" % (v, c * 1e12, 1.0 / c ** 2))
+# ekstraksi dari kemiringan dan potongan 1/C^2 terhadap V
+y = [1.0 / c ** 2 for c in cs]
+n = len(vs)
+mx, my = sum(vs) / n, sum(y) / n
+slope = sum((a - mx) * (b - my) for a, b in zip(vs, y)) / sum((a - mx) ** 2 for a in vs)
+icpt = my - slope * mx
+neff = -2.0 / (Q * EPS * AREA ** 2 * slope)
+print("kemiringan = %.4e F^-2/V  -&gt;  N_eff = %.4e cm^-3" % (slope, neff))
+print("Nd = %.0e, NaNd/(Na+Nd) = %.4e" % (ND, NA * ND / (NA + ND)))
+print("potongan sumbu V (1/C^2 = 0): V = %.4f V,  Vbi = %.4f V" % (-icpt / slope, vbi(NA, ND)))
+</pre>
+<h3>8.5 rectifier.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import sin, pi, exp
+from pn import is_sat, vt
+
+ISAT = is_sat(1e18, 1e16, 1e-2, 1e-6)       # dioda 1 mm^2
+VT = vt()
+
+
+def idiode(v):
+    return ISAT * (exp(min(v / VT, 700.0)) - 1.0)
+
+
+def simulate(vpk, freq, c, rl, cycles=8, steps=400):
+    """Penyearah setengah gelombang + kapasitor + beban. Euler mundur, tiap langkah
+    diselesaikan dengan bisection pada tegangan kapasitor."""
+    dt = 1.0 / (freq * steps)
+    vc = 0.0
+    out, ipk = [], 0.0
+    for k in range(cycles * steps):
+        vin = vpk * sin(2 * pi * freq * (k + 1) * dt)
+        lo, hi = -1.0, vpk + 1.0
+        for _ in range(70):
+            mid = 0.5 * (lo + hi)
+            g = c * (mid - vc) / dt + mid / rl - idiode(vin - mid)
+            if g &gt; 0:
+                hi = mid
+            else:
+                lo = mid
+        vc = 0.5 * (lo + hi)
+        out.append((vin, vc, idiode(vin - vc)))
+    last = out[-steps:]
+    vmax = max(x[1] for x in last)
+    vmin = min(x[1] for x in last)
+    ipk = max(x[2] for x in last)
+    cond = sum(1 for x in last if x[2] &gt; 1e-3 * ipk)
+    return vmax, vmin, ipk, 360.0 * cond / steps
+
+
+if __name__ == "__main__":
+    print("Is = %.4e A (1 mm2)" % ISAT)
+    for vpk, f, c, rl in [(5.0, 50.0, 100e-6, 1000.0), (5.0, 50.0, 1000e-6, 1000.0), (5.0, 50.0, 100e-6, 100.0), (12.0, 60.0, 470e-6, 220.0)]:
+        vmax, vmin, ipk, ang = simulate(vpk, f, c, rl)
+        est = (vmax) / (f * rl * c)
+        print("Vpk=%4.1f f=%2.0f C=%5.0f uF RL=%4.0f: Vo max=%.3f, ripple=%.3f V (rumus %.3f), Ipk=%.3f A, sudut hantar=%.0f derajat"
+              % (vpk, f, c * 1e6, rl, vmax, vmax - vmin, est, ipk, ang))
+</pre>
+<h3>8.6 schottky.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import exp, log
+from pn import is_sat, vt, voltage
+from semi import K_EV
+
+A_STAR = 112.0                 # konstanta Richardson efektif n-Si, A/(cm^2 K^2)
+
+
+def is_schottky(phib, area=1e-4, T=300.0):
+    """Arus saturasi emisi termionik (A): A A* T^2 exp(-phib/(kT/q))."""
+    return area * A_STAR * T * T * exp(-phib / vt(T))
+
+
+i_pn = is_sat(1e18, 1e16, 1e-4, 1e-6)
+print("pn      : Is = %.3e A" % i_pn)
+for phib in (0.55, 0.70, 0.85):
+    isb = is_schottky(phib)
+    print("Schottky: phiB=%.2f V  Is = %.3e A   Vf(1 mA) = %.3f V   Vf(pn, 1 mA) = %.3f V" % (phib, isb, voltage(1e-3, isb), voltage(1e-3, i_pn)))
+print("Schottky phiB=0.70: Is naik %.1f kali dari 300 ke 350 K" % (is_schottky(0.70, 1e-4, 350.0) / is_schottky(0.70)))
+print("pn      :          Is naik %.1f kali dari 300 ke 350 K" % (is_sat(1e18, 1e16, 1e-4, 1e-6, 350.0) / i_pn))
+</pre>
+<h3>8.7 bgr.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import log
+from pn import vt
+from semi import ni
+
+IS300 = 1e-15           # BJT/dioda-terhubung, A, pada 300 K
+
+
+def is_t(T):
+    """Is(T) ~ ni(T)^2 (mobilitas diabaikan)."""
+    return IS300 * (ni(T) / ni(300.0)) ** 2
+
+
+def vbe(i, T):
+    return vt(T) * log(i / is_t(T))
+
+
+def dvbe(ratio, T):
+    """Beda Vbe dua dioda beraliran berbeda (rasio arus atau luas): PTAT."""
+    return vt(T) * log(ratio)
+
+
+I = 10e-6
+print("Vbe(10 uA): 250 K=%.4f  300 K=%.4f  350 K=%.4f  400 K=%.4f V" % tuple(vbe(I, T) for T in (250.0, 300.0, 350.0, 400.0)))
+print("dVbe/dT pada 300 K = %.3f mV/K (CTAT)" % ((vbe(I, 301.0) - vbe(I, 299.0)) / 2 * 1e3))
+N = 8
+print("dVbe (rasio %d): 250 K=%.4f  300 K=%.4f  350 K=%.4f V; kemiringan %.3f mV/K (PTAT)" % (N, dvbe(N, 250.0), dvbe(N, 300.0), dvbe(N, 350.0), (dvbe(N, 301.0) - dvbe(N, 299.0)) / 2 * 1e3))
+sl_c = (vbe(I, 301.0) - vbe(I, 299.0)) / 2
+sl_p = (dvbe(N, 301.0) - dvbe(N, 299.0)) / 2
+K = -sl_c / sl_p
+print("K = %.3f agar kemiringan nol" % K)
+print("Vref = Vbe + K dVbe:")
+for T in (250.0, 275.0, 300.0, 325.0, 350.0, 400.0):
+    print("   T=%.0f K  Vref=%.4f V" % (T, vbe(I, T) + K * dvbe(N, T)))
+</pre>
+<h3>8.8 test_pn.py</h3>
+<pre class="icd-src" data-lang="python">
+import unittest
+from math import log, sqrt, log10
+from pn import vbi, depletion, cj, is_sat, current, voltage, vbr, vt, EPS, cdiff, storage_time, igen
+from semi import Q, ni
+import schottky, bgr, rectifier
+
+
+class T(unittest.TestCase):
+    def test_vbi_values_and_trend(self):
+        self.assertAlmostEqual(vbi(1e17, 1e16), 0.7993, places=3)
+        self.assertTrue(vbi(1e15, 1e15) &lt; vbi(1e16, 1e16) &lt; vbi(1e18, 1e18))
+        self.assertTrue(vbi(1e17, 1e16, 350.0) &lt; vbi(1e17, 1e16, 300.0))
+
+    def test_charge_neutrality_and_field(self):
+        for na, nd in ((1e17, 1e16), (1e15, 1e15), (1e19, 1e17)):
+            w, xn, xp, em = depletion(na, nd)
+            self.assertAlmostEqual(xn * nd / (xp * na), 1.0, places=9)
+            self.assertAlmostEqual(xn + xp, w, places=15)
+            self.assertAlmostEqual(Q * nd * xn / EPS / em, 1.0, places=9)
+            self.assertAlmostEqual(Q * na * xp / EPS / em, 1.0, places=9)
+
+    def test_bias_scaling(self):
+        w0 = depletion(1e17, 1e16)[0]
+        for v in (-10.0, -1.0, 0.3):
+            w = depletion(1e17, 1e16, v)[0]
+            self.assertAlmostEqual(w / w0, sqrt((vbi(1e17, 1e16) - v) / vbi(1e17, 1e16)), places=9)
+        with self.assertRaises(ValueError):
+            depletion(1e17, 1e16, 0.9)
+
+    def test_one_sided(self):
+        w, xn, xp, em = depletion(1e19, 1e16)
+        self.assertTrue(xp / xn &lt; 1.01e-3)
+
+    def test_capacitance_matches_plate(self):
+        c = cj(1e17, 1e16, -2.0, 1e-4)
+        w = depletion(1e17, 1e16, -2.0)[0]
+        self.assertAlmostEqual(c * w / (EPS * 1e-4), 1.0, places=12)
+
+    def test_cv_extraction(self):
+        na, nd, a = 1e18, 1e16, 1e-4
+        v1, v2 = -6.0, -2.0
+        slope = (1 / cj(na, nd, v2, a) ** 2 - 1 / cj(na, nd, v1, a) ** 2) / (v2 - v1)
+        neff = -2 / (Q * EPS * a * a * slope)
+        self.assertAlmostEqual(neff / (na * nd / (na + nd)), 1.0, places=9)
+
+    def test_diode_equation(self):
+        i = is_sat(1e18, 1e16, 1e-4, 1e-6)
+        self.assertAlmostEqual(current(-1.0, i) / i, -1.0, places=9)
+        self.assertAlmostEqual(current(voltage(1e-3, i), i) / 1e-3, 1.0, places=9)
+        dec = voltage(1e-3, i) - voltage(1e-4, i)
+        self.assertAlmostEqual(dec, vt() * log(10), places=4)
+        self.assertAlmostEqual(voltage(1e-2, i, 1.0, 10.0) - voltage(1e-2, i), 0.1, places=12)
+
+    def test_is_grows_fast_with_T(self):
+        i3, i35 = is_sat(1e18, 1e16, 1e-4, 1e-6, 300.0), is_sat(1e18, 1e16, 1e-4, 1e-6, 350.0)
+        self.assertTrue(500 &lt; i35 / i3 &lt; 3000)
+        self.assertAlmostEqual(is_sat(1e18, 1e16, 2e-4) / is_sat(1e18, 1e16, 1e-4), 2.0, places=9)
+
+    def test_charge_control(self):
+        self.assertAlmostEqual(cdiff(1e-3, 1e-6), 1e-9 / vt(), places=12)
+        self.assertAlmostEqual(storage_time(10e-3, 5e-3, 1e-6), 1e-6 * log(3.0), places=15)
+        self.assertTrue(storage_time(10e-3, 1e-3, 1e-6) &gt; storage_time(10e-3, 10e-3, 1e-6))
+
+    def test_generation_current(self):
+        a, b = igen(1e18, 1e16, -1.0), igen(1e18, 1e16, -9.0)
+        w1, w9 = depletion(1e18, 1e16, -1.0)[0], depletion(1e18, 1e16, -9.0)[0]
+        self.assertAlmostEqual(b / a, w9 / w1, places=9)
+        self.assertTrue(igen(1e18, 1e16, -5.0) &gt; 1000 * is_sat(1e18, 1e16, 1e-4, 1e-6))
+
+    def test_breakdown_trend(self):
+        self.assertTrue(vbr(1e15) &gt; vbr(1e16) &gt; vbr(1e17))
+        w, xn, xp, em = depletion(1e19, 1e16, -vbr(1e16))
+        self.assertTrue(2e5 &lt; em &lt; 8e5)
+
+    def test_schottky_vs_pn(self):
+        i = is_sat(1e18, 1e16, 1e-4, 1e-6)
+        self.assertTrue(voltage(1e-3, schottky.is_schottky(0.7)) &lt; voltage(1e-3, i) - 0.3)
+        self.assertTrue(schottky.is_schottky(0.55) &gt; schottky.is_schottky(0.85) * 1e4)
+
+    def test_bgr_flat(self):
+        ik = 10e-6
+        sl = (bgr.vbe(ik, 301.0) - bgr.vbe(ik, 299.0)) / 2
+        self.assertTrue(-2.6e-3 &lt; sl &lt; -2.0e-3)
+        self.assertTrue(bgr.dvbe(8, 350.0) &gt; bgr.dvbe(8, 250.0))
+        self.assertAlmostEqual(bgr.dvbe(8, 300.0), vt() * log(8), places=12)
+
+    def test_rectifier(self):
+        a = rectifier.simulate(5.0, 50.0, 100e-6, 1000.0)
+        b = rectifier.simulate(5.0, 50.0, 1000e-6, 1000.0)
+        self.assertTrue(b[0] - b[1] &lt; a[0] - a[1])
+        self.assertTrue(4.0 &lt; a[0] &lt; 4.6)
+        self.assertTrue(b[2] &gt; a[2])
+        est = b[0] / (50.0 * 1000.0 * 1000e-6)
+        self.assertTrue(abs((b[0] - b[1]) / est - 1.0) &lt; 0.15)
+
+
+if __name__ == "__main__":
+    unittest.main()
+</pre>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>"Tegangan built-in bisa diukur dengan voltmeter."</b>Tidak. <i>V<sub>bi</sub></i> = 0,80 V di dalam junction, tetapi kontak logam di kedua ujung menimbulkan potensial kontak yang persis menghapusnya pada loop tertutup. Yang terukur hanya tegangan bias eksternal.</div>
+<div class="icd-box mis"><b>"Daerah deplesi tidak punya muatan."</b>Ia kosong dari pembawa <em>bebas</em>, tetapi penuh muatan ion tetap (donor positif, akseptor negatif). Muatan itulah yang menciptakan medan 10<sup>4</sup> sampai 10<sup>5</sup> V/cm dan kapasitansi junction.</div>
+<div class="icd-box mis"><b>"Dioda memblokir total pada bias mundur."</b>Selalu ada arus bocor. Di dioda contoh arus generasi 2,4 pA pada −1 V (20.000 kali <i>I<sub>s</sub></i>) dan naik 2,2 kali tiap 10 K; pada chip besar dengan jutaan junction dan suhu 100 °C bocor ini menjadi sumber daya standby yang nyata.</div>
+<div class="icd-box trap"><b>Jebakan: tegangan maju konstan 0,7 V.</b>0,7 V hanyalah perkiraan di sekitar 1 mA. Tegangan berubah 60 mV per dekade arus dan −1,7 mV/K terhadap suhu. Dioda 1 µA bisa 0,59 V dan dioda 100 mA sekitar 0,89 V (lebih tinggi lagi dengan <i>R<sub>s</sub></i>).</div>
+<div class="icd-box trap"><b>Jebakan: memakai <i>I<sub>s</sub></i> ideal untuk menaksir bocor.</b><i>I<sub>s</sub></i> dari persamaan Shockley jauh lebih kecil dari bocor nyata karena generasi di deplesi (35.000 kali di contoh pada −5 V). Pakai data karakterisasi pabrik atau model bocor dengan suku generasi.</div>
+<div class="icd-box trap"><b>Jebakan: rumus riak untuk riak besar.</b><i>V<sub>max</sub></i>/(<i>fR<sub>L</sub>C</i>) hanya berlaku bila riak kecil: pada 100 Ω dan 100 µF, rumus memberi 8,5 V padahal riak sebenarnya 3,34 V (<i>V<sub>pk</sub></i> = 5 V), karena kapasitor tidak mungkin turun di bawah nol.</div>
+<div class="icd-box mis"><b>"Dioda Zener selalu berbasis efek Zener."</b>Dioda "Zener" di atas sekitar 6 V hampir semuanya avalanche. Zener sejati (di bawah 4 sampai 5 V) punya koefisien suhu negatif, avalanche positif, dan sekitar 5 sampai 6 V keduanya saling meniadakan.</div>
+<div class="icd-box trap"><b>Jebakan: arus puncak penyearah.</b>Dioda penyearah dengan kapasitor besar mengalirkan arus dalam pulsa sempit: 0,137 A puncak untuk beban rata-rata 4,2 mA (32 kali). Spesifikasi arus rata-rata saja tidak cukup; periksa <em>repetitive peak current</em> dan <em>surge current</em> saat power-on.</div>
+<div class="icd-box mis"><b>"Kapasitansi junction konstan."</b>Tergantung bias: 30,7 nF/cm² pada 0 V menjadi 6,0 nF/cm² pada −20 V di contoh 10<sup>17</sup>/10<sup>16</sup>. Model SPICE dan PDK memakai <i>C<sub>j0</sub></i> dan <i>V<sub>bi</sub></i>, jadi simulasikan di tegangan kerja yang benar.</div>
+<div class="icd-box trap"><b>Jebakan: kapasitansi difusi saat dibias maju.</b>Pada 1 mA dengan <i>τ</i> = 1 µs, <i>C<sub>d</sub></i> = 38,7 nF dan menutupi <i>C<sub>j</sub></i> (3,09 pF) ribuan kali. Dioda yang dibias maju membutuhkan waktu memadamkan muatan; hitung <i>t<sub>s</sub></i> bila kecepatan penting.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<ul>
+<li><strong>Isolasi dengan junction bias mundur.</strong> Di CMOS standar, sumur n dalam substrat p dan source/drain n+ di substrat p diisolasi oleh junction yang harus selalu bias mundur (substrat ke GND, sumur n ke VDD). Bila salah satu terbias maju lebih dari sekitar 0,5 V terjadi injeksi pembawa dan, di struktur PNPN, latch-up (M10 dan M32a).</li>
+<li><strong>Kapasitansi junction dalam model transistor.</strong> Source/drain ke body menyumbang <i>C<sub>j</sub></i> (luas) dan kapasitansi sidewall (keliling); PDK memberi <i>C<sub>j0</sub></i>, <i>V<sub>bi</sub></i>, dan <i>M<sub>J</sub></i> (≈ 0,5 untuk abrupt, ≈ 0,33 untuk graded) dan simulator memakai bentuk di 4.5. Dimensi lebar, luas diffusion, dan jumlah finger di layout menentukannya.</li>
+<li><strong>ESD protection.</strong> Pad I/O dilindungi dioda ke VDD dan GND (dan clamp di antara rail). Dioda harus cukup besar untuk mengalirkan puluhan ampere pulsa ESD, tetapi <i>C<sub>j</sub></i>-nya membebani pin; tradeoff ukuran dan kecepatan ditentukan per interface (pin RF dan SerDes memerlukan kapasitansi puluhan sampai ratusan fF).</li>
+<li><strong>Bandgap reference.</strong> Hampir setiap ADC, DAC, PLL, regulator LDO, dan PMIC memiliki bandgap. Desain rinci dibahas di M27b. Implementasi CMOS memakai PNP vertikal (emitter p+, base sumur n, kolektor substrat p) yang gratis di proses CMOS biasa; rasio luas 8 atau 24 dipakai, dengan <i>chopping</i> atau trim untuk menghapus offset op-amp, dan koreksi kelengkungan (curvature) untuk akurasi di bawah 0,1% pada −40 sampai 125 °C.</li>
+<li><strong>Sensor suhu on-chip.</strong> Δ<i>V<sub>BE</sub></i> pada dua arus (PTAT) dibaca ADC untuk thermal management dan throttling. Dioda atau BJT yang terpisah ada di dekat hotspot (core CPU, pembangkit daya), sering dengan kalibrasi satu atau dua titik saat test wafer.</li>
+<li><strong>Dioda Schottky dan daya.</strong> Penyearah sinkron dan dioda freewheel di power converter memakai Schottky atau (pada suhu tinggi) SiC Schottky karena <i>V<sub>F</sub></i> rendah dan <i>t<sub>rr</sub></i> nyaris nol; kerugiannya bocor mundur yang naik cepat dengan suhu dan tegangan.</li>
+<li><strong>Dioda cahaya dan surya.</strong> Fotodioda (sensor gambar, komunikasi optik), LED, dan sel surya adalah junction yang dioperasikan dengan generasi optik; arus fotonya menambah arus generasi pada bias mundur. Sensor gambar CMOS memakai fotodioda tersemat (<em>pinned</em>) untuk menurunkan bocor.</li>
+<li><strong>Varaktor.</strong> Junction bias mundur (atau kapasitor MOS) memberi kapasitansi yang disetel tegangan untuk VCO dan tuning filter; rasio <i>C</i>(0 V)/<i>C</i>(−<i>V</i>) dari rumus di 4.5 ditentukan profil doping hyper-abrupt.</li>
+<li><strong>Bocor dan suhu.</strong> Bocor junction naik sekitar dua kali tiap 8 sampai 10 K, sehingga signoff leakage dilakukan di sudut suhu tinggi (PVT corner, M06c dan M22c). Memastikan junction tidak terbias maju secara tak sengaja adalah item review standar (substrate noise dan pergerakan well).</li>
+<li><strong>Status per November 2026.</strong> Prinsip junction dan dioda tidak berubah; yang berubah adalah geometri (FinFET dan gate-all-around membuat source/drain berukuran puluhan nm dengan junction yang sangat landai sehingga deplesi penuh dan C-V menjadi pendekatan kasar) dan SiC/GaN yang menggeser dioda daya silikon di tegangan tinggi.</li>
+</ul>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Hitung <i>V<sub>bi</sub></i> untuk junction simetris <i>N<sub>a</sub></i> = <i>N<sub>d</sub></i> = 10<sup>16</sup> cm<sup>−3</sup> pada 300 K.</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p><i>V<sub>bi</sub></i> = <i>V<sub>t</sub></i> ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²) = 0,02585 × ln(10<sup>32</sup>/3,742 × 10<sup>19</sup>) = 0,02585 × 28,61 = 0,7397 V (<code>vbi_w.py</code>).</p></details>
+<p><strong>1.2</strong> Tegangan maju dinaikkan 60 mV pada suhu 300 K. Berapa kali arus naik?</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p>exp(0,060/0,02585) = 10,2 kali, sesuai aturan 59,5 mV per dekade untuk <i>n</i> = 1. Dengan <i>n</i> = 2, kenaikan yang sama hanya 3,2 kali.</p></details>
+<p><strong>1.3</strong> Pada junction p+/n dengan <i>N<sub>a</sub></i> = 10<sup>19</sup> dan <i>N<sub>d</sub></i> = 10<sup>15</sup>, di sisi mana deplesi terutama berada, dan berapa perbandingan <i>x<sub>n</sub></i>/<i>x<sub>p</sub></i>?</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>Netralitas muatan <i>N<sub>a</sub>x<sub>p</sub></i> = <i>N<sub>d</sub>x<sub>n</sub></i> memberi <i>x<sub>n</sub></i>/<i>x<sub>p</sub></i> = <i>N<sub>a</sub></i>/<i>N<sub>d</sub></i> = 10<sup>4</sup>. Hampir seluruh deplesi ada di sisi n (yang ringan); <i>W</i> ≈ <i>x<sub>n</sub></i>. Itulah sebabnya hanya doping sisi ringan yang ditentukan oleh C-V dan breakdown.</p></details>
+
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Untuk <i>N<sub>a</sub></i> = 10<sup>17</sup>, <i>N<sub>d</sub></i> = 10<sup>15</sup> pada −3 V (300 K): hitung <i>V<sub>bi</sub></i>, <i>W</i>, <i>x<sub>n</sub></i>, <i>x<sub>p</sub></i>, <i>E<sub>max</sub></i>, dan <i>C<sub>j</sub></i>/<i>A</i>.</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p><i>V<sub>bi</sub></i> = 0,7397 V (hasil kali doping 10<sup>32</sup>, sama dengan 1.1). <i>V<sub>bi</sub></i> − <i>V</i> = 3,7397 V. <i>W</i> = √(2<i>ε<sub>s</sub></i> × 3,7397 × (10<sup>−17</sup> + 10<sup>−15</sup>)/<i>q</i>) = 2,210 µm; <i>x<sub>n</sub></i> = 2,188 µm, <i>x<sub>p</sub></i> = 0,0219 µm; <i>E<sub>max</sub></i> = 2 × 3,7397/2,210 × 10<sup>−4</sup> = 3,38 × 10<sup>4</sup> V/cm; <i>C<sub>j</sub></i>/<i>A</i> = <i>ε<sub>s</sub></i>/<i>W</i> = 1,036 × 10<sup>−12</sup>/2,210 × 10<sup>−4</sup> = 4,69 nF/cm².</p></details>
+<p><strong>2.2</strong> Dua pengukuran dioda (<i>R<sub>s</sub></i> diabaikan): 0,80 V pada 1 mA dan 0,89 V pada 10 mA, 300 K. Hitung <i>n</i> dan <i>I<sub>s</sub></i>.</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>Kemiringan per dekade = 90 mV = <i>nV<sub>t</sub></i> ln 10 = <i>n</i> × 59,5 mV, sehingga <i>n</i> = 1,51. Maka <i>I<sub>s</sub></i> = <i>I</i>/exp(<i>V</i>/<i>nV<sub>t</sub></i>) = 10<sup>−3</sup>/exp(0,80/(1,512 × 0,025852)) = 1,29 × 10<sup>−12</sup> A. Nilai <i>n</i> mendekati 1,5 menandakan bahwa komponen rekombinasi di deplesi ikut berperan (atau ada <i>R<sub>s</sub></i> yang tak diperhitungkan); pada arus yang lebih tinggi kemiringan akan mendekati 60 mV per dekade bila <i>R<sub>s</sub></i> kecil.</p></details>
+<p><strong>2.3</strong> Rancang penyearah setengah gelombang: <i>V<sub>pk</sub></i> = 12 V, 60 Hz, <i>R<sub>L</sub></i> = 100 Ω, riak maksimum 0,5 V. Tentukan <i>C</i> dan perkirakan arus puncak dioda.</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p><i>V<sub>max</sub></i> ≈ 12 − 0,8 = 11,2 V. <i>C</i> ≈ <i>V<sub>max</sub></i>/(<i>fR<sub>L</sub>V<sub>r</sub></i>) = 11,2/(60 × 100 × 0,5) = 3,7 mF; pilih nilai standar 3,9 mF atau lebih. Simulasi <code>rectifier.py</code> dengan 3,77 mF: <i>V<sub>max</sub></i> = 11,19 V, riak 0,454 V (rumus 0,495 V, sedikit konservatif), arus puncak dioda 3,7 A (arus beban rata-rata hanya 0,11 A) dengan sudut hantar 26°. Dengan 3,3 mF riak 0,516 V sudah melampaui 0,5 V. Dioda harus berspesifikasi arus puncak berulang di atas 3,7 A.</p></details>
+
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Turunkan <i>V<sub>bi</sub></i> dari syarat <i>E<sub>F</sub></i> datar pada kesetimbangan dan hasil M05a.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>Jauh dari junction, sisi n netral memiliki <i>n</i> = <i>N<sub>d</sub></i> sehingga <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>N<sub>d</sub></i>/<i>n<sub>i</sub></i>); sisi p memiliki <i>p</i> = <i>N<sub>a</sub></i> sehingga <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = −<i>kT</i> ln(<i>N<sub>a</sub></i>/<i>n<sub>i</sub></i>). Karena <i>E<sub>F</sub></i> datar, <i>E<sub>i</sub></i> sisi p lebih tinggi dari <i>E<sub>i</sub></i> sisi n sebesar jumlah keduanya: <i>qV<sub>bi</sub></i> = <i>kT</i> [ln(<i>N<sub>d</sub></i>/<i>n<sub>i</sub></i>) + ln(<i>N<sub>a</sub></i>/<i>n<sub>i</sub></i>)] = <i>kT</i> ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²). Cara lain: syarat arus elektron nol, <i>J<sub>n</sub></i> = <i>qμ<sub>n</sub>nE</i> + <i>qD<sub>n</sub> dn/dx</i> = 0 dengan hubungan Einstein, diintegralkan dari sisi p ke sisi n, memberi hasil yang sama (−∫<i>E</i> d<i>x</i> = <i>V<sub>t</sub></i> ln(<i>n<sub>n</sub></i>/<i>n<sub>p</sub></i>)).</p></details>
+<p><strong>3.2</strong> Turunkan <i>W</i>(<i>V</i>) dan tunjukkan bahwa <i>C<sub>j</sub></i> ∝ (<i>V<sub>bi</sub></i> − <i>V</i>)<sup>−1/2</sup>.</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Di sisi n (0 &lt; <i>x</i> &lt; <i>x<sub>n</sub></i>), <i>dE</i>/<i>dx</i> = <i>qN<sub>d</sub></i>/<i>ε<sub>s</sub></i> dengan <i>E</i>(<i>x<sub>n</sub></i>) = 0, sehingga <i>E</i>(<i>x</i>) = −<i>qN<sub>d</sub></i>(<i>x<sub>n</sub></i> − <i>x</i>)/<i>ε<sub>s</sub></i>; analog di sisi p. Medan puncak di <i>x</i> = 0: <i>E<sub>max</sub></i> = <i>qN<sub>d</sub>x<sub>n</sub></i>/<i>ε<sub>s</sub></i> = <i>qN<sub>a</sub>x<sub>p</sub></i>/<i>ε<sub>s</sub></i>. Beda potensial adalah luas segitiga: <i>V<sub>bi</sub></i> − <i>V</i> = ½ <i>E<sub>max</sub> W</i> = <i>qN<sub>d</sub>x<sub>n</sub>W</i>/(2<i>ε<sub>s</sub></i>). Substitusi <i>x<sub>n</sub></i> = <i>WN<sub>a</sub></i>/(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>): <i>V<sub>bi</sub></i> − <i>V</i> = <i>qW</i>²<i>N<sub>a</sub>N<sub>d</sub></i>/(2<i>ε<sub>s</sub></i>(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>)), yaitu <i>W</i> = √(2<i>ε<sub>s</sub></i>(<i>V<sub>bi</sub></i> − <i>V</i>)(1/<i>N<sub>a</sub></i> + 1/<i>N<sub>d</sub></i>)/<i>q</i>). Karena <i>C<sub>j</sub></i> = <i>ε<sub>s</sub>A</i>/<i>W</i> ∝ (<i>V<sub>bi</sub></i> − <i>V</i>)<sup>−1/2</sup>, kuadrat terbalik 1/<i>C<sub>j</sub></i>² = 2(<i>V<sub>bi</sub></i> − <i>V</i>)/(<i>qε<sub>s</sub>A</i>²<i>N<sub>eff</sub></i>) linear dalam <i>V</i> dengan <i>N<sub>eff</sub></i> = <i>N<sub>a</sub>N<sub>d</sub></i>/(<i>N<sub>a</sub></i> + <i>N<sub>d</sub></i>).</p></details>
+<p><strong>3.3</strong> Tunjukkan bahwa <i>V<sub>ref</sub></i> bandgap tidak bergantung pada <i>N</i> (rasio arus atau luas), lalu hitung <i>K</i> untuk <i>N</i> = 8 dan <i>N</i> = 24 dengan kemiringan <i>dV<sub>BE</sub></i>/<i>dT</i> = −2,277 mV/K.</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>Kemiringan nol pada <i>T</i><sub>0</sub> mensyaratkan <i>K</i> (<i>k</i>/<i>q</i>) ln <i>N</i> = −<i>dV<sub>BE</sub></i>/<i>dT</i>. Kalikan dengan <i>T</i><sub>0</sub>: <i>K V<sub>t</sub></i> ln <i>N</i> = −<i>T</i><sub>0</sub> <i>dV<sub>BE</sub></i>/<i>dT</i>, sehingga <i>V<sub>ref</sub></i> = <i>V<sub>BE</sub></i> + <i>K</i>Δ<i>V<sub>BE</sub></i> = <i>V<sub>BE</sub></i> − <i>T</i><sub>0</sub> <i>dV<sub>BE</sub></i>/<i>dT</i>. Besaran terakhir tidak mengandung <i>N</i> atau <i>K</i>. Dari <i>V<sub>BE</sub></i> = <i>V<sub>t</sub></i> ln(<i>I</i>/<i>I<sub>s</sub></i>) dengan <i>I<sub>s</sub></i> ∝ <i>T</i><sup>γ</sup> exp(−<i>E<sub>g0</sub></i>/<i>kT</i>) diperoleh <i>dV<sub>BE</sub></i>/<i>dT</i> = (<i>V<sub>BE</sub></i> − <i>E<sub>g0</sub></i>/<i>q</i> − γ<i>V<sub>t</sub></i>)/<i>T</i>, jadi <i>V<sub>ref</sub></i> = <i>E<sub>g0</sub></i>/<i>q</i> + γ<i>V<sub>t</sub></i> (1,201 + 3 × 0,02585 = 1,2784 V, cocok dengan 1,2785 V di <code>bgr.py</code>). Dengan <i>k</i>/<i>q</i> = 0,08617 mV/K: <i>N</i> = 8 → 0,08617 × ln 8 = 0,1792 mV/K, <i>K</i> = 2,277/0,1792 = 12,71; <i>N</i> = 24 → 0,08617 × ln 24 = 0,2739 mV/K, <i>K</i> = 8,32 (8,3155 di <code>bgr.py</code>). Keduanya memberi <i>V<sub>ref</sub></i>(300 K) = 1,2785 V. <i>N</i> yang lebih besar menurunkan penguatan PTAT yang diperlukan dan karenanya noise dan offset yang dikalikan <i>K</i>.</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Jelaskan bagaimana PN junction terbentuk dan dari mana medan listriknya."</summary>
+<p><strong>Kerangka jawaban:</strong> Ada gradien konsentrasi elektron dan hole di perbatasan, sehingga pembawa berdifusi lintas junction dan meninggalkan ion donor positif di sisi n dan akseptor negatif di sisi p. Muatan ion tetap itu menciptakan medan yang menghasilkan arus drift berlawanan; pada kesetimbangan drift dan difusi sama besar, level Fermi datar, dan pita membengkok sebesar <i>V<sub>bi</sub></i> = <i>V<sub>t</sub></i> ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²) (sekitar 0,8 V). Tambahkan bahwa daerah deplesi menembus lebih dalam ke sisi berdoping ringan (<i>N<sub>a</sub>x<sub>p</sub></i> = <i>N<sub>d</sub>x<sub>n</sub></i>).</p></details>
+<details class="icd-sol"><summary>"Mengapa arus dioda naik eksponensial dengan tegangan maju?"</summary>
+<p><strong>Kerangka jawaban:</strong> Bias maju menurunkan penghalang sebesar <i>qV</i>, sehingga konsentrasi pembawa minoritas di tepi deplesi naik sebagai exp(<i>V</i>/<i>V<sub>t</sub></i>) (statistik Boltzmann). Arus difusi pembawa minoritas yang disuntikkan sebanding dengan konsentrasi itu. Konsekuensi: 60 mV per dekade pada 300 K, resistansi dinamis <i>V<sub>t</sub></i>/<i>I</i>, dan tegangan hampir konstan (sekitar 0,7 V) untuk rentang arus yang lebar.</p></details>
+<details class="icd-sol"><summary>"Mengapa tegangan maju dioda turun saat suhu naik, dan seberapa besar?"</summary>
+<p><strong>Kerangka jawaban:</strong> <i>I<sub>s</sub></i> ∝ <i>n<sub>i</sub></i>² naik eksponensial dengan suhu (di model lab 1.331 kali dari 300 ke 350 K), sehingga untuk arus yang sama tegangannya turun: d<i>V</i>/d<i>T</i> ≈ (<i>V</i> − <i>E<sub>g0</sub></i>/<i>q</i> − γ<i>V<sub>t</sub></i>)/<i>T</i> ≈ −1,7 sampai −2 mV/K. Disebut CTAT. Dipakai sensor suhu dan, dikombinasikan dengan PTAT, bandgap reference; berbahaya pada bipolar paralel (thermal runaway).</p></details>
+<details class="icd-sol"><summary>"Apa beda breakdown avalanche dan Zener, dan bagaimana koefisien suhunya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Avalanche: pembawa dipercepat oleh medan hingga ionisasi tumbukan melepas pasangan baru; dominan di atas sekitar 6 V (doping rendah, deplesi lebar); koefisien suhu positif (fonon menghambat percepatan). Zener: tunneling band-to-band pada deplesi sangat tipis (doping tinggi) di bawah sekitar 4 V; koefisien suhu negatif (celah menyempit). Sekitar 5 sampai 6 V keduanya saling meniadakan, sehingga dioda referensi dibuat di sana.</p></details>
+<details class="icd-sol"><summary>"Bagaimana bandgap reference bekerja?"</summary>
+<p><strong>Kerangka jawaban:</strong> <i>V<sub>BE</sub></i> turun sekitar 2 mV/K (CTAT) sedangkan Δ<i>V<sub>BE</sub></i> = <i>V<sub>t</sub></i> ln <i>N</i> dari dua dioda beraliran berbeda naik sebanding <i>T</i> (PTAT). Jumlah berbobot <i>V<sub>BE</sub></i> + <i>K</i>Δ<i>V<sub>BE</sub></i> dengan <i>K</i> yang tepat menghapus kemiringan; hasilnya sekitar 1,2 V, mendekati celah pita silikon yang diekstrapolasi ke 0 K, makanya disebut bandgap. Sebut op-amp yang memaksa kedua dioda beraliran berbeda, offset dan trim, serta koreksi kelengkungan.</p></details>
+<details class="icd-sol"><summary>"Mengapa dioda Schottky lebih cepat dan lebih efisien daripada dioda PN?"</summary>
+<p><strong>Kerangka jawaban:</strong> Arus dibawa pembawa mayoritas lewat emisi termionik di atas penghalang <i>φ<sub>B</sub></i> (sekitar 0,2 sampai 0,5 V maju pada 1 mA, tergantung <i>φ<sub>B</sub></i>), tanpa injeksi dan penyimpanan pembawa minoritas, sehingga <i>t<sub>rr</sub></i> nyaris nol dan <i>V<sub>F</sub></i> rendah. Kekurangan: bocor mundur besar dan sensitif pada suhu (<i>I<sub>s</sub></i> ∝ <i>T</i>² e<sup>−<i>φ<sub>B</sub></i>/<i>V<sub>t</sub></i></sup>), tegangan breakdown relatif rendah (silikon), dan penghalang tidak dapat diatur dengan doping.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: junction, dioda, dan bandgap</h2>
+<p><strong>Tujuan:</strong> menjalankan model junction sendiri, mencocokkannya dengan visualisasi, dan melihat sendiri bagaimana suhu, resistansi seri, dan kapasitor mengubah hasil. Platform: Linux, macOS, atau WSL2 dengan Python 3.12 ke atas (tidak perlu paket tambahan).</p>
+<h3>Langkah 0: siapkan</h3>
+<pre class="icd-src" data-lang="sh">
+mkdir -p ~/icd/m05b &amp;&amp; cd ~/icd/m05b      # salin seluruh isi folder lab/m05b (termasuk semi.py)
+python3 --version
+</pre>
+<h3>Langkah 1: potensial built-in, deplesi, dan breakdown</h3>
+<pre class="icd-src" data-lang="sh">
+python3 vbi_w.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+kT/q = 0.02585 V, ni = 6.1172e+09 cm^-3
+      Na       Nd     Vbi     W(0V)        xp        xn  Emax(V/cm) Cj0 nF/cm2
+   1e+15    1e+15  0.6207  1.2670 um  0.6335 um  0.6335 um   9.798e+03       8.18
+   1e+16    1e+16  0.7397  0.4374 um  0.2187 um  0.2187 um   3.382e+04      23.68
+   1e+17    1e+16  0.7993  0.3372 um  0.0307 um  0.3065 um   4.741e+04      30.72
+   1e+18    1e+16  0.8588  0.3349 um  0.0033 um  0.3316 um   5.128e+04      30.93
+   1e+19    1e+17  0.9778  0.1130 um  0.0011 um  0.1119 um   1.731e+05      91.67
+   1e+18    1e+18  0.9778  0.0503 um  0.0251 um  0.0251 um   3.889e+05     206.00
+
+Na=1e17, Nd=1e16 pada beberapa bias:
+  V=   0.4  W=0.2383 um  Emax=3.351e+04 V/cm  Cj/A=43.47 nF/cm2
+  V=   0.0  W=0.3372 um  Emax=4.741e+04 V/cm  Cj/A=30.72 nF/cm2
+  V=  -1.0  W=0.5059 um  Emax=7.113e+04 V/cm  Cj/A=20.48 nF/cm2
+  V=  -5.0  W=0.9083 um  Emax=1.277e+05 V/cm  Cj/A=11.41 nF/cm2
+  V= -20.0  W=1.7201 um  Emax=2.418e+05 V/cm  Cj/A=6.02 nF/cm2
+
+Breakdown avalanche sepihak (Nb):
+  Nb=1e+15  Vbr=346.6 V
+  Nb=1e+16  Vbr=61.6 V
+  Nb=1e+17  Vbr=11.0 V
+  Nb=1e+18  Vbr=1.9 V
+</pre>
+<p>Cocokkan baris 10<sup>17</sup>/10<sup>16</sup> dengan visualisasi 1 (0 V dan −5 V). Tambahkan baris 10<sup>19</sup>/10<sup>15</sup> dan lihat <i>x<sub>p</sub></i> yang hampir nol.</p>
+<h3>Langkah 2: kurva I-V, suhu, dan kapasitansi</h3>
+<pre class="icd-src" data-lang="sh">
+python3 iv_curve.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+T=300 K  Is=1.2056e-16 A  Vt=0.0259 V
+   I=1e-09 A -&gt; V=0.4119 V   (Rs=0)
+   I=1e-06 A -&gt; V=0.5904 V   (Rs=0)
+   I=1e-03 A -&gt; V=0.7690 V   (Rs=0)
+T=350 K  Is=1.6053e-13 A  Vt=0.0302 V
+   I=1e-09 A -&gt; V=0.2635 V   (Rs=0)
+   I=1e-06 A -&gt; V=0.4719 V   (Rs=0)
+   I=1e-03 A -&gt; V=0.6802 V   (Rs=0)
+kemiringan: 59.5 mV/dekade (n=1), 119.1 mV/dekade (n=2)
+rd pada 1 mA: 25.85 ohm
+dV/dT pada 1 mA: -1.74 mV/K
+bias mundur -1 V: I = -1.206e-16 A (= -Is)
+dengan Rs = 10 ohm, 10 mA: V = 0.9285 V (Rs=0: 0.8285 V)
+kapasitansi difusi pada 1 mA (tau = 1 us): 38.68 nF; Cj(0 V) = 3.09 pF
+waktu penyimpanan: IF=10 mA, IR=5 mA -&gt; ts = 1.099 us
+arus generasi pada -1 V: 2.415e-12 A  (20027 kali Is)
+arus generasi pada -5 V: 4.287e-12 A  (35555 kali Is)
+arus generasi: x2.22 dari 300 ke 310 K
+</pre>
+<p>Cocokkan dengan visualisasi 2 (set <i>T</i> = 350, <i>n</i> = 1, <i>R<sub>s</sub></i> = 0 dan baca <i>V</i>(1 mA)). Ubah <code>TAU</code> menjadi 1e-9 dan lihat bagaimana <i>I<sub>s</sub></i>, <i>C<sub>d</sub></i>, dan <i>t<sub>s</sub></i> berubah (<i>I<sub>s</sub></i> naik ≈ 32 kali karena <i>L</i> turun).</p>
+<h3>Langkah 3: ekstraksi doping dari C-V</h3>
+<pre class="icd-src" data-lang="sh">
+python3 cv.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+C-V (Na=1e+18, Nd=1e+16, A=1e-04 cm2)
+  V= -8.0  C=0.963 pF  1/C^2=1.0782e+24 F^-2
+  V= -6.0  C=1.095 pF  1/C^2=8.3474e+23 F^-2
+  V= -4.0  C=1.300 pF  1/C^2=5.9134e+23 F^-2
+  V= -2.0  C=1.695 pF  1/C^2=3.4793e+23 F^-2
+  V=  0.0  C=3.093 pF  1/C^2=1.0452e+23 F^-2
+kemiringan = -1.2170e+23 F^-2/V  -&gt;  N_eff = 9.9010e+15 cm^-3
+Nd = 1e+16, NaNd/(Na+Nd) = 9.9010e+15
+potongan sumbu V (1/C^2 = 0): V = 0.8588 V,  Vbi = 0.8588 V
+</pre>
+<p>Ubah <code>NA</code> menjadi 1e17 dan lihat bagaimana <i>N<sub>eff</sub></i> bergeser dari <i>N<sub>d</sub></i> (galat sekitar 9% bila sisi p hanya 10 kali lebih berat).</p>
+<h3>Langkah 4: penyearah</h3>
+<pre class="icd-src" data-lang="sh">
+python3 rectifier.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+Is = 1.2056e-14 A (1 mm2)
+Vpk= 5.0 f=50 C=  100 uF RL=1000: Vo max=4.293, ripple=0.700 V (rumus 0.859), Ipk=0.073 A, sudut hantar=48 derajat
+Vpk= 5.0 f=50 C= 1000 uF RL=1000: Vo max=4.248, ripple=0.078 V (rumus 0.085), Ipk=0.137 A, sudut hantar=32 derajat
+Vpk= 5.0 f=50 C=  100 uF RL= 100: Vo max=4.252, ripple=3.340 V (rumus 8.503), Ipk=0.156 A, sudut hantar=98 derajat
+Vpk=12.0 f=60 C=  470 uF RL= 220: Vo max=11.232, ripple=1.524 V (rumus 1.811), Ipk=0.984 A, sudut hantar=39 derajat
+</pre>
+<p>Cocokkan baris pertama dengan visualisasi 4. Cari kapasitor terkecil (kelipatan 100 µF) yang menahan riak di bawah 0,3 V untuk 12 V, 60 Hz, 220 Ω, lalu periksa arus puncaknya.</p>
+<h3>Langkah 5: Schottky dan bandgap</h3>
+<pre class="icd-src" data-lang="sh">
+python3 schottky.py
+python3 bgr.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+pn      : Is = 1.206e-16 A
+Schottky: phiB=0.55 V  Is = 5.806e-07 A   Vf(1 mA) = 0.193 V   Vf(pn, 1 mA) = 0.769 V
+Schottky: phiB=0.70 V  Is = 1.754e-09 A   Vf(1 mA) = 0.343 V   Vf(pn, 1 mA) = 0.769 V
+Schottky: phiB=0.85 V  Is = 5.298e-12 A   Vf(1 mA) = 0.493 V   Vf(pn, 1 mA) = 0.769 V
+Schottky phiB=0.70: Is naik 65.1 kali dari 300 ke 350 K
+pn      :          Is naik 1331.5 kali dari 300 ke 350 K
+Vbe(10 uA): 250 K=0.7074  300 K=0.5953  350 K=0.4798  400 K=0.3615 V
+dVbe/dT pada 300 K = -2.277 mV/K (CTAT)
+dVbe (rasio 8): 250 K=0.0448  300 K=0.0538  350 K=0.0627 V; kemiringan 0.179 mV/K (PTAT)
+K = 12.709 agar kemiringan nol
+Vref = Vbe + K dVbe:
+   T=250 K  Vref=1.2767 V
+   T=275 K  Vref=1.2780 V
+   T=300 K  Vref=1.2785 V
+   T=325 K  Vref=1.2781 V
+   T=350 K  Vref=1.2769 V
+   T=400 K  Vref=1.2725 V
+</pre>
+<p>Ubah <code>N = 8</code> di <code>bgr.py</code> menjadi 24 dan konfirmasi bahwa <i>V<sub>ref</sub></i> pada 300 K tidak berubah (1,2785 V) sedangkan <i>K</i> turun menjadi 8,32.</p>
+<h3>Langkah 6: uji</h3>
+<pre class="icd-src" data-lang="sh">
+python3 test_pn.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+Ran 14 tests
+OK
+</pre>
+<p>Rusak sengaja satu fungsi (mis. ganti <code>/ na</code> dengan <code>/ nd</code> pada <code>xp</code> di <code>depletion</code>) dan lihat uji mana yang gagal. Itu cara menguji bahwa uji kamu benar-benar menjaga model.</p>
+<h3>Langkah 7: tantangan mandiri</h3>
+<p>Tulis <code>junction_leak.py</code> yang menghitung bocor total dioda bias mundur (<i>I<sub>s</sub></i> + <i>I<sub>gen</sub></i>) pada −3 V untuk suhu 300 sampai 400 K langkah 10 K, mencari suhu tempat bocor naik lebih dari 100 kali dibanding 300 K, dan membandingkan hasilnya dengan <code>ni(T)</code>. Petunjuk: di suhu rendah <i>I<sub>gen</sub></i> mendominasi dan naik ∝ <i>n<sub>i</sub></i>; di suhu tinggi <i>I<sub>s</sub></i> ∝ <i>n<sub>i</sub></i>² mengejar dan akhirnya menggantikannya. Tentukan suhu persilangannya.</p>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Junction: <i>V<sub>bi</sub></i> = <i>V<sub>t</sub></i> ln(<i>N<sub>a</sub>N<sub>d</sub></i>/<i>n<sub>i</sub></i>²); <i>W</i> = √(2<i>ε<sub>s</sub></i>(<i>V<sub>bi</sub></i> − <i>V</i>)(1/<i>N<sub>a</sub></i> + 1/<i>N<sub>d</sub></i>)/<i>q</i>); <i>N<sub>a</sub>x<sub>p</sub></i> = <i>N<sub>d</sub>x<sub>n</sub></i>; <i>E<sub>max</sub></i> = 2(<i>V<sub>bi</sub></i> − <i>V</i>)/<i>W</i>. Contoh 10<sup>17</sup>/10<sup>16</sup>: 0,799 V, 0,337 µm, 4,74 × 10<sup>4</sup> V/cm.</li>
+<li>Dioda: <i>I</i> = <i>I<sub>s</sub></i>(e<sup><i>V</i>/<i>nV<sub>t</sub></i></sup> − 1); 59,5 <i>n</i> mV per dekade; <i>r<sub>d</sub></i> = <i>nV<sub>t</sub></i>/<i>I</i>; <i>I<sub>s</sub></i> ditentukan sisi ringan; −1,7 mV/K; <i>I<sub>s</sub></i> naik 1.331 kali dari 300 ke 350 K.</li>
+<li>Nyata: bocor mundur didominasi generasi (∝ <i>W</i>, ∝ <i>n<sub>i</sub></i>, tidak jenuh); bias maju rendah <i>n</i> ≈ 2; <i>R<sub>s</sub></i> dan injeksi tinggi melengkungkan kurva.</li>
+<li>Kapasitansi: <i>C<sub>j</sub></i> = <i>ε<sub>s</sub>A</i>/<i>W</i> ∝ (<i>V<sub>bi</sub></i> − <i>V</i>)<sup>−1/2</sup>; 1/<i>C</i>² linear → <i>N<sub>eff</sub></i> dan <i>V<sub>bi</sub></i>; <i>C<sub>d</sub></i> = <i>τI</i>/(<i>nV<sub>t</sub></i>); <i>t<sub>s</sub></i> = <i>τ</i> ln(1 + <i>I<sub>F</sub></i>/<i>I<sub>R</sub></i>).</li>
+<li>Breakdown: avalanche ≳ 6,7 V (koefisien suhu +), Zener ≲ 4,5 V (−); <i>V<sub>br</sub></i> ≈ 61,6 (<i>N<sub>b</sub></i>/10<sup>16</sup>)<sup>−3/4</sup> V untuk sepihak.</li>
+<li>Schottky: <i>I<sub>s</sub></i> = <i>AA</i><sup>*</sup><i>T</i>²e<sup>−<i>φ<sub>B</sub></i>/<i>V<sub>t</sub></i></sup>; <i>V<sub>F</sub></i> 0,19 sampai 0,49 V pada 1 mA; tanpa <i>t<sub>s</sub></i>; bocor besar.</li>
+<li>Penyearah dan referensi: riak ≈ <i>V<sub>max</sub></i>/(<i>fR<sub>L</sub>C</i>) hanya untuk riak kecil; arus puncak jauh di atas rata-rata; bandgap <i>V<sub>ref</sub></i> = <i>V<sub>BE</sub></i> + <i>K</i>Δ<i>V<sub>BE</sub></i> ≈ 1,2 V.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Konstanta 300 K</h4>Vt = 25,85 mV<br>ni = 6,117e9 cm⁻³ (model)<br>εs = 1,036e−12 F/cm<br>Eg = 1,12 eV<br>59,5 mV/dekade</div>
+<div class="icd-card"><h4>Junction</h4>Vbi = Vt ln(NaNd/ni²)<br>W = √(2εs(Vbi−V)(1/Na+1/Nd)/q)<br>xn = W Na/(Na+Nd)<br>Emax = 2(Vbi−V)/W<br>Cj = εsA/W</div>
+<div class="icd-card"><h4>Dioda</h4>I = Is(e^(V/nVt) − 1)<br>rd = nVt/I<br>V = nVt ln(I/Is) + I Rs<br>dV/dT ≈ −1,7 mV/K<br>Is ∝ ni²</div>
+<div class="icd-card"><h4>Contoh 1e17/1e16</h4>Vbi = 0,799 V<br>W(0) = 0,337 µm<br>W(−5) = 0,908 µm<br>Emax(0) = 4,74e4 V/cm<br>Cj/A(0) = 30,7 nF/cm²</div>
+<div class="icd-card"><h4>Breakdown</h4>Vbr(1e15) = 347 V<br>Vbr(1e16) = 61,6 V<br>Vbr(1e17) = 11,0 V<br>Zener &lt; 4,5 V<br>avalanche &gt; 6,7 V</div>
+<div class="icd-card"><h4>Referensi</h4>ΔVBE = Vt ln N (PTAT)<br>VBE ≈ −2,3 mV/K (CTAT)<br>K = 12,71 (N = 8)<br>Vref = Eg0/q + γVt<br>≈ 1,2 V</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>Neamen, <i>Semiconductor Physics and Devices</i>: bab PN junction, dioda, dan karakteristik arus-tegangan (urutan yang dipakai modul ini).</li>
+<li>Pierret, <i>Semiconductor Device Fundamentals</i>: perlakuan bertahap tentang deplesi, persamaan dioda ideal, dan model kapasitansi.</li>
+<li>Sze &amp; Ng, <i>Physics of Semiconductor Devices</i>: rujukan standar untuk breakdown (rumus avalanche empiris yang dipakai di s04), dioda Schottky, dan arus generasi-rekombinasi.</li>
+<li>Streetman &amp; Banerjee, <i>Solid State Electronic Devices</i>: pengantar dengan contoh numerik dan C-V.</li>
+<li>Sah, Noyce, dan Shockley, "Carrier generation and recombination in p-n junctions and p-n junction characteristics" (<i>Proc. IRE</i>, 1957): asal model arus rekombinasi dan <i>n</i> = 2.</li>
+<li>Shockley, "The theory of p-n junctions in semiconductors and p-n junction transistors" (<i>Bell System Technical Journal</i>, 1949): persamaan dioda ideal.</li>
+<li>Razavi, <i>Fundamentals of Microelectronics</i>, dan Gray, Hurst, Lewis, Meyer, <i>Analysis and Design of Analog Integrated Circuits</i>: dioda sebagai komponen rangkaian dan bandgap reference.</li>
+<li>Widlar, "New developments in IC voltage regulators" (<i>IEEE J. Solid-State Circuits</i>, 1971), dan Brokaw, "A simple three-terminal IC bandgap reference" (1974): sumber bandgap reference klasik.</li>
+<li>Schroder, <i>Semiconductor Material and Device Characterization</i>: pengukuran C-V dan profil doping.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut: <a href="m06a-mosfet-dasar.html">M06a</a> (BJT ringkas dan MOSFET dasar). Modul sebelumnya: <a href="m05a-pita-energi-pembawa.html">M05a</a>.</p>
+</section>
+</main>
+
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q;
+var MINUS = '−';
+
+ICD.gloss.add([
+{ id: 'pn-junction', en: 'PN junction', idn: 'sambungan PN', def: 'Batas antara daerah p dan n pada satu kristal; membentuk daerah deplesi, potensial built-in, dan sifat penyearah. Dasar dioda, sumur, source/drain, dan sel surya.', mod: 'M05b' },
+{ id: 'depletion', en: 'depletion region', idn: 'daerah deplesi', def: 'Daerah di sekitar junction yang kosong dari pembawa bebas dan hanya berisi ion donor dan akseptor tetap; lebarnya W = √(2εs(Vbi − V)(1/Na + 1/Nd)/q), melebar saat bias mundur.', mod: 'M05b' },
+{ id: 'vbi', en: 'built-in potential', idn: 'potensial built-in', def: 'Vbi = Vt ln(NaNd/ni²), beda potensial antara sisi netral n dan p pada kesetimbangan (sekitar 0,6 sampai 1 V untuk Si); tidak dapat diukur langsung dengan voltmeter.', mod: 'M05b' },
+{ id: 'forward-bias', en: 'forward bias', idn: 'bias maju', def: 'Tegangan yang menurunkan penghalang junction (p lebih positif dari n); arus naik eksponensial, sekitar 60 mV per dekade pada 300 K.', mod: 'M05b' },
+{ id: 'reverse-bias', en: 'reverse bias', idn: 'bias mundur', def: 'Tegangan yang meninggikan penghalang junction; deplesi melebar, kapasitansi turun, dan hanya mengalir arus bocor kecil sampai breakdown.', mod: 'M05b' },
+{ id: 'vt', en: 'thermal voltage', idn: 'tegangan termal', def: 'Vt = kT/q = 25,85 mV pada 300 K; skala tegangan alami semikonduktor: muncul pada eksponen dioda, Vbi, dan hubungan Einstein.', mod: 'M05b' },
+{ id: 'saturation-current', en: 'saturation current', idn: 'arus saturasi', def: 'Is = A q ni² (Dp/(LpNd) + Dn/(LnNa)); arus mundur ideal dan faktor skala persamaan dioda. Ditentukan sisi ringan; ∝ ni², naik sekitar 1.300 kali dari 300 ke 350 K.', mod: 'M05b' },
+{ id: 'ideality', en: 'ideality factor', idn: 'faktor idealitas', def: 'n dalam I = Is(e^(V/nVt) − 1); n = 1 untuk difusi ideal, n ≈ 2 untuk rekombinasi di deplesi dan injeksi tinggi.', mod: 'M05b' },
+{ id: 'generation-current', en: 'generation current', idn: 'arus generasi', def: 'Bocor bias mundur dari pasangan elektron-hole yang dibangkitkan di deplesi: q ni W A/(2τg). Naik dengan √(Vbi − V) dan ∝ ni, jauh di atas Is ideal.', mod: 'M05b' },
+{ id: 'series-resistance', en: 'series resistance', idn: 'resistansi seri', def: 'Resistansi badan netral dan kontak dioda, Rs; menambah IRs pada tegangan terminal dan melengkungkan kurva I-V semilog pada arus tinggi.', mod: 'M05b' },
+{ id: 'junction-cap', en: 'junction capacitance', idn: 'kapasitansi junction', def: 'Cj = εsA/W ∝ (Vbi − V)^(−1/2); kapasitansi deplesi, turun saat bias mundur. Plot 1/Cj² terhadap V linear dan memberi doping dan Vbi.', mod: 'M05b' },
+{ id: 'diffusion-cap', en: 'diffusion capacitance', idn: 'kapasitansi difusi', def: 'Cd = τ I/(nVt) (gaya SPICE); dari muatan minoritas yang tersimpan saat bias maju; dominan atas Cj pada arus besar.', mod: 'M05b' },
+{ id: 'storage-time', en: 'storage time', idn: 'waktu penyimpanan', def: 'Waktu pembuangan muatan minoritas saat dioda dibalik: ts = τ ln(1 + IF/IR); batas kecepatan switching dioda PN. Schottky tidak memilikinya.', mod: 'M05b' },
+{ id: 'avalanche', en: 'avalanche breakdown', idn: 'breakdown avalanche', def: 'Breakdown akibat ionisasi tumbukan berantai pada medan sekitar 3 × 10^5 V/cm; dominan di atas sekitar 6,7 V; koefisien suhu positif. Vbr ≈ 61,6 (Nb/10^16)^(−3/4) V (sepihak).', mod: 'M05b' },
+{ id: 'zener', en: 'Zener breakdown', idn: 'breakdown Zener', def: 'Breakdown akibat tunneling band-to-band pada deplesi sangat tipis (doping tinggi), di bawah sekitar 4,5 V; koefisien suhu negatif.', mod: 'M05b' },
+{ id: 'schottky', en: 'Schottky diode', idn: 'dioda Schottky', def: 'Sambungan logam-semikonduktor dengan penghalang φB; arus oleh pembawa mayoritas (emisi termionik): Is = A A* T² e^(−φB/Vt). Vf rendah, tanpa waktu penyimpanan, bocor besar.', mod: 'M05b' },
+{ id: 'rectifier', en: 'rectifier', idn: 'penyearah', def: 'Rangkaian dioda yang mengubah AC menjadi DC; dengan kapasitor, riak ≈ Vmax/(f RL C) (untuk riak kecil) dan arus dioda mengalir dalam pulsa sempit berarus puncak besar.', mod: 'M05b' },
+{ id: 'ptat', en: 'PTAT and CTAT', idn: 'PTAT dan CTAT', def: 'Besaran sebanding suhu mutlak (PTAT, mis. ΔVBE = Vt ln N, +0,18 mV/K untuk N = 8) dan komplementer terhadap suhu (CTAT, VBE sekitar −2 mV/K).', mod: 'M05b' },
+{ id: 'bgr', en: 'bandgap reference', idn: 'referensi bandgap', def: 'Sumber tegangan stabil terhadap suhu: Vref = VBE + KΔVBE ≈ Eg0/q + γVt ≈ 1,2 V; kemiringan suhu nol dengan K yang tepat. Dibahas rinci di M27b.', mod: 'M05b, M27b' }
+]);
+
+/* ---------- pembantu ---------- */
+function dc(x, d){ return x.toFixed(d).replace('.', ','); }
+function sci(x, d){ return x.toExponential(d === undefined ? 3 : d).replace('.', ','); }
+function sg(x, d){ return (x < 0 ? MINUS : '') + dc(Math.abs(x), d); }
+function lg(x){ return Math.log(x) / Math.LN10; }
+
+/* ---------- model silikon (identik dengan semi.py dan pn.py) ---------- */
+var K_EV = 8.617333262e-5, Q = 1.602176634e-19, EPS = 11.7 * 8.8541878128e-14, CT = { n: [68.5, 1414, 9.2e16, 0.711], p: [44.9, 470.5, 2.23e17, 0.719] };
+function vt(T){ return K_EV * T; }
+function eg(T){ return 1.17 - 4.73e-4 * T * T / (T + 636.0); }
+function nc(T){ return 2.8e19 * Math.pow(T / 300, 1.5); }
+function nv(T){ return 1.04e19 * Math.pow(T / 300, 1.5); }
+function ni(T){ return Math.sqrt(nc(T) * nv(T)) * Math.exp(-eg(T) / (2 * vt(T))); }
+function mobility(N, k){ var c = CT[k]; return c[0] + (c[1] - c[0]) / (1 + Math.pow(N / c[2], c[3])); }
+function vbi(na, nd, T){ var n0 = ni(T); return vt(T) * Math.log(na * nd / (n0 * n0)); }
+function depl(na, nd, v, T){ var psi = vbi(na, nd, T) - v, w = Math.sqrt(2 * EPS * psi / Q * (1 / na + 1 / nd)), xn = w * na / (na + nd), xp = w * nd / (na + nd); return [w, xn, xp, Q * nd * xn / EPS]; }
+function isat(na, nd, A, tau, T){
+  var N = na + nd, dp = mobility(N, 'p') * vt(T), dn = mobility(N, 'n') * vt(T), lp = Math.sqrt(dp * tau), ln = Math.sqrt(dn * tau), n0 = ni(T);
+  return A * Q * n0 * n0 * (dp / (lp * nd) + dn / (ln * na));
+}
+function vOfI(i, is, n, rs, T){ return n * vt(T) * Math.log(i / is + 1) + i * rs; }
+function iOfV(v, is, n, rs, T){ var lo = 0, hi = 1e4, mid, k; for (k = 0; k < 200; k++){ mid = (lo + hi) / 2; if (vOfI(mid, is, n, rs, T) > v) hi = mid; else lo = mid; } return (lo + hi) / 2; }
+var NA2 = 1e18, ND2 = 1e16, AR2 = 1e-4, TAU = 1e-6;
+
+/* ---------- 1. junction ---------- */
+function v1Draw(){
+  var ea = +q('#v1-na').value, ed = +q('#v1-nd').value, V = +q('#v1-v').value, T = 300, na = Math.pow(10, ea), nd = Math.pow(10, ed);
+  q('#v1-nav').textContent = String(ea); q('#v1-ndv').textContent = String(ed); q('#v1-vv').textContent = sg(V, 1);
+  var d = depl(na, nd, V, T), W = d[0], xn = d[1], xp = d[2], em = d[3], phi = vbi(na, nd, T) - V, g = eg(T), k = vt(T), i, svg, s, x0 = 200 + 200 * xp / W;
+  var hp = 34 * Math.min(1, na / Math.max(na, nd)), hn = 34 * Math.min(1, nd / Math.max(na, nd));
+  svg = '<svg viewBox="0 0 600 400" role="img" aria-label="junction PN: muatan, medan, pita energi">';
+  svg += '<line class="ax" x1="20" x2="580" y1="52" y2="52"/><rect class="qp" x="200" y="52" width="' + (x0 - 200) + '" height="' + hp + '"/><rect class="qn" x="' + x0 + '" y="' + (52 - hn) + '" width="' + (400 - x0) + '" height="' + hn + '"/>';
+  svg += '<text x="22" y="20">muatan ρ</text><text x="22" y="34" style="font-size:10px">(−qNa di p, +qNd di n)</text>';
+  svg += '<line class="ax" x1="20" x2="580" y1="112" y2="112"/><polyline class="fe" points="200,112 ' + x0 + ',160 400,112"/><text x="22" y="100">medan E(x)</text><text x="' + (x0 + 8) + '" y="172" style="font-size:11px">Emax = ' + sci(em, 2) + ' V/cm</text>';
+  s = 175 / (phi + g); var ecp = 205, ecn = ecp + phi * s;
+  var efpY = ecp + g * s - k * Math.log(nv(T) / na) * s, efnY = ecn + k * Math.log(nc(T) / nd) * s, pe = '', pv = '', x, ps;
+  for (i = 0; i <= 40; i++){
+    x = -xp + (xn + xp) * i / 40; ps = x < 0 ? Q * na * (x + xp) * (x + xp) / (2 * EPS) : phi - Q * nd * (xn - x) * (xn - x) / (2 * EPS);
+    pe += (200 + 200 * i / 40).toFixed(1) + ',' + (ecp + ps * s).toFixed(1) + ' '; pv += (200 + 200 * i / 40).toFixed(1) + ',' + (ecp + g * s + ps * s).toFixed(1) + ' ';
+  }
+  svg += '<polyline class="bd" fill="none" points="20,' + ecp + ' ' + pe + '580,' + ecn.toFixed(1) + '"/><polyline class="bd" fill="none" points="20,' + (ecp + g * s).toFixed(1) + ' ' + pv + '580,' + (ecn + g * s).toFixed(1) + '"/>';
+  if (Math.abs(V) < 0.005) svg += '<line class="ef" x1="20" x2="580" y1="' + efpY.toFixed(1) + '" y2="' + efpY.toFixed(1) + '"/>';
+  else svg += '<line class="efp" x1="20" x2="400" y1="' + efpY.toFixed(1) + '" y2="' + efpY.toFixed(1) + '"/><line class="efn" x1="200" x2="580" y1="' + efnY.toFixed(1) + '" y2="' + efnY.toFixed(1) + '"/>';
+  svg += '<text x="22" y="' + (ecp - 6) + '">Ec</text><text x="22" y="' + (ecp + g * s + 14).toFixed(1) + '">Ev</text><text x="30" y="395" style="font-size:11px">p (Na)</text><text x="520" y="395" style="font-size:11px">n (Nd)</text>';
+  svg += '<text x="' + (Math.abs(V) < 0.005 ? 560 : 540) + '" y="' + ((Math.abs(V) < 0.005 ? efpY : efnY) - 6).toFixed(1) + '" style="font-weight:700">' + (Math.abs(V) < 0.005 ? 'EF' : 'EFn') + '</text>';
+  if (Math.abs(V) >= 0.005) svg += '<text x="26" y="' + (efpY - 6).toFixed(1) + '" style="font-weight:700">EFp</text>';
+  svg += '</svg>';
+  q('#v1-fig').innerHTML = svg;
+  q('#v1-out').textContent = 'Na=' + sci(na, 2) + ' · Nd=' + sci(nd, 2) + ' · V=' + sg(V, 1) + ' · Vbi=' + dc(vbi(na, nd, T), 4) + ' V · W=' + dc(W * 1e4, 4) + ' µm · xp=' + dc(xp * 1e4, 4) + ' µm · xn=' + dc(xn * 1e4, 4) + ' µm · Emax=' + sci(em, 3) + ' V/cm · Cj/A=' + dc(EPS / W * 1e9, 2) + ' nF/cm²';
+}
+
+/* ---------- 2. I-V dioda ---------- */
+var v2plot = null;
+function v2Draw(){
+  var scale = q('#v2-s').value, T = +q('#v2-t').value, n = +q('#v2-n').value, rs = +q('#v2-rs').value, V = +q('#v2-v').value, is = isat(NA2, ND2, AR2, TAU, T), pts = [], i, e, I, v;
+  q('#v2-tv').textContent = String(T); q('#v2-nv').textContent = dc(n, 1); q('#v2-rv').textContent = String(rs); q('#v2-vv').textContent = dc(V, 2);
+  if (scale === 'log'){ for (e = -12; e <= 0.0001; e += 0.125){ I = Math.pow(10, e); v = vOfI(I, is, n, rs, T); if (v <= 1.2) pts.push([v, e]); } }
+  else { for (i = 1; i <= 200; i++){ I = i * 0.05e-3; v = vOfI(I, is, n, rs, T); if (v <= 1.2) pts.push([v, I * 1e3]); } pts.unshift([0, 0]); }
+  var o = { height: 230, x: { label: 'V', unit: 'V', min: 0, max: 1.2, plain: true }, y: scale === 'log' ? { label: 'log10 I (A)', unit: '', min: -12, max: 0, plain: true } : { label: 'I', unit: 'mA', min: 0, max: 10, plain: true },
+    series: [{ label: 'I(V)', kind: 'data', dash: [], unit: '', pts: pts }], marks: [{ x: V, label: 'V', kind: 'hi' }] };
+  if (!v2plot) v2plot = ICD.plot('#v2-plot', o); else v2plot.set(o);
+  var iv = iOfV(V, is, n, rs, T);
+  q('#v2-out').textContent = 'T=' + T + ' · n=' + dc(n, 1) + ' · Rs=' + rs + ' · Is=' + sci(is, 4) + ' A · V=' + dc(V, 2) + ' V · I=' + sci(iv, 3) + ' A · rd=' + dc(n * vt(T) / iv + rs, 2) + ' Ω · V1mA=' + dc(vOfI(1e-3, is, n, rs, T), 4) + ' V · lereng=' + dc(n * vt(T) * Math.LN10 * 1e3, 1) + ' mV/dek';
+}
+
+/* ---------- 3. C-V ---------- */
+var v3plot = null;
+function cOf(na, nd, v, A){ return EPS * A / depl(na, nd, v, 300)[0]; }
+function v3Draw(){
+  var mode = q('#v3-m').value, ea = +q('#v3-na').value, ed = +q('#v3-nd').value, A = +q('#v3-a').value, V = +q('#v3-v').value, na = Math.pow(10, ea), nd = Math.pow(10, ed), pts = [], i, vv, c;
+  q('#v3-nav').textContent = String(ea); q('#v3-ndv').textContent = String(ed); q('#v3-vv').textContent = sg(V, 1);
+  for (i = 0; i <= 103; i++){ vv = -10 + i * 0.1; c = cOf(na, nd, vv, A); pts.push([vv, mode === 'c' ? c * 1e12 : 1 / (c * c) / 1e23]); }
+  var o = { height: 220, x: { label: 'V', unit: 'V', min: -10, max: 0.3, plain: true }, y: mode === 'c' ? { label: 'Cj', unit: 'pF', min: 0, plain: true } : { label: '1/C²', unit: '10²³ F⁻²', min: 0, plain: true },
+    series: [{ label: mode === 'c' ? 'Cj(V)' : '1/Cj²(V)', kind: 'data', dash: [], unit: '', pts: pts }], marks: [{ x: V, label: 'V', kind: 'hi' }] };
+  if (!v3plot) v3plot = ICD.plot('#v3-plot', o); else v3plot.set(o);
+  var c1 = cOf(na, nd, -6, A), c2 = cOf(na, nd, -2, A), y1 = 1 / (c1 * c1), y2 = 1 / (c2 * c2), sl = (y2 - y1) / 4, nex = -2 / (Q * EPS * A * A * sl), vex = -2 - y2 / sl, d = depl(na, nd, V, 300);
+  q('#v3-out').textContent = 'Na=' + sci(na, 2) + ' · Nd=' + sci(nd, 2) + ' · A=' + sci(A, 0) + ' cm² · V=' + sg(V, 1) + ' · Vbi=' + dc(vbi(na, nd, 300), 4) + ' V · W=' + dc(d[0] * 1e4, 4) + ' µm · C=' + dc(cOf(na, nd, V, A) * 1e12, 3) + ' pF · C0=' + dc(cOf(na, nd, 0, A) * 1e12, 3) + ' pF · Neff=' + sci(na * nd / (na + nd), 4) + ' cm⁻³ · N_ekstraksi=' + sci(nex, 4) + ' cm⁻³ · Vbi_ekstraksi=' + dc(vex, 4) + ' V';
+}
+
+/* ---------- 4. penyearah ---------- */
+var v4plot = null, ISAT = isat(NA2, ND2, 1e-2, TAU, 300);
+function idiode(v){ return ISAT * (Math.exp(Math.min(v / vt(300), 700)) - 1); }
+function simRect(vpk, f, c, rl){
+  var steps = 400, cycles = 8, dt = 1 / (f * steps), vc = 0, k, j, vin, lo, hi, mid, g, rec = [];
+  for (k = 0; k < cycles * steps; k++){
+    vin = vpk * Math.sin(2 * Math.PI * f * (k + 1) * dt); lo = -1; hi = vpk + 1;
+    for (j = 0; j < 70; j++){ mid = 0.5 * (lo + hi); g = c * (mid - vc) / dt + mid / rl - idiode(vin - mid); if (g > 0) hi = mid; else lo = mid; }
+    vc = 0.5 * (lo + hi); rec.push([vin, vc, idiode(vin - vc), (k + 1) * dt]);
+  }
+  return rec;
+}
+function v4Draw(){
+  var vpk = +q('#v4-vpk').value, f = +q('#v4-f').value, c = +q('#v4-c').value, rl = +q('#v4-rl').value, steps = 400;
+  q('#v4-vv').textContent = dc(vpk, 1);
+  var rec = simRect(vpk, f, c, rl), last = rec.slice(-steps), vmax = -Infinity, vmin = Infinity, ipk = 0, i, cond = 0, a = [], b = [], t0 = rec[rec.length - 2 * steps][3];
+  last.forEach(function(r){ if (r[1] > vmax) vmax = r[1]; if (r[1] < vmin) vmin = r[1]; if (r[2] > ipk) ipk = r[2]; });
+  last.forEach(function(r){ if (r[2] > 1e-3 * ipk) cond++; });
+  rec.slice(-2 * steps).forEach(function(r){ a.push([(r[3] - t0) * 1e3, r[0]]); b.push([(r[3] - t0) * 1e3, r[1]]); });
+  var o = { height: 230, x: { label: 't', unit: 'ms', plain: true }, y: { label: 'tegangan', unit: 'V', plain: true },
+    series: [{ label: 'Vin', kind: 'ctrl', dash: [5, 4], unit: '', pts: a }, { label: 'Vout', kind: 'data', dash: [], unit: '', pts: b }], marks: [] };
+  if (!v4plot) v4plot = ICD.plot('#v4-plot', o); else v4plot.set(o);
+  q('#v4-out').textContent = 'Vpk=' + dc(vpk, 1) + ' · f=' + f + ' · C=' + dc(c * 1e6, 0) + ' µF · RL=' + rl + ' Ω · Vmax=' + dc(vmax, 3) + ' V · Vmin=' + dc(vmin, 3) + ' V · riak=' + dc(vmax - vmin, 3) + ' V · riak_rumus=' + dc(vmax / (f * rl * c), 3) + ' V · Ipk=' + dc(ipk, 3) + ' A · sudut=' + dc(360 * cond / steps, 0) + '°';
+}
+
+/* ---------- kuis ---------- */
+function quizSetup(){
+ICD.quiz.mount('#kuis', { id: 'm05b', title: 'Kuis M05b', questions: [
+{ q: 'Pada junction p+/n dengan Na = 10¹⁹ dan Nd = 10¹⁵ cm⁻³, di mana daerah deplesi terutama berada?', o: [
+  { t: 'Hampir seluruhnya di sisi n (xn/xp = 10⁴)', ok: true, w: 'Netralitas muatan Na·xp = Nd·xn membuat deplesi menembus jauh lebih dalam ke sisi yang berdoping lebih ringan, dan W ≈ xn.' },
+  { t: 'Sama di kedua sisi, W/2 masing-masing', w: 'Itu hanya benar untuk junction simetris; di sini perbandingan doping 10.000 kali.' },
+  { t: 'Hampir seluruhnya di sisi p', w: 'Kebalikannya: sisi berdoping berat hanya perlu penetrasi sangat tipis untuk memberi muatan yang sama.' },
+  { t: 'Tidak ada daerah deplesi karena p+ berdoping tinggi', w: 'Setiap junction memiliki deplesi; ia hanya tipis di sisi berdoping berat.' }] },
+{ q: 'Pada junction 10¹⁷/10¹⁶, tegangan mundur dinaikkan dari 1 V menjadi 5 V. Bagaimana lebar deplesi (0,506 µm pada −1 V) berubah?', o: [
+  { t: 'Naik sekitar 1,8 kali (menjadi 0,908 µm), mengikuti √(Vbi − V)', ok: true, w: 'W ∝ √(0,7993 + V mundur): √(5,7993/1,7993) = 1,80, sehingga 0,506 µm menjadi 0,908 µm.' },
+  { t: 'Naik 5 kali, sebanding dengan tegangan', w: 'W tidak linear terhadap tegangan; hubungannya akar kuadrat dari (Vbi − V).' },
+  { t: 'Tetap, karena doping tidak berubah', w: 'Doping tetap, tetapi lebar yang diperlukan agar ion tetap menyeimbangkan tegangan bertambah.' },
+  { t: 'Menyempit karena medan menjadi lebih kuat', w: 'Bias mundur melebarkan deplesi; bias maju yang menyempitkannya.' }] },
+{ q: 'Berapa kenaikan tegangan maju yang menaikkan arus dioda ideal (n = 1) sepuluh kali pada 300 K?', o: [
+  { t: 'Sekitar 60 mV', ok: true, w: 'ΔV = Vt ln 10 = 25,85 mV × 2,303 = 59,5 mV per dekade arus.' },
+  { t: 'Sekitar 0,7 V', w: 'Itu tegangan maju tipikal, bukan perubahan yang menghasilkan faktor 10 pada arus.' },
+  { t: 'Sekitar 26 mV', w: 'Vt = 25,85 mV menaikkan arus hanya e = 2,72 kali, bukan sepuluh kali.' },
+  { t: 'Sekitar 600 mV', w: 'Itu menaikkan arus 10 pangkat 10 kali (10 dekade), jauh dari sepuluh kali.' }] },
+{ q: 'Dioda p+/n (Na = 10¹⁸, Nd = 10¹⁶): suku mana yang menentukan Is?', o: [
+  { t: 'Injeksi hole ke sisi n yang berdoping ringan (Dp/(Lp·Nd))', ok: true, w: 'Sisi ringan memiliki konsentrasi minoritas ni²/N yang jauh lebih besar; suku sisi n 1,98 × 10⁻¹³ lawan sisi p 2,7 × 10⁻¹⁵.' },
+  { t: 'Injeksi elektron ke sisi p yang berdoping berat', w: 'Konsentrasi minoritas di sisi p+ sangat kecil (ni²/Na), sehingga sumbangannya hanya sekitar 1%.' },
+  { t: 'Keduanya sama besar karena arus harus kontinu', w: 'Arus total kontinu, tetapi komposisinya (hole atau elektron) sangat tidak seimbang.' },
+  { t: 'Kapasitansi deplesi', w: 'Kapasitansi tidak menentukan arus DC saturasi.' }] },
+{ q: 'Arus dioda dijaga 1 mA. Suhu naik dari 300 K ke 350 K. Apa yang terjadi pada tegangan maju?', o: [
+  { t: 'Turun sekitar 89 mV (kira-kira −1,7 mV/K)', ok: true, w: 'Is naik 1.331 kali, sehingga V = Vt ln(I/Is) turun dari 0,769 V ke 0,680 V pada model lab.' },
+  { t: 'Naik sekitar 89 mV', w: 'Vt memang naik, tetapi kenaikan Is jauh lebih dominan sehingga tegangan turun.' },
+  { t: 'Tetap karena arusnya tetap', w: 'Arus tetap berarti tegangan menyesuaikan diri terhadap Is(T) yang berubah drastis.' },
+  { t: 'Naik sebanding T karena Vt = kT/q', w: 'Hanya satu faktor dari persamaan; efek Is(T) yang ∝ ni² mengalahkannya.' }] },
+{ q: 'Mengapa arus bocor mundur nyata (mis. 2,4 pA pada −1 V) jauh melebihi Is ideal (0,12 fA)?', o: [
+  { t: 'Generasi pasangan elektron-hole di dalam daerah deplesi', ok: true, w: 'Igen = q ni W A/(2τg) tumbuh dengan W dan hanya ∝ ni; di contoh 20.000 kali Is pada −1 V.' },
+  { t: 'Karena persamaan Shockley salah', w: 'Persamaan itu benar untuk difusi minoritas; yang kurang adalah komponen generasi yang tidak termasuk di dalamnya.' },
+  { t: 'Karena resistansi seri', w: 'Rs menyangkut bias maju arus besar, bukan arus bocor pikoampere.' },
+  { t: 'Karena kapasitansi difusi', w: 'Kapasitansi tidak menimbulkan arus DC.' }] },
+{ q: 'Bagaimana kapasitansi junction berubah saat tegangan mundur bertambah?', o: [
+  { t: 'Turun, ∝ (Vbi − V)^(−1/2), karena deplesi melebar', ok: true, w: 'Cj = εsA/W dan W ∝ √(Vbi − V); contoh 10¹⁷/10¹⁶: 30,7 nF/cm² (0 V) menjadi 6,0 nF/cm² (−20 V).' },
+  { t: 'Naik karena medan lebih kuat', w: 'Medan lebih kuat, tetapi kapasitansi ditentukan jarak pemisah muatan (W) yang membesar.' },
+  { t: 'Tetap karena luas tidak berubah', w: 'Luas tetap, tetapi jarak efektif antar pelat (W) berubah.' },
+  { t: 'Turun linear dengan tegangan', w: 'Penurunan mengikuti akar kuadrat, bukan linear.' }] },
+{ q: 'Pada pengukuran C-V, grafik 1/C² terhadap V berupa garis lurus. Apa yang diperoleh dari kemiringan dan titik potongnya?', o: [
+  { t: 'Doping sisi ringan (Neff) dari kemiringan, dan Vbi dari titik potong sumbu V', ok: true, w: 'Kemiringan = −2/(q εs A² Neff); contoh: 9,90 × 10¹⁵ cm⁻³ dan 0,8588 V, tepat Neff dan Vbi model.' },
+  { t: 'Umur pembawa dari kemiringan', w: 'Umur pembawa tidak muncul dalam kapasitansi deplesi.' },
+  { t: 'Arus saturasi dari titik potong', w: 'Is tidak ada hubungannya dengan C-V; itu dari kurva I-V.' },
+  { t: 'Resistansi seri dari kemiringan', w: 'Rs diperoleh dari I-V pada arus tinggi atau pengukuran impedansi, bukan kemiringan 1/C².' }] },
+{ q: 'Pada bias maju besar, kapasitansi yang dominan pada dioda adalah…', o: [
+  { t: 'Kapasitansi difusi dari muatan minoritas tersimpan (Cd = τI/nVt)', ok: true, w: 'Pada 1 mA dan τ = 1 µs, Cd = 38,7 nF, ribuan kali lebih besar dari Cj0 = 3,09 pF.' },
+  { t: 'Kapasitansi junction karena deplesi menyempit', w: 'Cj naik sedikit, tetapi tertutup oleh Cd yang tumbuh sebanding arus.' },
+  { t: 'Kapasitansi oksida', w: 'Dioda PN tidak punya oksida gate; itu sifat kapasitor MOS.' },
+  { t: 'Tidak ada kapasitansi pada bias maju', w: 'Selalu ada; hanya jenis yang dominan berganti.' }] },
+{ q: 'Dioda dengan τ = 1 µs dialiri IF = 10 mA lalu dibalik dengan IR = 5 mA. Perkiraan waktu penyimpanan?', o: [
+  { t: 'Sekitar 1,1 µs (τ ln 3)', ok: true, w: 'ts = τ ln(1 + IF/IR) = 1 µs × ln(1 + 2) = 1,099 µs.' },
+  { t: 'Sekitar 2 µs (τ·IF/IR)', w: 'Model kendali muatan memberi logaritma, bukan perbandingan langsung.' },
+  { t: 'Nol, karena dioda langsung mati', w: 'Muatan minoritas harus dibuang dulu; selama itu dioda tetap menghantar mundur.' },
+  { t: 'Sekitar 10 µs', w: 'Itu 10 kali τ; tidak ada dasar dari rumus ts.' }] },
+{ q: 'Manakah pernyataan benar tentang breakdown?', o: [
+  { t: 'Avalanche punya koefisien suhu positif; Zener negatif; sekitar 5 sampai 6 V saling meniadakan', ok: true, w: 'Fonon menghambat percepatan pembawa saat panas (avalanche +), sedangkan celah menyempit mempermudah tunneling (Zener −).' },
+  { t: 'Avalanche terjadi pada doping sangat tinggi dan deplesi sangat tipis', w: 'Itu menggambarkan Zener; avalanche memerlukan deplesi lebar untuk percepatan.' },
+  { t: 'Breakdown selalu merusak dioda secara permanen', w: 'Dengan pembatas arus, breakdown dapat dipakai (dioda Zener, clamp).' },
+  { t: 'Tegangan breakdown naik bila doping naik', w: 'Sebaliknya: Vbr ∝ Nb^(−3/4), turun saat doping naik (61,6 V pada 10¹⁶ lawan 11,0 V pada 10¹⁷).' }] },
+{ q: 'Mengapa dioda Schottky tidak memiliki waktu penyimpanan?', o: [
+  { t: 'Arusnya dibawa pembawa mayoritas lewat emisi termionik, tanpa muatan minoritas tersimpan', ok: true, w: 'Tidak ada muatan yang harus dibuang saat dibalik, sehingga switching hampir seketika dan Vf rendah (0,34 V pada 1 mA untuk φB = 0,7 V).' },
+  { t: 'Karena Schottky memiliki τ yang sangat besar', w: 'Justru tidak ada τ minoritas yang relevan; τ besar akan memperpanjang waktu penyimpanan.' },
+  { t: 'Karena tidak punya kapasitansi', w: 'Schottky tetap memiliki kapasitansi deplesi.' },
+  { t: 'Karena memiliki tegangan breakdown sangat tinggi', w: 'Silikon Schottky biasanya breakdown rendah; ini tidak berhubungan dengan waktu penyimpanan.' }] },
+{ q: 'Bagaimana bandgap reference menghasilkan tegangan stabil terhadap suhu?', o: [
+  { t: 'Menjumlahkan VBE (turun ≈ 2 mV/K) dengan K·ΔVBE yang naik sebanding T; hasil sekitar 1,2 V', ok: true, w: 'Dengan K tepat kemiringan saling menghapus; di model lab K = 12,71 untuk N = 8 dan Vref = 1,2785 V yang datar (6 mV dari 250 sampai 400 K).' },
+  { t: 'Memakai dioda Zener 5,6 V saja', w: 'Itu referensi lain; bandgap berbasis VBE dan ΔVBE di sekitar 1,2 V.' },
+  { t: 'Mendinginkan chip dengan termostat', w: 'Referensi bandgap kompensasi murni lewat rangkaian, tanpa pengendalian suhu aktif.' },
+  { t: 'Memakai resistor dengan koefisien suhu nol', w: 'Resistor mempengaruhi K, tetapi sumber stabilitas adalah kombinasi CTAT dan PTAT.' }] },
+{ q: 'Penyearah setengah gelombang: C dinaikkan 10 kali pada beban yang sama. Apa yang terjadi?', o: [
+  { t: 'Riak turun hampir 10 kali, tetapi arus puncak dioda naik dan sudut hantar menyempit', ok: true, w: 'Di simulasi: riak 0,700 V menjadi 0,078 V, arus puncak 0,073 A menjadi 0,137 A, sudut hantar 48° menjadi 32°.' },
+  { t: 'Riak turun dan arus puncak dioda juga turun', w: 'Arus rata-rata sama harus dipikul oleh jendela hantar yang lebih sempit, sehingga puncaknya naik.' },
+  { t: 'Riak tidak berubah, hanya tegangan puncak naik', w: 'Riak ≈ Vmax/(f·RL·C) berbanding terbalik dengan C.' },
+  { t: 'Tegangan keluaran maksimum naik di atas Vpk', w: 'Dioda tidak bisa menaikkan tegangan di atas puncak sumber; yang ada drop 0,7 V.' }] }
+]});
+}
+
+/* ---------- flashcard ---------- */
+ICD.cards.register('m05b-pn-junction-dioda', [
+{ id: 'vbi', f: 'Potensial built-in junction?', b: 'Vbi = Vt ln(NaNd/ni²); 0,799 V untuk 10¹⁷/10¹⁶ pada 300 K. Tidak bisa diukur voltmeter.' },
+{ id: 'xnxp', f: 'Pembagian deplesi ke dua sisi?', b: 'Na·xp = Nd·xn; deplesi lebih dalam ke sisi ringan. xn = W·Na/(Na+Nd).' },
+{ id: 'w', f: 'Lebar deplesi?', b: 'W = √(2εs(Vbi − V)(1/Na + 1/Nd)/q); εs = 1,036e−12 F/cm; 0,337 µm (0 V) dan 0,908 µm (−5 V) untuk 10¹⁷/10¹⁶.' },
+{ id: 'emax', f: 'Medan puncak?', b: 'Emax = 2(Vbi − V)/W = qNd·xn/εs; 4,74e4 V/cm pada 0 V untuk 10¹⁷/10¹⁶.' },
+{ id: 'shockley', f: 'Persamaan dioda?', b: 'I = Is(e^(V/nVt) − 1); Is = A q ni²(Dp/(Lp Nd) + Dn/(Ln Na)); dominan sisi ringan.' },
+{ id: 'dek', f: 'Kemiringan semilog?', b: '59,5·n mV per dekade pada 300 K. rd = nVt/I: 25,85 Ω pada 1 mA.' },
+{ id: 'temp', f: 'Suhu dan tegangan maju?', b: 'Is ∝ ni² naik 1.331 kali dari 300 ke 350 K; V pada 1 mA: 0,769 → 0,680 V, sekitar −1,7 mV/K.' },
+{ id: 'gen', f: 'Bocor mundur nyata?', b: 'Igen = q ni W A/(2τg): ∝ W dan ∝ ni; 2,4 pA pada −1 V, 20.000 kali Is; naik 2,2 kali per 10 K.' },
+{ id: 'rs', f: 'Resistansi seri?', b: 'V = nVt ln(I/Is) + I·Rs; 10 Ω pada 10 mA menambah 0,1 V dan melengkungkan kurva semilog.' },
+{ id: 'cj', f: 'Kapasitansi junction?', b: 'Cj = εsA/W = Cj0/√(1 − V/Vbi); 30,7 nF/cm² (0 V) → 6,0 nF/cm² (−20 V) untuk 10¹⁷/10¹⁶.' },
+{ id: 'cv', f: 'Ekstraksi C-V?', b: '1/C² linear dalam V; kemiringan = −2/(q εs A² Neff), titik potong sumbu V = Vbi. Neff = NaNd/(Na+Nd).' },
+{ id: 'cd', f: 'Kapasitansi difusi dan waktu penyimpanan?', b: 'Cd = τI/(nVt) (38,7 nF pada 1 mA, τ = 1 µs); ts = τ ln(1 + IF/IR) (1,1 µs untuk 10 mA/5 mA).' },
+{ id: 'br', f: 'Breakdown?', b: 'Avalanche > 6,7 V (suhu +), Zener < 4,5 V (suhu −); Vbr ≈ 61,6 (Nb/10¹⁶)^(−3/4) V untuk sepihak (1e15: 347 V, 1e17: 11 V).' },
+{ id: 'sch', f: 'Dioda Schottky?', b: 'Is = A A* T² e^(−φB/Vt); Vf 0,19 sampai 0,49 V (φB 0,55 sampai 0,85 V) pada 1 mA; tanpa ts; bocor besar.' },
+{ id: 'rect', f: 'Penyearah dengan kapasitor?', b: 'Riak ≈ Vmax/(f RL C) (hanya riak kecil); arus puncak dioda jauh di atas rata-rata (0,137 A lawan 4,2 mA pada 1000 µF).' },
+{ id: 'ptat', f: 'PTAT dan CTAT?', b: 'ΔVBE = Vt ln N naik sebanding T (0,179 mV/K, N = 8); VBE turun sekitar −2,3 mV/K di model.' },
+{ id: 'bgr', f: 'Bandgap reference?', b: 'Vref = VBE + KΔVBE; K = 12,71 untuk N = 8; Vref = Eg0/q + γVt ≈ 1,2 V, tidak bergantung N. Rincian di M27b.' }
+]);
+ICD.cards.mount('#kartu', { file: 'm05b-pn-junction-dioda' });
+
+/* ---------- pasang ---------- */
+ICD.ready(function(){
+  var pairs = [['#v1-na', '#v1-nd', '#v1-v', v1Draw], ['#v2-s', '#v2-t', '#v2-n', '#v2-rs', '#v2-v', v2Draw], ['#v3-m', '#v3-na', '#v3-nd', '#v3-a', '#v3-v', v3Draw], ['#v4-vpk', '#v4-f', '#v4-c', '#v4-rl', v4Draw]];
+  pairs.forEach(function(arr){ var fn = arr[arr.length - 1]; arr.slice(0, -1).forEach(function(id){ q(id).addEventListener('input', fn); q(id).addEventListener('change', fn); }); fn(); });
+  quizSetup();
+});
+})();
+</script>
+</body>
+</html>
