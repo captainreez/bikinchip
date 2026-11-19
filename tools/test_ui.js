@@ -15,29 +15,29 @@ const U = f => require('url').pathToFileURL(require('path').resolve(process.env.
   assert(await p.locator('#parts a[href^="kurikulum.html?part="]').count() === 9, 'sembilan kartu Part menaut ke kurikulum.html?part=N');
   await p.goto(U('belajar.html')); await p.waitForTimeout(300);
   assert(await p.isVisible('#empty') && await p.locator('#empty .steps li').count() === 3 && !(await p.isVisible('#dash')), 'belajar: empty state dengan 3 langkah');
-  // lesson M04d
-  await p.goto(U('m04d-python-tcl-algoritma.html')); await p.waitForTimeout(300);
-  const nx = p.locator('.icd-nav a.next'); assert((await nx.getAttribute('href')) === 'belajar.html#kartu' && (await nx.textContent()).includes('Segera'), 'berikutnya M05a bertanda Segera');
-  const soon = p.locator('#s16 a.icd-soon'); assert(await soon.count() === 1, 'tautan M05a di rujukan bertanda Segera');
+  // lesson M05a
+  await p.goto(U('m05a-pita-energi-pembawa.html')); await p.waitForTimeout(300);
+  const nx = p.locator('.icd-nav a.next'); assert((await nx.getAttribute('href')) === 'belajar.html#kartu' && (await nx.textContent()).includes('Segera'), 'berikutnya M05b bertanda Segera');
+  const soon = p.locator('#s16 a.icd-soon'); assert(await soon.count() === 1, 'tautan M05b di rujukan bertanda Segera');
   assert(/\S\sSegera$/.test((await soon.textContent()).trim()), 'ada spasi antara teks tautan dan badge Segera: ' + (await soon.textContent()).trim());
-  await soon.click({ force: true }); await p.waitForTimeout(200); assert(p.url().endsWith('m04d-python-tcl-algoritma.html'), 'klik tautan Segera tidak pindah halaman');
+  await soon.click({ force: true }); await p.waitForTimeout(200); assert(p.url().endsWith('m05a-pita-energi-pembawa.html'), 'klik tautan Segera tidak pindah halaman');
   assert(await p.locator('a.icd-soon[href="m04c-linux-git-make.html"]').count() === 0, 'tautan M04c tetap normal');
-  assert((await p.title()) === 'M04d Python, Tcl, struktur data dan algoritma · bikinchip' || /· bikinchip$/.test(await p.title()), 'title lesson berakhir "· bikinchip": ' + (await p.title()));
+  assert((await p.title()) === 'M05a Pita energi, pembawa muatan, doping, drift dan difusi · bikinchip' || /· bikinchip$/.test(await p.title()), 'title lesson berakhir "· bikinchip": ' + (await p.title()));
   // tanda otomatis
   await p.evaluate(() => document.querySelector('#s02').scrollIntoView());
   const need = await p.evaluate(() => Math.min(180, Math.max(10, Math.round(document.querySelector('#s02').textContent.split(/\s+/).length / 6))));
   await p.locator('#s02 .icd-secend').scrollIntoViewIfNeeded(); await p.waitForTimeout((need + 2) * 1000);
-  assert(await p.evaluate(() => ICD.store.get('progress.m04d-python-tcl-algoritma.sections.s02', false)) === true, 's02 ditandai otomatis setelah ' + need + ' detik');
+  assert(await p.evaluate(() => ICD.store.get('progress.m05a-pita-energi-pembawa.sections.s02', false)) === true, 's02 ditandai otomatis setelah ' + need + ' detik');
   assert(await p.evaluate(() => ICD.store.get('progress.m04d-python-tcl-algoritma.sections.s01', false)) === false, 's01 (cuma lewat) tidak ditandai');
   await p.evaluate(() => document.querySelector('#s07').scrollIntoView()); await p.waitForTimeout(1800);
-  assert(await p.evaluate(() => ICD.store.get('progress.m04d-python-tcl-algoritma.last')) === 's07', 'section terakhir tersimpan s07');
-  await p.goto(U('m04d-python-tcl-algoritma.html')); await p.waitForTimeout(300);
+  assert(await p.evaluate(() => ICD.store.get('progress.m05a-pita-energi-pembawa.last')) === 's07', 'section terakhir tersimpan s07');
+  await p.goto(U('m05a-pita-energi-pembawa.html')); await p.waitForTimeout(300);
   assert(await p.locator('.icd-resume').count() === 1 && (await p.textContent('.icd-resume')).includes('Contoh soal'), 'banner lanjut membaca');
   await p.click('.icd-resume a'); await p.waitForTimeout(300); assert(p.url().endsWith('#s07'), 'lompat ke #s07');
   // beranda dan belajar setelah ada progres
   await p.goto(U('index.html')); await p.waitForTimeout(300);
-  const rs = await p.textContent('#resume'); assert(rs.includes("M04d") && rs.includes('1 dari 16 section'), 'beranda: kartu Lanjutkan M04d: ' + rs.replace(/\s+/g, ' ').slice(0, 120));
-  assert(await p.locator('#resume a[href="m04d-python-tcl-algoritma.html#s07"]').count() === 1, 'Lanjutkan menuju #s07');
+  const rs = await p.textContent('#resume'); assert(rs.includes("M05a") && rs.includes('1 dari 16 section'), 'beranda: kartu Lanjutkan M05a: ' + rs.replace(/\s+/g, ' ').slice(0, 120));
+  assert(await p.locator('#resume a[href="m05a-pita-energi-pembawa.html#s07"]').count() === 1, 'Lanjutkan menuju #s07');
   await p.goto(U('belajar.html')); await p.waitForTimeout(300);
   assert(await p.isVisible('#dash') && !(await p.isVisible('#empty')), 'belajar: dashboard tampil setelah ada progres');
   assert((await p.textContent('#stats')).includes('flashcard jatuh tempo') && (await p.textContent('#stats')).includes('beruntun'), 'belajar: kartu statistik (streak, flashcard)');
@@ -49,9 +49,9 @@ const U = f => require('url').pathToFileURL(require('path').resolve(process.env.
   await p.fill('#p-start', new Date(Date.now() - 6 * 7 * 864e5).toISOString().slice(0, 10)); await p.fill('#p-hours', '40'); await p.click('#p-make'); await p.waitForTimeout(200);
   assert((await p.textContent('#b-week')).includes('Segera') && (await p.textContent('#b-week')).includes('belum terbit'), 'minggu dengan lesson belum terbit memakai badge Segera');
   // daftar terbit baru dari penyimpanan
-  await p.evaluate(() => { const a = ICD.avail.list(); a.push('m05a-pita-energi-pembawa'); ICD.store.set('meta.built', { list: a, core: '9.9' }); });
-  await p.goto(U('m04d-python-tcl-algoritma.html')); await p.waitForTimeout(300);
-  assert(await p.locator('.icd-nav a.next').getAttribute('href') === 'm05a-pita-energi-pembawa.html', 'daftar terbit baru: M05a jadi tautan biasa');
+  await p.evaluate(() => { const a = ICD.avail.list(); a.push('m05b-pn-junction-dioda'); ICD.store.set('meta.built', { list: a, core: '9.9' }); });
+  await p.goto(U('m05a-pita-energi-pembawa.html')); await p.waitForTimeout(300);
+  assert(await p.locator('.icd-nav a.next').getAttribute('href') === 'm05b-pn-junction-dioda.html', 'daftar terbit baru: M05b jadi tautan biasa');
   // 360 px semua halaman utama
   const mo = await (await b.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true })).newPage();
   for (const pg of ['index', 'kurikulum', 'belajar', 'glosarium', 'tools', 'referensi', 'pengaturan', 'tentang', 'styleguide', 'm04d-python-tcl-algoritma']) {

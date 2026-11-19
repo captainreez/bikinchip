@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M05a Pita energi, pembawa muatan, doping, drift dan difusi — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+p code,li code,td code,summary code{overflow-wrap:anywhere}
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+table.icd td.r,table.icd th.r{text-align:right;font-family:var(--f-mono)}
+table.icd td.hl,table.icd th.hl{outline:2px solid var(--s-hi);outline-offset:-2px;font-weight:700}
+.rowlab{font:.78rem var(--f-mono);color:var(--ink2);margin-top:6px}
+.band{margin:6px 0}
+.band svg{width:100%;height:auto;max-height:300px}
+.band .bd{stroke:var(--ink);stroke-width:2.5}
+.band .ei{stroke:var(--ink2);stroke-width:1.2;stroke-dasharray:5 4}
+.band .ef{stroke:var(--s-hi);stroke-width:2.5}
+.band text{fill:var(--ink);font:12px var(--f-mono)}
+.band .gap{fill:var(--s-data);opacity:.1}
+.band .e{fill:var(--s-data)}.band .h{fill:none;stroke:var(--s-ctrl);stroke-width:2}
+.pbar{display:grid;grid-template-columns:7em 1fr 8em;gap:8px;align-items:center;font:.8rem var(--f-mono);margin:3px 0}
+.pbar .tr{height:12px;border-radius:6px;background:var(--surface-1,#eee);overflow:hidden;border:1px solid var(--line)}
+.pbar .fl{height:100%;background:var(--s-data)}
+</style>
+</head>
+<body data-file="m05a-pita-energi-pembawa">
+<main>
+<p class="icd-small icd-muted">Bagian 2: Device dan elektronika · M05 bagian a dari 2 · sekitar 12 jam · prasyarat: <a href="m01a-matematika-dasar.html">M01a</a> (eksponen, logaritma), <a href="m02a-rangkaian-dc.html">M02a</a> (hukum Ohm, resistivitas, resistansi lembar), <a href="m01b-kompleks-kalkulus.html">M01b</a> (turunan, persamaan diferensial sederhana)</p>
+<h1>M05a Pita energi, pembawa muatan, doping, drift dan difusi</h1>
+<p>Semua transistor, dioda, sensor, dan memori dalam sebuah chip dibangun dari satu bahan yang sifatnya bisa diatur: silikon. Modul ini menjawab pertanyaan yang mendahului semua komponen itu: mengapa silikon bukan konduktor atau isolator, apa yang dimaksud "pembawa muatan", bagaimana sedikit atom pengotor mengubah hambatannya sampai satu juta kali lipat, dan bagaimana pembawa bergerak (drift oleh medan, difusi oleh gradien). Di akhir kamu bisa menghitung konsentrasi elektron dan hole, resistivitas, dan kedalaman junction sebuah proses difusi, dan hasilnya dicocokkan dengan program yang dijalankan sungguhan.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<ul>
+<li><strong>Setiap perangkat chip adalah pengaturan pembawa.</strong> MOSFET menyalakan dan mematikan kanal dengan menarik atau mengusir elektron; dioda dan junction well mengatur arus dengan membedakan daerah n dan p. Tanpa gambaran pita energi dan konsentrasi pembawa, parameter seperti tegangan threshold, arus bocor, dan kapasitansi junction hanya rumus untuk dihafal.</li>
+<li><strong>Doping adalah tuas desain dan tuas proses.</strong> Resistivitas wafer, tahanan source/drain, tegangan breakdown, dan arus bocor ditentukan oleh jenis dan konsentrasi dopan. Insinyur proses memilih dosis dan suhu; insinyur desain membaca hasilnya sebagai resistansi lembar dan kapasitansi pada file teknologi.</li>
+<li><strong>Suhu mengubah semuanya.</strong> Konsentrasi pembawa intrinsik naik sekitar dua kali lipat tiap kenaikan beberapa kelvin. Karena itu arus bocor meroket pada chip yang panas (di model ini <i>n<sub>i</sub></i> naik 2,2 kali dari 300 K ke 310 K), dan di atas suhu tertentu silikon ekstrinsik kehilangan sifatnya.</li>
+<li><strong>Drift dan difusi adalah dua penggerak arus.</strong> Persamaan drift-difusi adalah dasar simulasi TCAD, model kompak transistor, dan seluruh pembahasan junction di M05b serta transistor di M06. Ia juga menjelaskan mengapa transistor yang lebih kecil lebih cepat (jarak tempuh lebih pendek) tetapi lebih bocor.</li>
+<li><strong>Proses difusi dan implantasi.</strong> Panjang difusi dopan √(4<i>Dt</i>) menentukan kedalaman source/drain. Pada teknologi sub-10 nm anggaran termal (suhu × waktu) dihitung dengan ketat agar junction tidak melebar.</li>
+<li><strong>Wawancara.</strong> "Mengapa silikon, bukan germanium?", "apa itu level Fermi dan di mana letaknya untuk bahan n-type?", "mengapa mobilitas turun saat doping naik?", "berapa resistivitas wafer p-type dengan doping 10<sup>15</sup>?", dan "jelaskan drift dan difusi dengan hubungan Einstein" adalah pertanyaan standar untuk posisi device, proses, dan analog.</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Pada kesetimbangan, hasil kali elektron dan hole selalu <i>np</i> = <i>n<sub>i</sub></i>²: menambah satu jenis pembawa mengurangi lawannya. Doping 10<sup>16</sup> donor pada 300 K memberi <i>n</i> ≈ 10<sup>16</sup> cm<sup>−3</sup> dan <i>p</i> ≈ 3,7 × 10<sup>3</sup> cm<sup>−3</sup> (selisih 12 orde), menggeser level Fermi 0,37 eV di atas pusat celah, dan menurunkan resistivitas dari ≈ 5,4 × 10<sup>5</sup> Ω·cm (intrinsik) menjadi 0,53 Ω·cm. Arus mengalir karena medan (drift) dan karena gradien konsentrasi (difusi), terhubung oleh hubungan Einstein <i>D</i> = <i>µkT</i>/<i>q</i>.</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> eksponen dan logaritma serta desibel (<a href="m01a-matematika-dasar.html">M01a</a>), turunan dan persamaan diferensial sederhana (<a href="m01b-kompleks-kalkulus.html">M01b</a>), serta hukum Ohm, resistivitas, dan resistansi lembar (<a href="m02a-rangkaian-dc.html">M02a</a>). Lab memakai Python 3.9 atau lebih baru (M04d); tidak ada paket tambahan.</p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
+<ol>
+<li>Menjelaskan terbentuknya <span data-term="bandgap">pita energi</span> dari atom di kristal, dan membedakan logam, <span data-term="semikonduktor">semikonduktor</span>, dan isolator lewat <span data-term="bandgap">celah pita</span> (Si 1,12 eV, Ge 0,66 eV, GaAs 1,42 eV).</li>
+<li>Menggambar diagram pita (<i>E<sub>c</sub></i>, <i>E<sub>v</sub></i>, <i>E<sub>i</sub></i>, <i>E<sub>F</sub></i>) untuk bahan intrinsik, n-type, dan p-type, serta menjelaskan <span data-term="hole">hole</span> sebagai ketiadaan elektron.</li>
+<li>Memakai statistik <span data-term="fermi-dirac">Fermi-Dirac</span> dan aproksimasi Boltzmann, dan menyatakan kapan aproksimasi itu gagal (<span data-term="degenerasi">degenerasi</span>, doping di atas sekitar 10<sup>19</sup> cm<sup>−3</sup>).</li>
+<li>Menghitung konsentrasi pembawa intrinsik <i>n<sub>i</sub></i>(<i>T</i>) dan konsentrasi <i>n</i>, <i>p</i> untuk doping <span data-term="donor">donor</span> dan <span data-term="akseptor">akseptor</span> (termasuk <span data-term="kompensasi">kompensasi</span>) dengan <span data-term="aksi-massa">hukum aksi massa</span> dan netralitas muatan, serta posisi <span data-term="fermi-level">level Fermi</span>.</li>
+<li>Menghitung <span data-term="mobilitas">mobilitas</span>, resistivitas, dan <span data-term="rsheet">resistansi lembar</span> sebagai fungsi doping, dan menjelaskan mengapa mobilitas turun saat doping naik.</li>
+<li>Menulis dan memecahkan persamaan arus <span data-term="drift">drift</span> dan <span data-term="difusi">difusi</span>, memakai <span data-term="einstein">hubungan Einstein</span>, dan menghitung panjang difusi pembawa minoritas √(<i>Dτ</i>) dari <span data-term="lifetime">umur pembawa</span>.</li>
+<li>Memperkirakan hasil difusi dopan (profil Gaussian, kedalaman junction) dengan <span data-term="fick">hukum Fick</span> dan koefisien difusi Arrhenius, serta menafsirkan pengukuran efek <span data-term="hall">Hall</span> menjadi jenis, konsentrasi, dan mobilitas pembawa.</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Pita energi: tribun stadion yang hampir penuh</h3>
+<p>Bayangkan stadion dengan dua tribun: tribun bawah (pita valensi) hampir penuh dan tribun atas (pita konduksi) kosong, dipisahkan lapangan kosong yang lebar (celah pita) tempat tak seorang pun boleh duduk. Penonton di tribun penuh tidak bisa bergerak karena tak ada kursi kosong. Bila seseorang punya cukup energi untuk melompati lapangan ke tribun atas, ia bisa bergerak bebas di sana, dan ia meninggalkan satu kursi kosong di tribun bawah yang memungkinkan tetangganya bergeser (inilah hole). <em>Di mana analogi ini berhenti:</em> posisi di tribun adalah energi, bukan tempat fisik, dan di kristal elektron berperilaku seperti gelombang sehingga "kursi" hanya boleh ada pada energi tertentu.</p>
+<h3>Doping: menambah penonton di tribun atas atau membuka kursi di bawah</h3>
+<p>Mengganti satu dari sejuta atom silikon dengan fosfor (lima elektron valensi) menyumbang satu elektron ekstra yang gampang naik ke tribun atas: pembawa elektron bertambah banyak. Mengganti dengan boron (tiga elektron valensi) menciptakan satu kursi kosong ekstra di tribun bawah: pembawa hole bertambah. <em>Di mana analogi ini berhenti:</em> jumlah elektron dan hole tidak bebas; karena kesetimbangan, menambah satu jenis menekan lawannya sehingga hasil kalinya tetap (<i>np</i> = <i>n<sub>i</sub></i>²).</p>
+<h3>Drift dan difusi: arus sungai dan tetesan tinta</h3>
+<p>Drift seperti hanyut di sungai: medan listrik mendorong semua pembawa searah, kecepatannya sebanding medan (mobilitas adalah "kemudahan hanyut"). Difusi seperti tetes tinta di segelas air: pembawa menyebar dari tempat padat ke tempat jarang walau tak ada medan, hanya karena gerak acak. Keduanya bisa terjadi bersamaan dan bahkan saling meniadakan pada kesetimbangan. <em>Di mana analogi ini berhenti:</em> tinta tak punya muatan sehingga difusi pembawa menimbulkan medan listrik sendiri (itulah asal tegangan built-in junction di M05b).</p>
+<h3>Hamburan: berlari di tengah keramaian</h3>
+<p>Mobilitas rendah bila pembawa sering bertabrakan, seperti berlari di pasar yang ramai. Getaran kisi (fonon) menabrak pembawa, terutama pada suhu tinggi; atom dopan yang bermuatan menabrak pembawa, terutama pada doping tinggi. Karena itu mobilitas turun pada doping tinggi dan suhu tinggi. <em>Di mana analogi ini berhenti:</em> hamburan terjadi lewat interaksi kuantum yang tidak sama dengan tabrakan bola biliar, dan di kanal MOSFET modern hamburan permukaan juga penting (M06).</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Kristal, pita energi, dan celah pita</h3>
+<p>Silikon berstruktur kristal berlian: tiap atom berikatan kovalen dengan empat tetangga, konstanta kisi 0,543 nm, kerapatan sekitar 5 × 10<sup>22</sup> atom/cm³. Bila atom dipertemukan, tingkat energi atom bebas melebar menjadi <em>pita</em> karena potensial periodik kristal. Pada silikon murni suhu nol mutlak, pita yang terisi elektron valensi (<span data-term="pita-valensi">pita valensi</span>) penuh dan pita di atasnya (<span data-term="pita-konduksi">pita konduksi</span>) kosong; keduanya dipisahkan <span data-term="bandgap">celah pita</span> <i>E<sub>g</sub></i> tempat tidak ada keadaan elektron.</p>
+<ul>
+<li><strong>Logam:</strong> pita terisi sebagian atau pita saling tumpang tindih, sehingga selalu ada elektron bebas dan resistivitas ≈ 10<sup>−6</sup> Ω·cm.</li>
+<li><strong>Isolator:</strong> celah besar (SiO<sub>2</sub> sekitar 9 eV), hampir tak ada elektron di pita konduksi; resistivitas &gt; 10<sup>14</sup> Ω·cm.</li>
+<li><strong><span data-term="semikonduktor">Semikonduktor</span>:</strong> celah sedang (Si 1,12 eV, Ge 0,66 eV, GaAs 1,42 eV, SiC sekitar 3,3 eV, GaN sekitar 3,4 eV pada suhu kamar). Pada suhu kamar sebagian kecil elektron tereksitasi, dan, yang terpenting, konsentrasi pembawa bisa diatur oleh doping dari 10<sup>14</sup> sampai 10<sup>20</sup> cm<sup>−3</sup>.</li>
+</ul>
+<p>Celah pita sedikit menyempit saat suhu naik. Model Varshni untuk silikon yang dipakai di seluruh lab:</p>
+<div class="icd-eq"><math display="block"><msub><mi>E</mi><mi>g</mi></msub><mrow><mo>(</mo><mi>T</mi><mo>)</mo></mrow><mo>=</mo><mn>1,17</mn><mo>&#x2212;</mo><mn>4,73</mn><mo>&#xB7;</mo><msup><mn>10</mn><mo>&#x2212;</mo><mn>4</mn></msup><mfrac><mrow><msup><mi>T</mi><mn>2</mn></msup></mrow><mrow><mrow><mi>T</mi><mo>+</mo><mn>636</mn></mrow></mrow></mfrac><mo>,</mo><mi>eV</mi></math><span class="alt">Eg(T) = 1,17 - 4,73e-4 T^2/(T + 636) eV, T dalam kelvin</span></div>
+<p>menghasilkan <i>E<sub>g</sub></i>(300 K) = 1,1245 eV dan <i>E<sub>g</sub></i>(500 K) = 1,0659 eV (<code>ni_temp.py</code>). Elektron di pita konduksi dan hole di pita valensi adalah <span data-term="pembawa">pembawa muatan</span> bebas. Sebuah <span data-term="hole">hole</span> adalah keadaan kosong di pita valensi yang berperilaku seperti partikel bermuatan positif dengan massa efektif sendiri. Gerak elektron dan hole dalam kristal digambarkan sebagai partikel bebas dengan <em>massa efektif</em> (<i>m</i><sup>*</sup> ≈ 0,26 <i>m</i><sub>0</sub> untuk konduktivitas elektron di Si dan ≈ 0,37 <i>m</i><sub>0</sub> untuk hole) yang merangkum pengaruh potensial kisi.</p>
+
+<h3>4.2 Statistik pembawa dan konsentrasi intrinsik</h3>
+<p>Peluang sebuah keadaan berenergi <i>E</i> terisi elektron pada kesetimbangan dinyatakan fungsi <span data-term="fermi-dirac">Fermi-Dirac</span>, dengan <span data-term="fermi-level">level Fermi</span> <i>E<sub>F</sub></i> sebagai energi yang peluangnya ½:</p>
+<div class="icd-eq"><math display="block"><mi>f</mi><mrow><mo>(</mo><mi>E</mi><mo>)</mo></mrow><mo>=</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mrow><mn>1</mn><mo>+</mo><mi>exp</mi><mrow><mo>(</mo><mfrac><mrow><mrow><mi>E</mi><mo>&#x2212;</mo><msub><mi>E</mi><mi>F</mi></msub></mrow></mrow><mrow><mrow><mi>k</mi><mi>T</mi></mrow></mrow></mfrac><mo>)</mo></mrow></mrow></mrow></mfrac></math><span class="alt">f(E) = 1/(1 + exp((E - E_F)/(k T)))</span></div>
+<p>dengan <i>kT</i> = 25,85 meV pada 300 K (<i>k</i> = 8,617 × 10<sup>−5</sup> eV/K). Bila <i>E</i> − <i>E<sub>F</sub></i> ≫ <i>kT</i>, peluang mendekati faktor Boltzmann exp(−(<i>E</i> − <i>E<sub>F</sub></i>)/<i>kT</i>). Galatnya 36,8% pada (<i>E</i> − <i>E<sub>F</sub></i>) = 1 <i>kT</i>, 13,5% pada 2 <i>kT</i>, 5,0% pada 3 <i>kT</i>, dan 1,8% pada 4 <i>kT</i> (<code>fermi.py</code>). Mengintegrasikan rapat keadaan dengan aproksimasi Boltzmann memberi konsentrasi elektron dan hole:</p>
+<div class="icd-eq"><math display="block"><mi>n</mi><mo>=</mo><msub><mi>N</mi><mi>c</mi></msub><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><mrow><msub><mi>E</mi><mi>c</mi></msub><mo>&#x2212;</mo><msub><mi>E</mi><mi>F</mi></msub></mrow></mrow><mrow><mrow><mi>k</mi><mi>T</mi></mrow></mrow></mfrac><mo>)</mo></mrow><mo>,</mo><mspace width="1em"/><mi>p</mi><mo>=</mo><msub><mi>N</mi><mi>v</mi></msub><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><mrow><msub><mi>E</mi><mi>F</mi></msub><mo>&#x2212;</mo><msub><mi>E</mi><mi>v</mi></msub></mrow></mrow><mrow><mrow><mi>k</mi><mi>T</mi></mrow></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">n = N_c exp(-(E_c - E_F)/(k T)),  p = N_v exp(-(E_F - E_v)/(k T))</span></div>
+<p>dengan rapat keadaan efektif <i>N<sub>c</sub></i> = 2,8 × 10<sup>19</sup> dan <i>N<sub>v</sub></i> = 1,04 × 10<sup>19</sup> cm<sup>−3</sup> pada 300 K (skala (<i>T</i>/300)<sup>3/2</sup>). Mengalikan keduanya meniadakan <i>E<sub>F</sub></i>, menghasilkan <span data-term="aksi-massa">hukum aksi massa</span> yang berlaku pada kesetimbangan untuk semua tingkat doping (selama Boltzmann berlaku):</p>
+<div class="icd-eq"><math display="block"><mi>n</mi><mi>p</mi><mo>=</mo><msubsup><mi>n</mi><mi>i</mi><mn>2</mn></msubsup><mo>,</mo><mspace width="1em"/><msub><mi>n</mi><mi>i</mi></msub><mo>=</mo><msqrt><msub><mi>N</mi><mi>c</mi></msub><msub><mi>N</mi><mi>v</mi></msub></msqrt><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><msub><mi>E</mi><mi>g</mi></msub></mrow><mrow><mrow><mn>2</mn><mi>k</mi><mi>T</mi></mrow></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">n p = n_i^2,  n_i = sqrt(N_c N_v) exp(-E_g/(2 k T))</span></div>
+<p><span data-term="intrinsik">Konsentrasi intrinsik</span> <i>n<sub>i</sub></i> bergantung eksponensial pada <i>E<sub>g</sub></i>/<i>kT</i>. Di model lab: <i>n<sub>i</sub></i>(250 K) = 4,5 × 10<sup>7</sup>, (300 K) = 6,1 × 10<sup>9</sup>, (400 K) = 3,2 × 10<sup>12</sup>, (500 K) = 1,6 × 10<sup>14</sup> cm<sup>−3</sup>. Kepustakaan menyebut <i>n<sub>i</sub></i>(300 K) antara 6 × 10<sup>9</sup> dan 1,5 × 10<sup>10</sup> cm<sup>−3</sup> tergantung parameter dan sumbernya; yang penting adalah ordenya dan kebergantungan suhunya. Untuk bahan intrinsik level Fermi (<i>E<sub>i</sub></i>) berada hampir di tengah celah dan <i>n</i> = <i>p</i> = <i>n<sub>i</sub></i>.</p>
+
+<h3>4.3 Doping, netralitas muatan, dan posisi level Fermi</h3>
+<p>Atom golongan V (P, As, Sb) yang menggantikan Si menyumbangkan satu elektron: <span data-term="donor">donor</span> dengan tingkat energi hanya sekitar 45 meV di bawah <i>E<sub>c</sub></i> untuk fosfor, sehingga pada suhu kamar hampir semuanya terionisasi. Atom golongan III (B) menerima satu elektron: <span data-term="akseptor">akseptor</span> sekitar 45 meV di atas <i>E<sub>v</sub></i>, meninggalkan hole. Kristal secara keseluruhan netral; dengan ionisasi penuh:</p>
+<div class="icd-eq"><math display="block"><mi>p</mi><mo>+</mo><msub><mi>N</mi><mi>d</mi></msub><mo>&#x2212;</mo><mi>n</mi><mo>&#x2212;</mo><msub><mi>N</mi><mi>a</mi></msub><mo>=</mo><mn>0</mn></math><span class="alt">p + N_d - n - N_a = 0</span></div>
+<p>Digabung dengan <i>np</i> = <i>n<sub>i</sub></i>², dan <i>N</i> = <i>N<sub>d</sub></i> − <i>N<sub>a</sub></i> (<span data-term="kompensasi">kompensasi</span>: donor dan akseptor saling meniadakan):</p>
+<div class="icd-eq"><math display="block"><mi>n</mi><mo>=</mo><mfrac><mrow><mrow><mi>N</mi><mo>+</mo><msqrt><msup><mi>N</mi><mn>2</mn></msup><mo>+</mo><mn>4</mn><msubsup><mi>n</mi><mi>i</mi><mn>2</mn></msubsup></msqrt></mrow></mrow><mrow><mn>2</mn></mrow></mfrac><mo>,</mo><mspace width="1em"/><mi>p</mi><mo>=</mo><mfrac><mrow><msubsup><mi>n</mi><mi>i</mi><mn>2</mn></msubsup></mrow><mrow><mi>n</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><mrow><mo>(</mo><mi>N</mi><mo>&#x2265;</mo><mn>0</mn><mo>)</mo></mrow></math><span class="alt">n = (N + sqrt(N^2 + 4 n_i^2))/2,  p = n_i^2/n   (N >= 0)</span></div>
+<p>Bila <i>N</i> ≫ <i>n<sub>i</sub></i>, maka <i>n</i> ≈ <i>N</i> dan <i>p</i> ≈ <i>n<sub>i</sub></i>²/<i>N</i> (bahan ekstrinsik); bila <i>N</i> ≪ <i>n<sub>i</sub></i> (suhu tinggi atau doping sangat rendah), bahan kembali intrinsik. Contoh dari <code>carriers.py</code> pada 300 K: <i>N<sub>d</sub></i> = 10<sup>16</sup> → <i>n</i> = 10<sup>16</sup>, <i>p</i> = 3,74 × 10<sup>3</sup>; <i>N<sub>a</sub></i> = 10<sup>17</sup> → <i>p</i> = 10<sup>17</sup>, <i>n</i> = 374; <i>N<sub>d</sub></i> = 10<sup>17</sup> dengan <i>N<sub>a</sub></i> = 9 × 10<sup>16</sup> memberi hasil yang sama dengan <i>N<sub>d</sub></i> = 10<sup>16</sup> murni; dan <i>N<sub>d</sub></i> = 10<sup>14</sup> pada 500 K memberi <i>n</i> = 2,14 × 10<sup>14</sup> dan <i>p</i> = 1,14 × 10<sup>14</sup>, hampir intrinsik. Dari persamaan <i>n</i> dan <i>p</i> di atas, posisi level Fermi terhadap level intrinsik:</p>
+<div class="icd-eq"><math display="block"><msub><mi>E</mi><mi>F</mi></msub><mo>&#x2212;</mo><msub><mi>E</mi><mi>i</mi></msub><mo>=</mo><mi>k</mi><mi>T</mi><mi>ln</mi><mrow><mo>(</mo><mfrac><mrow><mi>n</mi></mrow><mrow><msub><mi>n</mi><mi>i</mi></msub></mrow></mfrac><mo>)</mo></mrow><mo>=</mo><mo>&#x2212;</mo><mi>k</mi><mi>T</mi><mi>ln</mi><mrow><mo>(</mo><mfrac><mrow><mi>p</mi></mrow><mrow><msub><mi>n</mi><mi>i</mi></msub></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">E_F - E_i = k T ln(n/n_i) = - k T ln(p/n_i)</span></div>
+<p>Untuk <i>N<sub>d</sub></i> = 10<sup>16</sup>: <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = +0,370 eV (dekat pita konduksi); untuk <i>N<sub>a</sub></i> = 10<sup>17</sup>: −0,429 eV (dekat pita valensi). Perhatikan konsistensi: <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> = <i>kT</i> ln(<i>N<sub>c</sub></i>/<i>n</i>) dan <i>E<sub>F</sub></i> − <i>E<sub>v</sub></i> = <i>kT</i> ln(<i>N<sub>v</sub></i>/<i>p</i>) berjumlah tepat <i>E<sub>g</sub></i>, karena <i>np</i> = <i>n<sub>i</sub></i>². Pada doping sekitar 10<sup>19</sup> cm<sup>−3</sup> ke atas, <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> mendekati nol atau negatif sehingga aproksimasi Boltzmann gagal: bahan <span data-term="degenerasi">terdegenerasi</span> dan berperilaku seperti logam (kasus source/drain: <code>fermi.py</code> melaporkan <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> = 1,03 <i>kT</i> untuk 10<sup>19</sup> dan −1,27 <i>kT</i> untuk 10<sup>20</sup>, sehingga persamaan ini tak lagi akurat untuk sana).</p>
+<p><strong>Dua catatan realisme.</strong> Pada suhu sangat rendah donor tidak terionisasi (<em>freeze-out</em>), dan pada suhu sangat tinggi pembawa intrinsik mendominasi; model lab menghitung rentang tengah (kira-kira 250 sampai 500 K untuk dopan tipikal). Pada doping tinggi celah pita juga menyempit (<em>bandgap narrowing</em>) yang menaikkan <i>n<sub>i</sub></i> efektif; efek itu diabaikan di sini.</p>
+
+<h3>4.4 Transport: drift, mobilitas, resistivitas</h3>
+<p>Pembawa dalam medan listrik <i>E</i> mencapai kecepatan drift rata-rata <i>v<sub>d</sub></i> = ±<i>µE</i> (<span data-term="mobilitas">mobilitas</span> <i>µ</i>, cm²/(V·s)), karena tabrakan terus-menerus membatasi percepatan. Rapat arus drift dan konduktivitas total:</p>
+<div class="icd-eq"><math display="block"><msub><mi>J</mi><mi>d</mi><mi>r</mi><mi>i</mi><mi>f</mi><mi>t</mi></msub><mo>=</mo><mi>q</mi><mrow><mo>(</mo><mi>n</mi><msub><mi>μ</mi><mi>n</mi></msub><mo>+</mo><mi>p</mi><msub><mi>μ</mi><mi>p</mi></msub><mo>)</mo></mrow><mi>E</mi><mo>=</mo><mi>σ</mi><mi>E</mi><mo>,</mo><mspace width="1em"/><mi>ρ</mi><mo>=</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mi>σ</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mrow><mi>q</mi><mrow><mo>(</mo><mi>n</mi><msub><mi>μ</mi><mi>n</mi></msub><mo>+</mo><mi>p</mi><msub><mi>μ</mi><mi>p</mi></msub><mo>)</mo></mrow></mrow></mrow></mfrac></math><span class="alt">J_drift = q (n μ_n + p μ_p) E = σ E,  space ρ = 1/σ = 1/(q (n μ_n + p μ_p))</span></div>
+<p>Itu adalah hukum Ohm dalam bentuk lokal (M02a). Mobilitas turun karena hamburan fonon (naik dengan suhu, kira-kira ∝ <i>T</i><sup>−2,4</sup> untuk elektron di Si) dan hamburan impuritas bermuatan (naik dengan doping). Pada 300 K model Caughey-Thomas yang dipakai lab:</p>
+<div class="icd-eq"><math display="block"><mi>μ</mi><mrow><mo>(</mo><mi>N</mi><mo>)</mo></mrow><mo>=</mo><msub><mi>μ</mi><mi>min</mi></msub><mo>+</mo><mfrac><mrow><mrow><msub><mi>μ</mi><mi>max</mi></msub><mo>&#x2212;</mo><msub><mi>μ</mi><mi>min</mi></msub></mrow></mrow><mrow><mrow><mn>1</mn><mo>+</mo><msup><mrow><mo>(</mo><mfrac><mrow><mi>N</mi></mrow><mrow><msub><mi>N</mi><mi>r</mi></msub></mrow></mfrac><mi>e</mi><mi>f</mi><mo>)</mo></mrow><mi>α</mi></msup></mrow></mrow></mfrac></math><span class="alt">μ(N) = μ_min + (μ_max - μ_min)/(1 + (N/N_ref)^α)</span></div>
+<p>dengan elektron (68,5; 1414; 9,2 × 10<sup>16</sup>; 0,711) dan hole (44,9; 470,5; 2,23 × 10<sup>17</sup>; 0,719), <i>N</i> = <i>N<sub>d</sub></i> + <i>N<sub>a</sub></i> (impuritas total). Hasil <code>mobility.py</code>: <i>µ<sub>n</sub></i> = 1.404 pada 10<sup>14</sup>, 1.184 pada 10<sup>16</sup>, 721 pada 10<sup>17</sup>, 277 pada 10<sup>18</sup>, dan 78 pada 10<sup>20</sup> cm²/(V·s); hole sekitar sepertiga elektron. Karena itu resistivitas turun lebih lambat daripada naiknya doping: dari 10<sup>16</sup> ke 10<sup>17</sup> doping naik 10 kali, tetapi resistivitas elektron turun dari 0,527 ke 0,0865 Ω·cm, hanya 6,1 kali. Wafer p-type 10 Ω·cm setara <i>N<sub>a</sub></i> ≈ 1,36 × 10<sup>15</sup> cm<sup>−3</sup>. Lapisan tipis berdoping dinyatakan dengan <span data-term="rsheet">resistansi lembar</span> <i>R<sub>s</sub></i> = <i>ρ</i>/<i>t</i>: lapisan n tebal 0,2 µm berdoping 10<sup>19</sup> memiliki <i>R<sub>s</sub></i> = 272 Ω/□; lapisan 0,1 µm berdoping 10<sup>20</sup> memiliki 80 Ω/□.</p>
+<p>Pada medan tinggi kecepatan drift jenuh di sekitar 10<sup>7</sup> cm/s dan tidak lagi sebanding medan; efek ini penting untuk transistor channel pendek (M06) tetapi tidak dibahas kuantitatif di sini.</p>
+
+<h3>4.5 Difusi, hubungan Einstein, dan pembawa minoritas</h3>
+<p>Gradien konsentrasi menimbulkan arus difusi meski tak ada medan: pembawa bergerak acak lalu secara netto bergeser dari daerah padat ke jarang.</p>
+<div class="icd-eq"><math display="block"><msub><mi>J</mi><mi>n</mi></msub><mo>=</mo><mi>q</mi><msub><mi>D</mi><mi>n</mi></msub><mi>d</mi><mfrac><mrow><mi>n</mi></mrow><mrow><mi>d</mi></mrow></mfrac><mi>x</mi><mo>,</mo><mspace width="1em"/><msub><mi>J</mi><mi>p</mi></msub><mo>=</mo><mo>&#x2212;</mo><mi>q</mi><msub><mi>D</mi><mi>p</mi></msub><mi>d</mi><mfrac><mrow><mi>p</mi></mrow><mrow><mi>d</mi></mrow></mfrac><mi>x</mi></math><span class="alt">J_n = q D_n dn/dx,  space J_p = - q D_p dp/dx</span></div>
+<p>(tanda arus sesuai konvensi: elektron berdifusi ke arah gradien turun, arus konvensional berlawanan). Mobilitas dan difusi bukan besaran bebas: keduanya muncul dari gerak acak yang sama, dihubungkan oleh <span data-term="einstein">hubungan Einstein</span>:</p>
+<div class="icd-eq"><math display="block"><mi>D</mi><mo>=</mo><mi>μ</mi><mfrac><mrow><mrow><mi>k</mi><mi>T</mi></mrow></mrow><mrow><mi>q</mi></mrow></mfrac></math><span class="alt">D = μ k T/q</span></div>
+<p>dengan <i>kT</i>/<i>q</i> = 25,85 mV pada 300 K. Mobilitas 1.400 cm²/(V·s) memberi <i>D</i> = 36,2 cm²/s; 450 memberi 11,6 cm²/s (<code>minority.py</code>). Arus total pada setiap titik adalah jumlah drift dan difusi; pada kesetimbangan keduanya saling meniadakan, yang menjelaskan mengapa medan built-in junction (M05b) muncul tanpa arus netto.</p>
+<p>Pembawa minoritas yang disuntikkan ke daerah mayoritas berumur terbatas oleh rekombinasi: <span data-term="lifetime">umur pembawa</span> <i>τ</i>. Pada keadaan tunak, persamaan kontinuitas tanpa medan menjadi <i>D</i> <i>d</i>²<i>n</i>/<i>dx</i>² = <i>n</i>/<i>τ</i>, dengan solusi eksponensial peluruh bila dibatas <i>n</i>(0) = <i>n</i><sub>0</sub>:</p>
+<div class="icd-eq"><math display="block"><mi>n</mi><mrow><mo>(</mo><mi>x</mi><mo>)</mo></mrow><mo>=</mo><msub><mi>n</mi><mn>0</mn></msub><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><mi>x</mi></mrow><mrow><mi>L</mi></mrow></mfrac><mo>)</mo></mrow><mo>,</mo><mspace width="1em"/><mi>L</mi><mo>=</mo><msqrt><mi>D</mi><mi>τ</mi></msqrt></math><span class="alt">n(x) = n_0 exp(-x/L),  space L = sqrt(D τ)</span></div>
+<p><span data-term="difusi-length">Panjang difusi</span> <i>L</i> adalah jarak rata-rata sebelum pembawa minoritas berekombinasi. Untuk hole di Si n-type 10<sup>16</sup> (<i>µ<sub>p</sub></i> = 429, <i>D<sub>p</sub></i> = 11,1 cm²/s) dengan <i>τ</i> = 1 µs: <i>L</i> = 33,3 µm. Penyelesaian numerik beda hingga (<code>minority.py</code>) cocok dengan eksponensial dengan galat maksimum 4,5 × 10<sup>−5</sup> dari <i>n</i><sub>0</sub>. Karena <i>L</i> jauh lebih besar dari ukuran transistor (puluhan nm), minoritas yang disuntikkan melintasi daerah kecil tanpa banyak rekombinasi, kunci bagi bipolar dan bagi arus bocor junction.</p>
+
+<h3>4.6 Difusi dopan dalam proses dan pengukuran Hall</h3>
+<p>Atom dopan bergerak dalam kristal pada suhu tinggi menurut <span data-term="fick">hukum Fick</span>, dengan koefisien difusi yang mengikuti hukum Arrhenius:</p>
+<div class="icd-eq"><math display="block"><mi>d</mi><mfrac><mrow><mi>C</mi></mrow><mrow><mi>d</mi></mrow></mfrac><mi>t</mi><mo>=</mo><mi>D</mi><mfrac><mrow><mrow><msup><mi>d</mi><mn>2</mn></msup><mi>C</mi></mrow></mrow><mrow><mrow><mi>d</mi><msup><mi>x</mi><mn>2</mn></msup></mrow></mrow></mfrac><mo>,</mo><mspace width="1em"/><mi>D</mi><mrow><mo>(</mo><mi>T</mi><mo>)</mo></mrow><mo>=</mo><msub><mi>D</mi><mn>0</mn></msub><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><msub><mi>E</mi><mi>a</mi></msub></mrow><mrow><mrow><mi>k</mi><mi>T</mi></mrow></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">dC/dt = D d^2C/dx^2,  space D(T) = D_0 exp(-E_a/(k T))</span></div>
+<p>Nilai tipikal (kisaran literatur, difusi intrinsik): boron <i>D</i><sub>0</sub> = 0,76 cm²/s, <i>E<sub>a</sub></i> = 3,46 eV; fosfor 3,85 dan 3,66 eV; arsen 0,066 dan 3,44 eV. Pada 1000 °C boron memiliki <i>D</i> = 1,53 × 10<sup>−14</sup> cm²/s dan pada 1100 °C 1,52 × 10<sup>−13</sup>: naik 10 kali untuk 100 °C, sehingga suhu adalah tuas utama anggaran termal. Pada tahap <em>drive-in</em> dosis <i>Q</i> (cm<sup>−2</sup>) yang sudah ditanam berdifusi tanpa sumber baru, dan profilnya Gaussian:</p>
+<div class="icd-eq"><math display="block"><mi>C</mi><mrow><mo>(</mo><mi>x</mi><mo>,</mo><mi>t</mi><mo>)</mo></mrow><mo>=</mo><mfrac><mrow><mi>Q</mi></mrow><mrow><msqrt><mi>π</mi><mi>D</mi><mi>t</mi></msqrt></mrow></mfrac><mi>exp</mi><mrow><mo>(</mo><mo>&#x2212;</mo><mfrac><mrow><msup><mi>x</mi><mn>2</mn></msup></mrow><mrow><mrow><mn>4</mn><mi>D</mi><mi>t</mi></mrow></mrow></mfrac><mo>)</mo></mrow></math><span class="alt">C(x,t) = Q/sqrt(π D t) exp(-x^2/(4 D t))</span></div>
+<p>Kedalaman <em>junction</em> <i>x<sub>j</sub></i> adalah titik tempat <i>C</i> sama dengan konsentrasi latar belakang <i>N<sub>b</sub></i>: <i>x<sub>j</sub></i> = 2√(<i>Dt</i> ln(<i>C</i><sub>0</sub>/<i>N<sub>b</sub></i>)), <i>C</i><sub>0</sub> = <i>Q</i>/√(π<i>Dt</i>). Dengan <i>Q</i> = 10<sup>14</sup> cm<sup>−2</sup>, <i>N<sub>b</sub></i> = 10<sup>15</sup>, boron 1000 °C: setengah jam memberi <i>x<sub>j</sub></i> = 0,320 µm, satu jam 0,444 µm, dua jam 0,615 µm, empat jam 0,852 µm (<code>fick.py</code>). Mempergandakan waktu tidak menggandakan kedalaman: <i>x<sub>j</sub></i> tumbuh kira-kira √<i>t</i>. Penyelesaian beda hingga eksplisit (FTCS) dengan batas pantul di <i>x</i> = 0 menjaga dosis tetap (1,0000 × 10<sup>14</sup>) dan cocok dengan profil analitik dalam 0,49% dari puncak.</p>
+<p>Pada pengukuran <span data-term="hall">efek Hall</span>, medan magnet <i>B</i> tegak lurus arus <i>I</i> menimbulkan tegangan melintang <i>V<sub>H</sub></i> = <i>IB</i>/(<i>qnt</i>) untuk bahan tipe n dengan tebal <i>t</i>; tandanya mengungkap jenis pembawa (negatif untuk elektron, positif untuk hole), besarnya memberi konsentrasi: koefisien Hall <i>R<sub>H</sub></i> = ±1/(<i>qn</i>), dan mobilitas Hall <i>µ<sub>H</sub></i> = |<i>R<sub>H</sub></i>|/<i>ρ</i> (faktor hamburan Hall <i>r</i> = 1 diasumsikan). Untuk batang Si n 10<sup>16</sup> tebal 0,5 mm dengan <i>I</i> = 1 mA dan <i>B</i> = 0,1 T diperoleh <i>V<sub>H</sub></i> = −0,125 mV; inversinya mengembalikan jenis n, <i>N</i> = 10<sup>16</sup>, <i>µ<sub>H</sub></i> = 1.184 cm²/(V·s) (<code>hall.py</code>). Tegangan sekecil itu menjelaskan mengapa pengukuran Hall memakai arus bolak-balik, pembalikan medan, dan geometri van der Pauw.</p>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Pita energi dan doping</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Silikon murni hampir tak menghantar listrik pada suhu kamar. Menambahkan sedikit fosfor menambah elektron bebas (n-type); menambahkan boron menambah "lubang" pembawa positif (p-type). Dengan mengatur banyaknya atom tambahan, hambatan silikon bisa diatur dari megaohm sampai miliohm. Karena itulah silikon bahan chip.</p></div>
+<div data-level="engineer"><p>Hitung dengan: <i>n</i> = (<i>N</i> + √(<i>N</i>² + 4<i>n<sub>i</sub></i>²))/2 dan <i>p</i> = <i>n<sub>i</sub></i>²/<i>n</i>, lalu <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>). Ingat <i>n<sub>i</sub></i> ≈ 6 × 10<sup>9</sup> cm<sup>−3</sup> pada 300 K dan naik berlipat tiap beberapa kelvin; periksa kapan bahan menjadi intrinsik (<i>n<sub>i</sub></i> ≈ <i>N</i>: sekitar 566 K untuk 10<sup>15</sup>). Di atas 10<sup>19</sup>, anggap bahan terdegenerasi.</p></div>
+<div data-level="pakar"><p>Pita berasal dari teorema Bloch dan struktur pita nyata Si bercelah tak langsung (minimum pita konduksi dekat titik X, enam lembah), sehingga <i>m</i><sup>*</sup> untuk rapat keadaan dan konduktivitas berbeda. Ionisasi tak penuh (freeze-out), bandgap narrowing, penurunan <i>n<sub>i</sub></i> efektif, dan statistik Fermi-Dirac penuh (integral Fermi ½) diperlukan untuk bahan terdegenerasi dan untuk suhu kriogenik; simulator TCAD menyelesaikan semuanya bersama persamaan Poisson.</p></div>
+</div>
+<h3>2. Drift, difusi, dan transport</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Pembawa bergerak karena dua hal: didorong oleh medan listrik (drift) dan menyebar dari tempat ramai ke tempat sepi (difusi). Gerak keduanya terhambat tabrakan, dan seberapa gesit pembawa disebut mobilitas. Silikon dengan banyak atom tambahan menghantar lebih baik walau mobilitas pembawa turun.</p></div>
+<div data-level="engineer"><p>Pakai <i>ρ</i> = 1/(<i>q</i>(<i>nµ<sub>n</sub></i> + <i>pµ<sub>p</sub></i>)), <i>R<sub>s</sub></i> = <i>ρ</i>/<i>t</i>, <i>D</i> = <i>µkT</i>/<i>q</i>, dan <i>L</i> = √(<i>Dτ</i>). Ingat bahwa elektron sekitar 2,5 sampai 3 kali lebih gesit dari hole, sehingga komponen n-channel lebih kuat; dan mobilitas turun pada doping dan suhu tinggi. Ukur dengan pengujian empat titik (resistivitas) dan Hall (jenis dan konsentrasi).</p></div>
+<div data-level="pakar"><p>Drift-difusi adalah momen pertama persamaan transport Boltzmann dengan waktu relaksasi; mobilitas efektif merangkum hamburan fonon (akustik dan optik), impuritas (Brooks-Herring), permukaan, dan elektron-elektron. Hubungan Einstein berlaku untuk statistik Boltzmann; pada degenerasi berubah menjadi <i>D</i>/<i>µ</i> = (<i>kT</i>/<i>q</i>) <i>F</i><sub>1/2</sub>/<i>F</i><sub>−1/2</sub>. Pada ukuran nanometer, transport balistik dan quasi-balistik menggantikan model drift-difusi (M06b).</p></div>
+</div>
+<h3>3. Difusi dopan dan proses</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Atom tambahan (dopan) ditanam di permukaan wafer lalu dipanaskan agar menyebar masuk. Makin panas dan makin lama, makin dalam penyebarannya, tetapi kedalaman hanya naik kira-kira sebanding akar waktu. Kedalaman tempat dopan sama banyak dengan atom latar belakang disebut kedalaman junction.</p></div>
+<div data-level="engineer"><p>Hitung <i>D</i>(<i>T</i>) dengan Arrhenius, <i>C</i><sub>0</sub> = <i>Q</i>/√(π<i>Dt</i>), dan <i>x<sub>j</sub></i> = 2√(<i>Dt</i> ln(<i>C</i><sub>0</sub>/<i>N<sub>b</sub></i>)). Ingat anggaran termal: 100 °C lebih tinggi pada boron berarti sekitar 10 kali lipat <i>D</i>. Pada proses nyata, implantasi ion (M30) menanam dosis dengan presisi dan anil cepat (RTA) mengaktifkan dopan dengan difusi minimal.</p></div>
+<div data-level="pakar"><p>Difusi dopan nyata tidak konstan: ia dipercepat oleh interstisial dan kekosongan titik (mekanisme pasangan dopan-cacat), tergantung konsentrasi pada doping tinggi (<i>D</i> naik pada <i>n</i> &gt; <i>n<sub>i</sub></i>), mengalami difusi transien yang dipercepat (TED) setelah implantasi, dan dipengaruhi medan listrik internal. Simulasi proses (Sentaurus Process, Athena) menyelesaikan persamaan Fick dengan pasangan cacat; teknologi maju membatasi anggaran termal hingga milidetik (laser, flash anneal).</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Diagram pita, pembawa, dan level Fermi</h3></header>
+  <div class="stage">
+    <div class="band" id="v1-band"></div>
+    <div id="v1-bars"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Jenis doping</span><select class="icd-select" id="v1-type"><option value="n" selected>n-type (donor)</option><option value="p">p-type (akseptor)</option></select></label>
+    <label class="icd-field"><span>Doping <i>N</i> = 10<sup><b id="v1-nv"></b></sup> cm<sup>−3</sup></span><input type="range" id="v1-n" min="12" max="20" step="0.5" value="16"></label>
+    <label class="icd-field"><span>Suhu <i>T</i> = <b id="v1-tv"></b> K</span><input type="range" id="v1-t" min="250" max="500" step="10" value="300"></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Model sama dengan <code>semi.py</code>: <i>E<sub>g</sub></i>(<i>T</i>) Varshni, <i>N<sub>c</sub></i> = 2,8 × 10<sup>19</sup> dan <i>N<sub>v</sub></i> = 1,04 × 10<sup>19</sup> cm<sup>−3</sup> pada 300 K (skala <i>T</i><sup>3/2</sup>), ionisasi penuh, aproksimasi Boltzmann. <i>n</i> dan <i>p</i> dari netralitas muatan dan <i>np</i> = <i>n<sub>i</sub></i>²; <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> = <i>kT</i> ln(<i>N<sub>c</sub></i>/<i>n</i>), <i>E<sub>F</sub></i> − <i>E<sub>v</sub></i> = <i>kT</i> ln(<i>N<sub>v</sub></i>/<i>p</i>); keduanya berjumlah <i>E<sub>g</sub></i>. Garis putus-putus = <i>E<sub>i</sub></i>, garis tebal berwarna = <i>E<sub>F</sub></i>. Bila <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> &lt; 3 <i>kT</i> muncul catatan bahwa Boltzmann tidak berlaku.</div>
+</div>
+<div class="icd-guide" data-id="v1-n16" data-answer="1">
+  <p>Pilih n-type, <i>N</i> = 10<sup>16</sup>, <i>T</i> = 300 K. Di mana level Fermi?</p>
+  <ul><li>Tepat di tengah celah (sama dengan E<sub>i</sub>)</li><li>Sekitar 0,37 eV di atas E<sub>i</sub>, sekitar 0,21 eV di bawah E<sub>c</sub></li><li>Di dalam pita konduksi</li><li>Sekitar 0,37 eV di bawah E<sub>i</sub></li></ul>
+  <div class="explain"><p><i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>) = 0,02585 × ln(10<sup>16</sup>/6,12 × 10<sup>9</sup>) = +0,370 eV, dan <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> = <i>kT</i> ln(<i>N<sub>c</sub></i>/<i>n</i>) = 0,205 eV. Di bawah <i>E<sub>c</sub></i> dengan margin 7,9 <i>kT</i>, jadi Boltzmann berlaku. Naikkan <i>N</i> ke 10<sup>19</sup>: margin menyusut menjadi 1,0 <i>kT</i> dan catatan degenerasi muncul. Ganti ke p-type: <i>E<sub>F</sub></i> berpindah ke bawah <i>E<sub>i</sub></i>.</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Elektron, hole, dan <i>n<sub>i</sub></i> terhadap suhu</h3></header>
+  <div class="stage"><div id="v2-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Donor <i>N<sub>d</sub></i></span><select class="icd-select" id="v2-nd"><option value="1e14">10<sup>14</sup></option><option value="1e15" selected>10<sup>15</sup></option><option value="1e16">10<sup>16</sup></option><option value="1e17">10<sup>17</sup></option></select></label>
+    <label class="icd-field"><span>Suhu <i>T</i> = <b id="v2-tv"></b> K</span><input type="range" id="v2-t" min="250" max="800" step="10" value="300"></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Sumbu vertikal log<sub>10</sub> konsentrasi (cm<sup>−3</sup>); garis putus-putus vertikal = suhu terpilih. Di bawah suhu persilangan <i>n<sub>i</sub></i> = <i>N<sub>d</sub></i> kurva <i>n</i> datar (ekstrinsik); di atasnya <i>n</i> dan <i>p</i> menyatu dengan <i>n<sub>i</sub></i> (intrinsik). Suhu persilangan dihitung dengan bisection seperti <code>ni_temp.py</code>.</div>
+</div>
+<div class="icd-guide" data-id="v2-cross" data-answer="2">
+  <p>Dengan <i>N<sub>d</sub></i> = 10<sup>15</sup>, atur <i>T</i> = 570 K. Apa yang terjadi?</p>
+  <ul><li>n masih jauh lebih besar dari p (lebih dari 100 kali)</li><li>p lebih besar dari n karena suhu tinggi</li><li>n dan p sudah berbeda hanya sekitar 2,4 kali: bahan hampir intrinsik</li><li>n turun di bawah N<sub>d</sub></li></ul>
+  <div class="explain"><p>Persilangan <i>n<sub>i</sub></i> = <i>N<sub>d</sub></i> terjadi di 566 K. Di 570 K, <i>n<sub>i</sub></i> ≈ 1,1 × 10<sup>15</sup> sehingga <i>n</i> = (10<sup>15</sup> + √(10<sup>30</sup> + 4<i>n<sub>i</sub></i>²))/2 ≈ 1,7 × 10<sup>15</sup> dan <i>p</i> = <i>n<sub>i</sub></i>²/<i>n</i> ≈ 7,1 × 10<sup>14</sup>: perbandingannya hanya 2,4 kali. Pada suhu ini sambungan p-n tak lagi menyekat dan bahan tidak bisa dipakai sebagai semikonduktor ekstrinsik; itulah mengapa chip silikon dibatasi sekitar 150 °C (423 K), dan kendaraan listrik serta sumur minyak beralih ke SiC dan GaN (celah lebih lebar).</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Mobilitas, resistivitas, dan resistansi lembar terhadap doping</h3></header>
+  <div class="stage"><div id="v3-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Jenis</span><select class="icd-select" id="v3-type"><option value="n" selected>n-type</option><option value="p">p-type</option></select></label>
+    <label class="icd-field"><span>Doping <i>N</i> = 10<sup><b id="v3-nv"></b></sup> cm<sup>−3</sup></span><input type="range" id="v3-n" min="14" max="20" step="0.5" value="16"></label>
+    <label class="icd-field"><span>Tebal lapisan <i>t</i> = <b id="v3-tv"></b> µm</span><input type="range" id="v3-t" min="0.1" max="2" step="0.1" value="0.2"></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model">Mobilitas Caughey-Thomas 300 K (parameter di s04), <i>N</i> = impuritas total, resistivitas <i>ρ</i> = 1/(<i>q</i>(<i>nµ<sub>n</sub></i> + <i>pµ<sub>p</sub></i>)) dengan <i>n</i>, <i>p</i> dari ionisasi penuh. Kurva: log<sub>10</sub> <i>ρ</i> (Ω·cm) terhadap log<sub>10</sub> <i>N</i> untuk jenis terpilih; titik = doping sekarang. <i>R<sub>s</sub></i> = <i>ρ</i>/<i>t</i> untuk lapisan seragam. Identik dengan <code>mobility.py</code>.</div>
+</div>
+<div class="icd-guide" data-id="v3-slope" data-answer="0">
+  <p>Pilih n-type dan bandingkan <i>N</i> = 10<sup>16</sup> dengan 10<sup>17</sup>. Resistivitas turun berapa kali?</p>
+  <ul><li>Sekitar 6 kali, bukan 10, karena mobilitas turun dari 1.184 ke 721</li><li>Tepat 10 kali</li><li>Tidak berubah</li><li>Naik, karena hamburan bertambah</li></ul>
+  <div class="explain"><p><i>ρ</i> = 0,527 Ω·cm pada 10<sup>16</sup> dan 0,0865 pada 10<sup>17</sup>: rasio 6,1. Konsentrasi <i>n</i> naik 10 kali, tetapi mobilitas turun 1,64 kali (hamburan impuritas), jadi 10/1,64 ≈ 6,1. Pada 10<sup>19</sup> ke 10<sup>20</sup> rasionya 6,8: lebih dekat ke 10 karena mobilitas melandai (78 dan 115 cm²/(V·s)).</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Difusi dopan: profil Gaussian dan kedalaman junction</h3></header>
+  <div class="stage"><div id="v4-plot"></div></div>
+  <div class="params">
+    <label class="icd-field"><span>Dopan</span><select class="icd-select" id="v4-sp"><option value="B" selected>boron</option><option value="P">fosfor</option><option value="As">arsen</option></select></label>
+    <label class="icd-field"><span>Suhu <i>T</i> = <b id="v4-tv"></b> °C</span><input type="range" id="v4-t" min="900" max="1150" step="10" value="1000"></label>
+    <label class="icd-field"><span>Waktu <i>t</i> = <b id="v4-hv"></b> jam</span><input type="range" id="v4-h" min="0.25" max="4" step="0.25" value="1"></label>
+    <label class="icd-field"><span>Dosis <i>Q</i></span><select class="icd-select" id="v4-q"><option value="1e13">10<sup>13</sup> cm<sup>−2</sup></option><option value="1e14" selected>10<sup>14</sup> cm<sup>−2</sup></option><option value="1e15">10<sup>15</sup> cm<sup>−2</sup></option></select></label>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Drive-in dosis tetap, <i>C</i>(<i>x</i>) = <i>Q</i>/√(π<i>Dt</i>) exp(−<i>x</i>²/4<i>Dt</i>), <i>D</i> = <i>D</i><sub>0</sub> exp(−<i>E<sub>a</sub></i>/<i>kT</i>) dengan parameter di s04; latar belakang <i>N<sub>b</sub></i> = 10<sup>15</sup> cm<sup>−3</sup> (garis horizontal). Sumbu: kedalaman (µm) dan log<sub>10</sub> <i>C</i>. Rumus yang sama diverifikasi terhadap penyelesaian beda hingga di <code>fick.py</code>.</div>
+</div>
+<div class="icd-guide" data-id="v4-time" data-answer="0">
+  <p>Boron, 1000 °C, <i>Q</i> = 10<sup>14</sup>. Waktu 1 jam memberi <i>x<sub>j</sub></i> = 0,444 µm. Berapa bila waktu menjadi 2 jam?</p>
+  <ul><li>Sekitar 0,615 µm: naik 1,4 kali, bukan 2 kali</li><li>0,888 µm, tepat dua kali</li><li>0,222 µm, turun separuh</li><li>Tidak berubah karena dosis tetap</li></ul>
+  <div class="explain"><p>Difusi menyebar √(4<i>Dt</i>), jadi menggandakan waktu hanya menaikkan jangkauan √2 = 1,41 kali; konsentrasi puncak turun sama (7,6 menjadi 5,4 × 10<sup>18</sup>). <i>x<sub>j</sub></i> = 0,615 µm. Sebaliknya, menaikkan suhu 100 °C pada boron menaikkan <i>D</i> 10 kali dan jangkauan √10 = 3,2 kali: karena itu anggaran termal dikendalikan terutama lewat suhu.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+
+<h3>Contoh 1. Pembawa dan level Fermi untuk silikon n-type 10<sup>16</sup></h3>
+<p>Diberikan <i>N<sub>d</sub></i> = 10<sup>16</sup> cm<sup>−3</sup>, <i>N<sub>a</sub></i> = 0, <i>T</i> = 300 K. Langkah: (1) <i>n<sub>i</sub></i> = 6,117 × 10<sup>9</sup> (dari <i>E<sub>g</sub></i> = 1,1245 eV, <i>kT</i> = 25,85 meV). (2) <i>N</i> = 10<sup>16</sup> ≫ <i>n<sub>i</sub></i>, maka <i>n</i> ≈ 10<sup>16</sup> (rumus kuadrat memberi 1,000 × 10<sup>16</sup>). (3) <i>p</i> = <i>n<sub>i</sub></i>²/<i>n</i> = (6,117 × 10<sup>9</sup>)²/10<sup>16</sup> = 3,742 × 10<sup>3</sup>. (4) <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = 0,02585 ln(10<sup>16</sup>/6,117 × 10<sup>9</sup>) = 0,02585 × 14,31 = +0,370 eV. (5) <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> = 0,02585 ln(2,8 × 10<sup>19</sup>/10<sup>16</sup>) = 0,205 eV; karena 7,9 <i>kT</i> &gt; 3 <i>kT</i>, Boltzmann sah. Cek: <i>np</i>/<i>n<sub>i</sub></i>² = 1,000000. Cocok dengan baris "n 1e16" di <code>carriers.py</code>.</p>
+
+<h3>Contoh 2. Wafer p-type 10 Ω·cm</h3>
+<p>Dicari doping akseptor. Resistivitas wafer p-type 10 Ω·cm berarti <i>σ</i> = 0,1 S/cm. Tebak <i>N<sub>a</sub></i> = 10<sup>15</sup>: <i>µ<sub>p</sub></i> = 462, <i>ρ</i> = 13,5 Ω·cm (terlalu tinggi). Coba 10<sup>16</sup>: 1,45 (terlalu rendah). Interpolasi log memberi sekitar 1,4 × 10<sup>15</sup>; bisection di <code>mobility.py</code> memberi <i>N<sub>a</sub></i> = 1,357 × 10<sup>15</sup> cm<sup>−3</sup>. Pada nilai itu <i>p</i> = 1,357 × 10<sup>15</sup> dan <i>n</i> = <i>n<sub>i</sub></i>²/<i>p</i> = 2,8 × 10<sup>4</sup>: elektron minoritas hampir tak ada. Nilai ini wajar: wafer "10 Ω·cm" adalah salah satu spesifikasi substrat CMOS tipikal.</p>
+
+<h3>Contoh 3. Resistor n+ dari resistansi lembar</h3>
+<p>Lapisan n+ berdoping 10<sup>19</sup> dengan tebal 0,2 µm: <i>ρ</i> = 5,44 × 10<sup>−3</sup> Ω·cm dan <i>t</i> = 0,2 × 10<sup>−4</sup> cm, sehingga <i>R<sub>s</sub></i> = <i>ρ</i>/<i>t</i> = 5,44 × 10<sup>−3</sup>/(2 × 10<sup>−5</sup>) = 272 Ω/□ (cocok dengan <code>mobility.py</code>). Resistor dengan panjang 10 µm dan lebar 0,5 µm berisi 20 persegi: <i>R</i> = <i>R<sub>s</sub></i> × <i>L</i>/<i>W</i> = 272 × 20 = 5.435 Ω. Perhatikan dua penyederhanaan: profil dopan nyata tidak seragam, jadi nilai <i>R<sub>s</sub></i> dari proses diukur (empat titik) alih-alih dihitung dari satu konsentrasi.</p>
+
+<h3>Contoh 4. Seberapa cepat pembawa minoritas menyebar?</h3>
+<p>Hole di Si n-type 10<sup>16</sup>: <i>µ<sub>p</sub></i> = 429,3 cm²/(V·s). <i>D<sub>p</sub></i> = <i>µ</i> × <i>kT</i>/<i>q</i> = 429,3 × 0,02585 = 11,10 cm²/s. Dengan <i>τ</i> = 1 µs: <i>L</i> = √(<i>Dτ</i>) = √(11,10 × 10<sup>−6</sup>) = 3,33 × 10<sup>−3</sup> cm = 33,3 µm. Bila konsentrasi di tepi daerah adalah <i>n</i><sub>0</sub> = 10<sup>14</sup>, kerapatan arus difusi di tepi itu <i>J</i> = <i>qD n</i><sub>0</sub>/<i>L</i> = 1,602 × 10<sup>−19</sup> × 11,10 × 10<sup>14</sup>/3,33 × 10<sup>−3</sup> = 5,3 × 10<sup>−2</sup> A/cm² (<code>minority.py</code>). Pada <i>x</i> = 3<i>L</i> = 100 µm konsentrasi tinggal <i>e</i><sup>−3</sup> = 4,98% dari nilai awal.</p>
+
+<h3>Contoh 5. Kedalaman junction setelah drive-in</h3>
+<p>Boron, <i>Q</i> = 10<sup>14</sup> cm<sup>−2</sup>, 1000 °C (1273,15 K), 1 jam, latar belakang <i>N<sub>b</sub></i> = 10<sup>15</sup>. Langkah: (1) <i>D</i> = 0,76 exp(−3,46/(8,617 × 10<sup>−5</sup> × 1273,15)) = 0,76 exp(−31,54) = 1,53 × 10<sup>−14</sup> cm²/s. (2) <i>Dt</i> = 1,53 × 10<sup>−14</sup> × 3600 = 5,5 × 10<sup>−11</sup> cm²; √(4<i>Dt</i>) = 0,148 µm. (3) <i>C</i><sub>0</sub> = <i>Q</i>/√(π<i>Dt</i>) = 10<sup>14</sup>/1,31 × 10<sup>−5</sup> = 7,6 × 10<sup>18</sup> cm<sup>−3</sup>. (4) ln(<i>C</i><sub>0</sub>/<i>N<sub>b</sub></i>) = ln(7,6 × 10<sup>3</sup>) = 8,94; <i>x<sub>j</sub></i> = 2√(<i>Dt</i> × 8,94) = 2√(4,9 × 10<sup>−10</sup>) cm = 4,4 × 10<sup>−5</sup> cm = 0,444 µm. Pakai <code>fick.py</code> untuk mengonfirmasi.</p>
+
+<h3>Contoh 6. Dari tegangan Hall ke konsentrasi dan mobilitas</h3>
+<p>Batang tebal <i>t</i> = 0,5 mm dialiri <i>I</i> = 1 mA dalam <i>B</i> = 0,1 T; diukur <i>V<sub>H</sub></i> = −0,12483 mV dan <i>ρ</i> = 0,5273 Ω·cm. (1) Tanda negatif: pembawa elektron (n-type). (2) <i>R<sub>H</sub></i> = <i>V<sub>H</sub></i><i>t</i>/(<i>IB</i>) = −1,2483 × 10<sup>−4</sup> × 5 × 10<sup>−4</sup>/(10<sup>−3</sup> × 0,1) = −6,24 × 10<sup>−4</sup> m³/C. (3) <i>n</i> = 1/(<i>q</i>|<i>R<sub>H</sub></i>|) = 1/(1,602 × 10<sup>−19</sup> × 6,24 × 10<sup>−4</sup>) = 10<sup>22</sup> m<sup>−3</sup> = 10<sup>16</sup> cm<sup>−3</sup>. (4) <i>µ<sub>H</sub></i> = |<i>R<sub>H</sub></i>|/<i>ρ</i> = 6,24 × 10<sup>−4</sup>/(5,273 × 10<sup>−3</sup> Ω·m) = 0,1184 m²/(V·s) = 1.184 cm²/(V·s). Hasil sama dengan <code>hall.py</code>. (Pada pengukuran nyata <i>µ<sub>H</sub></i> = <i>r</i> <i>µ</i> dengan faktor hamburan <i>r</i> sekitar 1,1 sampai 1,2.)</p>
+
+<h3>Contoh 7. Bagaimana suhu memengaruhi bocor?</h3>
+<p>Arus bocor junction yang didominasi difusi pembawa minoritas sebanding <i>n<sub>i</sub></i>². Dalam model lab <i>n<sub>i</sub></i>(400 K)/<i>n<sub>i</sub></i>(300 K) = 3,229 × 10<sup>12</sup>/6,117 × 10<sup>9</sup> = 528, sehingga komponen ini naik sekitar 528² = 2,8 × 10<sup>5</sup> kali (dengan koreksi kecil dari <i>D</i> dan <i>L</i>). Walau angka pastinya bergantung model dan kepustakaan, kesimpulan desain tetap: bocor naik berorde-orde antara 25 °C dan 125 °C, sehingga kebocoran, retensi memori, dan daya standby harus dianalisis pada suhu terburuk (corner panas, M06c).</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Sembilan berkas Python (Python 3.12 yang dijalankan sungguhan): modul model <code>semi.py</code>, enam skrip yang mengimpornya, dan uji unit <code>test_semi.py</code>. Semua ada di folder <code>lab/m05a</code>; yang tampil di sini identik dengan berkas itu. Satuan: cm, s, eV, K.</p>
+<h3>8.1 semi.py</h3>
+<pre class="icd-src" data-lang="python">
+"""Model semikonduktor silikon yang dipakai semua skrip lab M05a (satuan: cm, s, eV, K)."""
+from math import exp, log, sqrt
+
+K_EV = 8.617333262e-5      # konstanta Boltzmann, eV/K
+Q = 1.602176634e-19        # muatan elementer, C
+EPS0 = 8.8541878128e-14    # permitivitas vakum, F/cm
+EPS_SI = 11.7              # permitivitas relatif silikon
+
+def kt(T):
+    """Energi termal kT dalam eV."""
+    return K_EV * T
+
+def eg(T):
+    """Celah pita silikon (eV), model Varshni."""
+    return 1.17 - 4.73e-4 * T * T / (T + 636.0)
+
+def nc(T):
+    """Rapat keadaan efektif pita konduksi (cm^-3)."""
+    return 2.8e19 * (T / 300.0) ** 1.5
+
+def nv(T):
+    """Rapat keadaan efektif pita valensi (cm^-3)."""
+    return 1.04e19 * (T / 300.0) ** 1.5
+
+def ni(T):
+    """Konsentrasi pembawa intrinsik (cm^-3)."""
+    return sqrt(nc(T) * nv(T)) * exp(-eg(T) / (2.0 * kt(T)))
+
+def carriers(nd, na, T=300.0):
+    """Kesetimbangan dengan ionisasi penuh: netralitas muatan + hukum aksi massa.
+    Mengembalikan (n, p) dalam cm^-3."""
+    net = nd - na
+    n0 = ni(T)
+    if net &gt;= 0:
+        n = (net + sqrt(net * net + 4.0 * n0 * n0)) / 2.0
+        return n, n0 * n0 / n
+    p = (-net + sqrt(net * net + 4.0 * n0 * n0)) / 2.0
+    return n0 * n0 / p, p
+
+def ef_minus_ei(n, T=300.0):
+    """Posisi level Fermi terhadap level intrinsik (eV): kT ln(n / ni)."""
+    return kt(T) * log(n / ni(T))
+
+# parameter Caughey-Thomas pada 300 K: (mu_min, mu_max, N_ref, alpha), mobilitas cm^2/(V s)
+CT = {'n': (68.5, 1414.0, 9.2e16, 0.711), 'p': (44.9, 470.5, 2.23e17, 0.719)}
+
+def mobility(ntot, kind):
+    """Mobilitas pada doping total ntot (cm^-3), kind 'n' atau 'p'."""
+    mn, mx, nref, a = CT[kind]
+    return mn + (mx - mn) / (1.0 + (ntot / nref) ** a)
+
+def resistivity(nd, na, T=300.0):
+    """Resistivitas (ohm cm) = 1 / (q (n mu_n + p mu_p))."""
+    n, p = carriers(nd, na, T)
+    ntot = nd + na
+    return 1.0 / (Q * (n * mobility(ntot, 'n') + p * mobility(ntot, 'p')))
+
+def einstein_d(mu, T=300.0):
+    """Koefisien difusi D = mu kT / q (cm^2/s); kT/q dalam volt sama dengan kt(T) dalam eV."""
+    return mu * kt(T)
+</pre>
+<h3>8.2 ni_temp.py</h3>
+<pre class="icd-src" data-lang="python">
+from semi import eg, kt, ni, nc, nv
+
+print("T(K)   Eg(eV)   kT(meV)     ni(cm^-3)")
+for T in (250, 300, 350, 400, 450, 500):
+    print("%4d   %.4f   %6.2f   %.3e" % (T, eg(T), kt(T) * 1000, ni(T)))
+print("ni(310)/ni(300) = %.3f" % (ni(310) / ni(300)))
+
+def crossover(nd, lo=300.0, hi=900.0):
+    """Suhu (K) saat ni = nd; di atasnya bahan n-type berperilaku intrinsik."""
+    for _ in range(80):
+        mid = (lo + hi) / 2
+        if ni(mid) &lt; nd:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+for nd in (1e14, 1e15, 1e16, 1e17):
+    T = crossover(nd)
+    print("ni = Nd = %.0e pada T = %.0f K (%.0f C)" % (nd, T, T - 273.15))
+</pre>
+<h3>8.3 carriers.py</h3>
+<pre class="icd-src" data-lang="python">
+from semi import carriers, ef_minus_ei, ni, kt
+
+CASES = [
+    ("intrinsik", 0.0, 0.0, 300.0),
+    ("n 1e16", 1e16, 0.0, 300.0),
+    ("p 1e17", 0.0, 1e17, 300.0),
+    ("n 1e17 kompensasi p 9e16", 1e17, 9e16, 300.0),
+    ("n 1e14 pada 300 K", 1e14, 0.0, 300.0),
+    ("n 1e14 pada 500 K", 1e14, 0.0, 500.0),
+    ("n 1e18", 1e18, 0.0, 300.0),
+]
+print("%-26s %10s %10s %10s  %s" % ("kasus", "n", "p", "EF-Ei(eV)", "jenis"))
+for name, nd, na, T in CASES:
+    n, p = carriers(nd, na, T)
+    ef = ef_minus_ei(n, T)
+    kind = "n-type" if n &gt; p * 10 else ("p-type" if p &gt; n * 10 else "intrinsik")
+    print("%-26s %10.3e %10.3e %+10.4f  %s" % (name, n, p, ef, kind))
+n, p = carriers(1e16, 0.0, 300.0)
+print("np / ni^2 = %.6f" % (n * p / ni(300.0) ** 2))
+</pre>
+<h3>8.4 mobility.py</h3>
+<pre class="icd-src" data-lang="python">
+from semi import mobility, resistivity, carriers, Q
+
+print("    N(cm^-3)   mu_n    mu_p   rho_n(ohm cm)  rho_p(ohm cm)")
+for e in range(14, 21):
+    N = 10.0 ** e
+    print("   1e%d   %7.1f %7.1f   %12.5g   %12.5g" % (e, mobility(N, 'n'), mobility(N, 'p'), resistivity(N, 0), resistivity(0, N)))
+print("intrinsik 300 K: rho = %.4g ohm cm" % resistivity(0, 0))
+# resistansi lembar lapisan seragam
+for t_um, N in ((0.2, 1e19), (0.1, 1e20), (1.0, 1e18)):
+    t = t_um * 1e-4
+    print("lapisan n+ tebal %.1f um, N=%.0e: Rs = %.1f ohm/persegi" % (t_um, N, resistivity(N, 0) / t))
+# wafer p 10 ohm cm: doping?
+lo, hi = 1e13, 1e18
+for _ in range(100):
+    mid = (lo * hi) ** 0.5
+    if resistivity(0, mid) &gt; 10.0:
+        lo = mid
+    else:
+        hi = mid
+print("wafer p 10 ohm cm: Na = %.3e cm^-3" % ((lo * hi) ** 0.5))
+</pre>
+<h3>8.5 fermi.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import exp, log
+from semi import carriers, kt, nc, nv, ni, ef_minus_ei
+
+print("(E-EF)/kT   FD        Boltzmann  galat relatif (hanya berlaku bila E-EF &gt; 0)")
+for x in (1, 2, 3, 4, 6, 10):
+    fd = 1.0 / (1.0 + exp(x))
+    bz = exp(-x)
+    print("%+5d     %.5f   %.5f    %6.2f%%" % (x, fd, bz, (bz - fd) / fd * 100))
+T = 300.0
+for nd in (1e16, 1e18, 1e19, 1e20):
+    n, p = carriers(nd, 0, T)
+    x = log(nc(T) / n)          # (Ec - EF)/kT bila Boltzmann
+    print("Nd=%.0e: Ec-EF = %.3f kT = %.4f eV  %s" % (nd, x, x * kt(T), "Boltzmann layak (galat &lt; 5%)" if x &gt; 3 else "Boltzmann gagal (terdegenerasi)"))
+</pre>
+<h3>8.6 fick.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import exp, log, pi, sqrt
+from semi import K_EV
+
+D0EA = {"B": (0.76, 3.46), "P": (3.85, 3.66), "As": (0.066, 3.44)}   # cm^2/s, eV (nilai kisaran literatur)
+
+def dcoef(sp, T):
+    d0, ea = D0EA[sp]
+    return d0 * exp(-ea / (K_EV * T))
+
+def gauss(x, Q, Dt):
+    """Profil drive-in dosis tetap, setengah ruang: C = Q / sqrt(pi D t) exp(-x^2 / 4Dt)."""
+    return Q / sqrt(pi * Dt) * exp(-x * x / (4.0 * Dt))
+
+def xj(Q, Dt, nb):
+    """Kedalaman junction: C(xj) = nb."""
+    c0 = Q / sqrt(pi * Dt)
+    return 2.0 * sqrt(Dt * log(c0 / nb))
+
+print("D (cm^2/s) pada beberapa suhu:")
+for sp in ("B", "P", "As"):
+    print("  %-2s " % sp + "  ".join("%dC: %.2e" % (c, dcoef(sp, c + 273.15)) for c in (900, 1000, 1100)))
+
+Q, nb = 1e14, 1e15
+T = 1000 + 273.15
+for hours in (0.5, 1, 2, 4):
+    Dt = dcoef("B", T) * hours * 3600
+    print("B 1000C %.1f jam: sqrt(4Dt)=%.3f um  C0=%.2e  xj=%.3f um" % (hours, 2e4 * sqrt(Dt), Q / sqrt(pi * Dt), xj(Q, Dt, nb) * 1e4))
+
+# beda hingga eksplisit (FTCS) dari t1 ke t2 dengan Dt_total sama seperti analitik
+D = 1e-14                      # cm^2/s
+t1, t2 = 1800.0, 3600.0
+dx = 2.0e-6                    # cm (0,02 um)
+nx = 400
+dt = 0.4 * dx * dx / D         # dt &lt;= dx^2/(2D) untuk stabil
+c = [gauss(i * dx, Q, D * t1) for i in range(nx)]
+t = t1
+while t &lt; t2 - 1e-9:
+    h = min(dt, t2 - t)
+    r = D * h / (dx * dx)
+    new = c[:]
+    new[0] = c[0] + 2 * r * (c[1] - c[0])      # batas pantul di x=0 (dosis kekal)
+    for i in range(1, nx - 1):
+        new[i] = c[i] + r * (c[i + 1] - 2 * c[i] + c[i - 1])
+    c = new
+    t += h
+ref = [gauss(i * dx, Q, D * t2) for i in range(nx)]
+err = max(abs(a - b) for a, b in zip(c, ref)) / max(ref)
+dose = (sum(c) - 0.5 * c[0]) * dx
+print("FTCS: langkah dt=%.0f s, kesalahan maksimum relatif terhadap puncak = %.2e, dosis = %.4e (awal %.1e)" % (dt, err, dose, Q))
+</pre>
+<h3>8.7 minority.py</h3>
+<pre class="icd-src" data-lang="python">
+from math import exp, sqrt
+from semi import einstein_d, mobility
+
+for mu in (1400.0, 1000.0, 450.0, 200.0):
+    print("mu=%6.0f cm2/Vs -&gt; D = %.2f cm2/s (300 K)" % (mu, einstein_d(mu)))
+
+def solve(L, W, n0, N=400):
+    """D n'' - n/tau = 0, n(0)=n0, n(W)=0, dengan skema beda hingga tridiagonal (algoritma Thomas)."""
+    h = W / N
+    a = [1.0 / h ** 2] * (N - 1)               # bawah
+    b = [-(2.0 / h ** 2 + 1.0 / L ** 2)] * (N - 1)
+    c = [1.0 / h ** 2] * (N - 1)               # atas
+    d = [0.0] * (N - 1)
+    d[0] = -n0 / h ** 2
+    cp, dp = [0.0] * (N - 1), [0.0] * (N - 1)
+    cp[0], dp[0] = c[0] / b[0], d[0] / b[0]
+    for i in range(1, N - 1):
+        m = b[i] - a[i] * cp[i - 1]
+        cp[i] = c[i] / m
+        dp[i] = (d[i] - a[i] * dp[i - 1]) / m
+    x = [0.0] * (N - 1)
+    x[-1] = dp[-1]
+    for i in range(N - 3, -1, -1):
+        x[i] = dp[i] - cp[i] * x[i + 1]
+    return [n0] + x + [0.0], h
+
+D = einstein_d(mobility(1e16, 'p'))          # hole sebagai pembawa minoritas pada bahan n 1e16
+tau = 1e-6
+L = sqrt(D * tau)
+print("D_p = %.2f cm2/s, tau = %.0e s, L = %.1f um" % (D, tau, L * 1e4))
+prof, h = solve(L, 10 * L, 1e14)
+err = max(abs(prof[i] - 1e14 * exp(-i * h / L)) for i in range(len(prof))) / 1e14
+print("beda hingga vs 1e14 exp(-x/L): kesalahan maksimum = %.2e dari n0" % err)
+for k in (1, 2, 3):
+    i = round(k * L / h)
+    print("x = %d L = %.0f um: n = %.3e (analitik %.3e)" % (k, k * L * 1e4, prof[i], 1e14 * exp(-k)))
+print("arus difusi di x=0 (J = q D n0 / L): %.3e A/cm2" % (1.602176634e-19 * D * 1e14 / L))
+</pre>
+<h3>8.8 hall.py</h3>
+<pre class="icd-src" data-lang="python">
+from semi import Q, carriers, mobility, resistivity
+
+# batang silikon n 1e16, I = 1 mA, B = 0,1 T. Satuan SI di dalam fungsi.
+def hall_forward(n_cm3, ptype, I, B, t_m):
+    n_m3 = n_cm3 * 1e6
+    sign = 1 if ptype else -1
+    return sign * I * B / (Q * n_m3 * t_m)
+
+def hall_inverse(VH, I, B, t_m, rho_ohm_cm):
+    RH = VH * t_m / (I * B)                    # m^3/C
+    typ = "p" if RH &gt; 0 else "n"
+    conc = 1.0 / (Q * abs(RH)) * 1e-6          # cm^-3
+    mu_h = abs(RH) / (rho_ohm_cm * 1e-2) * 1e4   # cm^2/Vs, mu_H = |R_H| / rho (faktor Hall r = 1)
+    return typ, conc, mu_h
+
+t = 0.5e-3
+for name, nd, na in (("n 1e16", 1e16, 0), ("p 1e17", 0, 1e17)):
+    n, p = carriers(nd, na)
+    majority_p = p &gt; n
+    conc = p if majority_p else n
+    VH = hall_forward(conc, majority_p, 1e-3, 0.1, t)
+    rho = resistivity(nd, na)
+    typ, c2, mu = hall_inverse(VH, 1e-3, 0.1, t, rho)
+    mu_true = mobility(nd + na, 'p' if majority_p else 'n')
+    print("%-7s VH = %+.4e V  rho = %.4f ohm cm -&gt; tipe %s, N = %.3e cm^-3, mu_H = %.1f (model %.1f)" % (name, VH, rho, typ, c2, mu, mu_true))
+</pre>
+<h3>8.9 test_semi.py</h3>
+<pre class="icd-src" data-lang="python">
+import unittest
+from math import exp, log, sqrt
+from semi import carriers, ni, nc, nv, eg, kt, mobility, resistivity, einstein_d, ef_minus_ei
+
+class T(unittest.TestCase):
+    def test_mass_action(self):
+        for nd, na, t in ((1e16, 0, 300), (0, 1e17, 300), (1e14, 0, 500), (1e15, 9e14, 350)):
+            n, p = carriers(nd, na, t)
+            self.assertAlmostEqual(n * p / ni(t) ** 2, 1.0, places=9)
+
+    def test_neutrality(self):
+        for nd, na, t in ((1e16, 0, 300), (0, 1e17, 300), (1e17, 9e16, 300)):
+            n, p = carriers(nd, na, t)
+            self.assertAlmostEqual((p + nd - n - na) / max(nd, na), 0.0, places=9)
+
+    def test_limits(self):
+        n, p = carriers(0, 0, 300)
+        self.assertAlmostEqual(n, ni(300)); self.assertAlmostEqual(p, ni(300))
+        n, p = carriers(1e18, 0, 300)
+        self.assertAlmostEqual(n / 1e18, 1.0, places=6)
+        self.assertAlmostEqual(ef_minus_ei(ni(300)), 0.0)
+
+    def test_ni_grows_with_T(self):
+        self.assertTrue(all(ni(a) &lt; ni(b) for a, b in ((250, 300), (300, 350), (350, 400))))
+        self.assertTrue(eg(400) &lt; eg(300) &lt; eg(200))
+
+    def test_mobility(self):
+        ns = [10 ** e for e in range(14, 21)]
+        for k in 'np':
+            ms = [mobility(x, k) for x in ns]
+            self.assertTrue(all(a &gt; b for a, b in zip(ms, ms[1:])))
+        self.assertGreater(mobility(1e14, 'n'), mobility(1e14, 'p'))
+
+    def test_resistivity_falls_with_doping(self):
+        self.assertTrue(resistivity(1e15, 0) &gt; resistivity(1e16, 0) &gt; resistivity(1e17, 0))
+        self.assertAlmostEqual(resistivity(1e16, 0), 0.5, delta=0.1)
+
+    def test_einstein(self):
+        self.assertAlmostEqual(einstein_d(1400.0), 36.2, delta=0.1)
+
+    def test_fermi_boltzmann(self):
+        x = 3.0
+        self.assertAlmostEqual(exp(-x) / (1 / (1 + exp(x))), 1 + exp(-x), places=9)
+
+if __name__ == "__main__":
+    unittest.main()
+</pre>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>"Hole adalah partikel nyata yang bergerak."</b>Hole adalah keadaan kosong di pita valensi; yang bergerak secara fisik adalah elektron valensi yang mengisi kekosongan itu. Memodelkannya sebagai partikel positif dengan massa efektif sendiri adalah penyederhanaan yang tepat dan sangat berguna, tetapi arus hole tetap berasal dari elektron yang bergeser.</div>
+<div class="icd-box mis"><b>"Silikon n-type bermuatan negatif."</b>Bahan n-type netral. Setiap elektron donor diimbangi ion donor positif yang tetap di kisi (netralitas muatan: <i>p</i> + <i>N<sub>d</sub></i> = <i>n</i> + <i>N<sub>a</sub></i>). Muatan ruang baru muncul bila ada medan atau junction.</div>
+<div class="icd-box mis"><b>"Doping tinggi berarti mobilitas tinggi."</b>Doping menaikkan jumlah pembawa tetapi menurunkan mobilitas (hamburan impuritas). Konduktivitas tetap naik karena pembawa bertambah lebih cepat: 10 kali doping memberi resistivitas turun hanya 6,1 kali di 10<sup>16</sup> ke 10<sup>17</sup>.</div>
+<div class="icd-box trap"><b>Jebakan: <i>np</i> = <i>n<sub>i</sub></i>² dipakai di luar kesetimbangan.</b>Hukum aksi massa hanya berlaku pada kesetimbangan termal. Di bawah injeksi (bias maju, cahaya) <i>np</i> &gt; <i>n<sub>i</sub></i>²; di daerah tercabut pembawa (bias mundur) <i>np</i> &lt; <i>n<sub>i</sub></i>². Persamaan dioda di M05b justru berangkat dari penyimpangan ini.</div>
+<div class="icd-box trap"><b>Jebakan: memakai Boltzmann pada doping tinggi.</b>Pada <i>N<sub>d</sub></i> = 10<sup>19</sup>, <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> = 1,03 <i>kT</i> dan aproksimasi Boltzmann salah sekitar 36% pada tepi itu; pada 10<sup>20</sup> level Fermi masuk pita konduksi. Source/drain MOSFET (10<sup>19</sup> sampai 10<sup>21</sup>) terdegenerasi; hitung dengan integral Fermi-Dirac penuh atau pakai fakta empiris (resistansi lembar terukur).</div>
+<div class="icd-box trap"><b>Jebakan: mengabaikan suhu.</b><i>n<sub>i</sub></i> naik 2,2 kali dari 300 ke 310 K; mobilitas turun, <i>E<sub>g</sub></i> menurun, dan difusi dopan naik 10 kali per 100 °C. Silikon berdoping 10<sup>14</sup> menjadi intrinsik di sekitar 486 K (213 °C), saat <i>n<sub>i</sub></i> = <i>N<sub>d</sub></i>; pada 125 °C (398 K) <i>n<sub>i</sub></i> = 3 × 10<sup>12</sup> masih sekitar 34 kali lebih kecil. Simulasi chip harus dijalankan di sudut suhu.</div>
+<div class="icd-box mis"><b>"Mobilitas dan koefisien difusi adalah dua sifat bebas."</b>Keduanya terkait oleh <i>D</i> = <i>µkT</i>/<i>q</i> (Boltzmann): bahan dengan mobilitas rendah pasti berdifusi lambat pada suhu yang sama. Konversi cepat: <i>D</i> (cm²/s) ≈ 0,02585 × <i>µ</i> (cm²/(V·s)) pada 300 K.</div>
+<div class="icd-box trap"><b>Jebakan: satuan cm lawan m.</b>Fisika semikonduktor memakai cm<sup>−3</sup>, cm²/(V·s), dan Ω·cm; rumus SI memakai m<sup>−3</sup> dan m²/(V·s). Hall pada <code>hall.py</code> berpindah ke SI di dalam fungsi dan kembali ke cm di output; kesalahan faktor 10<sup>6</sup> pada <i>n</i> sangat umum.</div>
+<div class="icd-box mis"><b>"Kedalaman junction naik sebanding waktu."</b>Difusi menyebar √(<i>Dt</i>). Dua kali waktu memberi 1,4 kali jangkauan (0,444 menjadi 0,615 µm untuk boron, 1000 °C, dosis 10<sup>14</sup>).</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<ul>
+<li><strong>Substrat dan sumur.</strong> Wafer CMOS logika biasanya p-type 1 sampai 20 Ω·cm (doping 10<sup>15</sup>), dengan sumur n dan p ditanam dengan implantasi pada 10<sup>16</sup> sampai 10<sup>18</sup>. Spesifikasi wafer diberikan sebagai resistivitas karena diukur langsung dengan probe empat titik; doping dihitung dari tabel seperti <code>mobility.py</code> (kurva Irvin).</li>
+<li><strong>Resistansi lembar sebagai parameter teknologi.</strong> File PDK memuat <i>R<sub>s</sub></i> tiap lapisan: n+ dan p+ diffusion (puluhan sampai ratusan Ω/□), poli, sumur (kΩ/□), dan logam (mΩ/□). Perancang menghitung resistor dari jumlah persegi (Contoh 3) dan mengestimasi IR drop.</li>
+<li><strong>Implantasi dan anil.</strong> Dopan ditanam dengan implantasi ion (dosis 10<sup>11</sup> sampai 10<sup>16</sup> cm<sup>−2</sup>, M30), lalu anil memperbaiki kristal dan mengaktifkan dopan. Anil panjang (furnace) memberi difusi besar; anil cepat (RTA, spike, flash, laser) menjaga junction dangkal. Anggaran termal terakumulasi sepanjang proses dan dicatat per langkah.</li>
+<li><strong>Pengukuran karakterisasi.</strong> Probe empat titik (resistansi lembar), Hall dan van der Pauw (jenis, konsentrasi, mobilitas), SIMS (profil dopan terhadap kedalaman), spreading resistance, dan kapasitansi-tegangan (profil doping dari sambungan). Tiap alat memberi besaran berbeda; profil SIMS adalah yang paling langsung untuk memeriksa hasil drive-in.</li>
+<li><strong>Bahan lain.</strong> Ge (celah 0,66 eV, bocor besar tetapi mobilitas hole tinggi) dipakai sebagai kanal SiGe untuk menaikkan kecepatan; SiC (3,3 eV) dan GaN (3,4 eV) untuk daya tinggi dan suhu tinggi karena <i>n<sub>i</sub></i> yang sangat kecil; GaAs dan InP untuk RF dan optik karena celah langsung dan mobilitas elektron tinggi. Pilihan bahan mengikuti celah dan mobilitas.</li>
+<li><strong>TCAD dan model.</strong> Simulator device (Sentaurus, Silvaco) menyelesaikan drift-difusi bersama Poisson dengan parameter mobilitas yang dikalibrasi; model kompak (BSIM, M06) menyederhanakannya menjadi persamaan yang cepat. Memahami model Caughey-Thomas dan hubungan Einstein membantu membaca parameter yang dikalibrasi itu.</li>
+<li><strong>Status per November 2026.</strong> Silikon tetap bahan utama logika dan memori; GaN dan SiC berkembang pesat di daya, dan bahan 2D (MoS<sub>2</sub>) diteliti untuk kanal ultra-tipis tetapi belum menggantikan silikon di produksi massal. Lab memakai model sederhana; angka literatur untuk <i>n<sub>i</sub></i>, <i>µ</i>, dan <i>D</i> bervariasi beberapa puluh persen antar sumber.</li>
+</ul>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Silikon n-type <i>N<sub>d</sub></i> = 10<sup>17</sup> cm<sup>−3</sup> pada 300 K. Berapa <i>n</i> dan <i>p</i>?</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p><i>n</i> ≈ <i>N<sub>d</sub></i> = 10<sup>17</sup> cm<sup>−3</sup> (rumus kuadrat memberi 1,0000 × 10<sup>17</sup>), <i>p</i> = <i>n<sub>i</sub></i>²/<i>n</i> = (6,117 × 10<sup>9</sup>)²/10<sup>17</sup> = 374 cm<sup>−3</sup>. Selisih 14 orde besaran antara pembawa mayoritas dan minoritas.</p></details>
+<p><strong>1.2</strong> Di mana level Fermi untuk p-type <i>N<sub>a</sub></i> = 10<sup>17</sup> pada 300 K, dan di atas atau di bawah <i>E<sub>i</sub></i>?</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p><i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = −<i>kT</i> ln(<i>p</i>/<i>n<sub>i</sub></i>) = −0,02585 × ln(10<sup>17</sup>/6,117 × 10<sup>9</sup>) = −0,429 eV: di bawah <i>E<sub>i</sub></i>, dekat pita valensi (<code>carriers.py</code>: −0,4294).</p></details>
+<p><strong>1.3</strong> Pada doping 10<sup>16</sup>, mana yang lebih besar, mobilitas elektron atau hole, dan kira-kira berapa kali?</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>Elektron: 1.184 cm²/(V·s); hole: 429 cm²/(V·s). Rasionya 2,8 kali. Karena itu transistor n-channel dengan lebar sama lebih kuat daripada p-channel, dan p-channel dilebarkan sekitar 2 sampai 3 kali pada inverter CMOS lama (M10).</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Silikon dengan <i>N<sub>d</sub></i> = 2 × 10<sup>16</sup> dan <i>N<sub>a</sub></i> = 1,5 × 10<sup>16</sup> cm<sup>−3</sup> pada 300 K. Hitung <i>n</i>, <i>p</i>, jenisnya, dan resistivitasnya.</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p>Bersih <i>N</i> = <i>N<sub>d</sub></i> − <i>N<sub>a</sub></i> = 5 × 10<sup>15</sup> &gt; 0: n-type. <i>n</i> = 5,000 × 10<sup>15</sup>, <i>p</i> = <i>n<sub>i</sub></i>²/<i>n</i> = 7,48 × 10<sup>3</sup> cm<sup>−3</sup>. Mobilitas bergantung pada impuritas total <i>N<sub>d</sub></i> + <i>N<sub>a</sub></i> = 3,5 × 10<sup>16</sup>, bukan yang bersih: <i>µ<sub>n</sub></i> = 964 cm²/(V·s). Maka <i>ρ</i> = 1/(<i>q n µ<sub>n</sub></i>) = 1/(1,602 × 10<sup>−19</sup> × 5 × 10<sup>15</sup> × 964) = 1,295 Ω·cm (<code>resistivity(2e16, 1.5e16)</code> = 1,2953). Kompensasi membuat bahan lebih resistif daripada n-type murni dengan <i>n</i> sama (hamburan lebih banyak).</p></details>
+<p><strong>2.2</strong> Lapisan n+ tebal 0,1 µm dengan <i>N</i> = 10<sup>20</sup> cm<sup>−3</sup> dibuat menjadi resistor 5 µm × 0,2 µm. Berapa resistansinya?</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p><i>ρ</i> = 8,03 × 10<sup>−4</sup> Ω·cm, <i>R<sub>s</sub></i> = <i>ρ</i>/<i>t</i> = 8,03 × 10<sup>−4</sup>/10<sup>−5</sup> = 80,3 Ω/□. Jumlah persegi = <i>L</i>/<i>W</i> = 5/0,2 = 25, jadi <i>R</i> = 80,3 × 25 = 2.006 Ω ≈ 2 kΩ (di luar resistansi kontak dan efek ujung).</p></details>
+<p><strong>2.3</strong> Arsen, <i>Q</i> = 10<sup>15</sup> cm<sup>−2</sup>, 1050 °C selama 30 menit, <i>N<sub>b</sub></i> = 10<sup>15</sup>. Hitung <i>D</i>, √(4<i>Dt</i>), <i>C</i><sub>0</sub>, dan <i>x<sub>j</sub></i>.</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p><i>D</i> = 0,066 exp(−3,44/(8,617 × 10<sup>−5</sup> × 1323,15)) = 5,21 × 10<sup>−15</sup> cm²/s. <i>Dt</i> = 5,21 × 10<sup>−15</sup> × 1800 = 9,38 × 10<sup>−12</sup> cm²; √(4<i>Dt</i>) = 0,0612 µm. <i>C</i><sub>0</sub> = 10<sup>15</sup>/√(π × 9,38 × 10<sup>−12</sup>) = 1,84 × 10<sup>20</sup> cm<sup>−3</sup>. <i>x<sub>j</sub></i> = 2√(<i>Dt</i> ln(1,84 × 10<sup>5</sup>)) = 0,213 µm. Catatan: pada konsentrasi puncak sekitar 10<sup>20</sup>, model <i>D</i> konstan dan statistik Boltzmann sudah kasar; difusi arsen nyata bergantung konsentrasi.</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Turunkan <i>np</i> = <i>n<sub>i</sub></i>² dan <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>) dari rumus Boltzmann <i>n</i> dan <i>p</i>.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>Kalikan <i>n</i> = <i>N<sub>c</sub></i> exp(−(<i>E<sub>c</sub></i> − <i>E<sub>F</sub></i>)/<i>kT</i>) dan <i>p</i> = <i>N<sub>v</sub></i> exp(−(<i>E<sub>F</sub></i> − <i>E<sub>v</sub></i>)/<i>kT</i>): eksponen <i>E<sub>F</sub></i> saling meniadakan sehingga <i>np</i> = <i>N<sub>c</sub>N<sub>v</sub></i> exp(−(<i>E<sub>c</sub></i> − <i>E<sub>v</sub></i>)/<i>kT</i>) = <i>N<sub>c</sub>N<sub>v</sub></i> exp(−<i>E<sub>g</sub></i>/<i>kT</i>), yaitu <i>n<sub>i</sub></i>² dengan <i>n<sub>i</sub></i> = √(<i>N<sub>c</sub>N<sub>v</sub></i>) exp(−<i>E<sub>g</sub></i>/2<i>kT</i>). Untuk bahan intrinsik <i>n</i> = <i>p</i> = <i>n<sub>i</sub></i> dan <i>E<sub>F</sub></i> = <i>E<sub>i</sub></i>, sehingga <i>n<sub>i</sub></i> = <i>N<sub>c</sub></i> exp(−(<i>E<sub>c</sub></i> − <i>E<sub>i</sub></i>)/<i>kT</i>). Bagi <i>n</i> oleh <i>n<sub>i</sub></i>: <i>n</i>/<i>n<sub>i</sub></i> = exp((<i>E<sub>F</sub></i> − <i>E<sub>i</sub></i>)/<i>kT</i>), sehingga <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>). Dengan cara sama <i>p</i>/<i>n<sub>i</sub></i> = exp(−(<i>E<sub>F</sub></i> − <i>E<sub>i</sub></i>)/<i>kT</i>). Hasil ini berlaku selama Boltzmann berlaku.</p></details>
+<p><strong>3.2</strong> Turunkan hubungan Einstein <i>D</i> = <i>µkT</i>/<i>q</i> dari syarat arus elektron nol pada kesetimbangan dalam bahan dengan doping tak seragam.</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Pada kesetimbangan <i>E<sub>F</sub></i> konstan, sedangkan <i>E<sub>i</sub></i>(<i>x</i>) berubah mengikuti doping, sehingga <i>n</i>(<i>x</i>) = <i>n<sub>i</sub></i> exp((<i>E<sub>F</sub></i> − <i>E<sub>i</sub></i>(<i>x</i>))/<i>kT</i>). Medan listrik internal adalah <i>E</i> = (1/<i>q</i>) <i>dE<sub>i</sub></i>/<i>dx</i> (pita miring mengikuti potensial elektrostatik). Turunkan: <i>dn</i>/<i>dx</i> = −(<i>n</i>/<i>kT</i>) <i>dE<sub>i</sub></i>/<i>dx</i> = −<i>qEn</i>/<i>kT</i>. Arus elektron <i>J<sub>n</sub></i> = <i>qµnE</i> + <i>qD</i> <i>dn</i>/<i>dx</i> = <i>qµnE</i> − <i>qD</i> <i>qEn</i>/<i>kT</i> = <i>qnE</i>(<i>µ</i> − <i>qD</i>/<i>kT</i>). Syarat <i>J<sub>n</sub></i> = 0 untuk <i>E</i> dan <i>n</i> sembarang menuntut <i>µ</i> = <i>qD</i>/<i>kT</i>, yaitu <i>D</i> = <i>µkT</i>/<i>q</i>. Hubungan ini hanya sifat bahan, jadi berlaku juga di luar kesetimbangan (selama Boltzmann berlaku).</p></details>
+<p><strong>3.3</strong> (a) Berapa rasio <i>x<sub>j</sub></i> saat waktu drive-in boron (1000 °C, <i>Q</i> = 10<sup>14</sup>, <i>N<sub>b</sub></i> = 10<sup>15</sup>) menjadi dua kali? (b) Berapa kenaikan suhu yang menyamai efek mempergandakan <i>D</i>?</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>(a) <i>x<sub>j</sub></i> = 2√(<i>Dt</i> ln(<i>Q</i>/(<i>N<sub>b</sub></i>√(π<i>Dt</i>)))). Saat <i>t</i> menjadi 2<i>t</i>, √(<i>Dt</i>) naik √2 tetapi ln(<i>C</i><sub>0</sub>/<i>N<sub>b</sub></i>) turun (dari 8,94 menjadi 8,59), sehingga rasio = √2 × √(8,59/8,94) = 1,386: <i>x<sub>j</sub></i> = 0,444 → 0,615 µm (<code>fick.py</code>), sedikit di bawah √2. (b) Dua kali <i>D</i> berarti exp(−<i>E<sub>a</sub></i>/<i>kT</i><sub>2</sub>)/exp(−<i>E<sub>a</sub></i>/<i>kT</i><sub>1</sub>) = 2. Linearisasi: Δ<i>T</i> ≈ <i>kT</i>² ln 2/<i>E<sub>a</sub></i> = 8,617 × 10<sup>−5</sup> × 1273² × 0,693/3,46 = 28 K; solusi eksak 28,6 K. Hanya sekitar 29 °C lebih panas sudah menggandakan <i>D</i>, itulah sebab kontrol suhu furnace harus ketat (±1 °C).</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Mengapa silikon, bukan germanium, untuk chip?"</summary>
+<p><strong>Kerangka jawaban:</strong> Celah Si (1,12 eV) lebih besar dari Ge (0,66 eV) sehingga <i>n<sub>i</sub></i> jauh lebih kecil dan arus bocor kecil sampai sekitar 150 °C. Oksida Si (SiO<sub>2</sub>) stabil, tumbuh dari substrat sendiri, dan antarmukanya bagus; oksida Ge larut dalam air. Silikon melimpah (pasir) dan bisa dimurnikan sampai sembilan angka sembilan. Ge hadir lagi sebagai paduan SiGe untuk menaikkan mobilitas.</p></details>
+<details class="icd-sol"><summary>"Jelaskan level Fermi dan di mana letaknya untuk n-type dan p-type."</summary>
+<p><strong>Kerangka jawaban:</strong> <i>E<sub>F</sub></i> adalah energi dengan peluang pengisian ½; ia menunjukkan "ketinggian muka air" elektron. Intrinsik: di sekitar tengah celah. n-type: di atas <i>E<sub>i</sub></i> (dekat <i>E<sub>c</sub></i>), <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>) (0,37 eV pada 10<sup>16</sup>). p-type: di bawah <i>E<sub>i</sub></i>. Pada kesetimbangan <i>E<sub>F</sub></i> rata di seluruh bahan; itu prinsip pembentukan junction (M05b).</p></details>
+<details class="icd-sol"><summary>"Mengapa mobilitas turun pada doping tinggi, dan mengapa elektron lebih cepat dari hole?"</summary>
+<p><strong>Kerangka jawaban:</strong> Ion dopan bermuatan menghamburkan pembawa (hamburan impuritas), dan pada suhu tinggi fonon juga; mobilitas elektron 1.400 turun jadi 78 pada 10<sup>20</sup>. Elektron lebih cepat karena massa efektif konduktivitasnya lebih kecil (sekitar 0,26 dibanding 0,37 <i>m</i><sub>0</sub>) dan struktur pita valensi yang rumit (pita hole berat dan ringan).</p></details>
+<details class="icd-sol"><summary>"Hitung resistivitas wafer p-type dengan doping 10<sup>15</sup>."</summary>
+<p><strong>Kerangka jawaban:</strong> <i>p</i> ≈ 10<sup>15</sup>, <i>µ<sub>p</sub></i> ≈ 460 cm²/(V·s) pada 300 K, <i>ρ</i> = 1/(<i>qpµ<sub>p</sub></i>) = 1/(1,602 × 10<sup>−19</sup> × 10<sup>15</sup> × 462) = 13,5 Ω·cm. Sebut juga bahwa wafer logika umum 1 sampai 20 Ω·cm.</p></details>
+<details class="icd-sol"><summary>"Apa beda arus drift dan difusi, dan apa hubungan keduanya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Drift: pembawa didorong medan, <i>J</i> = <i>qnµE</i>. Difusi: pembawa menyebar menuruni gradien konsentrasi, <i>J</i> = <i>qD</i> <i>dn</i>/<i>dx</i>. Hubungan Einstein <i>D</i> = <i>µkT</i>/<i>q</i> mengikat keduanya karena berasal dari gerak acak yang sama; pada kesetimbangan keduanya saling meniadakan.</p></details>
+<details class="icd-sol"><summary>"Bagaimana suhu menaikkan arus bocor?"</summary>
+<p><strong>Kerangka jawaban:</strong> Bocor junction dan subthreshold bergantung pada <i>n<sub>i</sub></i>² atau <i>n<sub>i</sub></i> (generasi), yang naik eksponensial dengan <i>E<sub>g</sub></i>/<i>kT</i>; di model lab <i>n<sub>i</sub></i> naik 2,2 kali per 10 K di dekat 300 K, jadi komponen ∝ <i>n<sub>i</sub></i>² naik sekitar 5 kali. Maka daya standby dan retensi memori dianalisis pada sudut panas, dan material celah lebar (SiC, GaN) dipakai untuk suhu tinggi.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: pembawa, transport, dan difusi</h2>
+<p><strong>Tujuan:</strong> menjalankan model semikonduktor sendiri, mencocokkannya dengan visualisasi, dan melihat batasnya (degenerasi, suhu tinggi). Platform: Linux, macOS, atau WSL2 dengan Python 3.9+. Salin folder <code>lab/m05a</code> ke <code>~/icd/m05a</code>.</p>
+<h3>Langkah 0: siapkan</h3>
+<pre class="icd-src" data-lang="sh">
+mkdir -p ~/icd/m05a &amp;&amp; cd ~/icd/m05a      # salin seluruh isi folder lab/m05a
+python3 --version
+</pre>
+<h3>Langkah 1: <i>n<sub>i</sub></i> terhadap suhu</h3>
+<pre class="icd-src" data-lang="sh">
+python3 ni_temp.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+T(K)   Eg(eV)   kT(meV)     ni(cm^-3)
+ 250   1.1366    21.54   4.535e+07
+ 300   1.1245    25.85   6.117e+09
+ 350   1.1112    30.16   2.148e+11
+ 400   1.0969    34.47   3.229e+12
+ 450   1.0818    38.78   2.744e+13
+ 500   1.0659    43.09   1.559e+14
+ni(310)/ni(300) = 2.223
+ni = Nd = 1e+14 pada T = 486 K (213 C)
+ni = Nd = 1e+15 pada T = 566 K (293 C)
+ni = Nd = 1e+16 pada T = 674 K (401 C)
+ni = Nd = 1e+17 pada T = 827 K (554 C)
+</pre>
+<p>Bandingkan dengan visualisasi 2 (<i>N<sub>d</sub></i> = 10<sup>15</sup> memotong <i>n<sub>i</sub></i> di 566 K). Ganti 300 menjadi 350 dan prediksi dulu rasio <i>n<sub>i</sub></i> yang naik; lalu ubah <i>E<sub>g</sub></i> menjadi 3,3 eV (SiC) dan lihat <i>n<sub>i</sub></i> turun belasan orde.</p>
+<h3>Langkah 2: pembawa dan level Fermi</h3>
+<pre class="icd-src" data-lang="sh">
+python3 carriers.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+kasus                               n          p  EF-Ei(eV)  jenis
+intrinsik                   6.117e+09  6.117e+09    +0.0000  intrinsik
+n 1e16                      1.000e+16  3.742e+03    +0.3699  n-type
+p 1e17                      3.742e+02  1.000e+17    -0.4294  p-type
+n 1e17 kompensasi p 9e16    1.000e+16  3.742e+03    +0.3699  n-type
+n 1e14 pada 300 K           1.000e+14  3.742e+05    +0.2508  n-type
+n 1e14 pada 500 K           2.138e+14  1.138e+14    +0.0136  intrinsik
+n 1e18                      1.000e+18  3.742e+01    +0.4889  n-type
+np / ni^2 = 1.000000
+</pre>
+<p>Cocokkan tiap baris dengan visualisasi 1 (jenis, <i>N</i>, <i>T</i>). Tambahkan kasus <i>N<sub>d</sub></i> = 10<sup>15</sup> pada 600 K: bahan sudah intrinsik. Periksa bahwa <i>np</i>/<i>n<sub>i</sub></i>² = 1.</p>
+<h3>Langkah 3: Fermi-Dirac lawan Boltzmann</h3>
+<pre class="icd-src" data-lang="sh">
+python3 fermi.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+(E-EF)/kT   FD        Boltzmann  galat relatif (hanya berlaku bila E-EF &gt; 0)
+   +1     0.26894   0.36788     36.79%
+   +2     0.11920   0.13534     13.53%
+   +3     0.04743   0.04979      4.98%
+   +4     0.01799   0.01832      1.83%
+   +6     0.00247   0.00248      0.25%
+  +10     0.00005   0.00005      0.00%
+Nd=1e+16: Ec-EF = 7.937 kT = 0.2052 eV  Boltzmann layak (galat &lt; 5%)
+Nd=1e+18: Ec-EF = 3.332 kT = 0.0861 eV  Boltzmann layak (galat &lt; 5%)
+Nd=1e+19: Ec-EF = 1.030 kT = 0.0266 eV  Boltzmann gagal (terdegenerasi)
+Nd=1e+20: Ec-EF = -1.273 kT = -0.0329 eV  Boltzmann gagal (terdegenerasi)
+</pre>
+<p>Lihat bahwa galat Boltzmann menyusut cepat dengan (<i>E</i> − <i>E<sub>F</sub></i>)/<i>kT</i> dan bahwa doping 10<sup>19</sup> keluar dari batas yang wajar.</p>
+<h3>Langkah 4: mobilitas, resistivitas, dan wafer</h3>
+<pre class="icd-src" data-lang="sh">
+python3 mobility.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+    N(cm^-3)   mu_n    mu_p   rho_n(ohm cm)  rho_p(ohm cm)
+   1e14    1403.6   468.8         44.469         133.13
+   1e15    1362.1   462.0         4.5824         13.511
+   1e16    1183.8   429.3        0.52725          1.454
+   1e17     721.3   317.4        0.08653        0.19664
+   1e18     277.0   152.9       0.022536       0.040826
+   1e19     114.8    70.8      0.0054352      0.0088097
+   1e20      77.8    50.1     0.00080255      0.0012455
+intrinsik 300 K: rho = 5.414e+05 ohm cm
+lapisan n+ tebal 0.2 um, N=1e+19: Rs = 271.8 ohm/persegi
+lapisan n+ tebal 0.1 um, N=1e+20: Rs = 80.3 ohm/persegi
+lapisan n+ tebal 1.0 um, N=1e+18: Rs = 225.4 ohm/persegi
+wafer p 10 ohm cm: Na = 1.357e+15 cm^-3
+</pre>
+<p>Cocokkan dengan visualisasi 3. Tebak dulu doping untuk wafer n-type 5 Ω·cm, lalu cari dengan menyalin blok bisection (ganti <code>resistivity(0, mid)</code> menjadi <code>resistivity(mid, 0)</code> dan 10.0 menjadi 5.0).</p>
+<h3>Langkah 5: difusi dopan</h3>
+<pre class="icd-src" data-lang="sh">
+python3 fick.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+D (cm^2/s) pada beberapa suhu:
+  B  900C: 1.04e-15  1000C: 1.53e-14  1100C: 1.52e-13
+  P  900C: 7.28e-16  1000C: 1.25e-14  1100C: 1.42e-13
+  As 900C: 1.10e-16  1000C: 1.59e-15  1100C: 1.56e-14
+B 1000C 0.5 jam: sqrt(4Dt)=0.105 um  C0=1.08e+19  xj=0.320 um
+B 1000C 1.0 jam: sqrt(4Dt)=0.148 um  C0=7.60e+18  xj=0.444 um
+B 1000C 2.0 jam: sqrt(4Dt)=0.210 um  C0=5.38e+18  xj=0.615 um
+B 1000C 4.0 jam: sqrt(4Dt)=0.297 um  C0=3.80e+18  xj=0.852 um
+FTCS: langkah dt=160 s, kesalahan maksimum relatif terhadap puncak = 4.85e-03, dosis = 1.0000e+14 (awal 1.0e+14)
+</pre>
+<p>Cocokkan dengan visualisasi 4 (boron 1000 °C 1 jam: <i>x<sub>j</sub></i> = 0,444 µm). Kecilkan <code>dx</code> dua kali dan perhatikan galat FTCS turun; lalu naikkan <code>dt</code> melewati batas kestabilan (0,5 <i>dx</i>²/<i>D</i>) dan lihat solusi meledak.</p>
+<h3>Langkah 6: pembawa minoritas</h3>
+<pre class="icd-src" data-lang="sh">
+python3 minority.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+mu=  1400 cm2/Vs -&gt; D = 36.19 cm2/s (300 K)
+mu=  1000 cm2/Vs -&gt; D = 25.85 cm2/s (300 K)
+mu=   450 cm2/Vs -&gt; D = 11.63 cm2/s (300 K)
+mu=   200 cm2/Vs -&gt; D = 5.17 cm2/s (300 K)
+D_p = 11.10 cm2/s, tau = 1e-06 s, L = 33.3 um
+beda hingga vs 1e14 exp(-x/L): kesalahan maksimum = 4.54e-05 dari n0
+x = 1 L = 33 um: n = 3.679e+13 (analitik 3.679e+13)
+x = 2 L = 67 um: n = 1.353e+13 (analitik 1.353e+13)
+x = 3 L = 100 um: n = 4.979e+12 (analitik 4.979e+12)
+arus difusi di x=0 (J = q D n0 / L): 5.337e-02 A/cm2
+</pre>
+<p>Ubah <i>τ</i> dari 1 µs menjadi 10 ns dan prediksi <i>L</i> (turun 10 kali jadi 3,3 µm) sebelum menjalankan.</p>
+<h3>Langkah 7: Hall dan uji</h3>
+<pre class="icd-src" data-lang="sh">
+python3 hall.py
+python3 test_semi.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+n 1e16  VH = -1.2483e-04 V  rho = 0.5273 ohm cm -&gt; tipe n, N = 1.000e+16 cm^-3, mu_H = 1183.8 (model 1183.8)
+p 1e17  VH = +1.2483e-05 V  rho = 0.1966 ohm cm -&gt; tipe p, N = 1.000e+17 cm^-3, mu_H = 317.4 (model 317.4)
+Ran 8 tests
+OK
+</pre>
+<p>Tegangan Hall hanya 0,125 mV: hitung berapa bila tebal sampel 0,05 mm (naik 10 kali, 1,25 mV) dan mengapa lapisan tipis lebih mudah diukur. Rusak sengaja satu fungsi model (mis. tukar <code>kt(T)</code> dengan <code>K_EV</code>) dan lihat uji mana yang gagal.</p>
+<h3>Langkah 8: tantangan mandiri</h3>
+<p>Tulis <code>profil_pn.py</code> yang menghitung profil dopan setelah dua tahap difusi berurutan (dua <i>Dt</i> berbeda, penjumlahan <i>Dt</i> total bila suhu sama), menemukan semua titik <i>x<sub>j</sub></i> (bila ada lebih dari satu), dan membandingkannya dengan FTCS. Bonus: tambahkan ketergantungan <i>D</i> pada konsentrasi (<i>D</i> = <i>D<sub>i</sub></i>(1 + <i>n</i>/<i>n<sub>i</sub></i>)) dan lihat profil "kotak" arsen.</p>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Pita: celah <i>E<sub>g</sub></i> memisahkan pita valensi (penuh) dari konduksi (kosong); Si 1,12 eV, Ge 0,66, GaAs 1,42, SiC 3,3, GaN 3,4. Elektron di pita konduksi dan hole di pita valensi adalah pembawa.</li>
+<li>Statistik: Boltzmann valid bila <i>E<sub>c</sub></i> − <i>E<sub>F</sub></i> &gt; 3<i>kT</i>; <i>n</i> = <i>N<sub>c</sub></i> exp(−(<i>E<sub>c</sub></i> − <i>E<sub>F</sub></i>)/<i>kT</i>), <i>np</i> = <i>n<sub>i</sub></i>²; <i>n<sub>i</sub></i>(300 K) ≈ 6 × 10<sup>9</sup> (model lab), naik 2,2 kali per 10 K.</li>
+<li>Doping: <i>n</i> = (<i>N</i> + √(<i>N</i>² + 4<i>n<sub>i</sub></i>²))/2, <i>p</i> = <i>n<sub>i</sub></i>²/<i>n</i>; <i>E<sub>F</sub></i> − <i>E<sub>i</sub></i> = <i>kT</i> ln(<i>n</i>/<i>n<sub>i</sub></i>); 10<sup>16</sup> memberi +0,370 eV. Di atas 10<sup>19</sup> degenerasi.</li>
+<li>Transport: <i>ρ</i> = 1/(<i>q</i>(<i>nµ<sub>n</sub></i> + <i>pµ<sub>p</sub></i>)), <i>R<sub>s</sub></i> = <i>ρ</i>/<i>t</i>; <i>D</i> = <i>µkT</i>/<i>q</i>; <i>L</i> = √(<i>Dτ</i>). Mobilitas elektron 1.184 dan hole 429 pada 10<sup>16</sup>; turun saat doping dan suhu naik.</li>
+<li>Difusi dopan: Fick; <i>D</i> = <i>D</i><sub>0</sub> exp(−<i>E<sub>a</sub></i>/<i>kT</i>) (boron 1,53 × 10<sup>−14</sup> cm²/s pada 1000 °C); profil Gaussian; <i>x<sub>j</sub></i> = 2√(<i>Dt</i> ln(<i>C</i><sub>0</sub>/<i>N<sub>b</sub></i>)); kedalaman ∝ √<i>t</i>; +29 °C menggandakan <i>D</i>.</li>
+<li>Hall: <i>V<sub>H</sub></i> = <i>IB</i>/(<i>qnt</i>) dengan tanda jenis pembawa; <i>µ<sub>H</sub></i> = |<i>R<sub>H</sub></i>|/<i>ρ</i>.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Konstanta 300 K</h4>kT = 25,85 meV<br>ni ≈ 6,1e9 cm⁻³ (model)<br>Nc = 2,8e19, Nv = 1,04e19<br>Eg = 1,1245 eV<br>kT/q = 25,85 mV</div>
+<div class="icd-card"><h4>Pembawa</h4>np = ni²<br>n = (N + √(N²+4ni²))/2<br>EF − Ei = kT ln(n/ni)<br>N = Nd − Na<br>Boltzmann: Ec−EF &gt; 3kT</div>
+<div class="icd-card"><h4>Transport</h4>ρ = 1/(q(nμn+pμp))<br>Rs = ρ/t, R = Rs·L/W<br>D = μkT/q<br>L = √(Dτ)<br>n(x) = n0 e^(−x/L)</div>
+<div class="icd-card"><h4>Mobilitas 10¹⁶</h4>μn = 1184<br>μp = 429<br>ρn = 0,527 Ω·cm<br>ρp = 1,454 Ω·cm<br>wafer p 10 Ω·cm: 1,36e15</div>
+<div class="icd-card"><h4>Difusi</h4>D = D0 e^(−Ea/kT)<br>B: 0,76 cm²/s, 3,46 eV<br>C = Q/√(πDt)·e^(−x²/4Dt)<br>xj ∝ √t (kira-kira)<br>10× D per +100 °C</div>
+<div class="icd-card"><h4>Hall</h4>VH = IB/(qnt)<br>tanda − : n-type<br>tanda + : p-type<br>RH = ±1/(qn)<br>μH = |RH|/ρ</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>Neamen, <i>Semiconductor Physics and Devices</i>: bab pita energi, statistik pembawa, dan transport (urutan yang dipakai modul ini).</li>
+<li>Pierret, <i>Semiconductor Fundamentals</i> (seri Modular Series on Solid State Devices): perlakuan bertahap yang bagus untuk drift, difusi, dan persamaan kontinuitas.</li>
+<li>Sze &amp; Ng, <i>Physics of Semiconductor Devices</i>: rujukan standar untuk parameter bahan, termasuk <i>N<sub>c</sub></i>, <i>N<sub>v</sub></i>, dan mobilitas.</li>
+<li>Streetman &amp; Banerjee, <i>Solid State Electronic Devices</i>: buku pengantar dengan banyak contoh numerik.</li>
+<li>Caughey &amp; Thomas, "Carrier mobilities in silicon empirically related to doping and field" (<i>Proc. IEEE</i>, 1967): asal model mobilitas yang dipakai.</li>
+<li>Plummer, Deal, Griffin, <i>Silicon VLSI Technology</i>: difusi dopan, implantasi, anil, dan anggaran termal dari sudut pandang proses.</li>
+<li>Varshni, "Temperature dependence of the energy gap in semiconductors" (<i>Physica</i>, 1967): asal model <i>E<sub>g</sub></i>(<i>T</i>).</li>
+<li>Schroder, <i>Semiconductor Material and Device Characterization</i>: probe empat titik, Hall, van der Pauw, SIMS, dan C-V.</li>
+<li>Misiakos &amp; Tsamakis (1993) dan Green (1990) untuk nilai <i>n<sub>i</sub></i> silikon yang terukur; perbedaan antar sumber dibahas di s04.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut: <a href="m05b-pn-junction-dioda.html">M05b</a> (PN junction dan dioda). Modul sebelumnya: <a href="m04d-python-tcl-algoritma.html">M04d</a>.</p>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q;
+var MINUS = '−';
+
+ICD.gloss.add([
+{ id: 'semikonduktor', en: 'semiconductor', idn: 'semikonduktor', def: 'Bahan dengan celah pita sedang (Si 1,12 eV) yang konduktivitasnya bisa diatur dari isolator ke hampir logam lewat doping, medan, cahaya, atau suhu.', mod: 'M05a' },
+{ id: 'bandgap', en: 'bandgap', idn: 'celah pita', def: 'Selisih energi antara dasar pita konduksi dan puncak pita valensi, Eg. Si 1,12 eV, Ge 0,66 eV, GaAs 1,42 eV; menyempit sedikit saat suhu naik.', mod: 'M05a' },
+{ id: 'pita-valensi', en: 'valence band', idn: 'pita valensi', def: 'Pita energi tertinggi yang terisi elektron pada suhu nol; keadaan kosong di dalamnya adalah hole.', mod: 'M05a' },
+{ id: 'pita-konduksi', en: 'conduction band', idn: 'pita konduksi', def: 'Pita energi kosong di atas celah pita; elektron di dalamnya bebas bergerak dan menghantar arus.', mod: 'M05a' },
+{ id: 'pembawa', en: 'charge carrier', idn: 'pembawa muatan', def: 'Partikel bermuatan bebas yang membawa arus di semikonduktor: elektron di pita konduksi dan hole di pita valensi.', mod: 'M05a' },
+{ id: 'hole', en: 'hole', idn: 'hole (lubang)', def: 'Keadaan kosong di pita valensi yang berperilaku sebagai pembawa positif dengan massa efektif sendiri; arusnya sebenarnya berasal dari elektron valensi yang bergeser.', mod: 'M05a' },
+{ id: 'intrinsik', en: 'intrinsic carrier concentration', idn: 'konsentrasi pembawa intrinsik', def: 'ni, konsentrasi elektron (sama dengan hole) pada semikonduktor murni: ni = √(NcNv) exp(−Eg/2kT). Silikon pada 300 K sekitar 6 × 10^9 sampai 1 × 10^10 cm⁻³; naik eksponensial dengan suhu.', mod: 'M05a' },
+{ id: 'fermi-dirac', en: 'Fermi-Dirac statistics', idn: 'statistik Fermi-Dirac', def: 'Peluang keadaan berenergi E terisi elektron: f = 1/(1 + exp((E − EF)/kT)). Bila E − EF ≫ kT menjadi faktor Boltzmann exp(−(E − EF)/kT).', mod: 'M05a' },
+{ id: 'fermi-level', en: 'Fermi level', idn: 'level Fermi', def: 'EF, energi dengan peluang pengisian ½. Di bahan n-type berada di atas pusat celah, di p-type di bawahnya; pada kesetimbangan rata di seluruh bahan.', mod: 'M05a' },
+{ id: 'degenerasi', en: 'degenerate semiconductor', idn: 'semikonduktor terdegenerasi', def: 'Semikonduktor berdoping sangat tinggi (≳ 10^19 cm⁻³) sehingga EF mendekati atau masuk pita; aproksimasi Boltzmann gagal dan bahan berperilaku seperti logam.', mod: 'M05a' },
+{ id: 'donor', en: 'donor', idn: 'donor', def: 'Atom pengotor (P, As, Sb pada Si) yang menyumbangkan satu elektron ke pita konduksi dan menjadi ion positif; menghasilkan bahan n-type.', mod: 'M05a' },
+{ id: 'akseptor', en: 'acceptor', idn: 'akseptor', def: 'Atom pengotor (B pada Si) yang menerima satu elektron, menciptakan hole dan menjadi ion negatif; menghasilkan bahan p-type.', mod: 'M05a' },
+{ id: 'kompensasi', en: 'compensation', idn: 'kompensasi', def: 'Keberadaan donor dan akseptor sekaligus sehingga saling meniadakan; konsentrasi pembawa ditentukan selisih Nd − Na, sementara mobilitas ditentukan jumlahnya.', mod: 'M05a' },
+{ id: 'aksi-massa', en: 'mass action law', idn: 'hukum aksi massa', def: 'Pada kesetimbangan termal np = ni² untuk semua tingkat doping (selama Boltzmann berlaku); menambah satu jenis pembawa menekan lawannya.', mod: 'M05a' },
+{ id: 'mobilitas', en: 'mobility', idn: 'mobilitas', def: 'Kecepatan drift per satuan medan, μ = vd/E (cm²/(V·s)). Si 300 K, doping rendah: elektron 1.400, hole 470; turun dengan doping dan suhu karena hamburan.', mod: 'M05a' },
+{ id: 'drift', en: 'drift current', idn: 'arus drift', def: 'Arus akibat medan listrik: J = q(nμn + pμp)E = σE; bentuk lokal hukum Ohm.', mod: 'M05a' },
+{ id: 'difusi', en: 'diffusion current', idn: 'arus difusi', def: 'Arus akibat gradien konsentrasi pembawa: Jn = qDn dn/dx; ada walau tak ada medan listrik.', mod: 'M05a' },
+{ id: 'einstein', en: 'Einstein relation', idn: 'hubungan Einstein', def: 'D = μkT/q (Boltzmann) yang menghubungkan koefisien difusi dan mobilitas; 25,85 mV × μ pada 300 K.', mod: 'M05a' },
+{ id: 'lifetime', en: 'carrier lifetime', idn: 'umur pembawa', def: 'Waktu rata-rata τ sebelum pembawa minoritas berekombinasi; menentukan panjang difusi L = √(Dτ).', mod: 'M05a' },
+{ id: 'difusi-length', en: 'diffusion length', idn: 'panjang difusi', def: 'L = √(Dτ), jarak rata-rata pembawa minoritas berdifusi sebelum berekombinasi; di Si n 10^16 dengan τ = 1 µs sekitar 33 µm.', mod: 'M05a' },
+{ id: 'fick', en: "Fick's laws", idn: 'hukum Fick', def: 'Fluks sebanding gradien (J = −D dC/dx) dan ∂C/∂t = D ∂²C/∂x²; dasar difusi dopan. D mengikuti Arrhenius, D = D0 exp(−Ea/kT).', mod: 'M05a, M30' },
+{ id: 'hall', en: 'Hall effect', idn: 'efek Hall', def: 'Tegangan melintang VH = IB/(qnt) pada konduktor beraliran I dalam medan magnet B; tandanya menunjukkan jenis pembawa dan besarnya konsentrasinya.', mod: 'M05a' },
+{ id: 'rsheet', en: 'sheet resistance', idn: 'resistansi lembar', def: 'Resistansi satu persegi lapisan tipis, Rs = ρ/t, dalam Ω/□; R = Rs·L/W.', mod: 'M02a, M05a, M22' }
+]);
+
+/* ---------- pembantu ---------- */
+function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function dc(x, d){ return x.toFixed(d).replace('.', ','); }
+function sci(x, d){ return x.toExponential(d === undefined ? 3 : d).replace('.', ','); }
+function sgn(x, d){ return (x >= 0 ? '+' : MINUS) + dc(Math.abs(x), d); }
+
+/* ---------- model silikon (identik dengan semi.py) ---------- */
+var K_EV = 8.617333262e-5, Q = 1.602176634e-19;
+function kt(T){ return K_EV * T; }
+function eg(T){ return 1.17 - 4.73e-4 * T * T / (T + 636.0); }
+function nc(T){ return 2.8e19 * Math.pow(T / 300, 1.5); }
+function nv(T){ return 1.04e19 * Math.pow(T / 300, 1.5); }
+function ni(T){ return Math.sqrt(nc(T) * nv(T)) * Math.exp(-eg(T) / (2 * kt(T))); }
+function carriers(nd, na, T){
+  var net = nd - na, n0 = ni(T), n, p;
+  if (net >= 0){ n = (net + Math.sqrt(net * net + 4 * n0 * n0)) / 2; return [n, n0 * n0 / n]; }
+  p = (-net + Math.sqrt(net * net + 4 * n0 * n0)) / 2; return [n0 * n0 / p, p];
+}
+var CT = { n: [68.5, 1414.0, 9.2e16, 0.711], p: [44.9, 470.5, 2.23e17, 0.719] };
+function mobility(N, k){ var c = CT[k]; return c[0] + (c[1] - c[0]) / (1 + Math.pow(N / c[2], c[3])); }
+function resistivity(nd, na, T){ var c = carriers(nd, na, T || 300), N = nd + na; return 1 / (Q * (c[0] * mobility(N, 'n') + c[1] * mobility(N, 'p'))); }
+function crossover(nd){ var lo = 300, hi = 900, i, mid; for (i = 0; i < 80; i++){ mid = (lo + hi) / 2; if (ni(mid) < nd) lo = mid; else hi = mid; } return (lo + hi) / 2; }
+var DIF = { B: [0.76, 3.46], P: [3.85, 3.66], As: [0.066, 3.44] };
+function dcoef(sp, T){ var d = DIF[sp]; return d[0] * Math.exp(-d[1] / (K_EV * T)); }
+function gauss(x, Qd, Dt){ return Qd / Math.sqrt(Math.PI * Dt) * Math.exp(-x * x / (4 * Dt)); }
+function xjf(Qd, Dt, nb){ return 2 * Math.sqrt(Dt * Math.log(Qd / Math.sqrt(Math.PI * Dt) / nb)); }
+function lg(x){ return Math.log(x) / Math.LN10; }
+
+/* ---------- 1. diagram pita ---------- */
+function v1Draw(){
+  var type = q('#v1-type').value, e = +q('#v1-n').value, T = +q('#v1-t').value, N = Math.pow(10, e);
+  q('#v1-nv').textContent = String(e); q('#v1-tv').textContent = String(T);
+  var c = type === 'n' ? carriers(N, 0, T) : carriers(0, N, T), n = c[0], p = c[1], k = kt(T), g = eg(T), n0 = ni(T);
+  var xc = Math.log(nc(T) / n), xv = Math.log(nv(T) / p), ecf = k * xc, efv = k * xv, efei = k * Math.log(n / n0);
+  var s = 170 / g, yc = 40, yv = yc + g * s, yf = Math.max(8, Math.min(252, yc + ecf * s)), yi = yc + (ecf + efei) * s;
+  var ndots = Math.max(0, Math.min(14, Math.round(14 * (lg(n) - 6) / 14))), npts = Math.max(0, Math.min(14, Math.round(14 * (lg(p) - 6) / 14))), i, dots = '';
+  for (i = 0; i < ndots; i++) dots += '<circle class="e" cx="' + (30 + i * 26) + '" cy="' + (yc - 10) + '" r="5"/>';
+  for (i = 0; i < npts; i++) dots += '<circle class="h" cx="' + (30 + i * 26) + '" cy="' + (yv + 12) + '" r="5"/>';
+  var svg = '<svg viewBox="0 0 600 262" role="img" aria-label="diagram pita energi"><rect class="gap" x="10" y="' + yc + '" width="400" height="' + (yv - yc) + '"/>' +
+    '<line class="bd" x1="10" x2="410" y1="' + yc + '" y2="' + yc + '"/><line class="bd" x1="10" x2="410" y1="' + yv + '" y2="' + yv + '"/>' +
+    '<line class="ei" x1="10" x2="410" y1="' + yi + '" y2="' + yi + '"/><line class="ef" x1="10" x2="410" y1="' + yf + '" y2="' + yf + '"/>' + dots +
+    '<text x="418" y="' + (yc + 4) + '">Ec</text><text x="418" y="' + (yv + 4) + '">Ev</text><text x="418" y="' + (Math.min(yi, 250) + 4) + '">Ei</text><text x="418" y="' + (yf + 4) + '" style="font-weight:700">EF</text>' +
+    '<text x="460" y="' + ((yc + yv) / 2) + '">Eg = ' + dc(g, 3) + ' eV</text></svg>';
+  q('#v1-band').innerHTML = svg;
+  var bars = '';
+  [['log n', lg(n)], ['log p', lg(p)], ['log ni', lg(n0)]].forEach(function(r){ var w = Math.max(0, Math.min(100, r[1] / 20 * 100)); bars += '<div class="pbar"><span>' + r[0] + '</span><span class="tr"><span class="fl" style="display:block;width:' + w + '%"></span></span><span>' + dc(r[1], 2) + '</span></div>'; });
+  q('#v1-bars').innerHTML = bars;
+  var ratio = Math.max(n, p) / Math.min(n, p);
+  q('#v1-out').textContent = 'jenis=' + type + ' · N=' + sci(N) + ' · T=' + T + ' · n=' + sci(n) + ' · p=' + sci(p) + ' · ni=' + sci(n0) + ' · EF−Ei=' + sgn(efei, 4) + ' eV · Ec−EF=' + dc(ecf, 4) + ' eV · EF−Ev=' + dc(efv, 4) + ' eV · rezim=' + (ratio < 10 ? 'intrinsik' : 'ekstrinsik') + (xc < 3 ? ' · catatan=Boltzmann tidak berlaku' : '');
+}
+
+/* ---------- 2. n, p, ni terhadap suhu ---------- */
+var v2plot = null;
+function v2Draw(){
+  var nd = +q('#v2-nd').value, T = +q('#v2-t').value, Ts = [], i, sn = [], sp = [], si = [];
+  q('#v2-tv').textContent = String(T);
+  for (i = 250; i <= 800; i += 10){ var c = carriers(nd, 0, i); sn.push([i, lg(c[0])]); sp.push([i, lg(c[1])]); si.push([i, lg(ni(i))]); }
+  var o = { height: 210, x: { label: 'T', unit: 'K', min: 250, max: 800, plain: true }, y: { label: 'log10 konsentrasi', unit: '', min: -2, max: 20, plain: true },
+    series: [{ label: 'n', kind: 'data', dash: [], unit: '', pts: sn }, { label: 'p', kind: 'ctrl', dash: [], unit: '', pts: sp }, { label: 'ni', kind: 'hi', dash: [5, 4], unit: '', pts: si }],
+    marks: [{ x: T, label: 'T', kind: 'hi' }] };
+  if (!v2plot) v2plot = ICD.plot('#v2-plot', o); else v2plot.set(o);
+  var cc = carriers(nd, 0, T);
+  q('#v2-out').textContent = 'Nd=1e' + Math.round(lg(nd)) + ' · T=' + T + ' · n=' + sci(cc[0]) + ' · p=' + sci(cc[1]) + ' · ni=' + sci(ni(T)) + ' · n/p=' + dc(cc[0] / cc[1], cc[0] / cc[1] < 100 ? 2 : 0) + ' · T_silang=' + crossover(nd).toFixed(0) + ' K';
+}
+
+/* ---------- 3. mobilitas dan resistivitas ---------- */
+var v3plot = null;
+function v3Draw(){
+  var type = q('#v3-type').value, e = +q('#v3-n').value, t = +q('#v3-t').value, N = Math.pow(10, e), pts = [], x;
+  q('#v3-nv').textContent = String(e); q('#v3-tv').textContent = dc(t, 1);
+  for (x = 14; x <= 20.0001; x += 0.25) pts.push([x, lg(type === 'n' ? resistivity(Math.pow(10, x), 0) : resistivity(0, Math.pow(10, x)))]);
+  var o = { height: 210, x: { label: 'log10 N', unit: '', min: 14, max: 20, plain: true }, y: { label: 'log10 ρ (Ω·cm)', unit: '', min: -4, max: 3, plain: true },
+    series: [{ label: 'ρ ' + type, kind: 'data', dash: [], unit: '', pts: pts }], marks: [{ x: e, label: 'N', kind: 'hi' }] };
+  if (!v3plot) v3plot = ICD.plot('#v3-plot', o); else v3plot.set(o);
+  var rho = type === 'n' ? resistivity(N, 0) : resistivity(0, N), rs = rho / (t * 1e-4);
+  q('#v3-out').textContent = 'jenis=' + type + ' · N=' + sci(N) + ' · μn=' + dc(mobility(N, 'n'), 1) + ' · μp=' + dc(mobility(N, 'p'), 1) + ' · ρ=' + sci(rho) + ' Ω·cm · Rs=' + sci(rs) + ' Ω/□ (t=' + dc(t, 1) + ' µm)';
+}
+
+/* ---------- 4. difusi dopan ---------- */
+var v4plot = null;
+function v4Draw(){
+  var sp = q('#v4-sp').value, Tc = +q('#v4-t').value, h = +q('#v4-h').value, Qd = +q('#v4-q').value, NB = 1e15;
+  q('#v4-tv').textContent = String(Tc); q('#v4-hv').textContent = dc(h, 2);
+  var D = dcoef(sp, Tc + 273.15), Dt = D * h * 3600, c0 = Qd / Math.sqrt(Math.PI * Dt), has = c0 > NB, xj = has ? xjf(Qd, Dt, NB) * 1e4 : 0, sd = 2e4 * Math.sqrt(Dt);
+  var xmax = Math.max(has ? xj * 1.6 : 0, sd * 2.2, 0.3), pts = [], bg = [], i, x, y;
+  for (i = 0; i <= 60; i++){ x = xmax * i / 60; y = lg(gauss(x * 1e-4, Qd, Dt)); pts.push([x, Math.max(y, 12)]); bg.push([x, lg(NB)]); }
+  var o = { height: 210, x: { label: 'kedalaman x', unit: 'µm', min: 0, max: xmax, plain: true }, y: { label: 'log10 C (cm⁻³)', unit: '', min: 12, max: 21, plain: true },
+    series: [{ label: 'C(x)', kind: 'data', dash: [], unit: '', pts: pts }, { label: 'latar Nb', kind: 'ctrl', dash: [5, 4], unit: '', pts: bg }], marks: has ? [{ x: xj, label: 'xj', kind: 'hi' }] : [] };
+  if (!v4plot) v4plot = ICD.plot('#v4-plot', o); else v4plot.set(o);
+  q('#v4-out').textContent = sp + ' · T=' + Tc + ' °C · t=' + dc(h, 2) + ' jam · Q=1e' + Math.round(lg(Qd)) + ' · D=' + sci(D, 2) + ' cm²/s · √(4Dt)=' + dc(sd, 3) + ' µm · C0=' + sci(c0, 2) + ' cm⁻³ · xj=' + (has ? dc(xj, 3) + ' µm' : 'tidak ada (C0 < Nb)');
+}
+
+/* ---------- kuis ---------- */
+function quizSetup(){
+ICD.quiz.mount('#kuis', { id: 'm05a', title: 'Kuis M05a', questions: [
+{ q: 'Mengapa silikon murni hampir tak menghantar pada suhu kamar?', o: [
+  { t: 'Pita valensi hampir penuh dan pita konduksi hampir kosong, dipisahkan celah 1,12 eV', ok: true, w: 'Hanya sebagian sangat kecil elektron (ni ≈ 6 × 10⁹ cm⁻³ dari 5 × 10²² atom/cm³) yang tereksitasi melewati celah, sehingga resistivitas intrinsik sekitar 5 × 10⁵ Ω·cm.' },
+  { t: 'Silikon tidak punya elektron valensi', w: 'Silikon punya empat elektron valensi per atom; mereka terikat kovalen dan mengisi pita valensi.' },
+  { t: 'Silikon adalah logam dengan mobilitas rendah', w: 'Logam punya pita terisi sebagian; silikon punya celah antara pita terisi dan kosong.' },
+  { t: 'Karena hole tidak bisa bergerak', w: 'Hole bergerak (lewat elektron valensi yang bergeser); masalahnya adalah jumlah pembawa yang sangat sedikit.' }] },
+{ q: 'Silikon n-type 10¹⁶ cm⁻³ pada 300 K. Berapa hole kira-kira?', o: [
+  { t: '3,7 × 10³ cm⁻³', ok: true, w: 'p = ni²/n = (6,117 × 10⁹)²/10¹⁶ = 3,74 × 10³. Perbedaan dengan n adalah 12 orde.' },
+  { t: '6 × 10⁹ cm⁻³', w: 'Itu ni; p = ni²/n turun saat n naik karena np = ni².' },
+  { t: '10¹⁶ cm⁻³', w: 'Itu donor/elektron; hole minoritas jauh lebih sedikit.' },
+  { t: '0, tidak ada hole', w: 'Hole tidak pernah nol; hukum aksi massa menjamin p = ni²/n > 0.' }] },
+{ q: 'Di mana level Fermi pada n-type 10¹⁶ (300 K) terhadap level intrinsik?', o: [
+  { t: 'Sekitar 0,37 eV di atas Ei', ok: true, w: 'EF − Ei = kT ln(n/ni) = 0,02585 × ln(10¹⁶/6,1 × 10⁹) = +0,370 eV; dekat pita konduksi (0,205 eV di bawah Ec).' },
+  { t: 'Sama dengan Ei', w: 'EF = Ei hanya untuk bahan intrinsik (n = p).' },
+  { t: 'Sekitar 0,37 eV di bawah Ei', w: 'Itu tanda p-type; di n-type pembawa elektron lebih banyak sehingga EF lebih tinggi.' },
+  { t: 'Di tengah pita konduksi', w: 'EF masuk pita hanya pada doping sangat tinggi (≳ 10¹⁹), bukan 10¹⁶.' }] },
+{ q: 'Silikon dengan Nd = 2 × 10¹⁶ dan Na = 1,5 × 10¹⁶ (300 K). Jenis dan konsentrasi pembawa mayoritas?', o: [
+  { t: 'n-type dengan n ≈ 5 × 10¹⁵ cm⁻³', ok: true, w: 'Kompensasi: konsentrasi bersih N = Nd − Na = 5 × 10¹⁵; n ≈ N, p = ni²/n ≈ 7,5 × 10³.' },
+  { t: 'n-type dengan n ≈ 3,5 × 10¹⁶', w: 'Itu jumlah Nd + Na; pembawa ditentukan oleh selisihnya.' },
+  { t: 'p-type', w: 'Donor lebih banyak dari akseptor, jadi n-type.' },
+  { t: 'Intrinsik', w: 'N = 5 × 10¹⁵ jauh di atas ni ≈ 6 × 10⁹, jadi jelas ekstrinsik.' }] },
+{ q: 'Pada Nd = 10¹⁵, ni sama dengan Nd di sekitar suhu berapa (model lab)?', o: [
+  { t: '566 K (≈ 293 °C)', ok: true, w: 'Di atas suhu ini ni melampaui doping dan bahan berperilaku intrinsik; di 570 K n/p hanya 2,4.' },
+  { t: '300 K', w: 'Di 300 K ni ≈ 6 × 10⁹, enam orde di bawah 10¹⁵.' },
+  { t: '400 K', w: 'Di 400 K ni = 3,2 × 10¹², masih 300 kali lebih kecil dari Nd.' },
+  { t: '1000 K', w: 'Jauh terlalu tinggi; bahan sudah intrinsik lama sebelumnya.' }] },
+{ q: 'Mengapa 10 kali lebih banyak doping (10¹⁶ ke 10¹⁷ n-type) hanya menurunkan resistivitas sekitar 6 kali?', o: [
+  { t: 'Mobilitas turun (1.184 ke 721) karena hamburan impuritas', ok: true, w: 'ρ = 1/(qnμ): n naik 10 kali, μ turun 1,64 kali, jadi ρ turun sekitar 10/1,64 = 6,1 kali.' },
+  { t: 'Karena hanya 60% donor yang terionisasi', w: 'Pada suhu kamar dan doping ini hampir semua donor terionisasi.' },
+  { t: 'Karena celah pita membesar', w: 'Celah malah mengecil sedikit pada doping tinggi.' },
+  { t: 'Karena hukum Ohm tidak berlaku', w: 'Hukum Ohm lokal berlaku; yang berubah adalah μ.' }] },
+{ q: 'Resistansi lembar lapisan n+ tebal 0,2 µm, 10¹⁹ cm⁻³ adalah ≈ 272 Ω/□. Resistor panjang 10 µm, lebar 0,5 µm?', o: [
+  { t: '≈ 5,4 kΩ', ok: true, w: 'L/W = 20 persegi; R = 272 × 20 = 5.435 Ω.' },
+  { t: '≈ 272 Ω', w: 'Itu satu persegi; resistor ini terdiri atas 20 persegi.' },
+  { t: '≈ 136 Ω', w: 'Itu akan terjadi bila lebar dua kali panjang; di sini panjang 20 kali lebar.' },
+  { t: '≈ 54 Ω', w: 'Faktor 100 terlalu kecil; hitung L/W = 20 lalu kalikan Rs.' }] },
+{ q: 'Hubungan Einstein menghubungkan…', o: [
+  { t: 'Koefisien difusi dan mobilitas: D = μkT/q', ok: true, w: 'Keduanya berasal dari gerak acak yang sama; μ = 1.400 memberi D = 36,2 cm²/s pada 300 K.' },
+  { t: 'Energi dan massa: E = mc²', w: 'Itu relasi massa-energi, bukan hubungan transport.' },
+  { t: 'Konsentrasi pembawa dan suhu: n = ni²/p', w: 'Itu hukum aksi massa (np = ni²), bukan hubungan Einstein.' },
+  { t: 'Arus dan tegangan: V = IR', w: 'Itu hukum Ohm (M02a), bukan hubungan antara D dan μ.' }] },
+{ q: 'Hole di Si n 10¹⁶ (D = 11,1 cm²/s) dengan umur 1 µs. Panjang difusinya?', o: [
+  { t: 'Sekitar 33 µm', ok: true, w: 'L = √(Dτ) = √(11,1 × 10⁻⁶ cm²) = 3,3 × 10⁻³ cm = 33 µm.' },
+  { t: 'Sekitar 3,3 nm', w: 'Faktor 10⁴ terlalu kecil; periksa satuan cm → µm.' },
+  { t: 'Sekitar 1 cm', w: 'Itu terlalu besar; τ hanya 1 µs.' },
+  { t: 'Sama dengan τ', w: 'L bukan waktu; ia jarak, √(Dτ).' }] },
+{ q: 'Boron di Si pada 1000 °C: D = 1,53 × 10⁻¹⁴ cm²/s. Pada 1100 °C?', o: [
+  { t: 'Sekitar 10 kali lebih besar (1,5 × 10⁻¹³)', ok: true, w: 'D = D0 exp(−Ea/kT) dengan Ea = 3,46 eV; naik 100 °C di sekitar 1273 K menaikkan D 10 kali.' },
+  { t: 'Dua kali lipat', w: 'Dua kali D hanya butuh sekitar +29 °C untuk boron pada 1000 °C.' },
+  { t: 'Tidak berubah', w: 'D bergantung eksponensial pada suhu.' },
+  { t: 'Turun separuh', w: 'Difusi semakin cepat pada suhu yang lebih tinggi.' }] },
+{ q: 'Waktu drive-in boron dilipatduakan (1000 °C, Q = 10¹⁴, Nb = 10¹⁵). Kedalaman junction…', o: [
+  { t: 'naik sekitar 1,39 kali (0,444 → 0,615 µm)', ok: true, w: 'Jangkauan √(Dt) naik √2; faktor logaritma sedikit turun sehingga rasionya 1,386.' },
+  { t: 'naik 2 kali', w: 'Difusi sebanding √t, bukan t.' },
+  { t: 'naik 4 kali', w: 'Itu akan bila xj ∝ t²; hubungannya √t.' },
+  { t: 'tidak berubah', w: 'Dosis tetap, tetapi dopan terus menyebar sehingga xj bertambah.' }] },
+{ q: 'Tegangan Hall negatif pada batang semikonduktor dengan arus dan medan magnet standar. Artinya?', o: [
+  { t: 'Pembawa mayoritas elektron (n-type)', ok: true, w: 'VH = ±IB/(qnt); tanda negatif untuk elektron dan positif untuk hole dalam konfigurasi standar.' },
+  { t: 'Pembawa mayoritas hole (p-type)', w: 'Hole memberi VH positif pada konfigurasi yang sama.' },
+  { t: 'Semikonduktornya intrinsik', w: 'Pada intrinsik, VH mendekati nol karena kontribusi elektron dan hole hampir saling meniadakan.' },
+  { t: 'Medan magnet terlalu kuat', w: 'Tanda ditentukan jenis pembawa, bukan kuat medan.' }] },
+{ q: 'Kapan aproksimasi Boltzmann untuk n = Nc exp(−(Ec − EF)/kT) gagal?', o: [
+  { t: 'Saat Ec − EF kurang dari sekitar 3kT, mis. doping ≥ 10¹⁹ cm⁻³', ok: true, w: 'Pada 10¹⁹, Ec − EF = 1,03 kT dan galat Boltzmann sekitar 36%; pada 10²⁰ EF masuk pita (terdegenerasi).' },
+  { t: 'Saat doping 10¹⁴', w: 'Pada doping rendah Ec − EF besar (≈ 12 kT), Boltzmann sangat akurat.' },
+  { t: 'Saat suhu 300 K', w: 'Suhu kamar tidak menyebabkan kegagalan.' },
+  { t: 'Boltzmann tidak pernah gagal', w: 'Pada doping tinggi dan suhu rendah ia gagal.' }] },
+{ q: 'Mengapa SiC dan GaN dipakai untuk suhu dan tegangan tinggi?', o: [
+  { t: 'Celahnya lebar (≈ 3,3 eV), sehingga ni sangat kecil dan bocor intrinsik rendah', ok: true, w: 'ni ∝ exp(−Eg/2kT); dari 1,12 ke 3,3 eV ni turun belasan orde, dan bahan tetap ekstrinsik sampai suhu sangat tinggi.' },
+  { t: 'Karena mobilitasnya lebih tinggi dari silikon', w: 'Mobilitas elektron GaN/SiC tidak lebih tinggi dari Si pada kebanyakan kasus; keunggulannya ada pada celah dan medan breakdown.' },
+  { t: 'Karena lebih murah dari silikon', w: 'Justru lebih mahal; dipilih untuk kinerja pada kondisi ekstrem.' },
+  { t: 'Karena tak memerlukan doping', w: 'Keduanya tetap didoping untuk mengatur pembawa.' }] }
+]});
+}
+
+/* ---------- flashcard ---------- */
+ICD.cards.register('m05a-pita-energi-pembawa', [
+{ id: 'gap', f: 'Celah pita Si, Ge, GaAs?', b: '1,12 eV, 0,66 eV, 1,42 eV (300 K); SiC ≈ 3,3 dan GaN ≈ 3,4 eV. Menyempit sedikit saat suhu naik (Varshni).' },
+{ id: 'hole', f: 'Apa itu hole?', b: 'Keadaan kosong di pita valensi yang berperilaku seperti pembawa positif; arus sebenarnya dari elektron valensi yang bergeser.' },
+{ id: 'fd', f: 'Fermi-Dirac dan Boltzmann?', b: 'f = 1/(1 + e^((E−EF)/kT)); Boltzmann bila E − EF > 3kT (galat < 5%); gagal pada doping ≳ 10¹⁹ (terdegenerasi).' },
+{ id: 'ni', f: 'ni silikon?', b: 'ni = √(NcNv) exp(−Eg/2kT) ≈ 6 × 10⁹ cm⁻³ pada 300 K (model lab; sumber lain sampai 1,5 × 10¹⁰); naik 2,2 kali per 10 K.' },
+{ id: 'mass', f: 'Hukum aksi massa?', b: 'np = ni² pada kesetimbangan. Nd = 10¹⁶ → n = 10¹⁶, p = 3,7 × 10³ cm⁻³.' },
+{ id: 'neut', f: 'Netralitas muatan dengan doping?', b: 'p + Nd − n − Na = 0 → n = (N + √(N² + 4ni²))/2, N = Nd − Na; p = ni²/n.' },
+{ id: 'ef', f: 'Posisi level Fermi?', b: 'EF − Ei = kT ln(n/ni) = −kT ln(p/ni). n-type: di atas Ei (+0,370 eV pada 10¹⁶); p-type: di bawah (−0,429 eV pada 10¹⁷).' },
+{ id: 'comp', f: 'Kompensasi?', b: 'Nd dan Na saling meniadakan; pembawa dari Nd − Na, tetapi mobilitas turun karena hamburan oleh Nd + Na.' },
+{ id: 'dop', f: 'Donor dan akseptor di Si?', b: 'Donor P, As, Sb (n-type), tingkat sekitar 45 meV di bawah Ec; akseptor B (p-type), sekitar 45 meV di atas Ev. Terionisasi penuh pada suhu kamar.' },
+{ id: 'mu', f: 'Mobilitas Si 300 K?', b: 'Rendah doping: elektron 1.400, hole 470 cm²/(V·s). Pada 10¹⁶: 1.184 dan 429; pada 10²⁰: 78 dan 50. Turun karena hamburan impuritas dan fonon.' },
+{ id: 'rho', f: 'Resistivitas dan resistansi lembar?', b: 'ρ = 1/(q(nμn + pμp)); Rs = ρ/t; R = Rs·L/W. Wafer p 10 Ω·cm ≈ 1,36 × 10¹⁵ cm⁻³; n+ 0,2 µm 10¹⁹: 272 Ω/□.' },
+{ id: 'drift', f: 'Drift lawan difusi?', b: 'Drift: J = qnμE (medan). Difusi: J = qD dn/dx (gradien). Keduanya digabung pada drift-difusi.' },
+{ id: 'ein', f: 'Hubungan Einstein?', b: 'D = μkT/q; μ = 1.400 → D = 36,2 cm²/s; 25,85 mV × μ pada 300 K.' },
+{ id: 'len', f: 'Panjang difusi minoritas?', b: 'L = √(Dτ); n(x) = n0 e^(−x/L). Hole di Si n 10¹⁶ dengan τ = 1 µs: L = 33 µm.' },
+{ id: 'fick', f: 'Difusi dopan?', b: 'Fick: ∂C/∂t = D ∂²C/∂x²; D = D0 exp(−Ea/kT); boron 1000 °C: 1,53 × 10⁻¹⁴ cm²/s; +100 °C → 10×.' },
+{ id: 'gs', f: 'Profil dan xj drive-in?', b: 'C = Q/√(πDt) e^(−x²/4Dt); xj = 2√(Dt ln(C0/Nb)). Boron 1000 °C, Q = 10¹⁴: 0,444 µm (1 jam), 0,615 (2 jam).' },
+{ id: 'hall', f: 'Efek Hall?', b: 'VH = IB/(qnt); tanda − untuk elektron, + untuk hole; μH = |RH|/ρ. Si n 10¹⁶, 1 mA, 0,1 T, 0,5 mm: −0,125 mV.' },
+{ id: 'T', f: 'Suhu dan semikonduktor?', b: 'ni naik cepat, μ dan Eg turun, D naik eksponensial, bocor naik. n 10¹⁵ menjadi intrinsik di 566 K; periksa sudut suhu terburuk.' }
+]);
+ICD.cards.mount('#kartu', { file: 'm05a-pita-energi-pembawa' });
+
+/* ---------- pasang ---------- */
+ICD.ready(function(){
+  var pairs = [['#v1-type', '#v1-n', '#v1-t', v1Draw], ['#v2-nd', '#v2-t', null, v2Draw], ['#v3-type', '#v3-n', '#v3-t', v3Draw], ['#v4-sp', '#v4-t', '#v4-h', '#v4-q', v4Draw]];
+  pairs.forEach(function(arr){ var fn = arr[arr.length - 1]; arr.slice(0, -1).forEach(function(id){ if (id){ q(id).addEventListener('input', fn); q(id).addEventListener('change', fn); } }); fn(); });
+  quizSetup();
+});
+})();
+</script>
+</body>
+</html>

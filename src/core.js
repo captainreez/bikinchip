@@ -158,7 +158,7 @@ reg.module = function(id){ return modById[id] || null; };
 ICD.reg = reg;
 /* File yang sudah dibuat, urut rilis. Halaman lama mempelajari daftar yang lebih baru lewat penyimpanan (lihat avail). */
 var BUILT_LIST = ['m00-orientasi', 'm01a-matematika-dasar', 'm01b-kompleks-kalkulus', 'm01c-linear-probabilitas-diskrit', 'm01d-transformasi-sinyal',
-  'm02a-rangkaian-dc', 'm02b-transien-ac', 'm02c-bode-filter-tline', 'm03a-bilangan', 'm03b-kode-deteksi-koreksi', 'm04a-c-pointer', 'm04b-assembly-toolchain-os', 'm04c-linux-git-make', 'm04d-python-tcl-algoritma'];
+  'm02a-rangkaian-dc', 'm02b-transien-ac', 'm02c-bode-filter-tline', 'm03a-bilangan', 'm03b-kode-deteksi-koreksi', 'm04a-c-pointer', 'm04b-assembly-toolchain-os', 'm04c-linux-git-make', 'm04d-python-tcl-algoritma', 'm05a-pita-energi-pembawa'];
 
 /* ---------- store: localStorage dengan cadangan memori ---------- */
 var KEY = 'icd.v1', mem = null, persistent = true;
