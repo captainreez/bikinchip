@@ -27,7 +27,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M03 bagian b dari 2 · sekitar 8 jam · prasyarat: <a href="m03a-bilangan.html">M03a</a> (biner, XOR, bit-field), <a href="m01c-linear-probabilitas-diskrit.html">M01c</a> (peluang diskret, binomial)</p>
 <h1>M03b Kode: Gray, paritas, Hamming/SECDED, CRC</h1>
-<p>Bit bisa salah: sel memori terkena partikel, link berkecepatan tinggi tercampur noise, dua clock saling mengamati bit yang sedang berubah. Modul ini membahas empat alat dasar. <em>Kode Gray</em> membuat tetangga berbeda satu bit sehingga pengamatan di tengah perubahan tidak liar. <em>Paritas</em> dan <em>kode Hamming/SECDED</em> menambah sedikit bit cadangan supaya galat bisa dideteksi atau dikoreksi. <em>CRC</em> mendeteksi galat pada aliran data panjang dengan hardware yang hanya berupa register geser. Anda akan membangun semuanya di Python dan di Verilog, lalu memeriksa penyandi dan pengurai dengan semua pola galat satu dan dua bit, serta semua burst sampai 8 bit.</p>
+<p>Bit bisa salah: sel memori terkena partikel, link berkecepatan tinggi tercampur noise, dua clock saling mengamati bit yang sedang berubah. Modul ini membahas empat alat dasar. <em>Kode Gray</em> membuat tetangga berbeda satu bit sehingga pengamatan di tengah perubahan tidak liar. <em>Paritas</em> dan <em>kode Hamming/SECDED</em> menambah sedikit bit cadangan supaya galat bisa dideteksi atau dikoreksi. <em>CRC</em> mendeteksi galat pada aliran data panjang dengan hardware yang hanya berupa register geser. Kamu akan membangun semuanya di Python dan di Verilog, lalu memeriksa penyandi dan pengurai dengan semua pola galat satu dan dua bit, serta semua burst sampai 8 bit.</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
@@ -45,7 +45,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m03a-bilangan.html">M03a</a> (XOR, geser, bit-field, endianness) dan <a href="m01c-linear-probabilitas-diskrit.html">M01c</a> (kombinasi, distribusi binomial). Aljabar medan GF(2) diperkenalkan di sini dari nol.</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menghitung <span data-term="hamdist">jarak Hamming</span> dan menurunkan kemampuan deteksi dan koreksi dari jarak minimum sebuah kode.</li>
 <li>Menyandikan dan mengurai <span data-term="gray">kode Gray</span> dengan <i>g</i> = <i>b</i> ⊕ (<i>b</i> ≫ 1), dan menjelaskan kapan Gray aman untuk penyeberangan clock domain.</li>
@@ -63,11 +63,11 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>Jarak antarkata: peta kota</h3>
 <p>Bayangkan semua pola <i>n</i> bit sebagai persimpangan di sebuah kota berbentuk kubus berdimensi <i>n</i>; satu bit berubah berarti satu langkah. Kode memilih sebagian persimpangan sebagai "alamat resmi" (kata kode). Bila dua alamat resmi berjarak 3 langkah, satu salah langkah masih lebih dekat ke alamat aslinya daripada ke alamat resmi lain: itulah koreksi. Bila berjarak 2, satu salah langkah mendarat di persimpangan yang bukan alamat resmi: terdeteksi tetapi tidak bisa dipastikan asalnya. <em>Di mana analogi ini berhenti:</em> di kota nyata satu langkah selalu ke tetangga yang jelas; pada kanal nyata galat bisa menyerang beberapa bit sekaligus (burst), sehingga "satu langkah" bukan model yang selalu benar.</p>
 <h3>Paritas: satu saksi</h3>
-<p>Paritas adalah satu saksi yang berkata "jumlah bit satu genap". Bila satu bit berubah, saksi berbohong dan Anda tahu ada yang salah, tetapi tidak tahu di mana. Hamming menambah beberapa saksi yang masing-masing menjaga himpunan bit yang berbeda; pola saksi yang berbohong menunjuk persis bit yang salah, seperti permainan tebak angka "ya/tidak" dengan pertanyaan yang dipilih rapi. <em>Di mana analogi ini berhenti:</em> dua kesalahan bisa membuat saksi-saksi menunjuk bit yang salah dengan penuh keyakinan, sehingga kode Hamming murni mengoreksi ke arah yang salah tanpa memperingatkan; itu sebabnya ada bit paritas keseluruhan (SECDED).</p>
+<p>Paritas adalah satu saksi yang berkata "jumlah bit satu genap". Bila satu bit berubah, saksi berbohong dan kamu tahu ada yang salah, tetapi tidak tahu di mana. Hamming menambah beberapa saksi yang masing-masing menjaga himpunan bit yang berbeda; pola saksi yang berbohong menunjuk persis bit yang salah, seperti permainan tebak angka "ya/tidak" dengan pertanyaan yang dipilih rapi. <em>Di mana analogi ini berhenti:</em> dua kesalahan bisa membuat saksi-saksi menunjuk bit yang salah dengan penuh keyakinan, sehingga kode Hamming murni mengoreksi ke arah yang salah tanpa memperingatkan; itu sebabnya ada bit paritas keseluruhan (SECDED).</p>
 <h3>CRC: sidik jari dari sisa pembagian</h3>
 <p>CRC memperlakukan seluruh pesan sebagai satu bilangan raksasa dan mengambil sisa bagi terhadap bilangan tetap (polinomial pembangkit). Pesan dikirim bersama sisanya; penerima membagi kembali dan sisa harus nol. Perubahan kecil pada pesan hampir pasti mengubah sisa. <em>Di mana analogi ini berhenti:</em> pembagian ini memakai aritmetika tanpa carry (XOR), dan CRC bukan sidik jari kriptografis: siapa pun bisa menyusun pesan berbeda dengan CRC sama, jadi CRC melindungi dari kecelakaan, bukan dari penyerang.</p>
 <h3>Gray: odometer yang tidak membuat bilangan palsu</h3>
-<p>Odometer biner berganti dari 0111 ke 1000 dengan empat roda berputar sekaligus; bila Anda memotret di tengah putaran, Anda bisa melihat 0000, 1111, atau apa saja. Kode Gray menyusun ulang urutan roda sehingga setiap langkah hanya memutar satu roda; foto di tengah putaran hanya bisa menunjukkan angka lama atau angka baru. <em>Di mana analogi ini berhenti:</em> jaminan itu hanya berlaku bila hitungan naik satu-satu; melompat dua langkah dalam kode Gray mengubah beberapa bit sekaligus, dan pada kanal asinkron setiap bit tetap harus disinkronkan sendiri.</p>
+<p>Odometer biner berganti dari 0111 ke 1000 dengan empat roda berputar sekaligus; bila kamu memotret di tengah putaran, kamu bisa melihat 0000, 1111, atau apa saja. Kode Gray menyusun ulang urutan roda sehingga setiap langkah hanya memutar satu roda; foto di tengah putaran hanya bisa menunjukkan angka lama atau angka baru. <em>Di mana analogi ini berhenti:</em> jaminan itu hanya berlaku bila hitungan naik satu-satu; melompat dua langkah dalam kode Gray mengubah beberapa bit sekaligus, dan pada kanal asinkron setiap bit tetap harus disinkronkan sendiri.</p>
 </section>
 
 <section class="icd-sec" id="s04">
@@ -95,7 +95,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p>Kode Gray berbentuk <em>reflected binary</em> adalah urutan semua pola <i>n</i> bit sehingga dua pola bertetangga (termasuk dari yang terakhir kembali ke pertama) berbeda tepat satu bit. Konversi dari biner <i>b</i> ke Gray <i>g</i> hanya satu XOR per bit, dan kembaliannya XOR prefiks:</p>
 <div class="icd-eq"><math display="block"><mi>g</mi><mo>=</mo><mi>b</mi><mo>&#x2295;</mo><mo>(</mo><mi>b</mi><mo>&#x226B;</mo><mn>1</mn><mo>)</mo><mspace width="2em"/><msub><mi>b</mi><mi>i</mi></msub><mo>=</mo><msub><mi>g</mi><mi>i</mi></msub><mo>&#x2295;</mo><msub><mi>b</mi><mrow><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>=</mo><munder><mo>&#x2295;</mo><mrow><mi>j</mi><mo>&#x2265;</mo><mi>i</mi></mrow></munder><msub><mi>g</mi><mi>j</mi></msub></math><span class="alt">g = b XOR (b >> 1) ; b_i = g_i XOR b_(i+1) = XOR_(j ≥ i) g_j</span></div>
 <p>Urutan 3 bit: 000, 001, 011, 010, 110, 111, 101, 100. Alasan sifat satu-bit berlaku: bila <i>b</i> bertambah 1 dan bit 0..<i>m</i>−1 berubah (<i>m</i> = jumlah nol di akhir <i>b</i> plus satu), maka <i>g</i> = <i>b</i> ⊕ (<i>b</i> ≫ 1) hanya berubah pada bit <i>m</i>−1: perubahan pada bit-bit lain saling meniadakan di XOR dengan tetangganya. Pada hitungan satu siklus penuh <i>n</i> bit: biner membalik 2<sup><i>n</i>+1</sup> − 2 bit, Gray tepat 2<sup><i>n</i></sup> (setiap langkah satu bit), jadi untuk hitungan naik satu-satu Gray menghemat sekitar separuh transisi pada bus penghitung.</p>
-<p><strong>Penyeberangan clock domain.</strong> Pointer penulis FIFO asinkron berpindah dari satu clock domain ke domain lain. Bila pointer biner dibaca oleh clock penerima tepat saat berubah dari 0111 ke 1000, bit-bit yang berubah mungkin ditangkap sebagian lama sebagian baru, sehingga nilai yang terbaca bisa pola sembarang (mis. 1111) yang membuat FIFO tampak penuh atau kosong secara keliru. Dengan Gray, hanya satu bit yang berubah: yang terbaca pasti nilai lama atau nilai baru, keduanya sah (hasilnya cuma terlambat satu hitungan, yang aman bila pembandingan dibuat konservatif). Syarat: (1) hitungan harus naik satu per satu; (2) setiap bit disinkronkan sendiri dengan dua flip-flop; (3) panjang siklus harus pangkat dua agar lompatan terakhir tetap satu bit (kalau tidak, pakai Gray terpotong yang dirancang khusus atau kodekan dengan hati-hati). Gray juga dipakai pada encoder putar dan posisi optik (agar salah baca hanya satu langkah), pada peta Karnaugh, dan pada keluaran sebagian ADC.</p>
+<p><strong>Penyeberangan clock domain.</strong> Pointer penulis FIFO asinkron berpindah dari satu clock domain ke domain lain. Bila pointer biner dibaca oleh clock penerima tepat saat berubah dari 0111 ke 1000, bit-bit yang berubah mungkin ditangkap sebagian lama sebagian baru, sehingga nilai yang terbaca bisa pola sembarang (mis. 1111) yang membuat FIFO tampak penuh atau kosong secara keliru. Dengan Gray, hanya satu bit yang berubah: yang terbaca pasti nilai lama atau nilai baru, keduanya sah (hasilnya cuma terlambat satu hitungan, yang aman bila pembandingan dibuat konservatif). Syarat: (1) hitungan harus naik satu per satu; (2) setiap bit disinkronkan sendiri dengan dua flip-flop; (3) panjang siklus harus pangkat dua agar lompatan terakhir tetap satu bit (kalau tidak, pakai Gray terpotong yang dirancang khusus atau kodekan dengan hati-hati). Gray juga dipakai pada encoder putar dan posisi optik (agar salah baca hanya satu langkah), pada peta Karnaugh, dan pada output sebagian ADC.</p>
 
 <h3>4.5 Kode Hamming(7,4)</h3>
 <p>Kode <span data-term="hamming">Hamming</span> menempatkan bit cek di posisi pangkat dua (1, 2, 4, …) dan bit data di posisi lain. Posisi diberi nomor mulai 1. Bit cek di posisi 2<sup><i>i</i></sup> menjaga semua posisi yang bit ke-<i>i</i> dari nomornya bernilai 1. Pada (7,4), bit data berada di posisi 3, 5, 6, 7:</p>
@@ -134,7 +134,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li>Galat ganda pada jarak <i>i</i> terdeteksi bila <i>G</i> tidak membagi <i>x</i><sup><i>i</i></sup> + 1. Untuk polinomial primitif berderajat <i>r</i>, ini berlaku untuk semua <i>i</i> &lt; 2<sup><i>r</i></sup> − 1. Contoh CRC-3 dengan <i>G</i> = <i>x</i><sup>3</sup> + <i>x</i> + 1 memiliki periode 7, sehingga dua galat berjarak 7 lolos.</li>
 <li>Galat acak sembarang (di luar kasus di atas) lolos dengan peluang sekitar 2<sup>−<i>r</i></sup>: 2<sup>−8</sup> = 0.39% untuk CRC-8, 2<sup>−32</sup> = 2.3 × 10<sup>−10</sup> untuk CRC-32.</li>
 </ul>
-<p><strong>Parameter standar (model Rocksoft).</strong> Dua implementasi bisa memberi CRC berbeda dengan polinomial sama. Selalu tetapkan: lebar, poly, nilai awal register (<code>init</code>), refleksi bit masukan per byte (<code>refin</code>), refleksi keluaran (<code>refout</code>), dan XOR akhir (<code>xorout</code>). Konvensi: <code>check</code> adalah CRC ASCII "123456789". Contoh: CRC-8 (poly 0x07, tanpa refleksi) check 0xF4; CRC-16/CCITT-FALSE (0x1021, init 0xFFFF) check 0x29B1; CRC-32 Ethernet (poly 0x04C11DB7, init 0xFFFFFFFF, refin dan refout benar, xorout 0xFFFFFFFF) check 0xCBF43926. Init bukan nol membuat awalan berupa nol terdeteksi; <code>refin</code>/<code>refout</code> muncul karena protokol serial seperti Ethernet mengirim bit paling tidak signifikan lebih dulu.</p>
+<p><strong>Parameter standar (model Rocksoft).</strong> Dua implementasi bisa memberi CRC berbeda dengan polinomial sama. Selalu tetapkan: lebar, poly, nilai awal register (<code>init</code>), refleksi bit input per byte (<code>refin</code>), refleksi output (<code>refout</code>), dan XOR akhir (<code>xorout</code>). Konvensi: <code>check</code> adalah CRC ASCII "123456789". Contoh: CRC-8 (poly 0x07, tanpa refleksi) check 0xF4; CRC-16/CCITT-FALSE (0x1021, init 0xFFFF) check 0x29B1; CRC-32 Ethernet (poly 0x04C11DB7, init 0xFFFFFFFF, refin dan refout benar, xorout 0xFFFFFFFF) check 0xCBF43926. Init bukan nol membuat awalan berupa nol terdeteksi; <code>refin</code>/<code>refout</code> muncul karena protokol serial seperti Ethernet mengirim bit paling tidak signifikan lebih dulu.</p>
 <p><strong>Pemakaian nyata.</strong> Ethernet FCS memakai CRC-32; PCIe memakai LCRC dan ECRC 32 bit pada generasi sebelum flit; USB memakai CRC-5 (token) dan CRC-16 (data); CAN memakai CRC-15; DDR4 memakai CRC pada data tulis dan DDR5 pada data baca dan tulis; SD kartu CRC-7 dan CRC-16. <strong>Status per November 2026:</strong> PCIe 6.0 (laju 64 GT/s dengan PAM4) memakai mode flit 256 byte dengan FEC ringan 6 byte (3 jalur interleave, koreksi satu simbol) dan CRC 8 byte berbasis Reed-Solomon, ditambah pengiriman ulang pada flit yang CRC-nya gagal; pendekatannya sengaja menjaga latensi sangat rendah dibanding FEC kuat pada Ethernet.</p>
 
 <h3>4.8 Memilih kode</h3>
@@ -171,7 +171,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>3. CRC</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>CRC adalah "sidik jari" pesan. Pengirim menghitung sidik jari dengan aturan tetap dan menempelkannya; penerima menghitung ulang. Bila berbeda, pesan rusak. Perubahan kecil pada pesan hampir pasti mengubah sidik jari, tetapi CRC bukan pengaman dari orang jahat.</p></div>
-<div data-level="engineer"><p>Yang Anda rancang: pilih polinomial untuk panjang pesan dan jenis galat; tetapkan init, refleksi, xorout agar kompatibel dengan standar; bangun LFSR bit-serial untuk link serial, atau versi paralel <i>w</i> bit per clock untuk bus lebar (dibangkitkan dengan skrip). Tulis model referensi Python dengan vektor check "123456789" dan cocokkan RTL dengan <code>zlib.crc32</code> bila sesuai. Untuk paket panjang, pemeriksaan CRC bisa dipasang sesudah semua data lewat, dan hasilnya (lulus atau gagal) menentukan apakah paket dibuang.</p></div>
+<div data-level="engineer"><p>Yang kamu rancang: pilih polinomial untuk panjang pesan dan jenis galat; tetapkan init, refleksi, xorout agar kompatibel dengan standar; bangun LFSR bit-serial untuk link serial, atau versi paralel <i>w</i> bit per clock untuk bus lebar (dibangkitkan dengan skrip). Tulis model referensi Python dengan vektor check "123456789" dan cocokkan RTL dengan <code>zlib.crc32</code> bila sesuai. Untuk paket panjang, pemeriksaan CRC bisa dipasang sesudah semua data lewat, dan hasilnya (lulus atau gagal) menentukan apakah paket dibuang.</p></div>
 <div data-level="pakar"><p>Kekuatan CRC ditentukan oleh <i>distribusi bobot</i> kata kode: untuk panjang pesan tertentu, polinomial berbeda memberi jarak Hamming minimum berbeda (menurut analisis Koopman, CRC-32 Ethernet mempertahankan jarak Hamming 4 hingga sekitar 91 600 bit, tetapi hanya 5 dan 6 pada panjang yang jauh lebih pendek; polinomial alternatif dapat memberi jarak lebih besar pada panjang tertentu). Memilih polinomial adalah pencarian terkomputasi, bukan pilihan estetis. Karena CRC linear terhadap XOR, untuk pesan sama panjang CRC(<i>a</i> ⊕ <i>b</i>) = CRC(<i>a</i>) ⊕ CRC(<i>b</i>) ⊕ CRC(0), sifat ini memungkinkan perhitungan paralel dan penggabungan CRC, dan juga membuat CRC mudah dipalsukan secara sengaja.</p></div>
 </div>
 </section>
@@ -187,7 +187,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
     <div id="v1-plot" style="margin-top:8px"></div>
   </div>
   <div class="params">
-    <label class="icd-field"><span>Lebar n</span><select class="icd-select" id="v1-n"><option value="2">2 bit</option><option value="3">3 bit</option><option value="4" selected>4 bit</option><option value="5">5 bit</option><option value="6">6 bit</option></select></label>
+    <label class="icd-field"><span>Bit width n</span><select class="icd-select" id="v1-n"><option value="2">2 bit</option><option value="3">3 bit</option><option value="4" selected>4 bit</option><option value="5">5 bit</option><option value="6">6 bit</option></select></label>
   </div>
   <div class="readout" id="v1-out" aria-live="polite"></div>
   <div class="model">Penghitung naik satu per langkah dari 0 sampai 2<sup>n</sup> (langkah terakhir kembali ke 0). Gray g = b ⊕ (b ≫ 1). "Bit berubah" = popcount(b<sub>lama</sub> ⊕ b<sub>baru</sub>). Bila pembaca asinkron menangkap bit-bit yang berubah secara terpisah (sebagian lama, sebagian baru), jumlah pola yang mungkin teramati adalah 2<sup>(bit berubah)</sup>. Grafik: transisi kumulatif biner dan Gray; pada siklus penuh biner membalik 2<sup>n+1</sup> − 2 bit dan Gray 2<sup>n</sup>. Tidak mencakup kemiringan waktu fisik (skew) antar bit maupun metastabilitas flip-flop (M09).</div>
@@ -246,14 +246,14 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
   <header><h3>4. Peluang galat satu kata: tanpa kode, paritas, SECDED</h3></header>
   <div class="stage"><div id="v4-plot"></div></div>
   <div class="params">
-    <label class="icd-field"><span>Lebar data k</span><select class="icd-select" id="v4-k"><option value="8">8 bit</option><option value="16">16 bit</option><option value="32">32 bit</option><option value="64" selected>64 bit</option><option value="128">128 bit</option></select></label>
+    <label class="icd-field"><span>Bit width data k</span><select class="icd-select" id="v4-k"><option value="8">8 bit</option><option value="16">16 bit</option><option value="32">32 bit</option><option value="64" selected>64 bit</option><option value="128">128 bit</option></select></label>
     <label class="icd-field"><span>log₁₀ p (BER) = <b id="v4-pv"></b></span><input type="range" id="v4-p" min="-9" max="-2" step="0.05" value="-6"></label>
   </div>
   <div class="readout" id="v4-out" aria-live="polite"></div>
   <div class="model">Galat bit bebas dengan peluang p (kanal simetris biner). Tanpa kode: P = 1 − (1 − p)<sup>k</sup>. Paritas (n = k + 1 bit): kata lolos tak terdeteksi bila jumlah galat genap ≥ 2. SECDED (n = k + r + 1, dengan r minimum sehingga 2<sup>r</sup> ≥ k + r + 1): "tak terkoreksi" = ≥ 2 galat (satu-dua galat tertangkap sebagai galat ganda; ≥ 3 mungkin salah koreksi diam-diam), jadi P(≥ 3) dipakai sebagai batas atas peluang salah tanpa peringatan. Semua jumlah binomial dihitung dari suku, bukan 1 − …, supaya tidak hilang karena pembulatan pada p kecil. Kurva paritas hampir berimpit dengan SECDED ≥ 2 galat karena keduanya sekitar C(<i>n</i>, 2)<i>p</i><sup>2</sup>; bedanya paritas hanya mendeteksi (tidak mengoreksi) galat ganjil dan lolos pada galat genap, sedangkan SECDED mengoreksi galat tunggal, yang tidak tergambar di sini. Tombol Putar menyapu p dari 10<sup>−9</sup> ke 10<sup>−2</sup> dan menggerakkan slider. Tidak memodelkan burst, galat berkorelasi, atau kegagalan sel permanen.</div>
 </div>
 <div class="icd-guide" data-id="v4-ecc" data-answer="0">
-  <p>Lebar data 64 bit dan p = 10<sup>−6</sup> (log p = −6). Perkirakan peluang kata salah tanpa kode dan peluang galat tak-terkoreksi pada SECDED 72 bit.</p>
+  <p>Bit width data 64 bit dan p = 10<sup>−6</sup> (log p = −6). Perkirakan peluang kata salah tanpa kode dan peluang galat tak-terkoreksi pada SECDED 72 bit.</p>
   <ul><li>Sekitar 6.4 × 10<sup>−5</sup> tanpa kode lawan sekitar 2.6 × 10<sup>−9</sup> dengan SECDED (puluhan ribu kali lebih kecil)</li><li>Sekitar 6.4 × 10<sup>−5</sup> tanpa kode lawan 6.4 × 10<sup>−6</sup> dengan SECDED (sepuluh kali lebih kecil)</li><li>Sama, karena SECDED hanya mendeteksi</li><li>Sekitar 10<sup>−6</sup> pada keduanya</li></ul>
   <div class="explain"><p>Tanpa kode, kata gagal bila ada ≥ 1 galat: sekitar <i>kp</i> = 64 × 10<sup>−6</sup>. Dengan SECDED, galat tunggal dikoreksi sehingga hanya ≥ 2 galat yang bermasalah: sekitar C(72, 2)<i>p</i><sup>2</sup> = 2556 × 10<sup>−12</sup>. Peluang "salah tanpa peringatan" masih lebih kecil lagi, di bawah C(72, 3)<i>p</i><sup>3</sup> ≈ 6 × 10<sup>−14</sup>. Kuncinya: keuntungan tumbuh pangkat dua terhadap <i>p</i>. Turunkan p ke 10<sup>−4</sup> dan lihat keuntungan menyempit; p yang besar menjadikan SECDED kewalahan, tepat saat koreksi paling dibutuhkan, sehingga kode lebih kuat diperlukan.</p></div>
 </div>
@@ -695,7 +695,7 @@ module tb_codes;
   end
 endmodule
 </pre>
-<p>Testbench swa-periksa dan lengkap. Gray diperiksa untuk semua 256 nilai 8 bit (balikan benar, tetangga satu bit termasuk lompatan 255 → 0). Hamming dan SECDED untuk semua 16 data: tanpa galat, setiap galat tunggal (7 dan 8 posisi), dan setiap pasangan galat ganda SECDED (28 pasang). CRC-8: nilai check "123456789" = 0xF4, 256 pesan satu byte terhadap <code>crc8_vec.hex</code> dari Python (pembanding yang <em>bukan</em> dari RTL), sisa nol untuk pesan 12 byte + CRC, dan semua burst 1…8 bit pada kata kode 13 byte. Satu catatan simulator: <code>$countones</code> diterapkan pada kabel perantara <code>gx</code>, bukan langsung pada ekspresi XOR, karena Icarus memberi hasil keliru bila ekspresi langsung dipakai; itu pelajaran umum: periksa pemeriksa Anda.</p>
+<p>Testbench swa-periksa dan lengkap. Gray diperiksa untuk semua 256 nilai 8 bit (balikan benar, tetangga satu bit termasuk lompatan 255 → 0). Hamming dan SECDED untuk semua 16 data: tanpa galat, setiap galat tunggal (7 dan 8 posisi), dan setiap pasangan galat ganda SECDED (28 pasang). CRC-8: nilai check "123456789" = 0xF4, 256 pesan satu byte terhadap <code>crc8_vec.hex</code> dari Python (pembanding yang <em>bukan</em> dari RTL), sisa nol untuk pesan 12 byte + CRC, dan semua burst 1…8 bit pada kata kode 13 byte. Satu catatan simulator: <code>$countones</code> diterapkan pada kabel perantara <code>gx</code>, bukan langsung pada ekspresi XOR, karena Icarus memberi hasil keliru bila ekspresi langsung dipakai; itu pelajaran umum: periksa pemeriksa kamu.</p>
 <h3>8.4 genvec.py</h3>
 <pre class="icd-src" data-lang="py">
 """Membuat crc8_vec.hex: CRC-8 (poly 0x07) untuk pesan satu byte 0x00..0xFF, dari model Python (pembanding independen untuk testbench)."""
@@ -785,12 +785,12 @@ for o in range(W):
 <div class="icd-box mis"><b>Miskonsepsi</b>"CRC mengoreksi galat." CRC pada pemakaian biasa hanya mendeteksi; koreksi datang dari pengiriman ulang. (Bahwa CRC bisa mengoreksi galat tunggal bila panjang pesan cukup pendek adalah trik khusus, bukan pemakaian standar.)</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"CRC aman terhadap penyerang." CRC linear: penyerang yang mengubah pesan dapat menghitung ulang CRC atau menyusun perubahan yang CRC-nya tetap. Untuk integritas terhadap penyerang dibutuhkan MAC atau tanda tangan kriptografis.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Gray aman untuk semua hitungan." Gray hanya menjamin satu bit berubah bila hitungan naik satu langkah dan siklusnya melingkar secara benar. Loncat dua langkah, atau panjang siklus yang bukan pangkat dua pada Gray biasa, merusak jaminan itu.</div>
-<div class="icd-box mis"><b>Miskonsepsi</b>"Dua kode dengan polinomial sama menghasilkan CRC sama." Belum tentu. Init, refleksi masukan dan keluaran, XOR akhir, dan urutan bit harus sama (model Rocksoft); selalu cocokkan dengan nilai check "123456789".</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Dua kode dengan polinomial sama menghasilkan CRC sama." Belum tentu. Init, refleksi input dan output, XOR akhir, dan urutan bit harus sama (model Rocksoft); selalu cocokkan dengan nilai check "123456789".</div>
 <div class="icd-box trap"><b>Jebakan industri: logika di antara register Gray dan sinkronisator</b>Menaruh gerbang kombinasional (mis. konversi Gray ke biner) sebelum flip-flop sinkronisasi membuat glitch dan menggabungkan bit-bit yang tidak sinkron. Daftarkan pointer Gray langsung di domain asal, lalu sinkronkan tiap bit sendiri, baru konversi di domain tujuan. Alat CDC mengecek ini (M09).</div>
 <div class="icd-box trap"><b>Jebakan industri: ECC tanpa scrubbing</b>SECDED yang mengoreksi tetapi tidak menulis kembali data yang sudah diperbaiki membiarkan galat tunggal menumpuk menjadi dua galat pada kata yang sama. Controller memori menulis ulang data terkoreksi dan melakukan patrol scrubbing berkala.</div>
 <div class="icd-box trap"><b>Jebakan industri: bit dalam satu kata kode bersebelahan secara fisik</b>Bila bit-bit satu kata kode berdekatan, satu partikel dapat membalik dua atau lebih sekaligus dan SECDED tak berguna. Gunakan bit interleaving pada layout memori agar bit tetangga fisik berasal dari kata kode berbeda (M29).</div>
-<div class="icd-box trap"><b>Jebakan industri: polinomial dan panjang pesan</b>Kekuatan CRC bergantung pada panjang pesan: polinomial primitif berderajat <i>r</i> hanya menjamin deteksi galat ganda sampai panjang 2<sup><i>r</i></sup> − 1. Pakai polinomial standar atau hasil pencarian yang diterbitkan untuk panjang paket Anda; jangan memilih sembarang.</div>
-<div class="icd-box trap"><b>Jebakan industri: urutan bit dan byte pada CRC serial</b>Protokol yang mengirim LSB lebih dulu menuntut refleksi masukan. Hasilnya cocok dengan <code>zlib.crc32</code> hanya bila <code>refin</code>, <code>refout</code>, init, dan xorout sama. Uji dengan "123456789" sebelum menulis lainnya.</div>
+<div class="icd-box trap"><b>Jebakan industri: polinomial dan panjang pesan</b>Kekuatan CRC bergantung pada panjang pesan: polinomial primitif berderajat <i>r</i> hanya menjamin deteksi galat ganda sampai panjang 2<sup><i>r</i></sup> − 1. Pakai polinomial standar atau hasil pencarian yang diterbitkan untuk panjang paket kamu; jangan memilih sembarang.</div>
+<div class="icd-box trap"><b>Jebakan industri: urutan bit dan byte pada CRC serial</b>Protokol yang mengirim LSB lebih dulu menuntut refleksi input. Hasilnya cocok dengan <code>zlib.crc32</code> hanya bila <code>refin</code>, <code>refout</code>, init, dan xorout sama. Uji dengan "123456789" sebelum menulis lainnya.</div>
 </section>
 
 <section class="icd-sec" id="s10">
@@ -847,7 +847,7 @@ for o in range(W):
 <details class="icd-sol"><summary>"Bedakan paritas, Hamming, SECDED, dan CRC."</summary>
 <p><strong>Kerangka jawaban:</strong> Gunakan jarak Hamming minimum: 2, 3, 4, dan "bervariasi". Paritas mendeteksi galat ganjil; Hamming mengoreksi satu; SECDED mengoreksi satu dan mendeteksi dua; CRC mendeteksi burst sampai <i>r</i> bit dan galat acak dengan peluang lolos 2<sup>−<i>r</i></sup>, hanya dengan <i>r</i> bit tambahan dan LFSR. Memori memakai SECDED karena koreksi harus instan; link memakai CRC dengan retry; gabungan FEC dan CRC pada link PAM4.</p></details>
 <details class="icd-sol"><summary>"Rancang pengurai SECDED untuk data 64 bit."</summary>
-<p><strong>Kerangka jawaban:</strong> 8 bit cek (7 + satu paritas keseluruhan, atau kode Hsiao dengan kolom berbobot ganjil). Matriks cek H 8 × 72 dengan kolom unik. Syndrome = H·r dihitung dengan pohon XOR (batasi bobot baris untuk delay). Keputusan: syndrome nol = benar; syndrome sama dengan salah satu kolom = galat tunggal pada bit itu (dekoder 72 keluaran, XOR koreksi); lainnya = galat ganda, laporkan. Sebut kasus tepi: galat pada bit cek, ≥ 3 galat salah-koreksi, injeksi galat untuk verifikasi, scrubbing, pelaporan ke perangkat lunak.</p></details>
+<p><strong>Kerangka jawaban:</strong> 8 bit cek (7 + satu paritas keseluruhan, atau kode Hsiao dengan kolom berbobot ganjil). Matriks cek H 8 × 72 dengan kolom unik. Syndrome = H·r dihitung dengan pohon XOR (batasi bobot baris untuk delay). Keputusan: syndrome nol = benar; syndrome sama dengan salah satu kolom = galat tunggal pada bit itu (dekoder 72 output, XOR koreksi); lainnya = galat ganda, laporkan. Sebut kasus tepi: galat pada bit cek, ≥ 3 galat salah-koreksi, injeksi galat untuk verifikasi, scrubbing, pelaporan ke perangkat lunak.</p></details>
 <details class="icd-sol"><summary>"Bagaimana CRC dihitung di hardware dan bagaimana membuatnya cepat?"</summary>
 <p><strong>Kerangka jawaban:</strong> LFSR <i>r</i> flip-flop dengan XOR pada tap polinomial, satu bit per clock. Untuk <i>w</i> bit per clock, buka LFSR <i>w</i> langkah: karena linear, <i>next</i> = A·<i>reg</i> ⊕ B·<i>data</i> sebagai pohon XOR yang dibangkitkan skrip. Tetapkan init, refin, refout, xorout; uji dengan "123456789". Pada paket dengan lebar bus tak kelipatan data terakhir, tangani byte sisa dengan varian masking.</p></details>
 <details class="icd-sol"><summary>"Apa batas ECC terhadap galat nyata?"</summary>
@@ -869,7 +869,7 @@ mkdir -p ~/icd/m03b &amp;&amp; cd ~/icd/m03b
 <pre class="icd-src" data-lang="sh">
 python3 codes.py
 </pre>
-<p>Keluaran yang benar (baris pertama: semua <code>assert</code> lulus, termasuk perbandingan dengan <code>zlib</code> dan semua burst):</p>
+<p>Output yang benar (baris pertama: semua <code>assert</code> lulus, termasuk perbandingan dengan <code>zlib</code> dan semua burst):</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 Gray 3 bit  : 000 001 011 010 110 111 101 100
@@ -889,7 +889,7 @@ python3 genvec.py
 iverilog -g2012 -Wall -o sim codes.v tb_codes.v
 vvp sim
 </pre>
-<p>Keluaran yang benar (<code>crc8_vec.hex</code> harus ada di folder kerja):</p>
+<p>Output yang benar (<code>crc8_vec.hex</code> harus ada di folder kerja):</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 LULUS: 14033 pemeriksaan (Gray, Hamming 7,4, SECDED 8,4, CRC-8 serial)
 tb_codes.v:85: $finish called at 13196926000 (1ps)
@@ -915,7 +915,7 @@ GAGAL: 464 kesalahan dari 14033 pemeriksaan
 <pre class="icd-src" data-lang="sh">
 python3 crcdetect.py
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 CRC-3: lolos 25219/200000 = 0.12610   (teori 2^-3 = 0.12500)
 CRC-4: lolos 12403/200000 = 0.06202   (teori 2^-4 = 0.06250)
@@ -923,9 +923,9 @@ CRC-8: lolos 770/200000 = 0.00385   (teori 2^-8 = 0.00391)
 </pre>
 <p><strong>Baca hasilnya.</strong> Laju lolos mengikuti 2<sup>−<i>r</i></sup> (12.5%, 6.25%, 0.39%), dengan selisih kecil karena sampling acak. Ini menegaskan bahwa kekuatan CRC terhadap galat acak ditentukan hanya oleh <i>r</i>; kekuatan terhadap galat terstruktur (burst, galat tunggal) jauh lebih besar dan bergantung pada polinomial.</p>
 <h3>Langkah 5: tantangan, CRC paralel</h3>
-<p>Turunkan persamaan XOR untuk menghitung CRC-8 satu byte per clock tanpa menjalankan 8 iterasi serial. Tebak dulu: apakah setiap bit keluaran bergantung pada semua bit masukan dan register?</p>
+<p>Turunkan persamaan XOR untuk menghitung CRC-8 satu byte per clock tanpa menjalankan 8 iterasi serial. Tebak dulu: apakah setiap bit output bergantung pada semua bit input dan register?</p>
 <details class="icd-sol"><summary>Solusi</summary>
-<p>Lihat <code>crcpar.py</code> di bagian 8.6; keluarannya:</p>
+<p>Lihat <code>crcpar.py</code> di bagian 8.6; output-nya:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 65536 kombinasi (register, byte): paralel == serial
 next[0] = r0 ^ r6 ^ r7 ^ d0 ^ d6 ^ d7
@@ -937,7 +937,7 @@ next[5] = r3 ^ r4 ^ r5 ^ d3 ^ d4 ^ d5
 next[6] = r4 ^ r5 ^ r6 ^ d4 ^ d5 ^ d6
 next[7] = r5 ^ r6 ^ r7 ^ d5 ^ d6 ^ d7
 </pre>
-<p>Tidak: tiap keluaran hanya bergantung pada 4 sampai 8 variabel, dan pasangan <code>r<sub>i</sub></code> dan <code>d<sub>i</sub></code> selalu muncul bersama (jadi cukup XOR byte dengan register lebih dulu, lalu satu pemetaan linear tunggal). Itu sebabnya CRC paralel kompak: 8 pohon XOR dangkal. Tantangan lanjutan: bangkitkan versi 32 bit per clock untuk CRC-32 dan cocokkan dengan <code>zlib.crc32</code>.</p></details>
+<p>Tidak: tiap output hanya bergantung pada 4 sampai 8 variabel, dan pasangan <code>r<sub>i</sub></code> dan <code>d<sub>i</sub></code> selalu muncul bersama (jadi cukup XOR byte dengan register lebih dulu, lalu satu pemetaan linear tunggal). Itu sebabnya CRC paralel kompak: 8 pohon XOR dangkal. Tantangan lanjutan: bangkitkan versi 32 bit per clock untuk CRC-32 dan cocokkan dengan <code>zlib.crc32</code>.</p></details>
 </section>
 
 <section class="icd-sec" id="s15">

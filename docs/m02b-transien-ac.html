@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1853,7 +1853,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M02 bagian b dari 3 · sekitar 15 jam · prasyarat: <a href="m01b-kompleks-kalkulus.html">M01b</a> (fasor, persamaan diferensial), <a href="m01d-transformasi-sinyal.html">M01d</a> (respons frekuensi), <a href="m02a-rangkaian-dc.html">M02a</a> (analisis nodal)</p>
 <h1>M02b Transien RC, RL, RLC dan analisis AC</h1>
-<p>Di M02a semua tegangan diam. Di chip tidak ada yang diam: setiap tepi clock mengisi dan mengosongkan miliaran kapasitansi kecil lewat resistansi transistor dan kawat. Modul ini membahas dua elemen penyimpan energi, kapasitor dan induktor, bagaimana rangkaian berubah dari satu keadaan ke keadaan lain (transien), dan bagaimana rangkaian merespons sinus (analisis AC). Dari sini lahir tiga angka yang menguasai desain digital: delay RC, daya dinamis <i>CV</i>²<i>f</i>, dan noise catu daya <i>L</i> d<i>i</i>/d<i>t</i>.</p>
+<p>Di M02a semua tegangan diam. Di chip tidak ada yang diam: setiap clock edge mengisi dan mengosongkan miliaran kapasitansi kecil lewat resistansi transistor dan kawat. Modul ini membahas dua elemen penyimpan energi, kapasitor dan induktor, bagaimana rangkaian berubah dari satu keadaan ke keadaan lain (transien), dan bagaimana rangkaian merespons sinus (analisis AC). Dari sini lahir tiga angka yang menguasai desain digital: delay RC, daya dinamis <i>CV</i>²<i>f</i>, dan noise catu daya <i>L</i> d<i>i</i>/d<i>t</i>.</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
@@ -1863,7 +1863,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li><strong>Catu daya berdering.</strong> Induktansi paket dan kapasitansi di chip membentuk rangkaian RLC. Saat arus melonjak, tegangan catu turun dan berayun pada frekuensi resonansinya; kapasitor dekap (decap) dan desain paket mengendalikannya (M23, M31).</li>
 <li><strong>Kawat panjang lambat secara kuadratis.</strong> Resistansi dan kapasitansi kawat sama-sama sebanding dengan panjangnya, sehingga delay sebanding dengan kuadrat panjang. Inilah alasan buffer disisipkan di kawat panjang.</li>
 <li><strong>Analisis AC adalah bahasa desain analog.</strong> Gain penguat, bandwidth, dan stabilitas umpan balik dihitung dengan impedansi kompleks pada setiap frekuensi (M07, M27).</li>
-<li><strong>Simulator transien bekerja dengan cara yang akan Anda tulis sendiri di lab:</strong> setiap langkah waktu adalah satu analisis DC dengan kapasitor dan induktor diganti model pendamping.</li>
+<li><strong>Simulator transien bekerja dengan cara yang akan kamu tulis sendiri di lab:</strong> setiap langkah waktu adalah satu analisis DC dengan kapasitor dan induktor diganti model pendamping.</li>
 </ul>
 <div class="icd-box ok"><b>Yang dibawa pulang</b>Kapasitor menolak perubahan tegangan, induktor menolak perubahan arus. Rangkaian orde satu selalu bergerak eksponensial dari nilai awal ke nilai akhir dengan konstanta waktu τ. Untuk sinus, kapasitor dan induktor menjadi impedansi kompleks, dan semua metode M02a tetap berlaku.</div>
 </section>
@@ -1871,7 +1871,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01b-kompleks-kalkulus.html">M01b</a> (bilangan kompleks, fasor, persamaan diferensial orde satu dan dua, ζ dan ω<sub>0</sub>), <a href="m01d-transformasi-sinyal.html">M01d</a> (respons frekuensi, kutub), <a href="m02a-rangkaian-dc.html">M02a</a> (KCL, KVL, analisis nodal, Thevenin).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menulis hubungan arus-tegangan dan energi <span data-term="kapasitansi">kapasitor</span> dan <span data-term="induktansi">induktor</span>, serta menggabungkannya seri dan paralel.</li>
 <li>Menyelesaikan <span data-term="transien">transien</span> rangkaian orde satu RC dan RL dengan rumus nilai awal, nilai akhir, dan <span data-term="tau">konstanta waktu</span>.</li>
@@ -1889,7 +1889,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>Kapasitor: ember air</h3>
 <p>Kapasitor seperti ember yang diisi lewat selang. Tinggi air adalah tegangan; aliran air adalah arus. Ember lebar (kapasitansi besar) butuh lebih banyak air untuk naik setinggi yang sama. Tinggi air tidak bisa melompat seketika; ia hanya naik secepat aliran mengizinkan. Saat ember hampir penuh, beda tinggi dengan tangki pengisi mengecil dan aliran melambat: itulah kurva eksponensial. <em>Di mana analogi ini berhenti:</em> kapasitor punya dua pelat dengan muatan sama besar dan berlawanan tanda; arus yang "masuk" ke satu pelat sama dengan arus yang "keluar" dari pelat lain, jadi arus tampak lewat menembus kapasitor walaupun tidak ada muatan yang menyeberangi isolatornya.</p>
 <h3>Induktor: roda gila</h3>
-<p>Induktor seperti roda gila yang berat dalam pipa air. Ia sulit diputar mulai, tetapi begitu berputar ia sulit dihentikan. Arus induktor tidak bisa berubah seketika. Jika Anda mencoba memotong arusnya tiba-tiba, ia akan membangkitkan tegangan sebesar apa pun yang perlu untuk mempertahankan arus itu sesaat. <em>Di mana analogi ini berhenti:</em> energi induktor tersimpan dalam medan magnet di sekitarnya, bukan di benda yang berputar, dan dua induktor yang berdekatan bisa saling memengaruhi lewat medan itu (induktansi bersama).</p>
+<p>Induktor seperti roda gila yang berat dalam pipa air. Ia sulit diputar mulai, tetapi begitu berputar ia sulit dihentikan. Arus induktor tidak bisa berubah seketika. Jika kamu mencoba memotong arusnya tiba-tiba, ia akan membangkitkan tegangan sebesar apa pun yang perlu untuk mempertahankan arus itu sesaat. <em>Di mana analogi ini berhenti:</em> energi induktor tersimpan dalam medan magnet di sekitarnya, bukan di benda yang berputar, dan dua induktor yang berdekatan bisa saling memengaruhi lewat medan itu (induktansi bersama).</p>
 <h3>RLC: ayunan anak</h3>
 <p>Rangkaian RLC seperti ayunan. Energi berpindah bolak-balik antara kapasitor (seperti ketinggian ayunan) dan induktor (seperti kecepatannya). Resistor adalah gesekan yang perlahan menghentikannya. Gesekan kecil: ayunan berlangsung lama. Gesekan besar: ayunan merayap ke tengah tanpa berayun sama sekali. <em>Di mana analogi ini berhenti:</em> ayunan sungguhan tidak linear untuk simpangan besar; rangkaian RLC dengan elemen ideal linear berapa pun besarnya.</p>
 <h3>Impedansi: resistansi yang bergantung frekuensi</h3>
@@ -1903,7 +1903,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p>Kapasitor adalah dua konduktor yang dipisahkan isolator. Muatan yang tersimpan sebanding dengan tegangannya, <i>Q</i> = <i>CV</i>, dengan <span data-term="kapasitansi">kapasitansi</span> <i>C</i> dalam farad (F). Untuk pelat sejajar, <i>C</i> = ε<i>A</i>/<i>d</i>: luas besar dan jarak kecil memberi kapasitansi besar. Menurunkan <i>Q</i> = <i>CV</i> terhadap waktu:</p>
 <div class="icd-eq"><math display="block"><mi>i</mi><mo>=</mo><mi>C</mi><mfrac><mrow><mi>d</mi><mi>v</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mspace width="2em"/><msub><mi>E</mi><mi>C</mi></msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>C</mi><msup><mi>V</mi><mn>2</mn></msup></math><span class="alt">i = C·dv/dt ; E = ½·C·V²</span></div>
 <p>Akibat langsung: tegangan kapasitor tidak bisa melompat, karena lompatan berarti arus tak hingga. Pada DC tunak (d<i>v</i>/d<i>t</i> = 0) kapasitor tidak dialiri arus: rangkaian terbuka. Energi didapat dengan mengintegralkan daya: ∫ <i>vi</i> d<i>t</i> = ∫ <i>Cv</i> d<i>v</i> = ½<i>CV</i>². Kapasitor paralel dijumlahkan (luas pelat bertambah); kapasitor seri digabung seperti resistor paralel.</p>
-<p><strong>Skala di chip:</strong> kapasitansi masukan satu gerbang kecil di proses modern berorde satu femtofarad (10<sup>−15</sup> F), kapasitansi kawat berorde 0.1 sampai 0.2 fF per mikrometer (angka ilustratif; nilai sebenarnya dari ekstraksi), dan kapasitor dekap di seluruh chip bisa mencapai ratusan nanofarad.</p>
+<p><strong>Skala di chip:</strong> kapasitansi input satu gerbang kecil di proses modern berorde satu femtofarad (10<sup>−15</sup> F), kapasitansi kawat berorde 0.1 sampai 0.2 fF per mikrometer (angka ilustratif; nilai sebenarnya dari ekstraksi), dan kapasitor dekap di seluruh chip bisa mencapai ratusan nanofarad.</p>
 
 <h3>4.2 Induktor</h3>
 <p>Arus yang mengalir membangkitkan medan magnet; medan yang berubah membangkitkan tegangan yang melawan perubahan arus. Untuk induktor dengan <span data-term="induktansi">induktansi</span> <i>L</i> dalam henry (H):</p>
@@ -1912,7 +1912,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Noise <span data-term="ldidt"><i>L</i> d<i>i</i>/d<i>t</i></span>.</strong> Jika arus catu melonjak 1 A dalam 1 ns melewati induktansi efektif 0.1 nH, tegangan yang hilang adalah 0.1 × 10<sup>−9</sup> × 10<sup>9</sup> = 0.1 V: lebih dari 10% catu 0.8 V. Karena itu arus yang melonjak harus dilayani oleh muatan yang sudah tersimpan dekat beban, di <span data-term="decap">kapasitor dekap</span>, sebelum induktor sempat menyusul.</p>
 
 <h3>4.3 Transien orde satu</h3>
-<p>Rangkaian dengan satu kapasitor (atau satu induktor) dan resistor, setelah sebuah sakelar berubah, memenuhi persamaan τ d<i>x</i>/d<i>t</i> + <i>x</i> = <i>x</i><sub>∞</sub>. Di M01b Anda sudah menyelesaikannya; hasilnya berlaku untuk tegangan kapasitor, arus induktor, dan juga semua tegangan dan arus lain di rangkaian itu:</p>
+<p>Rangkaian dengan satu kapasitor (atau satu induktor) dan resistor, setelah sebuah sakelar berubah, memenuhi persamaan τ d<i>x</i>/d<i>t</i> + <i>x</i> = <i>x</i><sub>∞</sub>. Di M01b kamu sudah menyelesaikannya; hasilnya berlaku untuk tegangan kapasitor, arus induktor, dan juga semua tegangan dan arus lain di rangkaian itu:</p>
 <div class="icd-eq"><math display="block"><mi>x</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><msub><mi>x</mi><mi>&#x221E;</mi></msub><mo>+</mo><mo>(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>&#x2212;</mo><msub><mi>x</mi><mi>&#x221E;</mi></msub><mo>)</mo><mspace width="0.2em"/><msup><mi>e</mi><mrow><mo>&#x2212;</mo><mi>t</mi><mo>/</mo><mi>&#x3C4;</mi></mrow></msup><mo>,</mo><mspace width="1em"/><mi>&#x3C4;</mi><mo>=</mo><msub><mi>R</mi><mtext>th</mtext></msub><mi>C</mi><mspace width="0.6em"/><mtext>atau</mtext><mspace width="0.6em"/><mi>&#x3C4;</mi><mo>=</mo><mfrac><mi>L</mi><msub><mi>R</mi><mtext>th</mtext></msub></mfrac></math><span class="alt">x(t) = x∞ + (x0 − x∞)·e^(−t/τ), τ = Rth·C atau L/Rth</span></div>
 <p>Resepnya tiga langkah: (1) nilai awal <i>x</i><sub>0</sub>, dari kenyataan bahwa tegangan kapasitor dan arus induktor tidak melompat; (2) nilai akhir <i>x</i><sub>∞</sub>, dari analisis DC dengan kapasitor terbuka dan induktor hubung singkat; (3) τ, dengan <i>R</i><sub>th</sub> resistansi Thevenin yang dilihat kapasitor atau induktor (M02a). Waktu-waktu penting: 50% pada 0.693τ, 10% sampai 90% dalam 2.2τ, tinggal 1% pada 4.6τ, tinggal 0.1% pada 6.9τ.</p>
 <p><strong>Contoh.</strong> Kapasitor 1 nF, mula-mula 0 V, diisi dari 5 V lewat 2 kΩ, dengan beban 2 kΩ paralel kapasitor. Nilai akhir: pembagi, 2.5 V. <i>R</i><sub>th</sub> dilihat kapasitor: 2k ∥ 2k = 1 kΩ, τ = 1 µs. Jadi <i>v</i>(<i>t</i>) = 2.5(1 − <i>e</i><sup>−<i>t</i>/1µs</sup>) V; pada <i>t</i> = 2 µs, 2.16 V.</p>
@@ -1958,8 +1958,8 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h2>Penjelasan berlapis</h2>
 <h3>1. Transien orde satu</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Setelah sesuatu dinyalakan, tegangan kapasitor tidak langsung sampai; ia mendekat dengan cepat di awal lalu makin lambat. Satu τ sudah 63%, lima τ praktis selesai. Untuk menghitung, Anda hanya perlu tiga hal: dari mana mulai, ke mana menuju, dan berapa τ.</p></div>
-<div data-level="engineer"><p>Untuk gerbang CMOS, model RC memberi delay ≈ 0.69 <i>R</i><sub>on</sub> <i>C</i><sub>beban</sub>. Ini menjelaskan tren yang Anda lihat di tabel timing: delay naik linear dengan kapasitansi beban (fanout dan panjang kawat) dan turun dengan transistor yang lebih lebar (<i>R</i><sub>on</sub> lebih kecil). Slew (waktu transisi) sebanding dengan τ yang sama, kira-kira 2.2τ untuk 10–90%.</p></div>
+<div data-level="pemula"><p>Setelah sesuatu dinyalakan, tegangan kapasitor tidak langsung sampai; ia mendekat dengan cepat di awal lalu makin lambat. Satu τ sudah 63%, lima τ praktis selesai. Untuk menghitung, kamu hanya perlu tiga hal: dari mana mulai, ke mana menuju, dan berapa τ.</p></div>
+<div data-level="engineer"><p>Untuk gerbang CMOS, model RC memberi delay ≈ 0.69 <i>R</i><sub>on</sub> <i>C</i><sub>beban</sub>. Ini menjelaskan tren yang kamu lihat di tabel timing: delay naik linear dengan kapasitansi beban (fanout dan panjang kawat) dan turun dengan transistor yang lebih lebar (<i>R</i><sub>on</sub> lebih kecil). Slew (waktu transisi) sebanding dengan τ yang sama, kira-kira 2.2τ untuk 10–90%.</p></div>
 <div data-level="pakar"><p>Model delay RC tunggal tidak menangkap efek resistive shielding: jika kawat di belakang sel punya resistansi berarti, sel hanya "melihat" sebagian kapasitansi kawat dalam waktu singkat. Model beban efektif (C efektif) dan model sumber arus (CCS) dipakai oleh tool timing untuk menangani ini. Untuk jaringan RC berbentuk pohon, Elmore adalah batas atas delay 50% dan dipakai sebagai metrik cepat saat routing; signoff memakai reduksi orde tinggi (AWE, PRIMA) yang mencocokkan beberapa momen pertama.</p></div>
 </div>
 <h3>2. Energi dan daya dinamis</h3>
@@ -1978,7 +1978,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-layers">
 <div data-level="pemula"><p>Untuk sinyal bolak-balik, kapasitor makin mudah dilewati saat frekuensi naik, induktor makin sulit. Impedansi adalah "resistansi" yang bergantung frekuensi dan juga menggeser waktu sinyal.</p></div>
 <div data-level="engineer"><p>Analisis AC di SPICE (<code>.ac</code>) melinearkan rangkaian di titik kerjanya lalu menyelesaikan MNA kompleks pada setiap frekuensi. Hasilnya respons small-signal: gain dan fase untuk sinyal kecil. Ia tidak menunjukkan clipping, slew, atau distorsi; untuk itu perlu transien.</p></div>
-<div data-level="pakar"><p>Hubungan amplitudo dan fase sebuah sistem fase minimum tidak bebas: kemiringan −20 dB per dekade selalu disertai sekitar −90° (hubungan Bode). Ini yang membuat phase margin bisa ditaksir dari kurva magnitudo saja. Untuk jaringan pasif, bagian real impedansi masukan tidak pernah negatif pada frekuensi apa pun; impedansi dengan bagian real negatif menandakan elemen aktif dan potensi osilasi.</p></div>
+<div data-level="pakar"><p>Hubungan amplitudo dan fase sebuah sistem fase minimum tidak bebas: kemiringan −20 dB per dekade selalu disertai sekitar −90° (hubungan Bode). Ini yang membuat phase margin bisa ditaksir dari kurva magnitudo saja. Untuk jaringan pasif, bagian real impedansi input tidak pernah negatif pada frekuensi apa pun; impedansi dengan bagian real negatif menandakan elemen aktif dan potensi osilasi.</p></div>
 </div>
 </section>
 
@@ -2011,7 +2011,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
     <label class="icd-field"><span>R = <b id="v2-rv"></b></span><input type="range" id="v2-r" min="0" max="100" step="1" value="53"></label>
   </div>
   <div class="readout" id="v2-out" aria-live="polite"></div>
-  <div class="model">Step 1 V ke R, L, C seri; keluaran tegangan kapasitor. L berskala log 0.1 sampai 10 nH; C 10 sampai 1000 nF; R 1 mΩ sampai 1 Ω. Dihitung dengan Runge-Kutta orde empat, 4 000 langkah dalam jendela yang menyesuaikan diri dengan ω<sub>0</sub> dan ζ. Garis putus-putus: respons teredam kritis (R = 2√(L/C)) dengan L dan C yang sama, sebagai pembanding.</div>
+  <div class="model">Step 1 V ke R, L, C seri; output tegangan kapasitor. L berskala log 0.1 sampai 10 nH; C 10 sampai 1000 nF; R 1 mΩ sampai 1 Ω. Dihitung dengan Runge-Kutta orde empat, 4 000 langkah dalam jendela yang menyesuaikan diri dengan ω<sub>0</sub> dan ζ. Garis putus-putus: respons teredam kritis (R = 2√(L/C)) dengan L dan C yang sama, sebagai pembanding.</div>
 </div>
 <div class="icd-guide" data-id="v2-kritis" data-answer="2">
   <p>L = 1 nH dan C = 100 nF. Dengan R berapa respons mencapai nilai akhir tercepat tanpa melewatinya?</p>
@@ -2023,15 +2023,15 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
   <header><h3>3. Fasor dan respons frekuensi</h3></header>
   <div class="stage"><div class="duo"><div id="v3-ph"></div><div style="flex:1 1 300px"><div id="v3-mag"></div><div id="v3-pha" style="margin-top:8px"></div></div></div></div>
   <div class="params">
-    <label class="icd-field">Rangkaian<select class="icd-select" id="v3-k"><option value="lp">RC low-pass (keluaran di C)</option><option value="hp">RC high-pass (keluaran di R)</option><option value="bp">RLC seri (keluaran di R)</option></select></label>
+    <label class="icd-field">Rangkaian<select class="icd-select" id="v3-k"><option value="lp">RC low-pass (output di C)</option><option value="hp">RC high-pass (output di R)</option><option value="bp">RLC seri (output di R)</option></select></label>
     <label class="icd-field"><span>R = <b id="v3-rv"></b></span><input type="range" id="v3-r" min="0" max="100" step="1" value="67"></label>
     <label class="icd-field"><span>C = 1 nF, L = 1 µH · frekuensi f = <b id="v3-fv"></b></span><input type="range" id="v3-f" min="0" max="100" step="0.02" value="40"></label>
   </div>
   <div class="readout" id="v3-out" aria-live="polite"></div>
-  <div class="model">Sumber sinus 1 V amplitudo (fasor 1∠0°). R berskala log 10 Ω sampai 10 kΩ; f 1 kHz sampai 100 MHz. Diagram fasor: panah sumber (abu), tegangan keluaran (hijau), tegangan elemen lain (ungu); keduanya dijumlahkan menjadi sumber (KVL dengan bilangan kompleks). Impedansi dihitung eksak: Z_C = 1/(jωC), Z_L = jωL.</div>
+  <div class="model">Sumber sinus 1 V amplitudo (fasor 1∠0°). R berskala log 10 Ω sampai 10 kΩ; f 1 kHz sampai 100 MHz. Diagram fasor: panah sumber (abu), tegangan output (hijau), tegangan elemen lain (ungu); keduanya dijumlahkan menjadi sumber (KVL dengan bilangan kompleks). Impedansi dihitung eksak: Z_C = 1/(jωC), Z_L = jωL.</div>
 </div>
 <div class="icd-guide" data-id="v3-fc" data-answer="1">
-  <p>RC low-pass dengan R = 1 kΩ dan C = 1 nF disinyali tepat pada f<sub>c</sub> = 1/(2πRC) ≈ 159 kHz. Berapa besar dan fase keluarannya?</p>
+  <p>RC low-pass dengan R = 1 kΩ dan C = 1 nF disinyali tepat pada f<sub>c</sub> = 1/(2πRC) ≈ 159 kHz. Berapa besar dan fase output-nya?</p>
   <ul><li>0.5 dan −90°</li><li>0.707 dan −45°</li><li>1 dan 0°</li><li>0.707 dan −90°</li></ul>
   <div class="explain"><p>Pada f<sub>c</sub>, |Z_C| = R, sehingga H = 1/(1 + j). Besarnya 1/√2 = 0.707 (−3 dB), fasenya −45°. Pada diagram fasor, tegangan R dan tegangan C sama panjang dan saling tegak lurus; keduanya menjumlah menjadi sumber. Geser f ke 1.59 MHz: besar turun ke sekitar 0.1 (−20 dB) dan fase mendekati −84°.</p></div>
 </div>
@@ -2062,7 +2062,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li>Delay 50%: 0.693 × 50 = 34.7 ps. Transisi 10–90%: 2.2 × 50 = 110 ps.</li>
 <li>Beban 20 fF: semuanya dua kali, 69.3 ps dan 220 ps.</li>
 </ol>
-<p><strong>Pelajaran.</strong> Delay linear terhadap beban; inilah kemiringan yang Anda lihat di tabel timing sel standar.</p>
+<p><strong>Pelajaran.</strong> Delay linear terhadap beban; inilah kemiringan yang kamu lihat di tabel timing sel standar.</p>
 
 <h3>Contoh 2: transien dengan pembagi</h3>
 <p><strong>Soal.</strong> Kapasitor 2 nF pada 0 V. Pada <i>t</i> = 0 sebuah sumber 6 V disambung lewat 3 kΩ; kapasitor juga punya resistor 6 kΩ paralel. Tulis <i>v</i><sub><i>C</i></sub>(<i>t</i>) dan cari kapan mencapai 3 V.</p>
@@ -2091,7 +2091,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Pelajaran.</strong> Decap tambahan menolong lewat dua jalan: menyimpan muatan lebih banyak dan menaikkan redaman. Dalam praktik, menambah resistansi seri yang terkendali sering lebih murah daripada menambah enam kali decap.</p>
 
 <h3>Contoh 5: impedansi dan pembagi kompleks</h3>
-<p><strong>Soal.</strong> RC low-pass 1 kΩ dan 1 nF. Hitung keluaran pada 159 kHz dan 1.59 MHz, dalam besar, dB, dan fase.</p>
+<p><strong>Soal.</strong> RC low-pass 1 kΩ dan 1 nF. Hitung output pada 159 kHz dan 1.59 MHz, dalam besar, dB, dan fase.</p>
 <ol>
 <li>ω<i>RC</i> pada 159 kHz: 2π × 159 155 × 10<sup>−6</sup> = 1.000. <i>H</i> = 1/(1 + <i>j</i>) → 0.707, −3.01 dB, −45°.</li>
 <li>Pada 1.59 MHz: ω<i>RC</i> = 10. |<i>H</i>| = 1/√101 = 0.0995, −20.04 dB, fase −arctan 10 = −84.3°.</li>
@@ -2325,7 +2325,7 @@ print fase*180/pi
 .endc
 .end
 </pre>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip Python, netlist (ngspice 42), langkah interaktif, bug sengaja, dan perluasan dijalankan sebelum modul ditulis; keluarannya disalin apa adanya ke bagian Lab.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip Python, netlist (ngspice 42), langkah interaktif, bug sengaja, dan perluasan dijalankan sebelum modul ditulis; output-nya disalin apa adanya ke bagian Lab.</div>
 </section>
 
 <section class="icd-sec" id="s09">
@@ -2353,7 +2353,7 @@ print fase*180/pi
 <tr><th scope="row">RLC, <i>L</i> d<i>i</i>/d<i>t</i>, decap</th><td>Analisis PDN dinamis, impedansi target, penempatan decap</td><td>Analisis daya-integritas chip dan paket; M23, M31</td></tr>
 <tr><th scope="row">Impedansi, analisis AC</th><td>Gain, bandwidth, stabilitas penguat, filter</td><td>SPICE <code>.ac</code>; M07, M27</td></tr>
 </tbody></table></div>
-<p><strong>Bagaimana sel standar dikarakterisasi.</strong> Untuk setiap sel, simulasi transien transistor penuh dijalankan pada kisi kombinasi waktu transisi masukan dan kapasitansi beban, di beberapa sudut proses, tegangan, dan suhu. Delay, transisi keluaran, dan energi setiap kombinasi disimpan dalam tabel (format Liberty). Tool timing menginterpolasi tabel itu. Model RC di modul ini menjelaskan bentuk tabelnya; tabelnyalah yang dipakai untuk signoff.</p>
+<p><strong>Bagaimana sel standar dikarakterisasi.</strong> Untuk setiap sel, simulasi transien transistor penuh dijalankan pada kisi kombinasi waktu transisi input dan kapasitansi beban, di beberapa sudut proses, tegangan, dan suhu. Delay, transisi output, dan energi setiap kombinasi disimpan dalam tabel (format Liberty). Tool timing menginterpolasi tabel itu. Model RC di modul ini menjelaskan bentuk tabelnya; tabelnyalah yang dipakai untuk signoff.</p>
 <p>Dalam alur RTL-to-GDSII, materi modul ini paling terasa di karakterisasi pustaka, static timing analysis, analisis daya, ekstraksi parasitik, dan analisis integritas daya.</p>
 </section>
 
@@ -2394,13 +2394,13 @@ print fase*180/pi
 <p><strong>Kerangka jawaban:</strong> Pengisian dari sumber <i>V</i>: sumber memberi <i>CV</i>², kapasitor menyimpan ½<i>CV</i>², separuhnya panas di PMOS. Pengosongan: ½<i>CV</i>² tersimpan menjadi panas di NMOS. Satu siklus penuh <i>CV</i>²; dikali probabilitas aktivitas α dan frekuensi: α<i>CV</i>²<i>f</i>. Sebutkan bahwa hasil ini tidak bergantung pada resistansi transistor, lalu teknik penurunannya (clock gating, DVFS, mengurangi kapasitansi), dan komponen daya lain (hubung singkat, bocor).</p></details>
 <details class="icd-sol"><summary>"Mengapa kawat panjang di chip butuh repeater?"</summary>
 <p><strong>Kerangka jawaban:</strong> Delay kawat RC terdistribusi sebanding ℓ². Memotong menjadi <i>k</i> bagian dengan buffer membuat delay kawat ≈ 1/<i>k</i> semula ditambah <i>k</i> delay buffer; ada <i>k</i> optimum yang membuat total delay linear terhadap panjang. Sebut biayanya: luas, daya, dan buffer yang harus ditempatkan di lokasi yang tersedia.</p></details>
-<details class="icd-sol"><summary>"Apa itu decap dan bagaimana Anda tahu berapa yang dibutuhkan?"</summary>
+<details class="icd-sol"><summary>"Apa itu decap dan bagaimana kamu tahu berapa yang dibutuhkan?"</summary>
 <p><strong>Kerangka jawaban:</strong> Kapasitor antara VDD dan VSS dekat beban yang memasok lonjakan arus lebih cepat daripada jalur induktif paket. Taksiran: muatan yang dibutuhkan selama lonjakan Δ<i>Q</i> = <i>I</i>Δ<i>t</i>, dibagi drop yang diizinkan, memberi <i>C</i> minimum. Lalu periksa impedansi jaringan terhadap frekuensi: resonansi antara induktansi paket dan decap, redamannya, dan impedansi target. Sebut kebocoran dan luas sebagai biaya.</p></details>
 <details class="icd-sol"><summary>"Bagaimana SPICE melakukan analisis transien?"</summary>
 <p><strong>Kerangka jawaban:</strong> Diskretisasi waktu: kapasitor dan induktor diganti model pendamping (konduktansi plus sumber arus) sesuai metode integrasi (Euler mundur, trapesium, Gear); setiap langkah satu MNA, dengan iterasi Newton bila tak linear; langkah dipilih adaptif dari perkiraan galat pemotongan lokal. Sebut masalah praktis: konvergensi, langkah terlalu besar, redaman numerik, dan osilasi palsu trapesium pada tepi yang sangat tajam.</p></details>
 <details class="icd-sol"><summary>"Bedakan analisis AC dan analisis transien. Kapan memakai yang mana?"</summary>
 <p><strong>Kerangka jawaban:</strong> AC: linearisasi pada titik kerja, sinus kecil, keadaan tunak, cepat, memberi gain, fase, bandwidth, dan margin stabilitas. Transien: waktu demi waktu, sinyal besar, menangkap ketidaklinearan, clipping, slew, dan waktu menetap. Desain penguat memakai AC untuk stabilitas dan transien untuk respons step dan distorsi.</p></details>
-<details class="icd-sol"><summary>"Rangkaian RLC Anda berdering. Bagaimana cara meredamnya?"</summary>
+<details class="icd-sol"><summary>"Rangkaian RLC kamu berdering. Bagaimana cara meredamnya?"</summary>
 <p><strong>Kerangka jawaban:</strong> Hitung ζ = (<i>R</i>/2)√(<i>C</i>/<i>L</i>). Naikkan <i>R</i> seri (atau tambahkan jalur RC paralel peredam), kurangi <i>L</i> (jalur lebih pendek, lebih banyak koneksi paralel), atau ubah <i>C</i> dengan memperhitungkan pergeseran resonansi. Sebut target ζ sekitar 0.5 sampai 0.7 sebagai kompromi kecepatan dan overshoot.</p></details>
 </section>
 
@@ -2413,7 +2413,7 @@ mkdir -p ~/icd/m02b &amp;&amp; cd ~/icd/m02b
 nano tran_ac.py            # tempel kode dari bagian 8, atau salin lab/m02b/tran_ac.py
 python3 tran_ac.py         # sekitar 3 detik
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 RC 1 kOhm, 1 nF, step 1 V:
@@ -2492,7 +2492,7 @@ if __name__ == "__main__":
         print(f"R = {R / 1e3:4.0f} kOhm, f = {f / 1e9:.0f} GHz: P = {p_dyn(R, C, V, f) * 1e6:.3f} uW, "
               f"C V^2 f = {C * V * V * f * 1e6:.3f} uW")
 </pre>
-<p>Keluaran yang benar (sekitar 10 detik):</p>
+<p>Output yang benar (sekitar 10 detik):</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 R =    5 kOhm, f = 1 GHz: P = 6.399 uW, C V^2 f = 6.400 uW
 R =   20 kOhm, f = 1 GHz: P = 5.437 uW, C V^2 f = 6.400 uW
@@ -2562,7 +2562,7 @@ ICD.gloss.add([
 { id: 'reaktansi', en: 'reactance', idn: 'reaktansi', def: 'Bagian imajiner impedansi; ωL untuk induktor, −1/(ωC) untuk kapasitor.', mod: 'M02b' },
 { id: 'fc', en: 'cutoff frequency', idn: 'frekuensi potong', def: 'Frekuensi tempat respons turun 3 dB; untuk RC, 1/(2πRC).', mod: 'M02b' },
 { id: 'resonansi', en: 'resonance', idn: 'resonansi', def: 'Keadaan saat reaktansi induktif dan kapasitif saling menghapus, pada ω0 = 1/√(LC).', mod: 'M02b' },
-{ id: 'rms', en: 'RMS', idn: 'nilai efektif', def: 'Akar dari rata-rata kuadrat; untuk sinus bernilai amplitudo dibagi √2.', mod: 'M01a, M01b' },
+{ id: 'rms', en: 'RMS', idn: 'nilai efektif', def: 'Root mean square: akar dari rata-rata kuadrat; untuk sinus bernilai amplitudo dibagi √2.', mod: 'M01a, M01b' },
 { id: 'elmore', en: 'Elmore delay', idn: 'delay Elmore', def: 'Jumlah resistansi dikali kapasitansi hilirnya di sepanjang jalur RC; momen pertama respons impuls.', mod: 'M02b, M21' },
 { id: 'pendamping', en: 'companion model', idn: 'model pendamping', def: 'Pengganti kapasitor atau induktor dalam satu langkah waktu: konduktansi plus sumber arus.', mod: 'M02b' }
 ]);

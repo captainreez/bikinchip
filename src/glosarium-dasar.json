@@ -37,14 +37,14 @@
  {
   "id": "g5",
   "en": "PVT corner",
-  "idn": "sudut PVT",
+  "idn": "PVT corner",
   "def": "Kombinasi ekstrem process, voltage, dan temperature yang dipakai untuk memastikan chip bekerja di semua kondisi.",
   "mod": "M06"
  },
  {
   "id": "g6",
   "en": "FinFET",
-  "idn": "transistor sirip",
+  "idn": "FinFET",
   "def": "Transistor dengan kanal berbentuk sirip tegak yang dibungkus gate di tiga sisi.",
   "mod": "M06"
  },
@@ -66,35 +66,35 @@
   "id": "g9",
   "en": "flip-flop",
   "idn": "flip-flop",
-  "def": "Elemen memori yang menangkap data hanya pada tepi clock (edge-triggered).",
+  "def": "Elemen memori yang menangkap data hanya pada clock edge (edge-triggered).",
   "mod": "M09"
  },
  {
   "id": "g10",
   "en": "setup time",
-  "idn": "waktu setup",
-  "def": "Lama data harus stabil sebelum tepi clock agar tertangkap dengan benar.",
+  "idn": "setup time",
+  "def": "Lama data harus stabil sebelum clock edge agar tertangkap dengan benar.",
   "mod": "M09"
  },
  {
   "id": "g11",
   "en": "hold time",
-  "idn": "waktu hold",
-  "def": "Lama data harus tetap stabil setelah tepi clock.",
+  "idn": "hold time",
+  "def": "Lama data harus tetap stabil setelah clock edge.",
   "mod": "M09"
  },
  {
   "id": "g12",
   "en": "metastability",
   "idn": "metastabilitas",
-  "def": "Keadaan tak tentu sementara pada flip-flop ketika data berubah terlalu dekat dengan tepi clock.",
+  "def": "Keadaan tak tentu sementara pada flip-flop ketika data berubah terlalu dekat dengan clock edge.",
   "mod": "M09"
  },
  {
   "id": "g13",
   "en": "FSM",
-  "idn": "mesin keadaan hingga",
-  "def": "Rangkaian sekuensial yang berpindah antar sejumlah keadaan terbatas berdasarkan masukan.",
+  "idn": "FSM",
+  "def": "Rangkaian sekuensial yang berpindah antar sejumlah keadaan terbatas berdasarkan input.",
   "mod": "M09"
  },
  {
@@ -135,7 +135,7 @@
  {
   "id": "g19",
   "en": "handshake",
-  "idn": "jabat tangan",
+  "idn": "handshake",
   "def": "Protokol dua sinyal (misalnya valid dan ready) agar pengirim dan penerima sepakat kapan data berpindah.",
   "mod": "M17"
  },
@@ -156,8 +156,8 @@
  {
   "id": "g22",
   "en": "testbench",
-  "idn": "bangku uji",
-  "def": "Kode yang membangkitkan stimulus dan memeriksa keluaran desain saat simulasi.",
+  "idn": "testbench",
+  "def": "Kode yang membangkitkan stimulus dan memeriksa output desain saat simulasi.",
   "mod": "M18"
  },
  {
@@ -212,21 +212,21 @@
  {
   "id": "g30",
   "en": "floorplan",
-  "idn": "denah chip",
+  "idn": "floorplan",
   "def": "Penataan awal area die: posisi macro, I/O, dan jalur daya.",
   "mod": "M23"
  },
  {
   "id": "g31",
   "en": "clock tree synthesis",
-  "idn": "sintesis pohon clock",
+  "idn": "clock tree synthesis",
   "def": "Pembangunan jaringan buffer yang mengantar clock ke semua flip-flop dengan skew terkendali.",
   "mod": "M23"
  },
  {
   "id": "g32",
   "en": "IR drop",
-  "idn": "jatuh tegangan IR",
+  "idn": "IR drop",
   "def": "Penurunan tegangan suplai akibat arus melewati resistansi jaringan daya.",
   "mod": "M23"
  },
@@ -234,7 +234,7 @@
   "id": "g33",
   "en": "PDK",
   "idn": "process design kit",
-  "def": "Paket dari foundry berisi model devais, design rules, dan file teknologi.",
+  "def": "Paket dari foundry berisi model device, design rules, dan file teknologi.",
   "mod": "M23"
  },
  {
@@ -268,7 +268,7 @@
  {
   "id": "g38",
   "en": "scan chain",
-  "idn": "rantai scan",
+  "idn": "scan chain",
   "def": "Flip-flop yang dirangkai menjadi shift register saat mode test agar keadaan internal bisa dikendalikan dan diamati.",
   "mod": "M26"
  },
@@ -303,7 +303,7 @@
  {
   "id": "g43",
   "en": "yield",
-  "idn": "rendemen",
+  "idn": "yield",
   "def": "Persentase die yang berfungsi dari seluruh die yang diproduksi.",
   "mod": "M30"
  },

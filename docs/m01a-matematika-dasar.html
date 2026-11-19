@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1850,16 +1850,16 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M01 bagian a dari 4 · sekitar 15 jam · prasyarat: <a href="m00-orientasi.html">M00</a></p>
 <h1>M01a Satuan, eksponen, logaritma, desibel, trigonometri</h1>
-<p>Lima alat hitung yang dipakai setiap hari di pekerjaan chip. Tidak ada yang sulit, tetapi semuanya harus menjadi refleks: Anda perlu bisa membaca "47 fF", "−3 dB", dan "fase 90°" secepat membaca harga di toko.</p>
+<p>Lima alat hitung yang dipakai setiap hari di pekerjaan chip. Tidak ada yang sulit, tetapi semuanya harus menjadi refleks: Kamu perlu bisa membaca "47 fF", "−3 dB", dan "fase 90°" secepat membaca harga di toko.</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
-<p>Chip hidup di dua ujung skala sekaligus. Dalam satu laporan timing Anda akan menemukan frekuensi dalam gigahertz (miliaran per detik) dan delay dalam pikodetik (sepertriliun detik). Selisih keduanya 21 orde besaran. Tanpa notasi yang ringkas dan kebiasaan memeriksa satuan, kesalahan seribu kali lipat sangat mudah terjadi dan sulit terlihat.</p>
+<p>Chip hidup di dua ujung skala sekaligus. Dalam satu laporan timing kamu akan menemukan frekuensi dalam gigahertz (miliaran per detik) dan delay dalam pikodetik (sepertriliun detik). Selisih keduanya 21 orde besaran. Tanpa notasi yang ringkas dan kebiasaan memeriksa satuan, kesalahan seribu kali lipat sangat mudah terjadi dan sulit terlihat.</p>
 <ul>
 <li><strong>Satuan yang tertukar bisa menghancurkan proyek.</strong> Wahana Mars Climate Orbiter milik NASA hilang pada 1999 karena satu tim memakai satuan imperial dan tim lain mengira angkanya metrik. Di dunia chip, versi kecilnya terjadi terus: file library memakai nanodetik sementara skrip mengira pikodetik, sehingga constraint meleset 1 000 kali.</li>
 <li><strong>Logaritma adalah cara engineer melihat.</strong> Diagram Bode, kurva arus transistor, grafik hukum Moore di M00, semuanya memakai sumbu logaritmik. Tanpa logaritma, grafik-grafik itu tidak terbaca.</li>
 <li><strong>Desibel adalah bahasa spesifikasi analog.</strong> Gain penguat, noise, kualitas ADC, dan phase noise PLL semuanya dinyatakan dalam dB. Salah memilih antara rumus 10 dan rumus 20 berarti salah dua kali lipat dalam dB.</li>
-<li><strong>Sinyal adalah gelombang.</strong> Clock, sinyal radio, dan gangguan pada suplai dianalisis sebagai gelombang sinus. Amplitudo, frekuensi, dan fase adalah tiga kata yang akan Anda pakai sampai modul terakhir.</li>
+<li><strong>Sinyal adalah gelombang.</strong> Clock, sinyal radio, dan gangguan pada suplai dianalisis sebagai gelombang sinus. Amplitudo, frekuensi, dan fase adalah tiga kata yang akan kamu pakai sampai modul terakhir.</li>
 </ul>
 <div class="icd-box ok"><b>Yang dibawa pulang</b>Selalu tulis satuan. Selalu periksa orde besaran sebelum mempercayai angka. Dua kebiasaan ini menangkap lebih banyak kesalahan daripada tool mana pun.</div>
 </section>
@@ -1867,7 +1867,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m00-orientasi.html">M00</a>, serta aritmetika dan aljabar SMP (pecahan, pangkat, persamaan satu variabel).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Mengubah bilangan apa pun antara 10<sup>−18</sup> dan 10<sup>12</sup> ke <span data-term="eng">notasi engineering</span> dengan awalan SI yang benar, tanpa kalkulator.</li>
 <li>Memeriksa kebenaran sebuah rumus dengan <span data-term="dimensi">analisis dimensi</span>.</li>
@@ -1883,13 +1883,13 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s03">
 <h2>Intuisi dulu</h2>
 <h3>Awalan satuan: ribu, juta, miliar yang diperluas</h3>
-<p>Anda sudah memakai awalan setiap hari: "5 ribu", "2 juta", "1 miliar". Awalan SI melakukan hal yang sama, tetapi juga ke arah kecil: seperseribu (mili), sepersejuta (mikro), sepersemiliar (nano). Setiap langkah adalah faktor 1 000. <em>Di mana analogi ini berhenti:</em> dalam bahasa sehari-hari "juta" selalu besar. Di chip, yang "biasa" justru yang sangat kecil; kapasitor 1 farad adalah raksasa, dan yang Anda temui sehari-hari adalah femtofarad.</p>
+<p>Kamu sudah memakai awalan setiap hari: "5 ribu", "2 juta", "1 miliar". Awalan SI melakukan hal yang sama, tetapi juga ke arah kecil: seperseribu (mili), sepersejuta (mikro), sepersemiliar (nano). Setiap langkah adalah faktor 1 000. <em>Di mana analogi ini berhenti:</em> dalam bahasa sehari-hari "juta" selalu besar. Di chip, yang "biasa" justru yang sangat kecil; kapasitor 1 farad adalah raksasa, dan yang kamu temui sehari-hari adalah femtofarad.</p>
 <h3>Logaritma: menghitung digit</h3>
 <p>Berapa digit bilangan 1 000 000? Tujuh, atau enam nol. Logaritma basis 10 pada dasarnya menghitung nol itu: log<sub>10</sub>(1 000 000) = 6. Ia menjawab "sepuluh pangkat berapa?". Dengan logaritma, bilangan raksasa menjadi bilangan kecil yang mudah dibandingkan, dan <strong>perkalian berubah menjadi penjumlahan</strong>: mengalikan 1 000 dengan 100 sama dengan menjumlahkan 3 nol dan 2 nol. <em>Di mana analogi ini berhenti:</em> jumlah digit selalu bilangan bulat, sedangkan logaritma bisa pecahan: log<sub>10</sub>(2) ≈ 0.301. Selain itu logaritma hanya terdefinisi untuk bilangan positif.</p>
 <h3>Desibel: tangga, bukan lift</h3>
-<p>Bayangkan tangga yang setiap anak tangganya berarti "kali sepuluh". Naik dua anak tangga berarti kali seratus. Desibel adalah tangga seperti itu dengan anak tangga yang lebih halus. Karena berupa tangga, melewati beberapa penguat berturut-turut cukup dijumlahkan anak tangganya. <em>Di mana analogi ini berhenti:</em> desibel selalu menyatakan <em>perbandingan</em> dua besaran. "20 dB" saja tidak berarti apa-apa sebelum Anda tahu dibandingkan dengan apa.</p>
+<p>Bayangkan tangga yang setiap anak tangganya berarti "kali sepuluh". Naik dua anak tangga berarti kali seratus. Desibel adalah tangga seperti itu dengan anak tangga yang lebih halus. Karena berupa tangga, melewati beberapa penguat berturut-turut cukup dijumlahkan anak tangganya. <em>Di mana analogi ini berhenti:</em> desibel selalu menyatakan <em>perbandingan</em> dua besaran. "20 dB" saja tidak berarti apa-apa sebelum kamu tahu dibandingkan dengan apa.</p>
 <h3>Sinus: bayangan pada kincir ria</h3>
-<p>Lihat satu gondola kincir ria dari samping, lalu perhatikan hanya ketinggiannya. Ia naik, melambat di puncak, turun, melambat di dasar, dan berulang. Grafik ketinggian terhadap waktu itulah gelombang sinus. Jari-jari roda adalah amplitudo, kecepatan putar adalah frekuensi, dan posisi awal gondola adalah fase. <em>Di mana analogi ini berhenti:</em> sinyal listrik nyata jarang berupa sinus murni. Namun, seperti akan Anda lihat di M01d, sinyal apa pun bisa diuraikan menjadi jumlah sinus, sehingga memahami satu sinus berarti memahami bahan dasar semua sinyal.</p>
+<p>Lihat satu gondola kincir ria dari samping, lalu perhatikan hanya ketinggiannya. Ia naik, melambat di puncak, turun, melambat di dasar, dan berulang. Grafik ketinggian terhadap waktu itulah gelombang sinus. Jari-jari roda adalah amplitudo, kecepatan putar adalah frekuensi, dan posisi awal gondola adalah fase. <em>Di mana analogi ini berhenti:</em> sinyal listrik nyata jarang berupa sinus murni. Namun, seperti akan kamu lihat di M01d, sinyal apa pun bisa diuraikan menjadi jumlah sinus, sehingga memahami satu sinus berarti memahami bahan dasar semua sinyal.</p>
 </section>
 
 <section class="icd-sec" id="s04">
@@ -1935,7 +1935,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><span data-term="sci">Notasi ilmiah</span> menulis bilangan sebagai <i>m</i> × 10<sup><i>n</i></sup> dengan 1 ≤ |<i>m</i>| &lt; 10. <span data-term="eng">Notasi engineering</span> sama, tetapi pangkatnya dipaksa kelipatan 3 sehingga langsung cocok dengan awalan SI, dan 1 ≤ |<i>m</i>| &lt; 1 000.</p>
 <p><strong>Cara mengubah:</strong> geser koma tiga digit setiap kali, sampai tersisa satu sampai tiga digit di depan koma. Setiap geseran ke kanan menurunkan pangkat 3; ke kiri menaikkan 3.</p>
 <p><strong>Contoh.</strong> 0.000 000 047 F. Geser koma ke kanan tiga kali tiga digit: 0.000 047 × 10<sup>−3</sup> → 0.047 × 10<sup>−6</sup> → 47 × 10<sup>−9</sup>. Pangkat −9 adalah nano, jadi 47 nF. Dalam notasi ilmiah bilangan yang sama ditulis 4.7 × 10<sup>−8</sup> F.</p>
-<p><strong><span data-term="sigfig">Angka penting</span>.</strong> Jumlah digit yang Anda tulis menyatakan seberapa teliti Anda tahu nilainya. Menulis hasil 33.000 000 0 ps dari masukan "2.2 kΩ" dan "15 fF" adalah ketelitian palsu. Aturan praktis: hasil perkalian atau pembagian ditulis dengan jumlah angka penting sebanyak masukan yang paling kasar, di sini dua: 33 ps.</p>
+<p><strong><span data-term="sigfig">Angka penting</span>.</strong> Jumlah digit yang kamu tulis menyatakan seberapa teliti kamu tahu nilainya. Menulis hasil 33.000 000 0 ps dari input "2.2 kΩ" dan "15 fF" adalah ketelitian palsu. Aturan praktis: hasil perkalian atau pembagian ditulis dengan jumlah angka penting sebanyak input yang paling kasar, di sini dua: 33 ps.</p>
 
 <h3>4.4 Aturan eksponen</h3>
 <p><span data-term="eksp">Eksponen</span> (pangkat) adalah perkalian berulang: <i>a</i><sup><i>n</i></sup> berarti <i>a</i> dikalikan dengan dirinya <i>n</i> kali. Dari definisi ini lahir lima aturan:</p>
@@ -1953,7 +1953,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 
 <h3>4.5 Analisis dimensi</h3>
 <p>Satuan bisa dikalikan dan dibagi seperti variabel aljabar. <span data-term="dimensi">Analisis dimensi</span> memeriksa apakah satuan di kedua ruas sebuah rumus cocok. Jika tidak cocok, rumusnya pasti salah.</p>
-<p><strong>Contoh.</strong> Di M02 Anda akan belajar bahwa hasil kali resistansi dan kapasitansi adalah sebuah waktu. Benarkah? Ω · F = (V/A) · (C/V) = C/A. Karena C = A·s, maka C/A = s. Benar, satuannya detik. Sekarang dengan angka: 2.2 kΩ × 15 fF = (2.2 × 10<sup>3</sup>) × (15 × 10<sup>−15</sup>) s = 33 × 10<sup>−12</sup> s = 33 ps. Perhatikan caranya: angka dikalikan dengan angka (2.2 × 15 = 33), pangkat dijumlahkan dengan pangkat (3 + (−15) = −12).</p>
+<p><strong>Contoh.</strong> Di M02 kamu akan belajar bahwa hasil kali resistansi dan kapasitansi adalah sebuah waktu. Benarkah? Ω · F = (V/A) · (C/V) = C/A. Karena C = A·s, maka C/A = s. Benar, satuannya detik. Sekarang dengan angka: 2.2 kΩ × 15 fF = (2.2 × 10<sup>3</sup>) × (15 × 10<sup>−15</sup>) s = 33 × 10<sup>−12</sup> s = 33 ps. Perhatikan caranya: angka dikalikan dengan angka (2.2 × 15 = 33), pangkat dijumlahkan dengan pangkat (3 + (−15) = −12).</p>
 
 <h3>4.6 Logaritma</h3>
 <p><span data-term="log">Logaritma</span> adalah kebalikan eksponen. Definisinya:</p>
@@ -1977,7 +1977,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Menghitung bit.</strong> Dengan <i>n</i> bit bisa dibedakan 2<sup><i>n</i></sup> nilai. Sebaliknya, untuk membedakan <i>N</i> nilai diperlukan ⌈log<sub>2</sub> <i>N</i>⌉ bit, dengan ⌈ ⌉ berarti dibulatkan ke atas. Counter yang menghitung 0 sampai 999 (1 000 nilai) butuh ⌈9.97⌉ = 10 bit.</p>
 
 <h3>4.7 Fungsi dan grafiknya</h3>
-<p>Sebuah <span data-term="fungsi">fungsi</span> adalah aturan yang memberi tepat satu keluaran untuk setiap masukan, ditulis <i>y</i> = <i>f</i>(<i>x</i>). Empat bentuk yang terus muncul:</p>
+<p>Sebuah <span data-term="fungsi">fungsi</span> adalah aturan yang memberi tepat satu output untuk setiap input, ditulis <i>y</i> = <i>f</i>(<i>x</i>). Empat bentuk yang terus muncul:</p>
 <div class="icd-tablewrap"><table class="icd">
 <thead><tr><th scope="col">Bentuk</th><th scope="col">Rumus</th><th scope="col">Ciri</th><th scope="col">Muncul di</th></tr></thead>
 <tbody>
@@ -2015,7 +2015,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li><strong>dBFS</strong>: dibanding skala penuh sebuah ADC atau DAC; selalu nol atau negatif.</li>
 <li><strong>dBc</strong>: dibanding sinyal pembawa (carrier); dipakai untuk spur dan phase noise.</li>
 </ul>
-<div class="icd-box model"><b>Model buku teks lawan praktik</b>Turunan rumus 20 mengandaikan resistansi masukan dan keluaran sama. Pada penguat di dalam chip hal itu hampir tidak pernah benar. Meski begitu, praktik industri tetap menulis gain tegangan sebagai 20·log<sub>10</sub>(<i>V</i><sub>out</sub>/<i>V</i><sub>in</sub>) berapa pun impedansinya. Angka itu adalah gain <em>tegangan</em> dalam dB, dan tidak boleh diartikan sebagai gain daya.</div>
+<div class="icd-box model"><b>Model buku teks lawan praktik</b>Turunan rumus 20 mengandaikan resistansi input dan output sama. Pada penguat di dalam chip hal itu hampir tidak pernah benar. Meski begitu, praktik industri tetap menulis gain tegangan sebagai 20·log<sub>10</sub>(<i>V</i><sub>out</sub>/<i>V</i><sub>in</sub>) berapa pun impedansinya. Angka itu adalah gain <em>tegangan</em> dalam dB, dan tidak boleh diartikan sebagai gain daya.</div>
 
 <h3>4.9 Trigonometri dan gelombang sinus</h3>
 <p><strong>Segitiga siku-siku.</strong> Untuk sudut θ pada segitiga siku-siku dengan sisi miring <i>r</i>, sisi di depan sudut <i>y</i>, dan sisi di samping sudut <i>x</i>: sin θ = <i>y</i>/<i>r</i>, cos θ = <i>x</i>/<i>r</i>, tan θ = <i>y</i>/<i>x</i>. Teorema Pythagoras menyatakan <i>x</i>² + <i>y</i>² = <i>r</i>². Bagi dengan <i>r</i>² dan didapat identitas terpenting: sin² θ + cos² θ = 1.</p>
@@ -2044,7 +2044,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 
 <h3>4.10 Estimasi orde besaran</h3>
 <p>Sebelum menghitung teliti, engineer menaksir <span data-term="orde">orde besaran</span>: pangkat sepuluh terdekat dari jawabannya. Caranya: bulatkan setiap angka ke satu digit, kalikan angkanya, jumlahkan pangkatnya.</p>
-<p><strong>Contoh.</strong> Berapa kira-kira daya sebuah prosesor dengan 1 miliar simpul logika? Andaikan tiap simpul berkapasitansi 1 fF, suplai 0.8 V, clock 3 GHz, dan 5% simpul berganti keadaan setiap siklus. Energi satu perpindahan sekitar <i>C</i>·<i>V</i>² = 10<sup>−15</sup> × 0.64 ≈ 0.6 × 10<sup>−15</sup> J. Daya = energi × jumlah simpul × frekuensi × 0.05 = 0.6 × 10<sup>−15</sup> × 10<sup>9</sup> × 3 × 10<sup>9</sup> × 5 × 10<sup>−2</sup>. Angka: 0.6 × 3 × 5 = 9. Pangkat: −15 + 9 + 9 − 2 = 1. Hasil: 9 × 10<sup>1</sup> ≈ 100 W. Ordenya cocok dengan prosesor desktop. Jika hitungan Anda memberi 100 kW atau 100 µW, Anda langsung tahu ada yang salah, bahkan sebelum mencari di mana.</p>
+<p><strong>Contoh.</strong> Berapa kira-kira daya sebuah prosesor dengan 1 miliar simpul logika? Andaikan tiap simpul berkapasitansi 1 fF, suplai 0.8 V, clock 3 GHz, dan 5% simpul berganti keadaan setiap siklus. Energi satu perpindahan sekitar <i>C</i>·<i>V</i>² = 10<sup>−15</sup> × 0.64 ≈ 0.6 × 10<sup>−15</sup> J. Daya = energi × jumlah simpul × frekuensi × 0.05 = 0.6 × 10<sup>−15</sup> × 10<sup>9</sup> × 3 × 10<sup>9</sup> × 5 × 10<sup>−2</sup>. Angka: 0.6 × 3 × 5 = 9. Pangkat: −15 + 9 + 9 − 2 = 1. Hasil: 9 × 10<sup>1</sup> ≈ 100 W. Ordenya cocok dengan prosesor desktop. Jika hitungan kamu memberi 100 kW atau 100 µW, kamu langsung tahu ada yang salah, bahkan sebelum mencari di mana.</p>
 </section>
 
 <section class="icd-sec" id="s05">
@@ -2052,7 +2052,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>1. Awalan dan notasi engineering</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Awalan adalah singkatan untuk "kali seribu" berulang. Kilo = seribu, mega = sejuta, giga = semiliar. Ke arah kecil: mili = seperseribu, mikro = sepersejuta, nano = sepersemiliar, piko, femto. Menulis 47 nF jauh lebih mudah dibaca dan lebih sulit salah daripada 0.000 000 047 F.</p></div>
-<div data-level="engineer"><p>Biasakan mengalikan awalan secara langsung: k × p = n (10<sup>3</sup> × 10<sup>−12</sup> = 10<sup>−9</sup>), k × f = p, M × p = µ. Maka kΩ × fF = ps, dan kΩ × pF = ns. Dengan refleks ini Anda bisa memeriksa konstanta waktu RC di kepala saat membaca skematik. Di file tool, satuan dinyatakan sekali di kepala file lalu semua angka ditulis tanpa awalan; selalu baca kepala file dulu.</p></div>
+<div data-level="engineer"><p>Biasakan mengalikan awalan secara langsung: k × p = n (10<sup>3</sup> × 10<sup>−12</sup> = 10<sup>−9</sup>), k × f = p, M × p = µ. Maka kΩ × fF = ps, dan kΩ × pF = ns. Dengan refleks ini kamu bisa memeriksa konstanta waktu RC di kepala saat membaca skematik. Di file tool, satuan dinyatakan sekali di kepala file lalu semua angka ditulis tanpa awalan; selalu baca kepala file dulu.</p></div>
 <div data-level="pakar"><p>Di bawah atto, intuisi "besaran kontinu" mulai gagal. Muatan elektron adalah 1.602 × 10<sup>−19</sup> C, sehingga kapasitor 100 aF pada 0.7 V hanya menyimpan sekitar 440 elektron. Fluktuasi jumlah muatan dan jumlah atom dopan menjadi sumber variasi yang tidak bisa dihilangkan, dan inilah akar pemodelan statistik di M06c dan M22c. Catat juga bahwa awalan biner (kibi, mebi, gibi: 2<sup>10</sup>, 2<sup>20</sup>, 2<sup>30</sup>) distandarkan terpisah oleh IEC justru karena "kilo = 1 024" menimbulkan kerancuan.</p></div>
 </div>
 <h3>2. Logaritma</h3>
@@ -2070,7 +2070,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>4. Gelombang sinus</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Gelombang sinus adalah naik-turun yang paling mulus. Tiga angka menentukannya: seberapa tinggi (amplitudo), seberapa sering (frekuensi), dan dari mana ia mulai (fase). Dua gelombang berfrekuensi sama bisa berbeda fase: yang satu mencapai puncak lebih dulu.</p></div>
-<div data-level="engineer"><p>Di rangkaian linear, masukan sinus selalu menghasilkan keluaran sinus berfrekuensi sama; yang berubah hanya amplitudo dan fase. Karena itu seluruh perilaku rangkaian linear bisa dirangkum sebagai "gain dan geseran fase pada tiap frekuensi", yaitu diagram Bode. Konversi yang sering dipakai: Δ<i>t</i> = φ/(360° · <i>f</i>), dan untuk sudut kecil dalam radian sin <i>x</i> ≈ <i>x</i> (galat di bawah 1% sampai sekitar 0.24 rad atau 14°).</p></div>
+<div data-level="engineer"><p>Di rangkaian linear, input sinus selalu menghasilkan output sinus berfrekuensi sama; yang berubah hanya amplitudo dan fase. Karena itu seluruh perilaku rangkaian linear bisa dirangkum sebagai "gain dan geseran fase pada tiap frekuensi", yaitu diagram Bode. Konversi yang sering dipakai: Δ<i>t</i> = φ/(360° · <i>f</i>), dan untuk sudut kecil dalam radian sin <i>x</i> ≈ <i>x</i> (galat di bawah 1% sampai sekitar 0.24 rad atau 14°).</p></div>
 <div data-level="pakar"><p>Sinus dan cosinus adalah bagian imajiner dan real dari satu eksponensial kompleks: <i>e</i><sup><i>j</i>θ</sup> = cos θ + <i>j</i> sin θ (rumus Euler, M01b). Titik yang berputar pada lingkaran satuan adalah bilangan kompleks itu sendiri, dan disebut fasor. Jitter clock adalah gangguan fase: jitter waktu σ<sub>t</sub> setara dengan gangguan fase 2π<i>f</i>σ<sub>t</sub> radian, dan karena sin <i>x</i> ≈ <i>x</i>, galat tegangan saat menyampel sinus berfrekuensi <i>f</i> sebanding dengan <i>f</i>σ<sub>t</sub>. Dari sinilah batas SNR akibat jitter, −20·log<sub>10</sub>(2π<i>f</i>σ<sub>t</sub>), berasal.</p></div>
 </div>
 </section>
@@ -2093,7 +2093,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-guide" data-id="v1-nf" data-answer="1">
   <p>Bagaimana 0.000 000 047 F ditulis dengan awalan SI?</p>
   <ul><li>47 µF</li><li>47 nF</li><li>4.7 nF</li><li>470 pF</li></ul>
-  <div class="explain"><p>Geser koma tiga digit sebanyak tiga kali: 47 × 10<sup>−9</sup> F = 47 nF. Jawaban 47 µF terjadi bila hanya menggeser dua kali. Ketik <code>0.000000047</code> di kotak masukan dan lihat penanda berhenti di antara "n" dan "µ", lebih dekat ke "n".</p></div>
+  <div class="explain"><p>Geser koma tiga digit sebanyak tiga kali: 47 × 10<sup>−9</sup> F = 47 nF. Jawaban 47 µF terjadi bila hanya menggeser dua kali. Ketik <code>0.000000047</code> di kotak input dan lihat penanda berhenti di antara "n" dan "µ", lebih dekat ke "n".</p></div>
 </div>
 
 <div class="icd-viz" id="v2">
@@ -2122,7 +2122,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
     <label class="icd-field"><span>Tahap 3: <b id="v3-g3v"></b></span><input type="range" id="v3-g3" min="-20" max="40" step="1" value="6"></label>
   </div>
   <div class="readout" id="v3-out" aria-live="polite"></div>
-  <div class="model">Model: tiga tahap linear ideal tanpa noise dan tanpa pembebanan antar tahap; masukan 1 mV RMS. Tinggi batang sebanding dengan level dalam dBV. Penguat nyata tidak bisa mengeluarkan tegangan melebihi suplainya; batang berarsir menandai level di atas 1 V yang pada rangkaian nyata akan terpotong.</div>
+  <div class="model">Model: tiga tahap linear ideal tanpa noise dan tanpa pembebanan antar tahap; input 1 mV RMS. Tinggi batang sebanding dengan level dalam dBV. Penguat nyata tidak bisa mengeluarkan tegangan melebihi suplainya; batang berarsir menandai level di atas 1 V yang pada rangkaian nyata akan terpotong.</div>
 </div>
 <div class="icd-guide" data-id="v3-total" data-answer="1">
   <p>Penguat +20 dB, lalu peredam −6 dB, lalu penguat +6 dB. Berapa gain tegangan total?</p>
@@ -2174,7 +2174,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Soal.</strong> (a) Penguat mengubah 2 mV menjadi 100 mV. Berapa gain-nya dalam dB? (b) Filter meredam −40 dB. Sinyal 500 mV menjadi berapa? (c) Berapa tegangan RMS sinyal 0 dBm pada beban 50 Ω?</p>
 <ol>
 <li>(a) Rasio tegangan = 100/2 = 50. Gain = 20·log<sub>10</sub>(50) = 20 × 1.699 = 33.98 dB ≈ 34 dB. Periksa dengan jangkar: 50 = 100/2, jadi 40 dB − 6 dB = 34 dB.</li>
-<li>(b) −40 dB untuk tegangan = 10<sup>−40/20</sup> = 10<sup>−2</sup> = 0.01. Keluaran = 500 mV × 0.01 = 5 mV.</li>
+<li>(b) −40 dB untuk tegangan = 10<sup>−40/20</sup> = 10<sup>−2</sup> = 0.01. Output = 500 mV × 0.01 = 5 mV.</li>
 <li>(c) 0 dBm = 1 mW. Dari <i>P</i> = <i>V</i>²/<i>R</i>: <i>V</i> = √(<i>P</i>·<i>R</i>) = √(10<sup>−3</sup> × 50) = √0.05 = 0.2236 V ≈ 224 mV RMS.</li>
 </ol>
 
@@ -2200,7 +2200,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 
 <section class="icd-sec" id="s08">
 <h2>Kode</h2>
-<p>Skrip Python kecil ini akan Anda pakai ulang di banyak modul. Anda belum belajar Python (itu tugas M04d); baca penjelasannya dan jalankan di bagian Lab. Karena ini perangkat lunak, bukan hardware, "testbench"-nya adalah deretan <code>assert</code> di bagian bawah yang memeriksa setiap fungsi.</p>
+<p>Skrip Python kecil ini akan kamu pakai ulang di banyak modul. Kamu belum belajar Python (itu tugas M04d); baca penjelasannya dan jalankan di bagian Lab. Karena ini perangkat lunak, bukan hardware, "testbench"-nya adalah deretan <code>assert</code> di bagian bawah yang memeriksa setiap fungsi.</p>
 <pre class="icd-src" data-lang="py">
 """eng.py : alat bantu satuan, logaritma, dan desibel untuk engineer chip."""
 import math
@@ -2298,7 +2298,7 @@ if __name__ == "__main__":
 <li><strong>Baris 61 sampai 78:</strong> uji diri. Setiap <code>assert</code> adalah satu fakta dari modul ini. Jika ada yang salah, program berhenti dan menunjuk barisnya.</li>
 <li><strong>Baris 80 sampai 86:</strong> contoh pemakaian yang mencetak hasil Contoh 2, 3, dan 4 serta tabel dB.</li>
 </ul>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini dijalankan dengan Python 3 sebelum modul ditulis; semua uji lulus dan keluarannya disalin apa adanya ke bagian Lab.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini dijalankan dengan Python 3 sebelum modul ditulis; semua uji lulus dan output-nya disalin apa adanya ke bagian Lab.</div>
 </section>
 
 <section class="icd-sec" id="s09">
@@ -2325,7 +2325,7 @@ if __name__ == "__main__":
 <tr><th scope="row">SPEF (<code>.spef</code>)</th><td><code>*T_UNIT 1 NS</code><br><code>*C_UNIT 1 PF</code><br><code>*R_UNIT 1 OHM</code></td><td>Satuan waktu, kapasitansi, resistansi parasitik</td></tr>
 <tr><th scope="row">SDC (<code>.sdc</code>)</th><td><code>create_clock -period 2.0 ...</code></td><td>Angka tanpa satuan; mengikuti satuan library yang dimuat</td></tr>
 <tr><th scope="row">SPICE</th><td><code>C1 out 0 15f</code><br><code>R1 in out 2.2k</code></td><td>Akhiran langsung pada angka: f, p, n, u, m, k, meg, g</td></tr>
-<tr><th scope="row">Verilog</th><td><code>`timescale 1ns/1ps</code></td><td>Satuan delay 1 ns, ketelitian 1 ps (sudah Anda pakai di M00)</td></tr>
+<tr><th scope="row">Verilog</th><td><code>`timescale 1ns/1ps</code></td><td>Satuan delay 1 ns, ketelitian 1 ps (sudah kamu pakai di M00)</td></tr>
 </tbody></table></div>
 <h3>Di mana logaritma dan dB muncul</h3>
 <ul>
@@ -2333,7 +2333,7 @@ if __name__ == "__main__":
 <li><strong>Analog:</strong> gain, bandwidth −3 dB, phase margin, PSRR, CMRR, semuanya dalam dB atau derajat pada diagram Bode.</li>
 <li><strong>Data converter:</strong> SNR, SINAD, SFDR dalam dB, dBc, atau dBFS.</li>
 <li><strong>PLL dan clock:</strong> phase noise dalam dBc/Hz; jitter dalam ps atau fs RMS.</li>
-<li><strong>Devais:</strong> kurva arus terhadap tegangan gate pada sumbu semi-log; kemiringan dalam mV per dekade.</li>
+<li><strong>Device:</strong> kurva arus terhadap tegangan gate pada sumbu semi-log; kemiringan dalam mV per dekade.</li>
 <li><strong>Signal integrity:</strong> insertion loss dan return loss kanal dalam dB.</li>
 </ul>
 <h3>Tool</h3>
@@ -2352,8 +2352,8 @@ if __name__ == "__main__":
 <h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
 <p><strong>2.1</strong> Clock berfrekuensi 2.5 GHz. Berapa periodenya? Jika sebuah sinyal tertunda 60 ps, berapa derajat geseran fasenya?</p>
 <details class="icd-sol"><summary>Solusi 2.1</summary><p><i>T</i> = 1/(2.5 × 10<sup>9</sup>) = 0.4 × 10<sup>−9</sup> s = 400 ps. Geseran fase = (60/400) × 360° = 54°.</p></details>
-<p><strong>2.2</strong> Rantai sinyal: penguat 26 dB, kabel −3 dB, penguat 14 dB. Masukan 2 mV. Berapa tegangan keluaran? Selesaikan tanpa kalkulator dengan jangkar 6 dB dan 20 dB.</p>
-<details class="icd-sol"><summary>Solusi 2.2</summary><p>Total = 26 − 3 + 14 = 37 dB. Uraikan: 37 = 40 − 3, yaitu 100 × 0.708 = 70.8 kali. Keluaran ≈ 2 mV × 70.8 ≈ 142 mV. Dengan kalkulator: 10<sup>37/20</sup> = 70.79.</p></details>
+<p><strong>2.2</strong> Rantai sinyal: penguat 26 dB, kabel −3 dB, penguat 14 dB. Input 2 mV. Berapa tegangan output? Selesaikan tanpa kalkulator dengan jangkar 6 dB dan 20 dB.</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>Total = 26 − 3 + 14 = 37 dB. Uraikan: 37 = 40 − 3, yaitu 100 × 0.708 = 70.8 kali. Output ≈ 2 mV × 70.8 ≈ 142 mV. Dengan kalkulator: 10<sup>37/20</sup> = 70.79.</p></details>
 <p><strong>2.3</strong> Sebuah memori punya 48 000 kata. Berapa bit lebar alamatnya? Jika setiap kata 32 bit, berapa total bit penyimpanannya dalam notasi engineering?</p>
 <details class="icd-sol"><summary>Solusi 2.3</summary><p>2<sup>15</sup> = 32 768 kurang; 2<sup>16</sup> = 65 536 cukup; jadi 16 bit. Total = 48 000 × 32 = 1 536 000 bit = 1.536 Mbit (dengan M = 10<sup>6</sup>).</p></details>
 <h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
@@ -2374,13 +2374,13 @@ if __name__ == "__main__":
 <section class="icd-sec" id="s13">
 <h2>Pertanyaan interview</h2>
 <details class="icd-sol"><summary>"Apa arti titik −3 dB?"</summary>
-<p><strong>Kerangka jawaban:</strong> Frekuensi tempat daya keluaran turun menjadi setengah dari nilai di passband, setara dengan tegangan turun ke 1/√2 ≈ 0.707. Itu definisi bandwidth yang lazim. Tambahkan dari mana angkanya: 10·log<sub>10</sub>(0.5) = −3.01 dB. Nilai plus bila Anda menyebut bahwa pada filter orde satu, fase di titik itu −45°.</p></details>
+<p><strong>Kerangka jawaban:</strong> Frekuensi tempat daya output turun menjadi setengah dari nilai di passband, setara dengan tegangan turun ke 1/√2 ≈ 0.707. Itu definisi bandwidth yang lazim. Tambahkan dari mana angkanya: 10·log<sub>10</sub>(0.5) = −3.01 dB. Nilai plus bila kamu menyebut bahwa pada filter orde satu, fase di titik itu −45°.</p></details>
 <details class="icd-sol"><summary>"Kapan memakai 10·log dan kapan 20·log?"</summary>
 <p><strong>Kerangka jawaban:</strong> 10 untuk besaran daya (watt, kerapatan daya noise), 20 untuk besaran amplitudo (tegangan, arus). Tunjukkan penurunannya dalam satu baris dari <i>P</i> ∝ <i>V</i>². Sebut syarat tersembunyinya (impedansi sama) dan bahwa gain tegangan tetap ditulis dengan 20 walau impedansinya berbeda.</p></details>
 <details class="icd-sol"><summary>"Berapa bit yang dibutuhkan counter untuk menghitung sampai N?"</summary>
 <p><strong>Kerangka jawaban:</strong> Tanyakan dulu: sampai <i>N</i> termasuk atau tidak? Untuk nilai 0 sampai <i>N</i> − 1 (ada <i>N</i> nilai): ⌈log<sub>2</sub> <i>N</i>⌉, di SystemVerilog <code>$clog2(N)</code>. Untuk 0 sampai <i>N</i> termasuk: ⌈log<sub>2</sub>(<i>N</i> + 1)⌉. Beri contoh di batas: <i>N</i> = 256 butuh 8 bit untuk 0 sampai 255, tetapi 9 bit untuk 0 sampai 256. Kesalahan selisih satu di sini adalah bug RTL yang sangat umum.</p></details>
 <details class="icd-sol"><summary>"Taksir cepat: 2 pangkat 24 itu berapa?"</summary>
-<p><strong>Kerangka jawaban:</strong> Pecah menjadi 2<sup>4</sup> · 2<sup>20</sup> = 16 × sekitar 10<sup>6</sup> = sekitar 16 juta (tepatnya 16 777 216). Pewawancara menilai apakah Anda punya trik 2<sup>10</sup> ≈ 10<sup>3</sup> dan berani menaksir.</p></details>
+<p><strong>Kerangka jawaban:</strong> Pecah menjadi 2<sup>4</sup> · 2<sup>20</sup> = 16 × sekitar 10<sup>6</sup> = sekitar 16 juta (tepatnya 16 777 216). Pewawancara menilai apakah kamu punya trik 2<sup>10</sup> ≈ 10<sup>3</sup> dan berani menaksir.</p></details>
 <details class="icd-sol"><summary>"Clock 5 GHz, dua sinyal berbeda fase 36°. Berapa selisih waktunya?"</summary>
 <p><strong>Kerangka jawaban:</strong> Periode = 1/5 GHz = 200 ps. 36° adalah sepersepuluh siklus, jadi 20 ps. Ucapkan langkahnya dengan lantang; kecepatan dan kerapian langkah lebih dinilai daripada angka akhirnya.</p></details>
 <details class="icd-sol"><summary>"Mengapa engineer menggambar dengan sumbu logaritmik?"</summary>
@@ -2401,7 +2401,7 @@ nano eng.py                # tempel kode dari bagian 8, simpan
 <pre class="icd-src" data-lang="sh">
 python3 eng.py
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 tau = R*C  = 33 ps
@@ -2421,7 +2421,7 @@ gain 50x   = 33.98 dB
 <pre class="icd-src" data-lang="sh">
 python3 -i eng.py
 </pre>
-<p>Opsi <code>-i</code> menjalankan berkas lalu membiarkan Anda mengetik perintah. Coba satu per satu dan tebak hasilnya sebelum menekan Enter:</p>
+<p>Opsi <code>-i</code> menjalankan berkas lalu membiarkan kamu mengetik perintah. Coba satu per satu dan tebak hasilnya sebelum menekan Enter:</p>
 <pre class="icd-src" data-lang="py" data-ln="off">
 eng(parse_eng("10k") * parse_eng("100f"), "s")     # konstanta waktu
 eng(1 / parse_eng("400p"), "Hz")                    # frekuensi dari periode

@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1858,9 +1858,9 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
 <ul>
-<li><strong>Setiap tool simulasi rangkaian memecahkan persamaan modul ini.</strong> SPICE menyusun matriks konduktansi persis seperti yang Anda tulis di bagian 4.7, lalu menyelesaikannya dengan eliminasi Gauss dari M01c. Rangkaian transistor yang tidak linear diselesaikan dengan mengulang langkah linear ini berkali-kali.</li>
+<li><strong>Setiap tool simulasi rangkaian memecahkan persamaan modul ini.</strong> SPICE menyusun matriks konduktansi persis seperti yang kamu tulis di bagian 4.7, lalu menyelesaikannya dengan eliminasi Gauss dari M01c. Rangkaian transistor yang tidak linear diselesaikan dengan mengulang langkah linear ini berkali-kali.</li>
 <li><strong>IR drop adalah masalah tanda tangan (signoff) nyata.</strong> Prosesor yang menarik puluhan sampai ratusan ampere pada tegangan di bawah 1 V hanya boleh kehilangan beberapa puluh milivolt di jaringan catunya. Satu bagian jaringan yang terlalu tipis membuat gerbang di sana lebih lambat dan timing gagal (M22).</li>
-<li><strong>Thevenin dan Norton adalah cara engineer berpikir.</strong> Keluaran gerbang logika, sumber referensi, dan tahap penguat diringkas menjadi satu sumber dan satu resistansi. Model small-signal transistor di M07 adalah rangkaian setara seperti ini.</li>
+<li><strong>Thevenin dan Norton adalah cara engineer berpikir.</strong> Output gerbang logika, sumber referensi, dan tahap penguat diringkas menjadi satu sumber dan satu resistansi. Model small-signal transistor di M07 adalah rangkaian setara seperti ini.</li>
 <li><strong>Pembagi tegangan ada di mana-mana:</strong> rantai resistor DAC, referensi tegangan, umpan balik regulator, dan pengukuran.</li>
 <li><strong>Kawat bukan konduktor sempurna.</strong> Resistansi kawat di chip bisa mencapai kiloohm untuk jalur panjang dan tipis, dan itu yang membuat sinyal lambat (M02b, M10).</li>
 </ul>
@@ -1870,7 +1870,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a> (prefiks SI, notasi ilmiah, aljabar), <a href="m01c-linear-probabilitas-diskrit.html">M01c</a> (sistem persamaan linear, matriks, eliminasi Gauss). Tidak perlu pengetahuan fisika sebelumnya.</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Mendefinisikan <span data-term="muatan">muatan</span>, <span data-term="arus">arus</span>, <span data-term="tegangan">tegangan</span>, dan <span data-term="daya">daya</span> dengan satuan yang benar, dan memakai konvensi tanda elemen pasif.</li>
 <li>Menghitung <span data-term="resistansi">resistansi</span> kawat dari dimensi dan <span data-term="rsheet">resistansi lembar</span>-nya.</li>
@@ -1886,9 +1886,9 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s03">
 <h2>Intuisi dulu</h2>
 <h3>Air dalam pipa</h3>
-<p>Bayangkan pipa berisi air. Tegangan seperti beda tekanan antara dua titik; arus seperti banyaknya air yang lewat per detik; resistor seperti bagian pipa yang menyempit. Tekanan lebih besar mendorong lebih banyak air; pipa lebih sempit meloloskan lebih sedikit. Itulah hukum Ohm. Di setiap percabangan, air yang masuk sama dengan air yang keluar (KCL). Jika Anda berjalan mengelilingi sistem pipa tertutup dan kembali ke titik awal, naik-turun tekanannya berjumlah nol (KVL). <em>Di mana analogi ini berhenti:</em> air bergerak cukup lambat dan butuh waktu untuk merambat, sedangkan pengaruh listrik merambat mendekati kecepatan cahaya walaupun elektronnya sendiri merayap pelan. Analogi ini juga tidak menjelaskan kapasitor dan induktor dengan baik; untuk itu pakai intuisi lain di M02b.</p>
+<p>Bayangkan pipa berisi air. Tegangan seperti beda tekanan antara dua titik; arus seperti banyaknya air yang lewat per detik; resistor seperti bagian pipa yang menyempit. Tekanan lebih besar mendorong lebih banyak air; pipa lebih sempit meloloskan lebih sedikit. Itulah hukum Ohm. Di setiap percabangan, air yang masuk sama dengan air yang keluar (KCL). Jika kamu berjalan mengelilingi sistem pipa tertutup dan kembali ke titik awal, naik-turun tekanannya berjumlah nol (KVL). <em>Di mana analogi ini berhenti:</em> air bergerak cukup lambat dan butuh waktu untuk merambat, sedangkan pengaruh listrik merambat mendekati kecepatan cahaya walaupun elektronnya sendiri merayap pelan. Analogi ini juga tidak menjelaskan kapasitor dan induktor dengan baik; untuk itu pakai intuisi lain di M02b.</p>
 <h3>Ketinggian dan tangga</h3>
-<p>Tegangan simpul seperti ketinggian tempat di sebuah bukit, diukur dari permukaan laut yang disepakati (ground). Yang bermakna hanya beda ketinggian; memilih titik nol lain mengubah semua angka tetapi tidak mengubah berapa jauh Anda harus mendaki. Analisis nodal mencari "ketinggian" tiap simpul; setelah itu, arus di setiap resistor langsung didapat dari beda ketinggian kedua ujungnya. <em>Di mana analogi ini berhenti:</em> di rangkaian dengan medan magnet yang berubah cepat, "ketinggian" listrik tidak lagi tunggal (tegangan bergantung pada jalur), sehingga KVL sederhana hanya pendekatan. Untuk rangkaian di chip dengan frekuensi yang lazim, pendekatan ini sangat baik.</p>
+<p>Tegangan simpul seperti ketinggian tempat di sebuah bukit, diukur dari permukaan laut yang disepakati (ground). Yang bermakna hanya beda ketinggian; memilih titik nol lain mengubah semua angka tetapi tidak mengubah berapa jauh kamu harus mendaki. Analisis nodal mencari "ketinggian" tiap simpul; setelah itu, arus di setiap resistor langsung didapat dari beda ketinggian kedua ujungnya. <em>Di mana analogi ini berhenti:</em> di rangkaian dengan medan magnet yang berubah cepat, "ketinggian" listrik tidak lagi tunggal (tegangan bergantung pada jalur), sehingga KVL sederhana hanya pendekatan. Untuk rangkaian di chip dengan frekuensi yang lazim, pendekatan ini sangat baik.</p>
 <h3>Kotak hitam Thevenin</h3>
 <p>Colokkan beban ke sebuah rangkaian rumit tertutup kotak. Seberapa rumit pun isinya, dari luar ia berperilaku persis seperti satu baterai dengan satu resistor seri. Dua pengukuran sudah cukup untuk mengenalinya: tegangan saat tidak dibebani dan arus saat dihubung-singkat. <em>Di mana analogi ini berhenti:</em> kotak itu hanya setara dari luar. Daya yang terbuang di dalam rangkaian asli bisa sangat berbeda dari daya di resistor setaranya.</p>
 </section>
@@ -1900,7 +1900,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><span data-term="muatan">Muatan</span> <i>Q</i> diukur dalam coulomb (C). Satu elektron membawa −<i>e</i> = −1.602 × 10<sup>−19</sup> C, sehingga satu coulomb adalah muatan 6.24 × 10<sup>18</sup> elektron. Muatan tidak bisa diciptakan atau dimusnahkan; ia hanya berpindah.</p>
 <p><span data-term="arus">Arus</span> adalah laju aliran muatan melewati sebuah penampang: <i>I</i> = d<i>Q</i>/d<i>t</i>, dalam ampere (A = C/s). Arah arus didefinisikan sebagai arah gerak muatan positif; elektron dalam logam bergerak berlawanan arah. Arus 1 A berarti 6.24 × 10<sup>18</sup> elektron per detik.</p>
 <p><span data-term="tegangan">Tegangan</span> antara titik A dan B adalah energi per satuan muatan untuk memindahkan muatan dari B ke A: <i>V</i><sub>AB</sub> = <i>W</i>/<i>Q</i>, dalam volt (V = J/C). Tegangan selalu antara dua titik. "Tegangan sebuah simpul" berarti tegangan terhadap simpul acuan yang disebut <span data-term="ground">ground</span>.</p>
-<p>Saat menganalisis, Anda memilih dulu <em>arah acuan</em>: panah untuk arus, tanda + dan − untuk tegangan. Arah ini boleh sembarang. Jika hasilnya negatif, arah sebenarnya berlawanan dengan panah; itu bukan kesalahan.</p>
+<p>Saat menganalisis, kamu memilih dulu <em>arah acuan</em>: panah untuk arus, tanda + dan − untuk tegangan. Arah ini boleh sembarang. Jika hasilnya negatif, arah sebenarnya berlawanan dengan panah; itu bukan kesalahan.</p>
 
 <h3>4.2 Daya dan konvensi tanda</h3>
 <p>Muatan <i>Q</i> yang turun melewati tegangan <i>V</i> melepas energi <i>QV</i>. Bila itu terjadi dengan laju <i>I</i> = <i>Q</i>/<i>t</i>, daya yang dilepas adalah:</p>
@@ -1928,11 +1928,11 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Pembagi tegangan.</strong> <i>V</i><sub><i>S</i></sub> melewati <i>R</i><sub>1</sub> lalu <i>R</i><sub>2</sub> ke ground. Arusnya <i>V</i><sub><i>S</i></sub>/(<i>R</i><sub>1</sub> + <i>R</i><sub>2</sub>), sehingga tegangan di <i>R</i><sub>2</sub>:</p>
 <div class="icd-eq"><math display="block"><msub><mi>V</mi><mtext>out</mtext></msub><mo>=</mo><msub><mi>V</mi><mi>S</mi></msub><mfrac><msub><mi>R</mi><mn>2</mn></msub><mrow><msub><mi>R</mi><mn>1</mn></msub><mo>+</mo><msub><mi>R</mi><mn>2</mn></msub></mrow></mfrac></math><span class="alt">Vout = VS · R2/(R1 + R2)</span></div>
 <p><strong>Pembagi arus.</strong> Arus <i>I</i> masuk ke dua resistor paralel; bagian yang lewat <i>R</i><sub>1</sub> adalah <i>I</i> · <i>R</i><sub>2</sub>/(<i>R</i><sub>1</sub> + <i>R</i><sub>2</sub>). Perhatikan: resistor <em>yang lain</em> di pembilang, karena arus memilih jalur yang lebih mudah.</p>
-<p><strong>Efek beban.</strong> Rumus pembagi hanya berlaku bila tidak ada arus yang diambil dari keluarannya. Beban <i>R</i><sub><i>L</i></sub> di keluaran membuat <i>R</i><sub>2</sub> menjadi <i>R</i><sub>2</sub> ∥ <i>R</i><sub><i>L</i></sub> dan tegangan turun. Contoh: 10 V, <i>R</i><sub>1</sub> = 6 kΩ, <i>R</i><sub>2</sub> = 4 kΩ memberi 4 V tanpa beban; dengan beban 2.4 kΩ, <i>R</i><sub>2</sub> ∥ <i>R</i><sub><i>L</i></sub> = 1.5 kΩ dan keluarannya 10 × 1.5/7.5 = 2 V.</p>
+<p><strong>Efek beban.</strong> Rumus pembagi hanya berlaku bila tidak ada arus yang diambil dari output-nya. Beban <i>R</i><sub><i>L</i></sub> di output membuat <i>R</i><sub>2</sub> menjadi <i>R</i><sub>2</sub> ∥ <i>R</i><sub><i>L</i></sub> dan tegangan turun. Contoh: 10 V, <i>R</i><sub>1</sub> = 6 kΩ, <i>R</i><sub>2</sub> = 4 kΩ memberi 4 V tanpa beban; dengan beban 2.4 kΩ, <i>R</i><sub>2</sub> ∥ <i>R</i><sub><i>L</i></sub> = 1.5 kΩ dan output-nya 10 × 1.5/7.5 = 2 V.</p>
 
 <h3>4.6 Sumber ideal, sumber nyata, sumber dependen</h3>
 <p><strong>Sumber tegangan ideal</strong> mempertahankan tegangannya berapa pun arus yang diambil. <strong>Sumber arus ideal</strong> mempertahankan arusnya berapa pun tegangan yang diperlukan. Sumber nyata dimodelkan sebagai sumber ideal ditambah resistansi dalam: seri untuk sumber tegangan, paralel untuk sumber arus. Dua sumber tegangan ideal berbeda nilai yang dipasang paralel, atau sumber arus ideal yang dibiarkan tanpa jalur, adalah rangkaian yang tidak punya jawaban.</p>
-<p><span data-term="depsrc">Sumber dependen</span> adalah sumber yang nilainya ditentukan oleh tegangan atau arus di tempat lain dalam rangkaian. Ada empat jenis: tegangan dikendalikan tegangan (VCVS), arus dikendalikan tegangan (VCCS), arus dikendalikan arus (CCCS), dan tegangan dikendalikan arus (CCVS). VCCS adalah inti model transistor di M07: arus keluaran <i>g</i><sub><i>m</i></sub><i>v</i><sub>in</sub>, dengan <i>g</i><sub><i>m</i></sub> dalam siemens. Contoh: VCCS dengan <i>g</i><sub><i>m</i></sub> = 1 mS yang mengalirkan arusnya ke resistor 10 kΩ menghasilkan tegangan −10 kali tegangan pengendalinya. Itulah sebuah penguat.</p>
+<p><span data-term="depsrc">Sumber dependen</span> adalah sumber yang nilainya ditentukan oleh tegangan atau arus di tempat lain dalam rangkaian. Ada empat jenis: tegangan dikendalikan tegangan (VCVS), arus dikendalikan tegangan (VCCS), arus dikendalikan arus (CCCS), dan tegangan dikendalikan arus (CCVS). VCCS adalah inti model transistor di M07: arus output <i>g</i><sub><i>m</i></sub><i>v</i><sub>in</sub>, dengan <i>g</i><sub><i>m</i></sub> dalam siemens. Contoh: VCCS dengan <i>g</i><sub><i>m</i></sub> = 1 mS yang mengalirkan arusnya ke resistor 10 kΩ menghasilkan tegangan −10 kali tegangan pengendalinya. Itulah sebuah penguat.</p>
 
 <h3>4.7 Analisis nodal</h3>
 <p>Analisis nodal adalah resep yang selalu berhasil:</p>
@@ -1971,7 +1971,7 @@ Determinan 7 × 11 − 4 × 6 = 53. <i>V</i><sub>2</sub> = (10 × 11 + 4 × 10)/
 <li><i>I</i><sub>N</sub> = arus saat terminal dihubung-singkat, <i>I</i><sub>sc</sub>. Lalu <i>R</i><sub>th</sub> = <i>V</i><sub>oc</sub>/<i>I</i><sub>sc</sub>.</li>
 <li>Atau: matikan semua sumber bebas dan hitung resistansi yang terlihat dari terminal. Atau: suntikkan arus uji dan ukur perubahan tegangannya (cara ini tetap berlaku bila ada sumber dependen; cara inilah yang dipakai di lab).</li>
 </ul>
-<p><strong>Contoh:</strong> pembagi 10 V, 6 kΩ, 4 kΩ. <i>V</i><sub>th</sub> = 4 V; <i>R</i><sub>th</sub> = 6k ∥ 4k = 2.4 kΩ (sumber tegangan dihubung-singkat, keduanya paralel dilihat dari keluaran).</p>
+<p><strong>Contoh:</strong> pembagi 10 V, 6 kΩ, 4 kΩ. <i>V</i><sub>th</sub> = 4 V; <i>R</i><sub>th</sub> = 6k ∥ 4k = 2.4 kΩ (sumber tegangan dihubung-singkat, keduanya paralel dilihat dari output).</p>
 <p><strong>Transfer daya maksimum.</strong> Daya ke beban <i>R</i><sub><i>L</i></sub> adalah <i>P</i> = <i>V</i><sub>th</sub>²<i>R</i><sub><i>L</i></sub>/(<i>R</i><sub>th</sub> + <i>R</i><sub><i>L</i></sub>)². Turunkan terhadap <i>R</i><sub><i>L</i></sub> dan samakan dengan nol: pembilang turunannya sebanding dengan (<i>R</i><sub>th</sub> + <i>R</i><sub><i>L</i></sub>) − 2<i>R</i><sub><i>L</i></sub>, nol saat <i>R</i><sub><i>L</i></sub> = <i>R</i><sub>th</sub>. Maka:</p>
 <div class="icd-eq"><math display="block"><msub><mi>P</mi><mtext>maks</mtext></msub><mo>=</mo><mfrac><msubsup><mi>V</mi><mtext>th</mtext><mn>2</mn></msubsup><mrow><mn>4</mn><msub><mi>R</mi><mtext>th</mtext></msub></mrow></mfrac><mspace width="1em"/><mtext>pada</mtext><mspace width="1em"/><msub><mi>R</mi><mi>L</mi></msub><mo>=</mo><msub><mi>R</mi><mtext>th</mtext></msub></math><span class="alt">Pmaks = Vth²/(4·Rth) pada RL = Rth</span></div>
 <p>Pada titik itu efisiensi rangkaian setara hanya 50%: separuh daya terbuang di <i>R</i><sub>th</sub>. Karena itu jaringan catu daya tidak pernah dirancang untuk transfer daya maksimum; ia dirancang agar <i>R</i><sub>th</sub> sangat kecil dibanding beban. Pencocokan resistansi dipakai di jalur sinyal frekuensi tinggi (M02c), dengan alasan pantulan, bukan daya.</p>
@@ -1991,7 +1991,7 @@ Determinan 7 × 11 − 4 × 6 = 53. <i>V</i><sub>2</sub> = (10 × 11 + 4 × 10)/
 <h2>Penjelasan berlapis</h2>
 <h3>1. KCL dan KVL</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Arus yang masuk ke suatu titik sambung harus keluar lagi; tidak ada yang hilang atau tertimbun. Dan jika Anda menjumlahkan semua "naik" dan "turun" tegangan sambil berjalan memutari satu loop, hasilnya nol, sama seperti naik-turun tangga dan kembali ke lantai yang sama.</p></div>
+<div data-level="pemula"><p>Arus yang masuk ke suatu titik sambung harus keluar lagi; tidak ada yang hilang atau tertimbun. Dan jika kamu menjumlahkan semua "naik" dan "turun" tegangan sambil berjalan memutari satu loop, hasilnya nol, sama seperti naik-turun tangga dan kembali ke lantai yang sama.</p></div>
 <div data-level="engineer"><p>KCL dan KVL tidak bergantung pada jenis elemen; keduanya hanya soal sambungan (topologi). Hukum Ohm, atau persamaan transistor, adalah persamaan elemen. Analisis rangkaian adalah menggabungkan keduanya. Saat memeriksa hasil simulasi, KCL adalah alat cepat: jumlah arus yang masuk ke sebuah pin catu harus sama dengan jumlah arus semua cabang yang dicatunya.</p></div>
 <div data-level="pakar"><p>Keduanya adalah pendekatan rangkaian tergumpal (lumped): ukuran rangkaian jauh lebih kecil dari panjang gelombang sinyal. KCL menganggap tidak ada muatan yang menumpuk di simpul; kapasitansi parasitik ke ground adalah cara memasukkan penumpukan itu sebagai elemen tersendiri. KVL menganggap tidak ada fluks magnet berubah yang menembus loop; induktansi parasitik memasukkan efek itu. Pada antarmuka multi-gigahertz dan pada jaringan catu daya saat arus melonjak, efek ini tidak lagi bisa diabaikan dan rangkaian dimodelkan sebagai jaringan RLC terdistribusi.</p></div>
 </div>
@@ -2003,8 +2003,8 @@ Determinan 7 × 11 − 4 × 6 = 53. <i>V</i><sub>2</sub> = (10 × 11 + 4 × 10)/
 </div>
 <h3>3. Thevenin dan Norton</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Rangkaian serumit apa pun, dilihat dari dua kabelnya, bisa diganti satu baterai dan satu resistor. Itu memudahkan menghitung apa yang terjadi pada apa pun yang Anda sambungkan ke kedua kabel itu.</p></div>
-<div data-level="engineer"><p>Resistansi Thevenin adalah resistansi keluaran. Sumber tegangan yang baik punya <i>R</i><sub>th</sub> kecil dibanding bebannya; sumber arus yang baik punya <i>R</i><sub>th</sub> besar. Keluaran gerbang CMOS yang menggerakkan kawat dimodelkan sebagai sumber tegangan dengan resistansi kanal transistor sebagai <i>R</i><sub>th</sub>; dengan kapasitansi beban, itulah yang menentukan delay (M10).</p></div>
+<div data-level="pemula"><p>Rangkaian serumit apa pun, dilihat dari dua kabelnya, bisa diganti satu baterai dan satu resistor. Itu memudahkan menghitung apa yang terjadi pada apa pun yang kamu sambungkan ke kedua kabel itu.</p></div>
+<div data-level="engineer"><p>Resistansi Thevenin adalah resistansi output. Sumber tegangan yang baik punya <i>R</i><sub>th</sub> kecil dibanding bebannya; sumber arus yang baik punya <i>R</i><sub>th</sub> besar. Output gerbang CMOS yang menggerakkan kawat dimodelkan sebagai sumber tegangan dengan resistansi kanal transistor sebagai <i>R</i><sub>th</sub>; dengan kapasitansi beban, itulah yang menentukan delay (M10).</p></div>
 <div data-level="pakar"><p>Konsep yang sama berlaku untuk impedansi kompleks pada frekuensi tertentu, dan untuk noise: setiap resistor setara dengan sumber noise tegangan seri atau sumber noise arus paralel. Untuk rangkaian dengan sumber dependen, <i>R</i><sub>th</sub> bisa nol, negatif, atau tak hingga; resistansi negatif adalah dasar osilator dan latch. Pada pemodelan sel standar, model sumber arus (CCS, ECSM) menggantikan model Thevenin sederhana karena kanal transistor tidak linear dan bebannya resistif-kapasitif.</p></div>
 </div>
 <h3>4. Resistansi kawat di chip</h3>
@@ -2048,7 +2048,7 @@ Determinan 7 × 11 − 4 × 6 = 53. <i>V</i><sub>2</sub> = (10 × 11 + 4 × 10)/
     <label class="icd-field"><span>Beban R<sub>L</sub> = <b id="v2-rlv"></b></span><input type="range" id="v2-rl" min="0" max="100" step="1" value="40"></label>
   </div>
   <div class="readout" id="v2-out" aria-live="polite"></div>
-  <div class="model">Rangkaian asli: V<sub>S</sub> lewat R1 ke simpul keluaran, R2 dari keluaran ke ground, beban R<sub>L</sub> dari keluaran ke ground. R1 dan R2 berskala log 100 Ω sampai 10 kΩ; R<sub>L</sub> 10 Ω sampai 100 kΩ. Grafik: daya beban terhadap R<sub>L</sub> (sumbu log), dihitung dari rangkaian asli dengan MNA; garis putus-putus menandai R<sub>th</sub>. Efisiensi asli = daya beban dibagi daya yang dikeluarkan V<sub>S</sub>.</div>
+  <div class="model">Rangkaian asli: V<sub>S</sub> lewat R1 ke simpul output, R2 dari output ke ground, beban R<sub>L</sub> dari output ke ground. R1 dan R2 berskala log 100 Ω sampai 10 kΩ; R<sub>L</sub> 10 Ω sampai 100 kΩ. Grafik: daya beban terhadap R<sub>L</sub> (sumbu log), dihitung dari rangkaian asli dengan MNA; garis putus-putus menandai R<sub>th</sub>. Efisiensi asli = daya beban dibagi daya yang dikeluarkan V<sub>S</sub>.</div>
 </div>
 <div class="icd-guide" data-id="v2-mpt" data-answer="2">
   <p>Pada nilai R<sub>L</sub> berapa daya ke beban paling besar?</p>
@@ -2112,10 +2112,10 @@ Determinan 7 × 11 − 4 × 6 = 53. <i>V</i><sub>2</sub> = (10 × 11 + 4 × 10)/
 <p><strong>Pelajaran.</strong> Untuk kawat pendek, via mendominasi; karena itu tool place-and-route sering memakai via ganda.</p>
 
 <h3>Contoh 3: pembagi berbeban</h3>
-<p><strong>Soal.</strong> Pembagi 3.3 V dengan <i>R</i><sub>1</sub> = 10 kΩ dan <i>R</i><sub>2</sub> = 20 kΩ dipakai sebagai referensi untuk sebuah blok berresistansi masukan 100 kΩ. Berapa galatnya?</p>
+<p><strong>Soal.</strong> Pembagi 3.3 V dengan <i>R</i><sub>1</sub> = 10 kΩ dan <i>R</i><sub>2</sub> = 20 kΩ dipakai sebagai referensi untuk sebuah blok berresistansi input 100 kΩ. Berapa galatnya?</p>
 <ol>
 <li>Tanpa beban: 3.3 × 20/30 = 2.200 V.</li>
-<li>Dengan beban: <i>R</i><sub>2</sub> ∥ 100k = 16.67 kΩ. Keluaran 3.3 × 16.67/26.67 = 2.063 V.</li>
+<li>Dengan beban: <i>R</i><sub>2</sub> ∥ 100k = 16.67 kΩ. Output 3.3 × 16.67/26.67 = 2.063 V.</li>
 <li>Galat 0.137 V, atau −6.3%.</li>
 <li>Lewat Thevenin: <i>R</i><sub>th</sub> = 10k ∥ 20k = 6.67 kΩ; 2.2 × 100/(100 + 6.67) = 2.063 V. Sama.</li>
 </ol>
@@ -2327,7 +2327,7 @@ print (v(2)-v(3))/500
 .endc
 .end
 </pre>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip, netlist (ngspice 42), langkah interaktif, bug sengaja, dan perluasan dijalankan sebelum modul ditulis; keluarannya disalin apa adanya ke bagian Lab.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip, netlist (ngspice 42), langkah interaktif, bug sengaja, dan perluasan dijalankan sebelum modul ditulis; output-nya disalin apa adanya ke bagian Lab.</div>
 </section>
 
 <section class="icd-sec" id="s09">
@@ -2336,11 +2336,11 @@ print (v(2)-v(3))/500
 <div class="icd-box mis"><b>Miskonsepsi</b>"Tegangan mengalir melalui rangkaian." Tegangan selalu <em>antara</em> dua titik; yang mengalir adalah arus. Mengatakan "tegangan di sebuah simpul" selalu berarti terhadap ground.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Hasil arus negatif berarti salah hitung." Arah acuan boleh dipilih sembarang; tanda negatif hanya berarti arus sebenarnya berlawanan dengan panah. Laporan arus SPICE untuk sumber tegangan yang memberi daya juga negatif karena konvensinya.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Resistor paralel menambah resistansi." Paralel menambah jalur, jadi menurunkan resistansi; hasilnya selalu lebih kecil dari resistor terkecil.</div>
-<div class="icd-box mis"><b>Miskonsepsi</b>"Rumus pembagi tegangan berlaku di mana saja." Hanya bila keluarannya tidak dibebani. Begitu ada arus diambil dari keluaran, pakai Thevenin.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Rumus pembagi tegangan berlaku di mana saja." Hanya bila output-nya tidak dibebani. Begitu ada arus diambil dari output, pakai Thevenin.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Daya bisa dihitung dengan superposisi." Superposisi berlaku untuk tegangan dan arus. Daya sebanding dengan kuadratnya, jadi tidak bisa dijumlahkan per sumber.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Transfer daya maksimum adalah tujuan desain yang baik." Pada titik itu separuh daya terbuang. Catu daya dan pengirim sinyal digital justru dirancang dengan resistansi sumber sekecil mungkin.</div>
-<div class="icd-box trap"><b>Jebakan industri: simpul mengambang</b>Netlist dengan simpul yang tidak punya jalur DC ke ground, misalnya masukan yang lupa disambung, gate yang hanya tersambung kapasitor, atau sumur yang tidak dibias, membuat simulator berhenti dengan galat matriks singular, atau, lebih buruk, berjalan dengan resistor kecil yang ditambahkan diam-diam dan menghasilkan angka sembarang. Periksa peringatan "no DC path" dan jangan tutupi dengan resistor ke ground tanpa alasan fisik.</div>
-<div class="icd-box trap"><b>Jebakan industri: IR drop hanya dicek statis</b>Analisis statis memakai arus rata-rata dan bisa lolos dengan nyaman, sementara lonjakan arus saat banyak flip-flop berganti bersamaan pada tepi clock menyebabkan drop sesaat jauh lebih besar. Signoff modern memeriksa IR drop statis dan dinamis (dengan kapasitansi dekap dan induktansi paket), dan memasukkan hasilnya ke analisis timing.</div>
+<div class="icd-box trap"><b>Jebakan industri: simpul mengambang</b>Netlist dengan simpul yang tidak punya jalur DC ke ground, misalnya input yang lupa disambung, gate yang hanya tersambung kapasitor, atau sumur yang tidak dibias, membuat simulator berhenti dengan galat matriks singular, atau, lebih buruk, berjalan dengan resistor kecil yang ditambahkan diam-diam dan menghasilkan angka sembarang. Periksa peringatan "no DC path" dan jangan tutupi dengan resistor ke ground tanpa alasan fisik.</div>
+<div class="icd-box trap"><b>Jebakan industri: IR drop hanya dicek statis</b>Analisis statis memakai arus rata-rata dan bisa lolos dengan nyaman, sementara lonjakan arus saat banyak flip-flop berganti bersamaan pada clock edge menyebabkan drop sesaat jauh lebih besar. Signoff modern memeriksa IR drop statis dan dinamis (dengan kapasitansi dekap dan induktansi paket), dan memasukkan hasilnya ke analisis timing.</div>
 <div class="icd-box trap"><b>Jebakan industri: lupa via dan kontak</b>Menghitung resistansi hanya dari panjang kawat mengabaikan via dan kontak yang pada kawat pendek bisa mendominasi. Tumpukan via sempit di jaringan catu daya adalah tempat klasik terjadinya drop dan elektromigrasi berlebih.</div>
 </section>
 
@@ -2354,10 +2354,10 @@ print (v(2)-v(3))/500
 <tr><th scope="row">Resistansi lembar, via</th><td>Ekstraksi parasitik dari layout (RC extraction)</td><td>OpenRCX (open source), tool ekstraksi komersial; aturan di PDK</td></tr>
 <tr><th scope="row">Kerapatan arus</th><td>Pemeriksaan elektromigrasi</td><td>Bersama analisis jaringan catu daya; batas dari foundry</td></tr>
 <tr><th scope="row">Pembagi, rantai resistor</th><td>DAC rantai resistor, referensi, umpan balik regulator</td><td>Desain analog (M27, M28)</td></tr>
-<tr><th scope="row">Thevenin, sumber dependen</th><td>Model small-signal transistor, resistansi keluaran, model penggerak sel</td><td>M07, M10</td></tr>
+<tr><th scope="row">Thevenin, sumber dependen</th><td>Model small-signal transistor, resistansi output, model penggerak sel</td><td>M07, M10</td></tr>
 <tr><th scope="row">Jembatan</th><td>Pengukuran resistansi presisi, sensor regangan dan suhu, struktur uji proses</td><td>Karakterisasi dan uji (M30)</td></tr>
 </tbody></table></div>
-<p><strong>Pengukuran empat kawat (Kelvin).</strong> Untuk mengukur resistansi kecil, misalnya rantai via di struktur uji, arus dialirkan lewat satu pasang kawat dan tegangan diukur lewat pasangan kawat lain. Kawat pengukur tegangan hampir tidak dialiri arus, sehingga drop di kawat dan kontak probe tidak ikut terukur. Ide yang sama dipakai pada rangkaian sense regulator: tegangan dirasakan langsung di beban, bukan di keluaran regulator.</p>
+<p><strong>Pengukuran empat kawat (Kelvin).</strong> Untuk mengukur resistansi kecil, misalnya rantai via di struktur uji, arus dialirkan lewat satu pasang kawat dan tegangan diukur lewat pasangan kawat lain. Kawat pengukur tegangan hampir tidak dialiri arus, sehingga drop di kawat dan kontak probe tidak ikut terukur. Ide yang sama dipakai pada rangkaian sense regulator: tegangan dirasakan langsung di beban, bukan di output regulator.</p>
 <p>Dalam alur RTL-to-GDSII, materi modul ini paling terasa di perencanaan dan analisis jaringan catu daya (floorplan, place-and-route, signoff) serta di seluruh desain analog.</p>
 </section>
 
@@ -2398,11 +2398,11 @@ print (v(2)-v(3))/500
 <p><strong>Kerangka jawaban:</strong> Susun persamaan MNA: KCL di setiap simpul dengan stempel konduktansi, plus satu variabel arus dan satu persamaan per sumber tegangan. Untuk elemen tak linear, linearkan di sekitar tebakan (konduktansi plus sumber arus setara), selesaikan sistem linear dengan LU sparse, perbarui tebakan, ulangi sampai konvergen (Newton-Raphson). Sebutkan penyebab gagal konvergen dan matriks singular: simpul mengambang, loop sumber tegangan, tebakan awal buruk; dan obatnya: nodeset, source stepping, gmin stepping.</p></details>
 <details class="icd-sol"><summary>"Apa itu IR drop dan bagaimana menguranginya?"</summary>
 <p><strong>Kerangka jawaban:</strong> Penurunan tegangan catu karena arus melewati resistansi jaringan catu. Akibatnya gerbang lebih lambat, timing gagal, dan margin noise berkurang. Cara mengurangi: lebih banyak titik catu (bump, pad), kawat lebih lebar atau lapisan lebih tebal, lebih banyak via, kerapatan jaring lebih tinggi, menyebar blok berdaya tinggi, kapasitor dekap untuk drop dinamis. Sebut beda statis dan dinamis, dan kaitan dengan elektromigrasi.</p></details>
-<details class="icd-sol"><summary>"Bagaimana Anda mencari resistansi Thevenin rangkaian yang punya sumber dependen?"</summary>
-<p><strong>Kerangka jawaban:</strong> Jangan matikan sumber dependen. Matikan sumber bebas, pasang sumber uji (tegangan atau arus) di terminal, hitung arus atau tegangan yang dihasilkan, dan bagi. Atau ukur <i>V</i><sub>oc</sub> dan <i>I</i><sub>sc</sub>. Beri contoh: resistansi keluaran tahap source-follower adalah sekitar 1/<i>g</i><sub><i>m</i></sub>, yang hanya muncul jika sumber dependen dibiarkan hidup.</p></details>
-<details class="icd-sol"><summary>"Pembagi tegangan Anda keluar 2.06 V padahal dihitung 2.2 V. Apa yang Anda periksa?"</summary>
-<p><strong>Kerangka jawaban:</strong> Pembebanan: hitung <i>R</i><sub>th</sub> pembagi dan bandingkan dengan resistansi masukan beban dan alat ukur (multimeter dan probe juga beban). Lalu toleransi resistor dan koefisien suhunya, resistansi kontak, dan tegangan sumber yang sebenarnya. Cara cepat membedakan: ukur tanpa beban, lalu dengan beban.</p></details>
-<details class="icd-sol"><summary>"Kapan Anda memakai nodal dan kapan mesh?"</summary>
+<details class="icd-sol"><summary>"Bagaimana kamu mencari resistansi Thevenin rangkaian yang punya sumber dependen?"</summary>
+<p><strong>Kerangka jawaban:</strong> Jangan matikan sumber dependen. Matikan sumber bebas, pasang sumber uji (tegangan atau arus) di terminal, hitung arus atau tegangan yang dihasilkan, dan bagi. Atau ukur <i>V</i><sub>oc</sub> dan <i>I</i><sub>sc</sub>. Beri contoh: resistansi output tahap source-follower adalah sekitar 1/<i>g</i><sub><i>m</i></sub>, yang hanya muncul jika sumber dependen dibiarkan hidup.</p></details>
+<details class="icd-sol"><summary>"Pembagi tegangan kamu keluar 2.06 V padahal dihitung 2.2 V. Apa yang kamu periksa?"</summary>
+<p><strong>Kerangka jawaban:</strong> Pembebanan: hitung <i>R</i><sub>th</sub> pembagi dan bandingkan dengan resistansi input beban dan alat ukur (multimeter dan probe juga beban). Lalu toleransi resistor dan koefisien suhunya, resistansi kontak, dan tegangan sumber yang sebenarnya. Cara cepat membedakan: ukur tanpa beban, lalu dengan beban.</p></details>
+<details class="icd-sol"><summary>"Kapan kamu memakai nodal dan kapan mesh?"</summary>
 <p><strong>Kerangka jawaban:</strong> Hitung jumlah persamaannya: nodal butuh (simpul − 1), mesh butuh (cabang − simpul + 1). Pilih yang lebih sedikit, dengan catatan sumber arus memudahkan nodal dan sumber tegangan memudahkan mesh. Untuk komputer selalu nodal (MNA), karena aturannya umum dan tidak memerlukan rangkaian datar.</p></details>
 <details class="icd-sol"><summary>"Mengapa resistansi kawat makin menjadi masalah di node proses yang lebih maju?"</summary>
 <p><strong>Kerangka jawaban:</strong> Penampang kawat mengecil kuadratis sementara panjang kawat global tidak ikut mengecil; resistivitas efektif naik karena hamburan permukaan dan batas butir, dan lapisan penghalang menempati porsi penampang yang lebih besar. Akibatnya delay kawat dan IR drop naik relatif terhadap delay transistor. Respons industri: lapisan logam atas yang tebal untuk jalur panjang, buffer berulang, logam alternatif, dan penyaluran daya dari sisi belakang wafer di proses termaju.</p></details>
@@ -2423,7 +2423,7 @@ mkdir -p ~/icd/m02a &amp;&amp; cd ~/icd/m02a
 nano mna.py                # tempel kode dari bagian 8, atau salin lab/m02a/mna.py
 python3 mna.py
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 jembatan: V2 = 2.8302 V, V3 = 2.4528 V, I(R5) = 0.7547 mA
@@ -2448,7 +2448,7 @@ rel 40 tap, 0.05 ohm, 1 mA/tap: drop satu ujung  41.00 mV, dua ujung  10.50 mV
 nano bridge.cir            # tempel netlist dari bagian 8, atau salin lab/m02a/bridge.cir
 ngspice -b bridge.cir
 </pre>
-<p>Bagian akhir keluaran yang benar (baris informasi lain bisa sedikit berbeda antarversi):</p>
+<p>Bagian akhir output yang benar (baris informasi lain bisa sedikit berbeda antarversi):</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 v(1) = 5.000000e+00
 v(2) = 2.830189e+00
@@ -2501,7 +2501,7 @@ if __name__ == "__main__":
     print(f"dilihat R5: Vth = {vth:.4f} V, Rth = {rth:.2f} ohm")
     print(f"arus R5 = Vth / (Rth + 500) = {vth / (rth + 500) * 1e3:.4f} mA")
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 dilihat R5: Vth = 1.3333 V, Rth = 1266.67 ohm
 arus R5 = Vth / (Rth + 500) = 0.7547 mA

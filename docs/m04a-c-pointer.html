@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1869,7 +1869,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M04 bagian a dari 4 · sekitar 14 jam · prasyarat: <a href="m03a-bilangan.html">M03a</a> (biner, two's complement, endianness), <a href="m03b-kode-deteksi-koreksi.html">M03b</a> (XOR, bit-field, CRC)</p>
 <h1>M04a C dan pointer untuk perancang hardware</h1>
-<p>Bahasa C adalah bahasa yang paling dekat dengan hardware di antara bahasa pemrograman umum: satu variabel adalah beberapa byte di alamat tertentu, satu pointer adalah sebuah alamat, dan satu struct adalah tata letak byte yang bisa Anda cocokkan dengan peta register sebuah chip. Perancang IC menulis C untuk model referensi (<em>golden model</em>), untuk perangkat lunak yang berbicara dengan register hardware, untuk fungsi yang dipanggil dari testbench, dan untuk membaca kode tool open source. Modul ini mengajarkan C dari sudut itu: memori sebagai deretan byte, pointer sebagai aritmetika alamat, tata letak struct dan perataan (<em>alignment</em>), manipulasi bit dan field register, serta bug klasik yang bisa dilihat oleh alat. Semua contoh dikompilasi dan dijalankan dengan gcc, lalu diperiksa dengan sanitizer.</p>
+<p>Bahasa C adalah bahasa yang paling dekat dengan hardware di antara bahasa pemrograman umum: satu variabel adalah beberapa byte di alamat tertentu, satu pointer adalah sebuah alamat, dan satu struct adalah tata letak byte yang bisa kamu cocokkan dengan peta register sebuah chip. Perancang IC menulis C untuk model referensi (<em>golden model</em>), untuk perangkat lunak yang berbicara dengan register hardware, untuk fungsi yang dipanggil dari testbench, dan untuk membaca kode tool open source. Modul ini mengajarkan C dari sudut itu: memori sebagai deretan byte, pointer sebagai aritmetika alamat, tata letak struct dan perataan (<em>alignment</em>), manipulasi bit dan field register, serta bug klasik yang bisa dilihat oleh alat. Semua contoh dikompilasi dan dijalankan dengan gcc, lalu diperiksa dengan sanitizer.</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
@@ -1877,17 +1877,17 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li><strong>Model referensi hampir selalu ditulis dalam C atau C++.</strong> Sebelum RTL ada, tim menulis model perilaku yang bisa dijalankan cepat (filter, kodek, ISA simulator, CRC). RTL kemudian dibandingkan bit demi bit dengan model itu (M18). Model C yang dibuat di M03 (CRC dan Q1.15) hanyalah awalnya.</li>
 <li><strong>Firmware dan driver berbicara dengan chip lewat memori.</strong> Register peripheral muncul sebagai alamat; menulis ke alamat itu menyalakan hardware. Salah satu <em>bit</em> atau salah satu <em>perataan</em> membuat chip tidak merespons, dan bug seperti itu biasanya ditemukan di laboratorium, bukan di simulator.</li>
 <li><strong>Testbench modern memanggil C.</strong> SystemVerilog DPI-C, Verilator, dan Python-C extension menghubungkan HDL ke fungsi C (M16 dan M18). Tanpa pemahaman memori, antarmuka itu penuh jebakan (struct yang diisi berbeda di dua sisi, endianness, masa hidup pointer).</li>
-<li><strong>Tool EDA dan pustaka dasarnya ditulis dalam C dan C++.</strong> Membaca kode OpenROAD, Yosys, atau Verilator menuntut Anda membaca pointer, struct, dan alokasi memori.</li>
+<li><strong>Tool EDA dan pustaka dasarnya ditulis dalam C dan C++.</strong> Membaca kode OpenROAD, Yosys, atau Verilator menuntut kamu membaca pointer, struct, dan alokasi memori.</li>
 <li><strong>Bug memori adalah penyebab kerentanan keamanan dan kegagalan lapangan.</strong> Buffer overflow, use-after-free, dan <em>undefined behavior</em> adalah kategori yang menurunkan keandalan sistem dan sering diaudit pada standar keselamatan (mis. MISRA C, CERT C; M32).</li>
 <li><strong>Wawancara.</strong> "Beda array dan pointer?", "Berapa <code>sizeof</code> struct ini?", "Cara set dan clear bit?", dan "Kenapa <code>volatile</code>?" muncul di hampir semua wawancara pekerjaan yang menyentuh firmware, verifikasi, atau arsitektur.</li>
 </ul>
-<div class="icd-box ok"><b>Yang dibawa pulang</b>Di C, setiap objek adalah daerah byte dengan alamat dan tipe. Pointer menyimpan alamat dan aritmetikanya dikali ukuran tipe: alamat(<i>p</i> + <i>n</i>) = alamat(<i>p</i>) + <i>n</i>·sizeof(*<i>p</i>). Tata letak struct ditentukan oleh perataan, bukan hanya jumlah field. Bit dimanipulasi dengan mask dan geser pada tipe tak bertanda. Banyak kesalahan "kecil" adalah <em>undefined behavior</em> yang dibiarkan lolos oleh kompiler, dan alat bantu (peringatan, sanitizer, valgrind) harus dipakai sejak awal.</div>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Di C, setiap objek adalah daerah byte dengan alamat dan tipe. Pointer menyimpan alamat dan aritmetikanya dikali ukuran tipe: alamat(<i>p</i> + <i>n</i>) = alamat(<i>p</i>) + <i>n</i>·sizeof(*<i>p</i>). Tata letak struct ditentukan oleh perataan, bukan hanya jumlah field. Bit dimanipulasi dengan mask dan geser pada tipe unsigned. Banyak kesalahan "kecil" adalah <em>undefined behavior</em> yang dibiarkan lolos oleh kompiler, dan alat bantu (peringatan, sanitizer, valgrind) harus dipakai sejak awal.</div>
 </section>
 
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
-<p><strong>Prasyarat:</strong> <a href="m03a-bilangan.html">M03a</a> (biner, heksadesimal, two's complement, endianness, geser dan XOR) dan <a href="m03b-kode-deteksi-koreksi.html">M03b</a> (bit-field, CRC). Pengalaman memprogram tidak diwajibkan; modul ini menjelaskan sintaks yang dipakai. Anda butuh Linux atau WSL2 dengan <code>gcc</code> (lihat lab).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Prasyarat:</strong> <a href="m03a-bilangan.html">M03a</a> (biner, heksadesimal, two's complement, endianness, geser dan XOR) dan <a href="m03b-kode-deteksi-koreksi.html">M03b</a> (bit-field, CRC). Pengalaman memprogram tidak diwajibkan; modul ini menjelaskan sintaks yang dipakai. Kamu butuh Linux atau WSL2 dengan <code>gcc</code> (lihat lab).</p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Membaca dan menulis program C kecil dengan tipe berukuran pasti (<code>stdint.h</code>), fungsi, array, struct, dan kendali alur, serta mengompilasinya dengan peringatan penuh.</li>
 <li>Menjelaskan sebuah <span data-term="pointer">pointer</span> sebagai alamat bertipe, dan menghitung alamat hasil <i>p</i> + <i>n</i>, selisih pointer, dan <code>a[i]</code> sebagai <code>*(a + i)</code>.</li>
@@ -1927,7 +1927,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <tr><th scope="row"><span data-term="stack">stack</span></th><td>Frame pemanggilan: parameter, lokal, alamat kembali</td><td>Selama fungsi berjalan</td></tr>
 </tbody></table></div>
 <p>Setiap tipe punya ukuran dalam byte (<code>sizeof</code>) dan perataan (<code>alignof</code>). Aturan baku C hanya menjamin <code>sizeof(char) == 1</code> dan batas minimum tipe lain, sedangkan ukuran sebenarnya ditentukan platform. Dua model data yang penting: <strong>LP64</strong> (Linux, macOS, WSL2 pada x86-64 dan ARM64; <code>int</code> 4 byte, <code>long</code> dan pointer 8 byte) dan <strong>LLP64</strong> (Windows 64 bit; <code>int</code> dan <code>long</code> 4 byte, pointer 8 byte). Karena itu kode portabel memakai tipe berukuran pasti dari <code>&lt;stdint.h&gt;</code> (<code>uint8_t</code>, <code>int16_t</code>, <code>uint32_t</code>, <code>uint64_t</code>) dan <code>size_t</code> untuk ukuran dan indeks. Lab di modul ini berjalan di Linux/WSL2 (LP64) dan <code>_Static_assert</code> di kode memeriksa asumsi itu.</p>
-<p><strong>Konversi dan promosi.</strong> Operan bertipe lebih sempit dari <code>int</code> dipromosikan ke <code>int</code> sebelum dioperasikan. Bila bertipe bertanda dan tak bertanda bertemu dengan lebar sama, yang bertanda dikonversi ke tak bertanda. Akibatnya, <code>-1 &lt; 1u</code> bernilai <em>salah</em> karena -1 menjadi 4294967295. Aturan dan jebakan lain (konversi ke tipe lebih sempit memotong bit, pembagian bilangan bulat membulat ke nol) sudah muncul di M03a untuk bilangan; di sini kita melihatnya sebagai sumber bug.</p>
+<p><strong>Konversi dan promosi.</strong> Operan bertipe lebih sempit dari <code>int</code> dipromosikan ke <code>int</code> sebelum dioperasikan. Bila bertipe bertanda dan unsigned bertemu dengan lebar sama, yang bertanda dikonversi ke unsigned. Akibatnya, <code>-1 &lt; 1u</code> bernilai <em>salah</em> karena -1 menjadi 4294967295. Aturan dan jebakan lain (konversi ke tipe lebih sempit memotong bit, pembagian bilangan bulat membulat ke nol) sudah muncul di M03a untuk bilangan; di sini kita melihatnya sebagai sumber bug.</p>
 
 <h3>4.2 Pointer</h3>
 <p>Sebuah <span data-term="pointer">pointer</span> bertipe <code>T *</code> menyimpan alamat sebuah objek bertipe <code>T</code>. Operator <code>&amp;x</code> memberi alamat <code>x</code>; operator <code>*p</code> mengakses objek di alamat itu. Tiga hal menentukan semuanya: <em>alamat</em> (nilai), <em>tipe</em> (berapa byte dibaca dan bagaimana ditafsirkan), dan <em>objek yang ditunjuk masih hidup</em> (pointer yang menunjuk ke objek yang sudah tak ada disebut <em>dangling</em>).</p>
@@ -1952,7 +1952,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-eq"><math display="block"><mi>M</mi><mo>=</mo><mo>(</mo><mo>(</mo><mn>1</mn><mo>&#x226A;</mo><mi>w</mi><mo>)</mo><mo>&#x2212;</mo><mn>1</mn><mo>)</mo><mo>&#x226A;</mo><mi>l</mi><mspace width="2em"/><mi>get</mi><mo>=</mo><mo>(</mo><mi>r</mi><mo>&#x226B;</mo><mi>l</mi><mo>)</mo><mo>&amp;</mo><mo>(</mo><msup><mn>2</mn><mi>w</mi></msup><mo>&#x2212;</mo><mn>1</mn><mo>)</mo><mspace width="2em"/><mi>set</mi><mo>=</mo><mo>(</mo><mi>r</mi><mo>&amp;</mo><mo>~</mo><mi>M</mi><mo>)</mo><mo>|</mo><mo>(</mo><mo>(</mo><mi>v</mi><mo>&#x226A;</mo><mi>l</mi><mo>)</mo><mo>&amp;</mo><mi>M</mi><mo>)</mo></math><span class="alt">M = ((1 << w) − 1) << l ; ambil = (r >> l) &amp; (2^w − 1) ; ganti = (r &amp; ~M) | ((v << l) &amp; M)</span></div>
 <ul>
 <li><strong>Nyalakan</strong> bit: <code>r |= M</code>. <strong>Matikan</strong>: <code>r &amp;= ~M</code>. <strong>Balik</strong>: <code>r ^= M</code>. <strong>Ambil field</strong>: <code>(r &gt;&gt; l) &amp; mask(w)</code>. <strong>Ganti field</strong>: kosongkan lalu OR nilai yang sudah digeser dan di-mask (jangan lupa memotong nilai yang terlalu lebar).</li>
-<li><strong>Selalu pakai tipe tak bertanda.</strong> Menggeser kiri bilangan bertanda sampai mengubah bit tanda tak terdefinisi, menggeser kanan bilangan bertanda negatif ditentukan implementasi, dan geser dengan jumlah ≥ lebar tipe tak terdefinisi. Karena itu <code>1u &lt;&lt; 32</code> pada <code>uint32_t</code> tak terdefinisi; pembangun <code>mask(w)</code> di <code>bits.h</code> memberi pengecualian untuk <i>w</i> = 32.</li>
+<li><strong>Selalu pakai tipe unsigned.</strong> Menggeser kiri bilangan bertanda sampai mengubah bit tanda tak terdefinisi, menggeser kanan bilangan bertanda negatif ditentukan implementasi, dan geser dengan jumlah ≥ lebar tipe tak terdefinisi. Karena itu <code>1u &lt;&lt; 32</code> pada <code>uint32_t</code> tak terdefinisi; pembangun <code>mask(w)</code> di <code>bits.h</code> memberi pengecualian untuk <i>w</i> = 32.</li>
 <li><strong>Tulis dengan literal bersufiks</strong> (<code>1u</code>, <code>0xFFu</code>) atau konversi eksplisit; <code>1 &lt;&lt; 31</code> pada <code>int</code> tak terdefinisi.</li>
 <li><strong>Bit-field C</strong> (<code>unsigned x : 3;</code>) mudah ditulis, tetapi urutan alokasi bit, perataan, dan padding ditentukan implementasi. Untuk peta register hardware, mask dan geser eksplisit lebih portabel.</li>
 </ul>
@@ -1964,7 +1964,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>4.7 Undefined behavior (UB)</h3>
 <p>Standar C membagi perilaku menjadi <em>terdefinisi</em>, <em>ditentukan implementasi</em> (compiler harus mendokumentasikan; mis. ukuran <code>int</code>), dan <span data-term="ub">tak terdefinisi</span> (standar tak mensyaratkan apa pun). Program yang mengandung UB tidak sekadar menghasilkan "angka acak": kompiler boleh mengasumsikan UB tak pernah terjadi, dan mengoptimalkan berdasarkan itu. Contoh: karena overflow bilangan bertanda adalah UB, kompiler boleh menyimpulkan <code>x + 1 &gt; x</code> selalu benar dan menghapus pemeriksaan yang dimaksudkan menangkap overflow. Daftar sumber UB yang paling sering:</p>
 <ul>
-<li>Overflow bilangan bulat bertanda (bilangan tak bertanda membungkus secara terdefinisi, modulo 2<sup><i>n</i></sup>).</li>
+<li>Overflow bilangan bulat bertanda (bilangan unsigned membungkus secara terdefinisi, modulo 2<sup><i>n</i></sup>).</li>
 <li>Akses di luar batas array atau objek; mendereferensi <code>NULL</code> atau pointer dangling; membaca variabel lokal yang belum diinisialisasi (nilainya tak tentu).</li>
 <li>Geser dengan jumlah negatif atau ≥ lebar tipe; pembagian dengan nol; <code>INT_MIN / -1</code>.</li>
 <li>Pelanggaran aliasing dan akses tak rata melalui cast pointer; dua thread menulis variabel yang sama tanpa sinkronisasi (data race).</li>
@@ -2031,7 +2031,7 @@ _Static_assert(offsetof(uart_t, data) == 0x08, "peta register");
 <div class="icd-guide" data-id="v1-ptr" data-answer="0">
   <p>Pilih <code>int32_t *</code>, offset 0, little-endian, lalu tekan Maju dua kali (dua kali <code>p++</code>). Berapa alamat p dan berapa <code>*p</code>? Lalu ganti ke big-endian pada alamat yang sama: apa yang berubah?</p>
   <ul><li>Alamat 0x1008 dan *p = 1 (dua langkah × 4 byte). Pada big-endian byte yang sama terbaca 0x01000000 = 16 777 216</li><li>Alamat 0x1002 dan *p = 0x2233; big-endian tak mengubah apa pun</li><li>Alamat 0x1008 dan *p = 0x0000_0008, karena p + 2 menambah 2 pada nilainya</li><li>Alamat 0x1004 dan *p = 0xAABBCCDD pada kedua urutan byte</li></ul>
-  <div class="explain"><p>Aritmetika pointer mengalikan dengan ukuran elemen: <code>p++</code> dua kali menambah 2 × sizeof(int32_t) = 8 byte, jadi alamat 0x1000 + 8 = 0x1008 (bukan 0x1002; itu akan terjadi pada <code>int16_t *</code>). Empat byte di sana adalah 01 00 00 00; dibaca little-endian menjadi 0x00000001 = 1. Byte yang sama tidak berubah bila Anda memilih big-endian, tetapi urutan penggabungannya terbalik: 0x01000000 = 16 777 216. Itulah sebabnya kode yang membaca field multibyte dari buffer harus menyatakan urutan byte secara eksplisit. Coba lanjutkan ke empat langkah (alamat 0x1010): empat byte "Hell" terbaca sebagai bilangan 0x6C6C6548, karena teks dan bilangan hanyalah penafsiran byte.</p></div>
+  <div class="explain"><p>Aritmetika pointer mengalikan dengan ukuran elemen: <code>p++</code> dua kali menambah 2 × sizeof(int32_t) = 8 byte, jadi alamat 0x1000 + 8 = 0x1008 (bukan 0x1002; itu akan terjadi pada <code>int16_t *</code>). Empat byte di sana adalah 01 00 00 00; dibaca little-endian menjadi 0x00000001 = 1. Byte yang sama tidak berubah bila kamu memilih big-endian, tetapi urutan penggabungannya terbalik: 0x01000000 = 16 777 216. Itulah sebabnya kode yang membaca field multibyte dari buffer harus menyatakan urutan byte secara eksplisit. Coba lanjutkan ke empat langkah (alamat 0x1010): empat byte "Hell" terbaca sebagai bilangan 0x6C6C6548, karena teks dan bilangan hanyalah penafsiran byte.</p></div>
 </div>
 
 <div class="icd-viz" id="v2">
@@ -2090,11 +2090,11 @@ _Static_assert(offsetof(uart_t, data) == 0x08, "peta register");
     <label class="icd-field"><span>Register r (hex 32 bit)</span><input class="icd-input" id="v4-reg" type="text" value="A5C3F00F" maxlength="10" autocomplete="off" spellcheck="false"></label>
     <label class="icd-field"><span>Operasi</span><select class="icd-select" id="v4-op"><option value="ins" selected>ganti field dengan v</option><option value="set">nyalakan field (|=)</option><option value="clr">matikan field (&amp;= ~)</option><option value="tog">balik field (^=)</option><option value="get">ambil field (&gt;&gt; lalu &amp;)</option></select></label>
     <label class="icd-field"><span>LSB field l = <b id="v4-lv"></b></span><input type="range" id="v4-l" min="0" max="31" step="1" value="12"></label>
-    <label class="icd-field"><span>Lebar w = <b id="v4-wv"></b></span><input type="range" id="v4-w" min="1" max="20" step="1" value="4"></label>
+    <label class="icd-field"><span>Bit width w = <b id="v4-wv"></b></span><input type="range" id="v4-w" min="1" max="20" step="1" value="4"></label>
     <label class="icd-field"><span>Nilai v = <b id="v4-vv"></b></span><input type="range" id="v4-v" min="0" max="255" step="1" value="9"></label>
   </div>
   <div class="readout" id="v4-out" aria-live="polite"></div>
-  <div class="model">Semua operasi dihitung pada <code>uint32_t</code> (modulo 2³², tanpa tanda). M = field_mask(l, w) = ((1u &lt;&lt; w) − 1) &lt;&lt; l, dengan pengecualian w = 32 (M = 0xFFFFFFFF) karena <code>1u &lt;&lt; 32</code> tak terdefinisi di C. Ganti field: (r &amp; ~M) | ((v &lt;&lt; l) &amp; M); v yang terlalu lebar dipotong oleh mask. Ambil field: (r &gt;&gt; l) &amp; mask(w). Tombol "Maju" menampilkan satu tahap perhitungan setiap langkah. Lebar w dibatasi oleh 32 − l. Disederhanakan: tak ada register hardware nyata di sini; pada register W1C, read-clear, atau baca-saja, rumus yang sama bisa merusak (bagian 4.8).</div>
+  <div class="model">Semua operasi dihitung pada <code>uint32_t</code> (modulo 2³², tanpa tanda). M = field_mask(l, w) = ((1u &lt;&lt; w) − 1) &lt;&lt; l, dengan pengecualian w = 32 (M = 0xFFFFFFFF) karena <code>1u &lt;&lt; 32</code> tak terdefinisi di C. Ganti field: (r &amp; ~M) | ((v &lt;&lt; l) &amp; M); v yang terlalu lebar dipotong oleh mask. Ambil field: (r &gt;&gt; l) &amp; mask(w). Tombol "Maju" menampilkan satu tahap perhitungan setiap langkah. Bit width w dibatasi oleh 32 − l. Disederhanakan: tak ada register hardware nyata di sini; pada register W1C, read-clear, atau baca-saja, rumus yang sama bisa merusak (bagian 4.8).</div>
 </div>
 <div class="icd-guide" data-id="v4-field" data-answer="0">
   <p>Biarkan r = 0xA5C3F00F, operasi "ganti field dengan v", l = 12, w = 4, v = 9. Tebak hasil akhirnya sebelum menekan Maju empat kali.</p>
@@ -2111,7 +2111,7 @@ _Static_assert(offsetof(uart_t, data) == 0x08, "peta register");
 <ol>
 <li><code>&amp;a[3]</code> = 0x1000 + 3 × sizeof(int32_t) = 0x1000 + 12 = 0x100C. <code>*(a + 3)</code> = −2 (0xFFFFFFFE).</li>
 <li><code>(a + 3) - a</code> = 3 elemen, walaupun alamatnya berselisih 12 byte.</li>
-<li><code>h + 2</code> = 0x1000 + 2 × 2 = 0x1004. Byte di sana: DD CC (bagian a[1]). Little-endian: 0xCCDD = 52 445 tak bertanda, atau −13 091 bertanda 16 bit.</li>
+<li><code>h + 2</code> = 0x1000 + 2 × 2 = 0x1004. Byte di sana: DD CC (bagian a[1]). Little-endian: 0xCCDD = 52 445 unsigned, atau −13 091 bertanda 16 bit.</li>
 <li>Byte pertama objek: <code>((unsigned char *)a)[0] = 0x44</code>, bukan 0x11, karena little-endian.</li>
 </ol>
 <p><strong>Pelajaran.</strong> Hanya tipe pointer yang menentukan langkah dan lebar bacaan; alamat yang sama dapat dibaca sebagai tipe berbeda dengan hasil berbeda.</p>
@@ -2124,7 +2124,7 @@ _Static_assert(offsetof(uart_t, data) == 0x08, "peta register");
 <li><code>e</code> (perataan 2) di 24, akhir 26. Perataan struct <i>A</i> = 8: sizeof = ceil(26/8) × 8 = 32; padding ekor 6 byte; padding total 3 + 7 + 6 = 16 byte.</li>
 <li>Urutan baru <code>d, b, e, a, c</code>: d@0 (akhir 8), b@8 (12), e@12 (14), a@14 (15), c@15 (16); sizeof = 16, tanpa padding.</li>
 </ol>
-<p><strong>Pelajaran.</strong> Hanya dengan mengurutkan field, struct menyusut separuh. Hasil ini sama dengan keluaran <code>layout.c</code> dan visualisasi 3.</p>
+<p><strong>Pelajaran.</strong> Hanya dengan mengurutkan field, struct menyusut separuh. Hasil ini sama dengan output <code>layout.c</code> dan visualisasi 3.</p>
 
 <h3>Contoh 3: mengganti dan mengambil field</h3>
 <p><strong>Soal.</strong> <code>r = 0xA5C3F00F</code>. Ganti bit 12 sampai 15 dengan 9, lalu ambil bit 8 sampai 11 dari hasilnya.</p>
@@ -2146,7 +2146,7 @@ _Static_assert(offsetof(uart_t, data) == 0x08, "peta register");
 <p><strong>Pelajaran.</strong> Rekursi menukar waktu pemrograman dengan kedalaman stack. Di sistem tertanam, hitung kedalaman terburuk atau hindari rekursi.</p>
 
 <h3>Contoh 5: register W1C dan baca-ubah-tulis</h3>
-<p><strong>Soal.</strong> Register STATUS bersifat write-1-to-clear dan berisi flag aktif di bit 1, 3, dan 5 (0x2A). Anda ingin menghapus hanya flag bit 3.</p>
+<p><strong>Soal.</strong> Register STATUS bersifat write-1-to-clear dan berisi flag aktif di bit 1, 3, dan 5 (0x2A). Kamu ingin menghapus hanya flag bit 3.</p>
 <ol>
 <li>Cara salah: <code>STATUS |= BIT(3);</code> membaca 0x2A, menghitung 0x2A | 0x08 = 0x2A, dan menulis 0x2A. Menulis 1 pada bit 1, 3, 5 menghapus ketiganya; kondisi interupsi bit 1 dan 5 hilang tanpa penanganan.</li>
 <li>Cara benar: <code>STATUS = BIT(3);</code> menulis 0x08; hanya bit 3 dihapus, sisa 0x22.</li>
@@ -2467,7 +2467,7 @@ int main(void) {
 <div class="icd-box mis"><b>Miskonsepsi</b>"Array sama dengan pointer." Nama array meluruh menjadi pointer di kebanyakan ungkapan, tetapi array adalah objek dengan ukuran sendiri: <code>sizeof(arr)</code> memberi ukuran seluruh array, dan parameter fungsi bertipe array sebenarnya pointer.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"<code>p + 1</code> menambah satu byte." Ia menambah <code>sizeof(*p)</code> byte; untuk mengayun byte demi byte, ubah tipe pointer ke <code>unsigned char *</code>.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"<code>sizeof</code> struct adalah jumlah ukuran field." Padding dan perataan menambah ukuran; urutan field mengubahnya. Untuk antarmuka biner, tetapkan tata letak secara eksplisit dan uji dengan <code>_Static_assert</code>.</div>
-<div class="icd-box mis"><b>Miskonsepsi</b>"Overflow bilangan bertanda pasti membungkus." Itu perilaku bilangan tak bertanda (terdefinisi). Pada bilangan bertanda, overflow adalah UB: kompiler boleh membuang pemeriksaan yang bergantung padanya, dan hasil pada <code>-O2</code> dapat berbeda dari <code>-O0</code>.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Overflow bilangan bertanda pasti membungkus." Itu perilaku bilangan unsigned (terdefinisi). Pada bilangan bertanda, overflow adalah UB: kompiler boleh membuang pemeriksaan yang bergantung padanya, dan hasil pada <code>-O2</code> dapat berbeda dari <code>-O0</code>.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"<code>volatile</code> membuat akses atomik dan terurut antar-inti." <code>volatile</code> hanya mencegah kompiler membuang atau menggabungkan akses dan mempertahankan urutannya terhadap akses volatile lain. Ia tak membuat akses atomik, tak menyisipkan barrier, dan tak mengatur urutan terhadap DMA atau inti lain.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Program yang tidak crash itu benar." Banyak bug memori tak crash: menulis ke padding atau variabel lain, membaca nilai sisa. Nilai bisa salah secara sunyi, atau bug baru muncul setelah perubahan yang tak berhubungan.</div>
 <div class="icd-box trap"><b>Jebakan industri: mengirim struct mentah lewat jaringan, file, atau chip</b>Padding, urutan byte, dan ukuran tipe berbeda antar kompiler dan arsitektur, dan isi padding tak terdefinisi. Serialisasi field demi field dengan tipe berukuran pasti dan urutan byte yang disepakati (seperti <code>write_be32</code>) dan tetapkan <code>sizeof</code> dengan <code>_Static_assert</code> bila struct memetakan perangkat keras.</div>
@@ -2483,13 +2483,13 @@ int main(void) {
 <thead><tr><th scope="col">Konsep modul ini</th><th scope="col">Muncul sebagai</th><th scope="col">Tool dan tempat</th></tr></thead>
 <tbody>
 <tr><th scope="row">Tipe berukuran pasti dan bit</th><td>Model referensi bit-exact (kodek, CRC, DSP fixed-point)</td><td>gcc/clang; dibandingkan dengan RTL di testbench (M18)</td></tr>
-<tr><th scope="row">Pointer dan struct</th><td>Antarmuka DPI-C, penyangga data, struktur tool EDA</td><td>SystemVerilog DPI-C, Verilator, Python-C extension (M16, M18)</td></tr>
+<tr><th scope="row">Pointer dan struct</th><td>Antarmuka DPI-C, buffer data, struktur tool EDA</td><td>SystemVerilog DPI-C, Verilator, Python-C extension (M16, M18)</td></tr>
 <tr><th scope="row">Peta register dan <code>volatile</code></th><td>Driver peripheral, bring-up chip, header register</td><td>Header yang dibangkitkan dari spesifikasi register (mis. IP-XACT, SystemRDL); uji dengan model register palsu (M15)</td></tr>
 <tr><th scope="row">Perataan dan tata letak</th><td>Struktur data biner dan ABI; kinerja cache</td><td><code>pahole</code>, <code>-Wpadded</code>, <code>_Static_assert</code> (M13, M14)</td></tr>
 <tr><th scope="row">Sanitizer, valgrind, analisis statis</th><td>Pemeriksaan di CI, audit keselamatan</td><td>ASan, UBSan, valgrind, <code>clang-tidy</code>, <code>cppcheck</code>; aturan MISRA C dan SEI CERT C (M32)</td></tr>
 <tr><th scope="row">Dialek dan flag</th><td>Build terkendali</td><td><code>-std=c11</code> atau <code>-std=c23</code> di Makefile atau CMake (M04c)</td></tr>
 </tbody></table></div>
-<p><strong>Bagaimana tim menulis C untuk hardware.</strong> (1) Pilih dialek dan flag, dan jadikan peringatan sebagai kesalahan di CI. (2) Pakai tipe berukuran pasti untuk semua data yang berbatas lebar; <code>size_t</code> untuk ukuran dan indeks. (3) Peta register dibangkitkan dari satu sumber spesifikasi supaya header C dan RTL tak berbeda; <code>_Static_assert</code> pada offset. (4) Akses register hanya lewat fungsi kecil yang memahami jenis register; uji dengan model register palsu. (5) Jalankan uji di bawah ASan dan UBSan setiap commit, dan valgrind bila perlu. (6) Bandingkan model C dengan RTL pada vektor yang sama (acak dan terarah) di tingkat blok. (7) Kode yang berkaitan dengan keselamatan mengikuti MISRA C atau CERT C, dengan alat analisis statis dan tinjauan. Alat komersial berbeda tersedia; modul ini memakai gcc, clang, valgrind, dan sanitizer open source supaya semua lab dapat Anda ulang.</p>
+<p><strong>Bagaimana tim menulis C untuk hardware.</strong> (1) Pilih dialek dan flag, dan jadikan peringatan sebagai kesalahan di CI. (2) Pakai tipe berukuran pasti untuk semua data yang berbatas lebar; <code>size_t</code> untuk ukuran dan indeks. (3) Peta register dibangkitkan dari satu sumber spesifikasi supaya header C dan RTL tak berbeda; <code>_Static_assert</code> pada offset. (4) Akses register hanya lewat fungsi kecil yang memahami jenis register; uji dengan model register palsu. (5) Jalankan uji di bawah ASan dan UBSan setiap commit, dan valgrind bila perlu. (6) Bandingkan model C dengan RTL pada vektor yang sama (acak dan terarah) di tingkat blok. (7) Kode yang berkaitan dengan keselamatan mengikuti MISRA C atau CERT C, dengan alat analisis statis dan tinjauan. Alat komersial berbeda tersedia; modul ini memakai gcc, clang, valgrind, dan sanitizer open source supaya semua lab dapat kamu ulang.</p>
 </section>
 
 <section class="icd-sec" id="s11">
@@ -2500,7 +2500,7 @@ int main(void) {
 <p><strong>1.2</strong> <code>int32_t a[10]</code> terletak di 0x2000. Berapa alamat <code>&amp;a[7]</code>?</p>
 <details class="icd-sol"><summary>Solusi 1.2</summary><p>0x2000 + 7 × 4 = 0x2000 + 28 = 0x201C.</p></details>
 <p><strong>1.3</strong> Berapa hasil <code>-1 &lt; 1u</code>, dan mengapa?</p>
-<details class="icd-sol"><summary>Solusi 1.3</summary><p>0 (salah). Operan bertanda dikonversi ke tak bertanda, jadi −1 menjadi 4 294 967 295, yang tidak lebih kecil dari 1. Peringatan <code>-Wsign-compare</code> menangkapnya.</p></details>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>0 (salah). Operan bertanda dikonversi ke unsigned, jadi −1 menjadi 4 294 967 295, yang tidak lebih kecil dari 1. Peringatan <code>-Wsign-compare</code> menangkapnya.</p></details>
 <h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
 <p><strong>2.1</strong> Hitung offset dan <code>sizeof</code> untuk <code>struct { short a; char b; int c; char d; }</code> (LP64), lalu susun ulang agar sekecil mungkin.</p>
 <details class="icd-sol"><summary>Solusi 2.1</summary><p>a@0 (akhir 2); b@2 (akhir 3); c: ceil(3/4) × 4 = 4, padding 1, c@4 (akhir 8); d@8 (akhir 9). Perataan struct 4: sizeof = ceil(9/4) × 4 = 12 byte (padding 1 + 3 = 4 byte). Urutan <code>{int c; short a; char b; char d;}</code>: c@0, a@4, b@6, d@7, akhir 8, sizeof 8 byte, tanpa padding.</p></details>
@@ -2530,7 +2530,7 @@ int main(void) {
 <details class="icd-sol"><summary>"Berapa ukuran struct ini dan bagaimana memperkecilnya?"</summary>
 <p><strong>Kerangka jawaban:</strong> Hitung offset per field dengan membulatkan ke perataan, bulatkan ukuran akhir ke perataan terbesar. Urutkan dari perataan terbesar ke terkecil. Sebut <code>packed</code> sebagai alternatif dengan harga akses tak rata, dan bahwa antarmuka biner memerlukan tata letak eksplisit dan <code>_Static_assert</code>. Sebut platform (LP64 atau LLP64).</p></details>
 <details class="icd-sol"><summary>"Tulis cara menyalakan, mematikan, membalik, dan mengambil satu bit atau field."</summary>
-<p><strong>Kerangka jawaban:</strong> <code>r |= M</code>, <code>r &amp;= ~M</code>, <code>r ^= M</code>, <code>(r &gt;&gt; l) &amp; mask(w)</code>; ganti field = kosongkan lalu OR nilai yang digeser dan di-mask. Gunakan tipe tak bertanda dan literal <code>1u</code>; hindari geser sebesar lebar tipe. Sebut jebakan W1C pada register hardware.</p></details>
+<p><strong>Kerangka jawaban:</strong> <code>r |= M</code>, <code>r &amp;= ~M</code>, <code>r ^= M</code>, <code>(r &gt;&gt; l) &amp; mask(w)</code>; ganti field = kosongkan lalu OR nilai yang digeser dan di-mask. Gunakan tipe unsigned dan literal <code>1u</code>; hindari geser sebesar lebar tipe. Sebut jebakan W1C pada register hardware.</p></details>
 <details class="icd-sol"><summary>"Apa yang dilakukan <code>volatile</code> dan apa yang tidak?"</summary>
 <p><strong>Kerangka jawaban:</strong> Mencegah kompiler membuang, menggabungkan, atau menyusun ulang akses volatile satu terhadap yang lain; dipakai untuk register hardware dan variabel yang diubah oleh interupsi. Tidak membuat akses atomik, tidak menyisipkan barrier arsitektur, dan tidak menjamin urutan terhadap DMA atau inti lain; untuk itu pakai barrier atau tipe atomik C11.</p></details>
 <details class="icd-sol"><summary>"Apa itu undefined behavior, dan beri contoh bagaimana kompiler memanfaatkannya?"</summary>
@@ -2541,7 +2541,7 @@ int main(void) {
 
 <section class="icd-sec" id="s14">
 <h2>Lab: tata letak, pointer, bit, dan bug yang ditangkap alat</h2>
-<p><strong>Tujuan:</strong> menjalankan semua program, mencocokkan hasil dengan perhitungan tangan, menemukan lima bug klasik dengan sanitizer dan valgrind, mematahkan <code>bits.h</code> dengan sengaja, dan mengubah model referensi menjadi pembaca paket yang benar. Waktu: sekitar 2 jam. Tool: gcc (atau clang) dan valgrind di Linux/WSL2. Semua keluaran di bawah dari gcc 13.3 pada Ubuntu 24.04 x86-64.</p>
+<p><strong>Tujuan:</strong> menjalankan semua program, mencocokkan hasil dengan perhitungan tangan, menemukan lima bug klasik dengan sanitizer dan valgrind, mematahkan <code>bits.h</code> dengan sengaja, dan mengubah model referensi menjadi pembaca paket yang benar. Waktu: sekitar 2 jam. Tool: gcc (atau clang) dan valgrind di Linux/WSL2. Semua output di bawah dari gcc 13.3 pada Ubuntu 24.04 x86-64.</p>
 <h3>Langkah 0: siapkan</h3>
 <pre class="icd-src" data-lang="sh">
 sudo apt update &amp;&amp; sudo apt install -y gcc valgrind
@@ -2561,7 +2561,7 @@ rapat    : sizeof=16 alignof=1 | b@1 d@6
 uart_regs: sizeof=16 | ctrl@0 status@4 data@8 baud@12
 urutan byte mesin: little-endian
 </pre>
-<p><strong>Baca hasilnya.</strong> Struct <code>deklarasi</code> 32 byte (a@0, b@4, c@8, d@16, e@24), <code>tersusun</code> 16 byte, <code>rapat</code> 16 byte tetapi <code>b</code> di offset 1 (tak rata), persis seperti contoh 2. Bila Anda menjalankan pada Windows asli (LLP64), <code>long</code> akan 4 byte; asumsi LP64 dikunci oleh <code>_Static_assert</code>.</p>
+<p><strong>Baca hasilnya.</strong> Struct <code>deklarasi</code> 32 byte (a@0, b@4, c@8, d@16, e@24), <code>tersusun</code> 16 byte, <code>rapat</code> 16 byte tetapi <code>b</code> di offset 1 (tak rata), persis seperti contoh 2. Bila kamu menjalankan pada Windows asli (LLP64), <code>long</code> akan 4 byte; asumsi LP64 dikunci oleh <code>_Static_assert</code>.</p>
 <h3>Langkah 2: pointer</h3>
 <pre class="icd-src" data-lang="sh">
 gcc $W -o ptr ptr.c &amp;&amp; ./ptr
@@ -2610,7 +2610,7 @@ runtime error: signed integer overflow: 1 + 2147483647 cannot be represented in 
 runtime error: load of misaligned address ADDR for type 'int', which requires 4 byte alignment
 Invalid read of size 4
 </pre>
-<p><strong>Baca hasilnya.</strong> Tanpa alat, bug 1 selesai tanpa laporan. Tiap bug punya jenis laporan berbeda: ASan menangkap bug batas dan masa hidup (stack dan heap), UBSan menangkap overflow bertanda dan akses tak rata, dan valgrind menangkap pembacaan setelah <code>free</code> pada biner biasa tanpa kompilasi ulang. Untuk mendapat nomor baris, hapus <code>grep</code> dan baca laporan lengkap. Alamat berubah setiap run (ASLR), sehingga keluaran di atas hanya memuat bagian yang stabil.</p>
+<p><strong>Baca hasilnya.</strong> Tanpa alat, bug 1 selesai tanpa laporan. Tiap bug punya jenis laporan berbeda: ASan menangkap bug batas dan masa hidup (stack dan heap), UBSan menangkap overflow bertanda dan akses tak rata, dan valgrind menangkap pembacaan setelah <code>free</code> pada biner biasa tanpa kompilasi ulang. Untuk mendapat nomor baris, hapus <code>grep</code> dan baca laporan lengkap. Alamat berubah setiap run (ASLR), sehingga output di atas hanya memuat bagian yang stabil.</p>
 <h3>Langkah 5: rusak dengan sengaja</h3>
 <p>Hapus pengecualian <i>w</i> = 32 dari <code>mask()</code> dan jalankan uji di bawah UBSan di <code>-O0</code>, lalu di <code>-O2</code> tanpa alat. Tebak dulu: apakah kedua kali gagal?</p>
 <pre class="icd-src" data-lang="sh">
@@ -2627,7 +2627,7 @@ semua pemeriksaan test_bits.c lulus
 </pre>
 <p>Pada <code>-O0</code> dengan UBSan, uji gagal dan laporan menunjuk persis baris geser. Pada <code>-O2</code> tanpa alat, uji <em>lulus</em>: UB tersembunyi oleh hasil yang kebetulan benar pada kompiler dan flag itu. Ini inti UB: uji "lulus" tidak membuktikan kode benar, dan pecah ketika kompiler, versi, atau flag berubah. Hasil serupa bisa berbeda pada mesin dan versi lain.</p></details>
 <h3>Langkah 6: tantangan, pembaca paket</h3>
-<p>Sebuah paket jaringan berisi 4 byte 0x11 0x22 0x33 0x44 (big-endian). Tulis fungsi yang mengembalikan nilai 32 bit tanpa cast pointer, dan uji pada mesin little-endian. Tebak dulu: berapa nilainya bila Anda membaca byte yang sama sebagai little-endian?</p>
+<p>Sebuah paket jaringan berisi 4 byte 0x11 0x22 0x33 0x44 (big-endian). Tulis fungsi yang mengembalikan nilai 32 bit tanpa cast pointer, dan uji pada mesin little-endian. Tebak dulu: berapa nilainya bila kamu membaca byte yang sama sebagai little-endian?</p>
 <details class="icd-sol"><summary>Solusi</summary>
 <p>Lihat <code>endian.c</code> (bagian 8.7): <code>read_be32</code> membangun nilai dari byte dengan geser dan OR sehingga hasilnya 0x11223344 di mesin mana pun; membacanya sebagai little-endian memberi 0x44332211.</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
@@ -2643,7 +2643,7 @@ semua pemeriksaan endian.c lulus
 <ul>
 <li>Objek = daerah byte dengan alamat dan tipe. Pointer = alamat + tipe; alamat(<i>p</i> + <i>n</i>) = alamat(<i>p</i>) + <i>n</i>·sizeof(*<i>p</i>); selisih pointer dalam elemen; <code>a[i] == *(a + i)</code>; array meluruh menjadi pointer (kecuali <code>sizeof</code>, <code>&amp;</code>); parameter array adalah pointer.</li>
 <li>Offset field = pembulatan ke atas ke perataan; <code>sizeof</code> = pembulatan ke perataan terbesar. Urutkan field besar ke kecil; antarmuka biner: tipe berukuran pasti dan <code>_Static_assert</code>. LP64 (Linux/WSL2): <code>long</code> 8 byte; LLP64 (Windows): 4.</li>
-<li>Bit: <code>M = ((1u &lt;&lt; w) − 1) &lt;&lt; l</code>; nyalakan <code>|= M</code>, matikan <code>&amp;= ~M</code>, balik <code>^= M</code>, ambil <code>(r &gt;&gt; l) &amp; mask(w)</code>, ganti <code>(r &amp; ~M) | ((v &lt;&lt; l) &amp; M)</code>. Tipe tak bertanda; hindari geser sebesar lebar tipe.</li>
+<li>Bit: <code>M = ((1u &lt;&lt; w) − 1) &lt;&lt; l</code>; nyalakan <code>|= M</code>, matikan <code>&amp;= ~M</code>, balik <code>^= M</code>, ambil <code>(r &gt;&gt; l) &amp; mask(w)</code>, ganti <code>(r &amp; ~M) | ((v &lt;&lt; l) &amp; M)</code>. Tipe unsigned; hindari geser sebesar lebar tipe.</li>
 <li>Stack: satu frame per pemanggilan, pemakaian = kedalaman × ukuran frame; heap: <code>malloc</code>/<code>free</code>. Bug: dangling, use-after-free, double free, kebocoran, overflow buffer, stack overflow.</li>
 <li>UB: overflow bertanda, di luar batas, <code>NULL</code> atau dangling, tak diinisialisasi, geser berlebih, aliasing, data race. Kompiler boleh mengasumsikan UB tak terjadi. Lawan dengan peringatan, ASan, UBSan, valgrind, analisis statis, dan uji di beberapa level optimasi.</li>
 <li><code>volatile</code>: akses benar-benar terjadi dan terurut terhadap akses volatile lain; bukan atomik, bukan barrier. Register W1C dihapus dengan menulis hanya bit yang dimaksud.</li>

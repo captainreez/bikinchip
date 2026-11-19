@@ -11,26 +11,26 @@
 <main>
 <h1>Kebijakan privasi</h1>
 <p class="icd-muted icd-small">Berlaku sejak 19 November 2026.</p>
-<p>bikinchip adalah proyek pendidikan nonkomersial dan open source. Kami hanya menyimpan data yang dibutuhkan agar Anda bisa melanjutkan belajar dari perangkat mana pun.</p>
+<p>bikinchip adalah proyek pendidikan nonkomersial dan open source. Kami hanya menyimpan data yang dibutuhkan agar kamu bisa melanjutkan belajar dari perangkat mana pun.</p>
 
 <h2>Data yang kami simpan</h2>
 <ul>
-<li><strong>Data akun:</strong> email, nama, dan, bila Anda masuk dengan Google, foto profil dan ID akun Google yang dikirim Google saat Anda menyetujuinya. Kata sandi disimpan dalam bentuk hash oleh penyedia autentikasi; kami tidak pernah bisa melihatnya.</li>
+<li><strong>Data akun:</strong> email, nama, dan, bila kamu masuk dengan Google, foto profil dan ID akun Google yang dikirim Google saat kamu menyetujuinya. Kata sandi disimpan dalam bentuk hash oleh penyedia autentikasi; kami tidak pernah bisa melihatnya.</li>
 <li><strong>Data belajar:</strong> bagian modul yang sudah dibaca, posisi baca terakhir, skor kuis, jadwal flashcard, catatan pribadi, bookmark, rencana belajar, dan pengaturan tampilan.</li>
 </ul>
-<p>Kami <strong>tidak</strong> memasang iklan, pelacak pihak ketiga, atau analitik perilaku, dan tidak menjual atau membagikan data Anda kepada siapa pun.</p>
+<p>Kami <strong>tidak</strong> memasang iklan, pelacak pihak ketiga, atau analitik perilaku, dan tidak menjual atau membagikan data kamu kepada siapa pun.</p>
 
 <h2>Untuk apa data dipakai</h2>
-<p>Hanya untuk menjalankan layanan: mengenali akun Anda, menyimpan dan menyinkronkan progres belajar antarperangkat, dan mengirim email yang Anda minta (konfirmasi pendaftaran dan atur ulang kata sandi).</p>
+<p>Hanya untuk menjalankan layanan: mengenali akun kamu, menyimpan dan menyinkronkan progres belajar antarperangkat, dan mengirim email yang kamu minta (konfirmasi pendaftaran dan atur ulang kata sandi).</p>
 
 <h2>Di mana data disimpan</h2>
-<p>Data akun dan data belajar disimpan di layanan basis data Supabase. Setiap baris data dilindungi aturan keamanan (Row Level Security) sehingga hanya pemilik akun yang bisa membaca dan mengubahnya. Salinan data belajar juga tersimpan di penyimpanan lokal browser Anda (localStorage) agar situs tetap cepat dan bisa dipakai saat koneksi terputus. Situs disajikan oleh GitHub Pages, yang dapat mencatat log teknis kunjungan (misalnya alamat IP) sesuai kebijakan GitHub.</p>
+<p>Data akun dan data belajar disimpan di layanan basis data Supabase. Setiap baris data dilindungi aturan keamanan (Row Level Security) sehingga hanya pemilik akun yang bisa membaca dan mengubahnya. Salinan data belajar juga tersimpan di penyimpanan lokal browser kamu (localStorage) agar situs tetap cepat dan bisa dipakai saat koneksi terputus. Situs disajikan oleh GitHub Pages, yang dapat mencatat log teknis kunjungan (misalnya alamat IP) sesuai kebijakan GitHub.</p>
 
-<h2>Hak Anda</h2>
-<p>Sesuai Undang-Undang Pelindungan Data Pribadi, Anda berhak mengakses, memperbaiki, dan menghapus data Anda.</p>
+<h2>Hak kamu</h2>
+<p>Sesuai Undang-Undang Pelindungan Data Pribadi, kamu berhak mengakses, memperbaiki, dan menghapus data kamu.</p>
 <ul>
 <li><strong>Melihat dan mengunduh:</strong> buka beranda → Data → <em>Ekspor progres</em>.</li>
-<li><strong>Menghapus data belajar di server:</strong> pakai tombol di bawah saat Anda sudah masuk.</li>
+<li><strong>Menghapus data belajar di server:</strong> pakai tombol di bawah saat kamu sudah masuk.</li>
 <li><strong>Menghapus akun sepenuhnya:</strong> ajukan permintaan lewat <span id="pv-contact">repositori GitHub proyek</span>. Kami memprosesnya paling lambat 14 hari.</li>
 </ul>
 <div class="icd-card" id="pv-del" hidden>
@@ -53,7 +53,7 @@ function paint(){
 }
 ICD.ready(paint); document.addEventListener('icd:auth', paint);
 q('#pv-btn').addEventListener('click', function(){
-  ICD.dialog({ title: 'Hapus data belajar dari server?', body: 'Progres, catatan, skor, dan flashcard yang tersimpan di akun akan dihapus dari server, dan Anda akan keluar. Salinan di browser ini tetap ada sampai Anda menghapusnya di beranda → Data.',
+  ICD.dialog({ title: 'Hapus data belajar dari server?', body: 'Progres, catatan, skor, dan flashcard yang tersimpan di akun akan dihapus dari server, dan kamu akan keluar. Salinan di browser ini tetap ada sampai kamu menghapusnya di beranda → Data.',
     actions: [{ label: 'Batal', primary: true }, { label: 'Hapus', run: function(){
       S.deleteRemote().then(function(){ q('#pv-msg').textContent = 'Data belajar di server sudah dihapus.'; S.logout(); })
         .catch(function(e){ q('#pv-msg').textContent = 'Gagal menghapus: ' + e.message; });

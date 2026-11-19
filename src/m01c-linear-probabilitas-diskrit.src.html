@@ -31,7 +31,7 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <li><strong>Tidak ada dua transistor yang sama.</strong> Pabrik tidak bisa membuat miliaran transistor identik. Setiap delay, setiap tegangan ambang, setiap arus bocor adalah besaran acak dengan sebaran tertentu. Sebuah chip dengan satu miliar sel memori hanya berguna bila <em>semua</em> selnya bekerja, sehingga setiap sel harus dirancang dengan margin jauh melampaui "biasanya bekerja".</li>
 <li><strong>Merancang untuk kasus terburuk terlalu mahal.</strong> Menganggap semua gerbang di sebuah path sekaligus berada di nilai terburuknya menghasilkan chip yang lambat dan boros. Analisis timing modern (OCV, POCV, LVF di M22c) memakai statistik agar margin tidak berlebihan. Selisihnya bisa belasan persen frekuensi.</li>
 <li><strong>Tool EDA adalah algoritma graf.</strong> Netlist adalah graf. Analisis timing adalah pencarian path terpanjang pada graf. Placement dan routing adalah optimasi pada graf. Bahkan simulasi RTL mengurutkan evaluasi gerbang dengan urutan topologis.</li>
-<li><strong>Menghitung kemungkinan menentukan strategi verifikasi.</strong> Adder 32 bit punya 2<sup>64</sup> kombinasi masukan. Mengetahui bahwa angka itu mustahil dicoba semuanya adalah alasan adanya constrained-random, coverage, dan formal (M18, M19).</li>
+<li><strong>Menghitung kemungkinan menentukan strategi verifikasi.</strong> Adder 32 bit punya 2<sup>64</sup> kombinasi input. Mengetahui bahwa angka itu mustahil dicoba semuanya adalah alasan adanya constrained-random, coverage, dan formal (M18, M19).</li>
 </ul>
 <div class="icd-box ok"><b>Yang dibawa pulang</b>Engineer chip berpikir dalam sebaran, bukan dalam satu angka. Pertanyaannya bukan "berapa delay path ini?" melainkan "seberapa sering delay path ini melampaui batas, dan berapa chip yang gagal karenanya?"</div>
 </section>
@@ -39,7 +39,7 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a> (eksponen, logaritma) dan <a href="m01b-kompleks-kalkulus.html">M01b</a> (integral sebagai luas, fungsi eksponensial).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menulis sistem persamaan linear dalam bentuk <span data-term="matriks">matriks</span> <i>A</i><b>x</b> = <b>b</b>, mengalikan matriks, dan menghitung <span data-term="det">determinan</span> serta invers matriks 2 × 2.</li>
 <li>Menyelesaikan sistem tiga persamaan dengan <span data-term="gauss">eliminasi Gauss</span>, dan mengenali sistem <span data-term="singular">singular</span>.</li>
@@ -59,11 +59,11 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <h3>Probabilitas: peramal yang jujur</h3>
 <p>Peramal cuaca tidak tahu apakah besok hujan, tetapi dari ratusan hari serupa ia tahu 30% di antaranya hujan. Probabilitas adalah bilangan antara 0 dan 1 yang menyatakan seberapa sering sesuatu terjadi bila situasinya diulang sangat banyak kali. <em>Di mana analogi ini berhenti:</em> hari-hari tidak pernah benar-benar berulang, sedangkan pabrik chip benar-benar mengulang proses yang sama miliaran kali. Di sini probabilitas bukan kiasan; "satu per sejuta" berarti benar-benar seribu sel rusak dalam satu miliar sel.</p>
 <h3>Simpangan baku: lebar kerumunan</h3>
-<p>Minta seratus orang melempar bola ke sasaran. Lemparan mengumpul di sekitar satu titik (rata-rata) dengan sebaran tertentu. Simpangan baku σ mengukur lebar kerumunan itu. Sekitar dua pertiga lemparan jatuh dalam satu σ dari pusat; hampir semuanya dalam tiga σ. <em>Di mana analogi ini berhenti:</em> "hampir semuanya" tidak cukup untuk chip. Dengan satu miliar sel, kejadian yang peluangnya satu per sejuta terjadi seribu kali. Karena itu perancang memori berbicara tentang 5σ dan 6σ, wilayah yang tidak pernah Anda lihat dalam seratus lemparan.</p>
+<p>Minta seratus orang melempar bola ke sasaran. Lemparan mengumpul di sekitar satu titik (rata-rata) dengan sebaran tertentu. Simpangan baku σ mengukur lebar kerumunan itu. Sekitar dua pertiga lemparan jatuh dalam satu σ dari pusat; hampir semuanya dalam tiga σ. <em>Di mana analogi ini berhenti:</em> "hampir semuanya" tidak cukup untuk chip. Dengan satu miliar sel, kejadian yang peluangnya satu per sejuta terjadi seribu kali. Karena itu perancang memori berbicara tentang 5σ dan 6σ, wilayah yang tidak pernah kamu lihat dalam seratus lemparan.</p>
 <h3>Monte Carlo: mencoba berkali-kali dengan dadu</h3>
-<p>Ingin tahu peluang menang sebuah permainan kartu yang rumit? Daripada menurunkan rumus, mainkan seribu kali dan hitung berapa kali menang. Monte Carlo melakukan itu dengan komputer: bangkitkan variasi acak, simulasikan, ulangi, lalu hitung statistiknya. <em>Di mana analogi ini berhenti:</em> permainan kartu cepat dimainkan. Satu simulasi rangkaian bisa memakan menit, dan untuk mengukur peluang satu per semiliar Anda butuh bermiliar-miliar percobaan; di situlah teknik khusus diperlukan.</p>
+<p>Ingin tahu peluang menang sebuah permainan kartu yang rumit? Daripada menurunkan rumus, mainkan seribu kali dan hitung berapa kali menang. Monte Carlo melakukan itu dengan komputer: bangkitkan variasi acak, simulasikan, ulangi, lalu hitung statistiknya. <em>Di mana analogi ini berhenti:</em> permainan kartu cepat dimainkan. Satu simulasi rangkaian bisa memakan menit, dan untuk mengukur peluang satu per semiliar kamu butuh bermiliar-miliar percobaan; di situlah teknik khusus diperlukan.</p>
 <h3>Graf: peta jalur, bukan peta wilayah</h3>
-<p>Peta kereta bawah tanah tidak peduli jarak sebenarnya atau belokan rel. Ia hanya menunjukkan stasiun dan sambungan antar stasiun. Itulah graf: simpul dan sambungan. Netlist sebuah chip adalah graf dengan gerbang sebagai simpul dan kawat sebagai sambungan. <em>Di mana analogi ini berhenti:</em> kereta bisa berjalan dua arah, sedangkan sinyal logika mengalir satu arah, dari keluaran gerbang ke masukan gerbang berikutnya. Graf chip <em>berarah</em>, dan sifat inilah yang membuat urutan evaluasi dan analisis timing mungkin dilakukan.</p>
+<p>Peta kereta bawah tanah tidak peduli jarak sebenarnya atau belokan rel. Ia hanya menunjukkan stasiun dan sambungan antar stasiun. Itulah graf: simpul dan sambungan. Netlist sebuah chip adalah graf dengan gerbang sebagai simpul dan kawat sebagai sambungan. <em>Di mana analogi ini berhenti:</em> kereta bisa berjalan dua arah, sedangkan sinyal logika mengalir satu arah, dari output gerbang ke input gerbang berikutnya. Graf chip <em>berarah</em>, dan sifat inilah yang membuat urutan evaluasi dan analisis timing mungkin dilakukan.</p>
 </section>
 
 <section class="icd-sec" id="s04">
@@ -146,7 +146,7 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <p><strong>Galatnya.</strong> Rata-rata dari <i>N</i> sampel sendiri adalah besaran acak dengan simpangan baku σ/√<i>N</i> (bagian 4.5). Untuk taksiran peluang gagal <i>p</i> dari <i>N</i> percobaan, simpangan bakunya</p>
 <div class="icd-eq"><math display="block"><msub><mi>&#x3C3;</mi><mover><mi>p</mi><mo>^</mo></mover></msub><mo>=</mo><msqrt><mfrac><mrow><mi>p</mi><mo>(</mo><mn>1</mn><mo>&#x2212;</mo><mi>p</mi><mo>)</mo></mrow><mi>N</mi></mfrac></msqrt></math><span class="alt">σ_p̂ = √(p(1 − p)/N)</span></div>
 <p>(dari variansi binomial <i>Np</i>(1 − <i>p</i>) dibagi <i>N</i>²). Dua akibat praktis. Pertama, agar galat turun sepuluh kali, jumlah sampel harus naik seratus kali. Kedua, untuk mengukur <i>p</i> kecil dengan galat relatif ε diperlukan kira-kira <i>N</i> ≈ 1/(<i>p</i>ε²) sampel: peluang 10<sup>−3</sup> dengan galat 10% butuh 100 000 percobaan.</p>
-<div class="icd-box model"><b>Model buku teks lawan kenyataan</b>Seluruh bagian ini mengandaikan sebaran normal dan variabel yang saling bebas. Pada devais nyata, ekor sebaran sering tidak normal: arus bocor, misalnya, bergantung eksponensial pada tegangan ambang sehingga sebarannya miring (log-normal). Variasi juga punya bagian yang berkorelasi antar transistor berdekatan. Rumus di sini memberi intuisi dan taksiran pertama yang benar; signoff memakai model yang dikarakterisasi dari silikon (M06c, M22c).</div>
+<div class="icd-box model"><b>Model buku teks lawan kenyataan</b>Seluruh bagian ini mengandaikan sebaran normal dan variabel yang saling bebas. Pada device nyata, ekor sebaran sering tidak normal: arus bocor, misalnya, bergantung eksponensial pada tegangan ambang sehingga sebarannya miring (log-normal). Variasi juga punya bagian yang berkorelasi antar transistor berdekatan. Rumus di sini memberi intuisi dan taksiran pertama yang benar; signoff memakai model yang dikarakterisasi dari silikon (M06c, M22c).</div>
 
 <h3>4.9 Menghitung kemungkinan</h3>
 <ul>
@@ -167,12 +167,12 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 
 <h3>4.12 Graf</h3>
 <p>Sebuah <span data-term="graf">graf</span> terdiri dari <span data-term="simpul">simpul</span> (vertex) dan <span data-term="sisi">sisi</span> (edge) yang menghubungkan pasangan simpul. Pada graf <em>berarah</em>, setiap sisi punya arah. Sebuah <em>path</em> adalah urutan simpul yang tersambung searah. <em>Siklus</em> adalah path yang kembali ke simpul awalnya. Graf berarah tanpa siklus disebut <span data-term="dag">DAG</span> (directed acyclic graph).</p>
-<p>Rangkaian kombinasional adalah DAG: gerbang sebagai simpul, kawat sebagai sisi dari keluaran ke masukan, dan tidak ada lingkaran umpan balik. Dua algoritma pada DAG mendasari banyak tool:</p>
+<p>Rangkaian kombinasional adalah DAG: gerbang sebagai simpul, kawat sebagai sisi dari output ke input, dan tidak ada lingkaran umpan balik. Dua algoritma pada DAG mendasari banyak tool:</p>
 <ul>
 <li><strong><span data-term="topo">Urutan topologis</span>:</strong> susunan semua simpul sehingga setiap sisi mengarah dari simpul yang lebih awal ke yang lebih akhir. Caranya (algoritma Kahn): ambil simpul yang tidak punya sisi masuk, keluarkan, hapus sisi-sisinya, ulangi. Jika pada suatu saat tidak ada simpul yang bisa diambil padahal masih ada sisa, graf itu memuat siklus.</li>
 <li><strong>Path terpanjang:</strong> proses simpul menurut urutan topologis; waktu tiba di sebuah simpul adalah waktu tiba terbesar di antara pendahulunya, ditambah delay simpul itu sendiri. Karena pendahulu selalu diproses lebih dulu, satu kali lewat sudah cukup.</li>
 </ul>
-<p>Yang kedua adalah inti static timing analysis (M22): waktu tiba terlama di keluaran menentukan periode clock minimum, dan path yang menghasilkannya disebut <span data-term="critpath">critical path</span>.</p>
+<p>Yang kedua adalah inti static timing analysis (M22): waktu tiba terlama di output menentukan periode clock minimum, dan path yang menghasilkannya disebut <span data-term="critpath">critical path</span>.</p>
 </section>
 
 <section class="icd-sec" id="s05">
@@ -192,14 +192,14 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <h3>3. Monte Carlo</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Coba berkali-kali dengan nilai acak, lalu hitung berapa kali hasilnya buruk. Makin banyak percobaan, makin tepat jawabannya, tetapi kemajuannya lambat: seratus kali lebih banyak percobaan hanya memberi sepuluh kali lebih teliti.</p></div>
-<div data-level="engineer"><p>Di SPICE, model devais dari PDK memuat sebaran statistik; analisis Monte Carlo menjalankan simulasi berulang dengan parameter acak. Beberapa ratus sampai beberapa ribu sampel cukup untuk menaksir μ dan σ sebuah offset atau delay. Selalu catat benih (seed) agar hasil bisa diulang, dan laporkan selang kepercayaan, bukan hanya angka tunggal: 0 gagal dari 1 000 sampel hanya membuktikan <i>p</i> di bawah kira-kira 0.3%.</p></div>
+<div data-level="engineer"><p>Di SPICE, model device dari PDK memuat sebaran statistik; analisis Monte Carlo menjalankan simulasi berulang dengan parameter acak. Beberapa ratus sampai beberapa ribu sampel cukup untuk menaksir μ dan σ sebuah offset atau delay. Selalu catat benih (seed) agar hasil bisa diulang, dan laporkan selang kepercayaan, bukan hanya angka tunggal: 0 gagal dari 1 000 sampel hanya membuktikan <i>p</i> di bawah kira-kira 0.3%.</p></div>
 <div data-level="pakar"><p>Untuk peluang 10<sup>−9</sup>, Monte Carlo biasa butuh sekitar 10<sup>11</sup> simulasi. Importance sampling menggeser sebaran pembangkit ke arah daerah gagal lalu mengoreksi setiap sampel dengan bobot rasio kerapatan, sehingga jumlah sampel turun banyak orde besaran; variasinya (mean-shift, minimum-norm, statistical blockade, scaled-sigma sampling) adalah alat baku karakterisasi sel SRAM. Urutan kuasi-acak (Sobol, Latin hypercube) mempercepat konvergensi rata-rata mendekati 1/<i>N</i> pada dimensi rendah.</p></div>
 </div>
 <h3>4. Graf dan urutan topologis</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Graf adalah titik-titik dan panah di antaranya. Urutan topologis adalah urutan mengerjakan titik sehingga setiap titik dikerjakan setelah semua yang menunjuk kepadanya, seperti memakai kaus kaki sebelum sepatu.</p></div>
 <div data-level="engineer"><p>Simulator dan tool sintesis melevelkan netlist kombinasional dengan urutan topologis agar tiap gerbang dievaluasi sekali. STA menjalankan dua lintasan: maju untuk waktu tiba (maksimum untuk setup, minimum untuk hold) dan mundur untuk waktu yang diwajibkan; selisihnya adalah slack. Siklus pada logika kombinasional (combinational loop) merusak semua ini, sehingga lint menandainya sebagai galat.</p></div>
-<div data-level="pakar"><p>Path terpanjang pada graf umum bersifat NP-hard; ia menjadi linear hanya karena grafnya DAG. Itulah sebabnya tool memutus loop dan memperlakukan flip-flop sebagai titik awal dan akhir. Banyak masalah EDA lain memang NP-hard (partisi, placement, routing, technology mapping optimal), sehingga tool memakai heuristik dan hasilnya bergantung pada benih serta urutan; perubahan kecil pada masukan bisa menggeser hasil beberapa persen. Enumerasi <i>k</i> path terburuk dan analisis berbasis path (PBA) mengurangi pesimisme analisis berbasis graf dengan biaya waktu hitung.</p></div>
+<div data-level="pakar"><p>Path terpanjang pada graf umum bersifat NP-hard; ia menjadi linear hanya karena grafnya DAG. Itulah sebabnya tool memutus loop dan memperlakukan flip-flop sebagai titik awal dan akhir. Banyak masalah EDA lain memang NP-hard (partisi, placement, routing, technology mapping optimal), sehingga tool memakai heuristik dan hasilnya bergantung pada benih serta urutan; perubahan kecil pada input bisa menggeser hasil beberapa persen. Enumerasi <i>k</i> path terburuk dan analisis berbasis path (PBA) mengurangi pesimisme analisis berbasis graf dengan biaya waktu hitung.</p></div>
 </div>
 </section>
 
@@ -220,7 +220,7 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <div class="icd-guide" data-id="v1-sing" data-answer="1">
   <p>Sebuah sistem tiga persamaan punya baris kedua yang persis dua kali baris pertama. Apa yang terjadi saat eliminasi?</p>
   <ul><li>Tidak ada masalah; hasilnya tetap satu solusi</li><li>Muncul baris yang seluruhnya nol, pivot menjadi nol, dan tidak ada solusi tunggal</li><li>Solusinya menjadi dua kali lebih besar</li><li>Eliminasi selesai satu langkah lebih cepat dengan satu solusi</li></ul>
-  <div class="explain"><p>Baris kedua tidak membawa informasi baru: Anda hanya punya dua persamaan untuk tiga yang tidak diketahui. Eliminasi mengungkapnya sebagai baris nol; pivotnya nol dan determinan nol. Pilih sistem ketiga dan langkahkan untuk melihatnya. Pada rangkaian, hal serupa terjadi bila sebuah simpul tidak punya jalur ke ground.</p></div>
+  <div class="explain"><p>Baris kedua tidak membawa informasi baru: Kamu hanya punya dua persamaan untuk tiga yang tidak diketahui. Eliminasi mengungkapnya sebagai baris nol; pivotnya nol dan determinan nol. Pilih sistem ketiga dan langkahkan untuk melihatnya. Pada rangkaian, hal serupa terjadi bila sebuah simpul tidak punya jalur ke ground.</p></div>
 </div>
 
 <div class="icd-viz" id="v2">
@@ -233,7 +233,7 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
     <label class="icd-field">Jumlah sel yang semuanya harus di dalam batas<select class="icd-select" id="v2-n"><option value="1">1</option><option value="100">100</option><option value="10000">10 ribu</option><option value="1000000" selected>1 juta</option><option value="1000000000">1 miliar</option></select></label>
   </div>
   <div class="readout" id="v2-out" aria-live="polite"></div>
-  <div class="model">Kurva adalah kerapatan normal eksak; luas dihitung dari fungsi galat komplementer (pendekatan numerik dengan galat relatif sekitar 10<sup>−7</sup>). Sumbu mendatar diberi satuan ps sebagai contoh delay. Yield mengandaikan semua sel saling bebas dan gagal bila berada di luar batas di sisi mana pun. Sebaran devais nyata menyimpang dari normal di ekornya.</div>
+  <div class="model">Kurva adalah kerapatan normal eksak; luas dihitung dari fungsi galat komplementer (pendekatan numerik dengan galat relatif sekitar 10<sup>−7</sup>). Sumbu mendatar diberi satuan ps sebagai contoh delay. Yield mengandaikan semua sel saling bebas dan gagal bila berada di luar batas di sisi mana pun. Sebaran device nyata menyimpang dari normal di ekornya.</div>
 </div>
 <div class="icd-guide" data-id="v2-juta" data-answer="2">
   <p>Satu juta sel, masing-masing harus berada dalam ±3σ. Kira-kira berapa sel yang berada di luar batas?</p>
@@ -266,12 +266,12 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
     <label class="icd-field"><span>Delay G4 = <b id="v4-d4v"></b></span><input type="range" id="v4-d4" min="10" max="80" step="5" value="20"></label>
   </div>
   <div class="readout" id="v4-out" aria-live="polite"></div>
-  <div class="model">Lima gerbang dan tiga masukan; delay gerbang lain tetap (G2 45 ps, G3 25 ps, G5 15 ps), masukan tiba pada t = 0, dan delay kawat diabaikan. Waktu tiba = waktu tiba terbesar di antara pendahulu + delay gerbang. Ini model STA paling sederhana; STA nyata memisahkan tepi naik dan turun serta memperhitungkan slew dan beban.</div>
+  <div class="model">Lima gerbang dan tiga input; delay gerbang lain tetap (G2 45 ps, G3 25 ps, G5 15 ps), input tiba pada t = 0, dan delay kawat diabaikan. Waktu tiba = waktu tiba terbesar di antara pendahulu + delay gerbang. Ini model STA paling sederhana; STA nyata memisahkan tepi naik dan turun serta memperhitungkan slew dan beban.</div>
 </div>
 <div class="icd-guide" data-id="v4-slack" data-answer="0">
-  <p>Pada pengaturan awal, waktu tiba di keluaran adalah 85 ps. Jika delay G1 naik dari 30 ps menjadi 40 ps, berapa waktu tiba di keluaran?</p>
+  <p>Pada pengaturan awal, waktu tiba di output adalah 85 ps. Jika delay G1 naik dari 30 ps menjadi 40 ps, berapa waktu tiba di output?</p>
   <ul><li>Tetap 85 ps</li><li>95 ps</li><li>90 ps</li><li>75 ps</li></ul>
-  <div class="explain"><p>G1 tidak berada di critical path. Di masukan G3, sinyal dari G2 tiba pada 45 ps sedangkan dari G1 pada 30 ps, jadi G1 punya kelonggaran 15 ps sebelum mulai menentukan. Kelonggaran itu disebut slack. Naikkan G1 sampai 50 ps dan perhatikan critical path berpindah.</p></div>
+  <div class="explain"><p>G1 tidak berada di critical path. Di input G3, sinyal dari G2 tiba pada 45 ps sedangkan dari G1 pada 30 ps, jadi G1 punya kelonggaran 15 ps sebelum mulai menentukan. Kelonggaran itu disebut slack. Naikkan G1 sampai 50 ps dan perhatikan critical path berpindah.</p></div>
 </div>
 </section>
 
@@ -305,8 +305,8 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 </ol>
 <p><strong>Pelajaran.</strong> Dari 4σ ke 5σ, yield melompat dari nol ke tiga perempat. Karena itulah memori nyata menyediakan baris dan kolom cadangan serta ECC (M29): keduanya mengizinkan beberapa sel gagal tanpa membuang chip.</p>
 
-<h3>Contoh 4: mengapa tidak semua masukan bisa dicoba</h3>
-<p><strong>Soal.</strong> Adder 32 bit punya dua masukan 32 bit. Jika simulator mencoba satu miliar kombinasi per detik, berapa lama untuk mencoba semuanya?</p>
+<h3>Contoh 4: mengapa tidak semua input bisa dicoba</h3>
+<p><strong>Soal.</strong> Adder 32 bit punya dua input 32 bit. Jika simulator mencoba satu miliar kombinasi per detik, berapa lama untuk mencoba semuanya?</p>
 <ol>
 <li>Jumlah kombinasi: 2<sup>32</sup> × 2<sup>32</sup> = 2<sup>64</sup> (aturan perkalian).</li>
 <li>Taksir: 2<sup>64</sup> = 2<sup>4</sup> × 2<sup>60</sup> ≈ 16 × 10<sup>18</sup> = 1.6 × 10<sup>19</sup> (tepatnya 1.84 × 10<sup>19</sup>).</li>
@@ -322,10 +322,10 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 <li>Tambah 16 sampai tidak negatif: −13 + 16 = 3.</li>
 <li>Periksa dengan menghitung: dari 14 ke 15, ke 0, ke 1 adalah tiga langkah.</li>
 </ol>
-<p><strong>Pelajaran.</strong> Di hardware Anda tidak perlu melakukan apa pun: pengurang 4 bit otomatis membuang bit pinjaman, yang sama dengan mengambil mod 16.</p>
+<p><strong>Pelajaran.</strong> Di hardware kamu tidak perlu melakukan apa pun: pengurang 4 bit otomatis membuang bit pinjaman, yang sama dengan mengambil mod 16.</p>
 
 <h3>Contoh 6: urutan topologis dan waktu tiba</h3>
-<p><strong>Soal.</strong> Gerbang G1 (30 ps) menerima masukan a dan b. G2 (45 ps) menerima a dan c. G3 (20 ps) menerima keluaran G1 dan G2. Semua masukan tiba pada <i>t</i> = 0. Cari urutan topologis dan waktu tiba di G3.</p>
+<p><strong>Soal.</strong> Gerbang G1 (30 ps) menerima input a dan b. G2 (45 ps) menerima a dan c. G3 (20 ps) menerima output G1 dan G2. Semua input tiba pada <i>t</i> = 0. Cari urutan topologis dan waktu tiba di G3.</p>
 <ol>
 <li>Simpul tanpa sisi masuk: a, b, c. Keluarkan ketiganya.</li>
 <li>Sekarang G1 dan G2 tidak punya pendahulu tersisa. Keluarkan G1, lalu G2.</li>
@@ -337,7 +337,7 @@ table.mat th{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2);font-w
 
 <section class="icd-sec" id="s08">
 <h2>Kode</h2>
-<p>Skrip ini memuat satu fungsi untuk tiap alat di modul: penyelesai sistem linear, statistik dasar, pembangkit bilangan acak, Monte Carlo, dan dua algoritma graf. Pembangkit acaknya ditulis sendiri agar keluaran di halaman ini sama persis dengan yang Anda dapatkan di komputer mana pun.</p>
+<p>Skrip ini memuat satu fungsi untuk tiap alat di modul: penyelesai sistem linear, statistik dasar, pembangkit bilangan acak, Monte Carlo, dan dua algoritma graf. Pembangkit acaknya ditulis sendiri agar output di halaman ini sama persis dengan yang kamu dapatkan di komputer mana pun.</p>
 <pre class="icd-src" data-lang="py">
 """mc.py : aljabar linear, statistik, Monte Carlo, dan graf untuk engineer chip."""
 import math
@@ -506,7 +506,7 @@ if __name__ == "__main__":
 <li><strong>Baris 101 sampai 141:</strong> uji. Perhatikan uji ketiga <code>solve</code> yang pivot pertamanya nol sehingga memaksa pertukaran baris, serta dua uji yang memastikan galat <em>memang</em> muncul untuk matriks singular dan graf bersiklus. Menguji jalur galat sama pentingnya dengan menguji jalur normal.</li>
 <li><strong>Baris 143 sampai 155:</strong> mencetak hasil contoh soal, tabel konvergensi Monte Carlo, dan tabel yield.</li>
 </ul>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif, bug sengaja, dan solusi perluasan dijalankan dengan Python 3 sebelum modul ditulis; keluaran di bagian Lab disalin apa adanya. Visualisasi 3 memakai pembangkit yang sama dan diuji menghasilkan angka yang sama dengan skrip.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif, bug sengaja, dan solusi perluasan dijalankan dengan Python 3 sebelum modul ditulis; output di bagian Lab disalin apa adanya. Visualisasi 3 memakai pembangkit yang sama dan diuji menghasilkan angka yang sama dengan skrip.</div>
 </section>
 
 <section class="icd-sec" id="s09">
@@ -550,14 +550,14 @@ if __name__ == "__main__":
 <p><strong>1.3</strong> Data lima pengukuran delay: 98, 100, 101, 103, 98 ps. Hitung rata-rata dan simpangan baku sampelnya.</p>
 <details class="icd-sol"><summary>Solusi 1.3</summary><p>Rata-rata = 500/5 = 100 ps. Simpangan: −2, 0, 1, 3, −2; kuadratnya 4, 0, 1, 9, 4, jumlah 18. Variansi sampel = 18/4 = 4.5 ps². σ = √4.5 = 2.12 ps.</p></details>
 <h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
-<p><strong>2.1</strong> Offset masukan sebuah penguat berasal dari dua pasang transistor yang saling bebas, masing-masing menyumbang σ = 5 mV. Berapa σ offset total, dan berapa rentang ±3σ-nya?</p>
+<p><strong>2.1</strong> Offset input sebuah penguat berasal dari dua pasang transistor yang saling bebas, masing-masing menyumbang σ = 5 mV. Berapa σ offset total, dan berapa rentang ±3σ-nya?</p>
 <details class="icd-sol"><summary>Solusi 2.1</summary><p>σ total = √(5² + 5²) = 7.07 mV. Rentang ±3σ = ±21.2 mV. Menjumlahkan langsung (10 mV) akan melebih-lebihkan.</p></details>
 <p><strong>2.2</strong> Sebuah lot berisi 10 chip; tiap chip gagal dengan peluang 0.1 secara saling bebas. Hitung peluang (a) tidak ada yang gagal, (b) tepat satu gagal, (c) paling sedikit satu gagal.</p>
 <details class="icd-sol"><summary>Solusi 2.2</summary><p>(a) 0.9<sup>10</sup> = 0.349. (b) C(10, 1) × 0.1 × 0.9<sup>9</sup> = 10 × 0.1 × 0.387 = 0.387. (c) 1 − 0.349 = 0.651.</p></details>
 <p><strong>2.3</strong> Delay sebuah blok berdistribusi normal dengan μ = 500 ps dan σ = 20 ps. Berapa periode clock agar tidak lebih dari 1 350 dari sejuta chip gagal karena blok ini?</p>
 <details class="icd-sol"><summary>Solusi 2.3</summary><p>1 350 ppm satu sisi berpadanan dengan 3σ. Periode = 500 + 3 × 20 = 560 ps.</p></details>
 <h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
-<p><strong>3.1</strong> Anda menjalankan Monte Carlo 2 000 sampel dan menemukan 12 gagal. Taksir peluang gagal beserta simpangan baku taksirannya. Berapa sampel dibutuhkan agar simpangan baku itu turun menjadi sepersepuluhnya?</p>
+<p><strong>3.1</strong> Kamu menjalankan Monte Carlo 2 000 sampel dan menemukan 12 gagal. Taksir peluang gagal beserta simpangan baku taksirannya. Berapa sampel dibutuhkan agar simpangan baku itu turun menjadi sepersepuluhnya?</p>
 <details class="icd-sol"><summary>Solusi 3.1</summary><p><i>p</i> ≈ 12/2 000 = 0.006. Simpangan baku = √(0.006 × 0.994/2 000) = 0.0017. Jadi taksirannya 0.6% ± 0.17%: galat relatif hampir 30%. Agar turun sepuluh kali, sampel harus seratus kali lebih banyak: 200 000.</p></details>
 <p><strong>3.2</strong> Dua path menuju flip-flop yang sama: path A μ = 300 ps, σ = 10 ps; path B μ = 310 ps, σ = 2 ps. Mana yang lebih berbahaya untuk periode clock 325 ps? Apa pelajarannya untuk memilih "critical path"?</p>
 <details class="icd-sol"><summary>Solusi 3.2</summary><p>Path A: <i>z</i> = (325 − 300)/10 = 2.5, peluang gagal 0.62%. Path B: <i>z</i> = (325 − 310)/2 = 7.5, peluang gagal praktis nol. Path A lebih berbahaya walaupun rata-ratanya lebih cepat. Pelajaran: critical path secara statistik bukan yang rata-ratanya terlama, melainkan yang jarak ke batasnya paling sedikit dalam satuan sigma. STA statistik mengurutkan path menurut ukuran ini.</p></details>
@@ -579,10 +579,10 @@ if __name__ == "__main__":
 <p><strong>Kerangka jawaban:</strong> Rata-rata dijumlahkan. Bagian variasi yang acak dan saling bebas digabung dengan akar jumlah kuadrat sehingga tumbuh sebanding √<i>n</i>; bagian yang berkorelasi (global) dijumlahkan langsung. Hubungkan dengan praktik: OCV memakai satu faktor derating pukul rata; AOCV membuat faktor itu mengecil untuk path yang lebih dalam; POCV dan LVF membawa σ tiap sel dan menggabungkannya secara statistik.</p></details>
 <details class="icd-sol"><summary>"Apa itu urutan topologis dan di mana dipakai?"</summary>
 <p><strong>Kerangka jawaban:</strong> Susunan simpul DAG sehingga setiap sisi mengarah maju. Dihitung dengan algoritma Kahn atau penelusuran mendalam dalam waktu sebanding jumlah simpul ditambah sisi. Dipakai di levelisasi simulasi, STA (propagasi waktu tiba), dan urutan kompilasi. Sebut syaratnya: tidak ada siklus, dan apa yang dilakukan tool bila ada combinational loop.</p></details>
-<details class="icd-sol"><summary>"Berapa sampel Monte Carlo yang Anda perlukan?"</summary>
+<details class="icd-sol"><summary>"Berapa sampel Monte Carlo yang kamu perlukan?"</summary>
 <p><strong>Kerangka jawaban:</strong> Tergantung apa yang ditaksir. Untuk μ dan σ, ratusan sampai ribuan cukup; galat rata-rata σ/√<i>N</i>. Untuk peluang gagal <i>p</i>, butuh kira-kira 100/<i>p</i> sampel untuk galat relatif 10%. Untuk peristiwa di ekor (5σ ke atas) Monte Carlo biasa tidak layak; pakai importance sampling atau metode ekor lain. Kandidat yang menyebut angka tanpa bertanya "untuk menaksir apa?" kehilangan nilai.</p></details>
-<details class="icd-sol"><summary>"Matriks rangkaian Anda singular. Apa kemungkinan penyebabnya?"</summary>
-<p><strong>Kerangka jawaban:</strong> Persamaannya tidak saling bebas. Secara fisik: simpul mengambang tanpa jalur DC ke ground (misalnya di antara dua kapasitor), loop sumber tegangan atau induktor ideal, atau potongan rangkaian yang terpisah. Perbaikan: beri jalur DC (resistor besar), periksa sambungan, atau andalkan <code>gmin</code>. Tunjukkan bahwa Anda menghubungkan matematika dengan rangkaian.</p></details>
+<details class="icd-sol"><summary>"Matriks rangkaian kamu singular. Apa kemungkinan penyebabnya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Persamaannya tidak saling bebas. Secara fisik: simpul mengambang tanpa jalur DC ke ground (misalnya di antara dua kapasitor), loop sumber tegangan atau induktor ideal, atau potongan rangkaian yang terpisah. Perbaikan: beri jalur DC (resistor besar), periksa sambungan, atau andalkan <code>gmin</code>. Tunjukkan bahwa kamu menghubungkan matematika dengan rangkaian.</p></details>
 <details class="icd-sol"><summary>"Counter n bit berisi nilai maksimum lalu ditambah satu. Apa yang terjadi, dan kapan itu berguna?"</summary>
 <p><strong>Kerangka jawaban:</strong> Kembali ke nol, karena hardware menghitung mod 2<sup><i>n</i></sup>. Berguna: penunjuk FIFO melingkar tidak butuh logika khusus saat berputar, dan selisih dua penunjuk tetap benar selama jaraknya di bawah 2<sup><i>n</i></sup>. Berbahaya: counter waktu yang berputar tanpa disadari, atau perbandingan "lebih besar" antara nilai yang sudah berputar. Sebut bit tambahan pada penunjuk FIFO untuk membedakan penuh dari kosong.</p></details>
 </section>
@@ -596,7 +596,7 @@ mkdir -p ~/icd/m01c &amp;&amp; cd ~/icd/m01c
 nano mc.py                 # tempel kode dari bagian 8, atau salin lab/m01c/mc.py
 python3 mc.py
 </pre>
-<p>Keluaran yang benar (butuh satu sampai beberapa detik):</p>
+<p>Output yang benar (butuh satu sampai beberapa detik):</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 tegangan simpul      = [1.0, 0.5, 0.5]
@@ -664,7 +664,7 @@ assert abs(sigma_needed(1, 1 - tail(3)) - 3) &lt; 1e-3
 for n in (1e3, 1e6, 1e9):
     print(f"{n:.0e} sel, yield 99%: {sigma_needed(n, 0.99):.2f} sigma")
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 1e+03 sel, yield 99%: 4.26 sigma
 1e+06 sel, yield 99%: 5.61 sigma
@@ -680,7 +680,7 @@ for n in (1e3, 1e6, 1e9):
 <li>Sebaran dirangkum oleh μ dan σ. Besaran bebas digabung dengan akar jumlah kuadrat; besaran berkorelasi penuh dijumlahkan langsung.</li>
 <li>Distribusi normal mengubah "berapa sigma" menjadi peluang; untuk <i>N</i> salinan, yield = <i>e</i><sup>−<i>Np</i></sup>.</li>
 <li>Monte Carlo menaksir apa pun dengan mencoba, dengan galat sebanding 1/√<i>N</i>.</li>
-<li>Kombinatorik menunjukkan mengapa ruang masukan tidak bisa dicoba habis; aritmetika modular adalah aritmetika asli register.</li>
+<li>Kombinatorik menunjukkan mengapa ruang input tidak bisa dicoba habis; aritmetika modular adalah aritmetika asli register.</li>
 <li>Netlist adalah graf; urutan topologis dan path terpanjang adalah inti analisis timing.</li>
 </ul>
 <h3>Cheat sheet satu layar</h3>

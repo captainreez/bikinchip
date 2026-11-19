@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1886,25 +1886,25 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M04 bagian b dari 4 · sekitar 14 jam · prasyarat: <a href="m04a-c-pointer.html">M04a</a> (pointer, stack, struct), <a href="m03a-bilangan.html">M03a</a> (biner, two's complement, flag)</p>
 <h1>M04b Assembly, toolchain, dan sistem operasi</h1>
-<p>Di M04a program C adalah byte di memori. Modul ini membuka apa yang terjadi di antara file <code>.c</code> dan prosesor yang menjalankannya: bagaimana kompiler menurunkan C menjadi instruksi mesin, bagaimana <em>assembler</em> dan <em>linker</em> menyusun potongan-potongan itu menjadi satu berkas yang bisa dijalankan, apa yang dilakukan <em>loader</em> dan sistem operasi ketika Anda mengetik nama program, dan bagaimana sebuah proses memandang memorinya sebagai ruang alamat virtual. Kita memakai x86-64 dengan sintaks Intel karena Anda hampir pasti punya komputer x86-64, tetapi semua ide (register, flag, konvensi pemanggilan, relokasi, tabel halaman) berlaku di ARM64 dan RISC-V yang akan dibangun di M11. Semua contoh dirakit, ditautkan, dan dijalankan sungguhan, dan model-model mainan di visualisasi dibandingkan dengan alat nyata (<code>ld</code>, <code>nm</code>, <code>objdump</code>, <code>strace</code>).</p>
+<p>Di M04a program C adalah byte di memori. Modul ini membuka apa yang terjadi di antara file <code>.c</code> dan prosesor yang menjalankannya: bagaimana kompiler menurunkan C menjadi instruksi mesin, bagaimana <em>assembler</em> dan <em>linker</em> menyusun potongan-potongan itu menjadi satu berkas yang bisa dijalankan, apa yang dilakukan <em>loader</em> dan sistem operasi ketika kamu mengetik nama program, dan bagaimana sebuah proses memandang memorinya sebagai ruang alamat virtual. Kita memakai x86-64 dengan sintaks Intel karena kamu hampir pasti punya komputer x86-64, tetapi semua ide (register, flag, konvensi pemanggilan, relokasi, tabel halaman) berlaku di ARM64 dan RISC-V yang akan dibangun di M11. Semua contoh dirakit, ditautkan, dan dijalankan sungguhan, dan model-model mainan di visualisasi dibandingkan dengan alat nyata (<code>ld</code>, <code>nm</code>, <code>objdump</code>, <code>strace</code>).</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
 <ul>
-<li><strong>Prosesor yang akan Anda rancang menjalankan instruksi, dan instruksi itu berasal dari rantai alat ini.</strong> Arsitektur set instruksi (ISA, M11), pipeline (M12), cache (M13) hanya bermakna bila Anda tahu seperti apa program nyata: loop kecil, pemanggilan fungsi, akses stack, panggilan sistem.</li>
+<li><strong>Prosesor yang akan kamu rancang menjalankan instruksi, dan instruksi itu berasal dari rantai alat ini.</strong> Arsitektur set instruksi (ISA, M11), pipeline (M12), cache (M13) hanya bermakna bila kamu tahu seperti apa program nyata: loop kecil, pemanggilan fungsi, akses stack, panggilan sistem.</li>
 <li><strong>Bring-up chip dimulai dari assembly dan linker script.</strong> Kode pertama yang berjalan di silikon baru (boot ROM, startup, penyalinan <code>.data</code>, penghapusan <code>.bss</code>) ditulis dengan assembly dan ditempatkan di alamat tepat oleh linker. Peta memori di M15 adalah input langsung bagi linker script.</li>
 <li><strong>Debug di perbatasan hardware-software menuntut membaca disassembly.</strong> "Mengapa register ini tidak tertulis?", "mengapa loop ini dibuang?", "mengapa akses ini tak rata?" dijawab dengan <code>objdump -d</code>, bukan dengan menebak C.</li>
 <li><strong>Verifikasi dan model bergantung pada ABI.</strong> DPI-C, ISA simulator, dan pustaka C dari testbench (M18) memanggil fungsi lewat konvensi pemanggilan; salah satu register argumen yang tertukar memberi hasil aneh yang mustahil dilihat dari C saja.</li>
 <li><strong>Memori virtual, izin halaman, dan sinyal adalah batas antara program dan mesin.</strong> MMU (M13), trap dan interrupt (M11), dan keamanan (M32) dimulai dari pemahaman bahwa "segmentation fault" adalah hardware yang menolak sebuah alamat, lalu kernel yang menerjemahkannya menjadi sinyal.</li>
-<li><strong>Wawancara.</strong> "Apa yang terjadi ketika Anda menjalankan <code>./a.out</code>?", "Apa itu relokasi?", "Beda proses dan thread?", "Bagaimana fork bisa murah?" muncul di wawancara firmware, arsitektur, dan verifikasi.</li>
+<li><strong>Wawancara.</strong> "Apa yang terjadi ketika kamu menjalankan <code>./a.out</code>?", "Apa itu relokasi?", "Beda proses dan thread?", "Bagaimana fork bisa murah?" muncul di wawancara firmware, arsitektur, dan verifikasi.</li>
 </ul>
 <div class="icd-box ok"><b>Yang dibawa pulang</b>Sebuah program melewati lima tahap: <em>preprocess → compile → assemble → link → load</em>. Assembler menghasilkan potongan kode dengan alamat yang belum final dan daftar <em>relokasi</em>; linker menentukan alamat dan menambal relokasi dengan rumus nilai = <i>S</i> + <i>A</i> − <i>P</i>; kernel memetakan segmen berkas ke ruang alamat virtual dan melompat ke titik masuk. CPU hanya melihat register, flag, dan memori; fungsi saling memanggil lewat ABI (argumen di rdi, rsi, rdx, rcx, r8, r9; hasil di rax). Program tak pernah menyentuh memori fisik: ia memakai alamat virtual, dan MMU memeriksa izin pada tiap akses.</div>
 </section>
 
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
-<p><strong>Prasyarat:</strong> <a href="m04a-c-pointer.html">M04a</a> (pointer, stack, struct, tata letak memori) dan <a href="m03a-bilangan.html">M03a</a> (heksadesimal, two's complement, flag nol dan tanda). Anda butuh Linux atau WSL2 dengan <code>gcc</code>, <code>binutils</code> (<code>as</code>, <code>ld</code>, <code>nm</code>, <code>objdump</code>, <code>readelf</code>), dan <code>strace</code> (lihat lab).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Prasyarat:</strong> <a href="m04a-c-pointer.html">M04a</a> (pointer, stack, struct, tata letak memori) dan <a href="m03a-bilangan.html">M03a</a> (heksadesimal, two's complement, flag nol dan tanda). Kamu butuh Linux atau WSL2 dengan <code>gcc</code>, <code>binutils</code> (<code>as</code>, <code>ld</code>, <code>nm</code>, <code>objdump</code>, <code>readelf</code>), dan <code>strace</code> (lihat lab).</p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menyebut lima tahap dari <code>.c</code> sampai proses yang berjalan, perintah <code>gcc</code> untuk berhenti di tiap tahap, dan artefak yang dihasilkan.</li>
 <li>Membaca sebuah berkas objek ELF: bagian (<code>.text</code>, <code>.data</code>, <code>.bss</code>, <code>.rodata</code>), tabel <span data-term="symbol">simbol</span>, dan entri <span data-term="reloc">relokasi</span>; dan membedakan <em>bagian</em> (untuk linker) dari <em>segmen</em> (untuk loader).</li>
@@ -1920,11 +1920,11 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s03">
 <h2>Intuisi dulu</h2>
 <h3>Rantai alat: dari resep ke hidangan</h3>
-<p>Bayangkan Anda menulis resep (C). Penerjemah mengubahnya menjadi langkah-langkah sangat kecil dan mekanis (assembly): "ambil dua butir telur", "aduk 20 kali". Perakit mengubah tiap langkah menjadi kode yang dimengerti dapur (bahasa mesin), tetapi masih bagian demi bagian: satu halaman untuk adonan, satu untuk saus, dan di halaman adonan tertulis "lanjut ke langkah di halaman saus, lihat nanti". Penaut mengumpulkan semua halaman, menentukan urutannya, memberi nomor halaman yang tetap, lalu mengisi semua "lihat nanti" dengan nomor yang benar. Pemuat (kernel) membawa buku jadi itu ke dapur dan menaruhnya di rak yang sudah disiapkan; CPU kemudian membaca langkah satu demi satu. <em>Di mana analogi ini berhenti:</em> halaman buku tak pernah berpindah tempat, sedangkan program modern ditempatkan di alamat acak tiap dijalankan (ASLR, pustaka bersama), sehingga sebagian penautan dilakukan lagi saat dimuat; dan "dapur" tak menyentuh rak asli, melainkan memakai nomor rak palsu yang diterjemahkan perangkat keras.</p>
+<p>Bayangkan kamu menulis resep (C). Penerjemah mengubahnya menjadi langkah-langkah sangat kecil dan mekanis (assembly): "ambil dua butir telur", "aduk 20 kali". Perakit mengubah tiap langkah menjadi kode yang dimengerti dapur (bahasa mesin), tetapi masih bagian demi bagian: satu halaman untuk adonan, satu untuk saus, dan di halaman adonan tertulis "lanjut ke langkah di halaman saus, lihat nanti". Penaut mengumpulkan semua halaman, menentukan urutannya, memberi nomor halaman yang tetap, lalu mengisi semua "lihat nanti" dengan nomor yang benar. Pemuat (kernel) membawa buku jadi itu ke dapur dan menaruhnya di rak yang sudah disiapkan; CPU kemudian membaca langkah satu demi satu. <em>Di mana analogi ini berhenti:</em> halaman buku tak pernah berpindah tempat, sedangkan program modern ditempatkan di alamat acak tiap dijalankan (ASLR, pustaka bersama), sehingga sebagian penautan dilakukan lagi saat dimuat; dan "dapur" tak menyentuh rak asli, melainkan memakai nomor rak palsu yang diterjemahkan perangkat keras.</p>
 <h3>CPU: kalkulator dengan beberapa laci dan satu penunjuk</h3>
 <p>CPU hanya punya sedikit tempat kerja cepat (register), sebuah penunjuk <em>instruksi berikutnya</em> (rip), beberapa lampu hasil (flag: nol, negatif, carry), dan jalan ke memori. Satu instruksi = satu aksi kecil: salin, tambah, bandingkan, lompat. Sebuah <code>for</code> di C menjadi: tambahkan, kurangi penghitung, lihat apakah lampu "nol" menyala, lompat mundur bila belum. <em>Di mana analogi ini berhenti:</em> prosesor modern menjalankan banyak instruksi sekaligus dan tidak berurutan di balik layar (M12), tetapi menjaga ilusi urutan; dan instruksi yang tampak satu bisa dipecah menjadi beberapa operasi mikro.</p>
 <h3>Proses dan memori virtual: kamar hotel bernomor palsu</h3>
-<p>Tiap proses mendapat "kamar" dengan nomor 0 sampai ujung yang seolah milik sendiri. Resepsionis (MMU) memiliki buku tamu yang menerjemahkan nomor kamar palsu menjadi nomor kamar sungguhan, dan juga mencatat siapa boleh membaca, menulis, atau mengeksekusi isi tiap kamar. Dua proses boleh sama-sama memakai kamar nomor 5; keduanya berakhir di kamar sungguhan berbeda. Bila Anda meminta kamar yang tak ada dalam buku, resepsionis memanggil manajer (kernel): manajer menyiapkan kamar baru atau menyuruh Anda pergi (SIGSEGV). <em>Di mana analogi ini berhenti:</em> buku tamu terlalu besar untuk dibaca tiap kali, sehingga ada cache terjemahan (TLB), dan buku itu sendiri tersimpan di memori yang juga harus diterjemahkan oleh aturan bertingkat.</p>
+<p>Tiap proses mendapat "kamar" dengan nomor 0 sampai ujung yang seolah milik sendiri. Resepsionis (MMU) memiliki buku tamu yang menerjemahkan nomor kamar palsu menjadi nomor kamar sungguhan, dan juga mencatat siapa boleh membaca, menulis, atau mengeksekusi isi tiap kamar. Dua proses boleh sama-sama memakai kamar nomor 5; keduanya berakhir di kamar sungguhan berbeda. Bila kamu meminta kamar yang tak ada dalam buku, resepsionis memanggil manajer (kernel): manajer menyiapkan kamar baru atau menyuruh kamu pergi (SIGSEGV). <em>Di mana analogi ini berhenti:</em> buku tamu terlalu besar untuk dibaca tiap kali, sehingga ada cache terjemahan (TLB), dan buku itu sendiri tersimpan di memori yang juga harus diterjemahkan oleh aturan bertingkat.</p>
 </section>
 
 <section class="icd-sec" id="s04">
@@ -1955,7 +1955,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <tr><th scope="row">.symtab, .strtab</th><td>Tabel <span data-term="symbol">simbol</span> dan nama</td><td>ya (hilang bila di-<em>strip</em>)</td></tr>
 <tr><th scope="row">.rela.text</th><td>Daftar <span data-term="reloc">relokasi</span> untuk <code>.text</code></td><td>ya, hanya di berkas objek</td></tr>
 </tbody></table></div>
-<p>Satu simbol punya nama, bagian, nilai (offset), dan ikatan (lokal atau global). Keluaran <code>nm</code> memakai huruf: <code>T</code> (global di .text), <code>t</code> (lokal di .text), <code>D</code>/<code>d</code> (.data), <code>B</code>/<code>b</code> (.bss), <code>R</code>/<code>r</code> (.rodata), dan <code>U</code> (<em>undefined</em>: dipakai di sini, didefinisikan di tempat lain). Contoh lab: <code>start.o</code> berisi <code>T _start</code> dan <code>U add_mul</code>; <code>util.o</code> berisi <code>T add_mul</code>.</p>
+<p>Satu simbol punya nama, bagian, nilai (offset), dan ikatan (lokal atau global). Output <code>nm</code> memakai huruf: <code>T</code> (global di .text), <code>t</code> (lokal di .text), <code>D</code>/<code>d</code> (.data), <code>B</code>/<code>b</code> (.bss), <code>R</code>/<code>r</code> (.rodata), dan <code>U</code> (<em>undefined</em>: dipakai di sini, didefinisikan di tempat lain). Contoh lab: <code>start.o</code> berisi <code>T _start</code> dan <code>U add_mul</code>; <code>util.o</code> berisi <code>T add_mul</code>.</p>
 <p><strong>Bagian lawan segmen.</strong> Linker bekerja dengan <em>bagian</em>; loader bekerja dengan <em>segmen</em> (<em>program header</em>), yang menggabungkan beberapa bagian berizin sama: satu segmen LOAD berizin r-x (kode dan rodata) dan satu berizin rw- (data dan bss). Kernel memetakan segmen itu ke alamat virtual dengan izin yang tercatat; di situlah izin x dan w pada visualisasi 4 berasal.</p>
 
 <h3>4.3 Penautan dan relokasi</h3>
@@ -1970,7 +1970,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p>Pada penautan <em>statis</em> semuanya selesai di <code>ld</code>. Pada penautan <em>dinamis</em> (default <code>gcc</code> untuk program biasa), pustaka bersama (<code>libc.so</code>) ditautkan saat dimuat oleh <code>ld.so</code> lewat tabel offset global (GOT) dan stub PLT; modul ini memakai penautan statis agar semua alamat terlihat dan bisa dihitung tangan.</p>
 
 <h3>4.4 x86-64: register, flag, dan instruksi</h3>
-<p>x86-64 punya 16 register umum 64 bit: <code>rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp, r8…r15</code>, penunjuk instruksi <code>rip</code>, dan register flag <code>rflags</code>. Nama <code>eax</code> adalah 32 bit bawah <code>rax</code>. <strong>Aturan penting:</strong> menulis register 32 bit mengisi nol 32 bit atas, sehingga <code>xor eax, eax</code> menghapus seluruh <code>rax</code> dan <code>mov eax, 1</code> mengisi <code>rax = 1</code>; ini lebih pendek dari bentuk 64 bit dan dipakai kompiler di mana-mana. Flag yang dipakai modul ini: <strong>ZF</strong> (hasil nol), <strong>SF</strong> (hasil negatif, bit teratas), <strong>CF</strong> (carry/borrow tak bertanda), dan <strong>OF</strong> (overflow bertanda). Dalam sintaks Intel tujuan ditulis lebih dulu: <code>add rax, rdi</code> berarti <code>rax ← rax + rdi</code>.</p>
+<p>x86-64 punya 16 register umum 64 bit: <code>rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp, r8…r15</code>, penunjuk instruksi <code>rip</code>, dan register flag <code>rflags</code>. Nama <code>eax</code> adalah 32 bit bawah <code>rax</code>. <strong>Aturan penting:</strong> menulis register 32 bit mengisi nol 32 bit atas, sehingga <code>xor eax, eax</code> menghapus seluruh <code>rax</code> dan <code>mov eax, 1</code> mengisi <code>rax = 1</code>; ini lebih pendek dari bentuk 64 bit dan dipakai kompiler di mana-mana. Flag yang dipakai modul ini: <strong>ZF</strong> (hasil nol), <strong>SF</strong> (hasil negatif, bit teratas), <strong>CF</strong> (carry/borrow unsigned), dan <strong>OF</strong> (overflow bertanda). Dalam sintaks Intel tujuan ditulis lebih dulu: <code>add rax, rdi</code> berarti <code>rax ← rax + rdi</code>.</p>
 <div class="icd-tablewrap"><table class="icd">
 <thead><tr><th scope="col">Instruksi</th><th scope="col">Efek</th><th scope="col">Flag</th></tr></thead>
 <tbody>
@@ -2040,7 +2040,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>2. Penautan: dari objek ke eksekutabel</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Setiap berkas <code>.c</code> dikompilasi sendiri menjadi potongan yang belum tahu di mana potongan lain berada. Penaut menyatukan semua potongan, menentukan alamat tiap fungsi, lalu mengisi semua tempat yang tadinya kosong ("panggil fungsi X di sini") dengan alamat yang benar. Jika fungsi X tidak ada, atau ada dua, penaut berhenti dengan pesan galat.</p></div>
-<div data-level="engineer"><p>Pahami keluaran <code>nm</code> (<code>U</code> lawan <code>T</code>), <code>objdump -dr</code> (relokasi di bawah instruksi), <code>readelf -S -l -h</code> (bagian, segmen, titik masuk), dan <code>size</code>. Galat "undefined reference" hampir selalu berarti berkas objek atau pustaka lupa disertakan atau urutannya salah (pustaka statis dicari dari kiri ke kanan); "multiple definition" berarti fungsi global didefinisikan di header tanpa <code>static inline</code> atau dua berkas mendefinisikan simbol yang sama. Pada firmware, <em>linker script</em> menaruh <code>.text</code> di flash, menyalin <code>.data</code> ke RAM saat boot, dan menghapus <code>.bss</code>; peta memori SoC (M15) adalah sumbernya.</p></div>
+<div data-level="engineer"><p>Pahami output <code>nm</code> (<code>U</code> lawan <code>T</code>), <code>objdump -dr</code> (relokasi di bawah instruksi), <code>readelf -S -l -h</code> (bagian, segmen, titik masuk), dan <code>size</code>. Galat "undefined reference" hampir selalu berarti berkas objek atau pustaka lupa disertakan atau urutannya salah (pustaka statis dicari dari kiri ke kanan); "multiple definition" berarti fungsi global didefinisikan di header tanpa <code>static inline</code> atau dua berkas mendefinisikan simbol yang sama. Pada firmware, <em>linker script</em> menaruh <code>.text</code> di flash, menyalin <code>.data</code> ke RAM saat boot, dan menghapus <code>.bss</code>; peta memori SoC (M15) adalah sumbernya.</p></div>
 <div data-level="pakar"><p>Linker melakukan pengumpulan bagian, pembuangan bagian tak terpakai (<code>--gc-sections</code>), pelipatan kode identik, relaksasi (mengganti lompat panjang dengan pendek), dan optimasi saat penautan (LTO), di mana kompiler menjalankan ulang optimasi lintas berkas. Pada penautan dinamis, PIE dan GOT/PLT memungkinkan kode berpindah alamat tanpa tambal ulang kode; pengikatan malas menunda resolusi sampai panggilan pertama, dengan biaya keamanan (diperkeras dengan <code>-z now</code> dan RELRO). Aturan resolusi pustaka statis, simbol lemah (<code>weak</code>), dan urutan inisialisasi (<code>.init_array</code>) adalah sumber bug halus dalam proyek besar.</p></div>
 </div>
 <h3>3. Sistem operasi: proses, memori virtual, dan penjadwalan</h3>
@@ -2090,7 +2090,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
     <label class="icd-field"><span>Alamat dasar .text</span><select class="icd-select" id="v2-base"><option value="401000" selected>0x401000 (default ld)</option><option value="400000">0x400000 (-Ttext=0x400000)</option></select></label>
   </div>
   <div class="readout" id="v2-out" aria-live="polite"></div>
-  <div class="model">Model dua objek dengan ukuran nyata dari <code>size</code>: <code>start.o</code> 24 byte (call di offset 0xa, field rel32 di 0xb), <code>util.o</code> 7 byte (<code>lea 3 + imul 3 + ret 1</code>). Tahap 1: tiap objek ditaruh berurutan dari alamat dasar, awal bagiannya dibulatkan ke perataan. Tahap 2: simbol <code>add_mul</code> yang tak terdefinisi di <code>start.o</code> dicari: nol definisi → <em>undefined reference</em>, dua → <em>multiple definition</em>. Tahap 3: rel32 = S − (alamat call + 5) dipotong ke 32 bit. Tahap 4: titik masuk = alamat <code>_start</code>; program keluar dengan kode (4 + 5) × 4 = 36. Disederhanakan: hanya bagian <code>.text</code>, tak ada <code>.data</code> atau bagian tajuk ELF; ld sungguhan menaruh tajuk di halaman pertama sehingga alamat dasar default 0x401000. Delapan kombinasi urutan, perataan, dan alamat dasar dibandingkan dengan <code>ld</code>, <code>nm</code>, dan <code>objdump</code> sungguhan oleh <code>link.py</code>; pesan galat disalin dari keluaran <code>ld</code> 2.42.</div>
+  <div class="model">Model dua objek dengan ukuran nyata dari <code>size</code>: <code>start.o</code> 24 byte (call di offset 0xa, field rel32 di 0xb), <code>util.o</code> 7 byte (<code>lea 3 + imul 3 + ret 1</code>). Tahap 1: tiap objek ditaruh berurutan dari alamat dasar, awal bagiannya dibulatkan ke perataan. Tahap 2: simbol <code>add_mul</code> yang tak terdefinisi di <code>start.o</code> dicari: nol definisi → <em>undefined reference</em>, dua → <em>multiple definition</em>. Tahap 3: rel32 = S − (alamat call + 5) dipotong ke 32 bit. Tahap 4: titik masuk = alamat <code>_start</code>; program keluar dengan kode (4 + 5) × 4 = 36. Disederhanakan: hanya bagian <code>.text</code>, tak ada <code>.data</code> atau bagian tajuk ELF; ld sungguhan menaruh tajuk di halaman pertama sehingga alamat dasar default 0x401000. Delapan kombinasi urutan, perataan, dan alamat dasar dibandingkan dengan <code>ld</code>, <code>nm</code>, dan <code>objdump</code> sungguhan oleh <code>link.py</code>; pesan galat disalin dari output <code>ld</code> 2.42.</div>
 </div>
 <div class="icd-guide" data-id="v2-align" data-answer="0">
   <p>Biarkan skenario normal, urutan start.o util.o, dasar 0x401000. Ubah perataan util.o dari 16 menjadi 1 byte, lalu maju sampai tahap 3. Berapa alamat <code>add_mul</code> dan rel32?</p>
@@ -2307,7 +2307,7 @@ if __name__ == '__main__':
     for n in range(13, 21): s, ns = run('sum_to', n); assert s == lib.sum_to(n) and ns == 3 * n + 4
     print('emulator == mesin sungguhan untuk sum_to (n = 0..20) dan fact_it (n = 1..12)')
 </pre>
-<p>Emulator mini hanya melayani instruksi yang dibutuhkan visualisasi 1. <code>PROG</code> berisi dua daftar instruksi (indeks sama dengan angka di visualisasi); <code>run</code> menjalankan satu fungsi sampai <code>ret</code> dan menghitung langkah. Bagian <code>__main__</code> membangun <code>libsumloop.so</code> dari berkas assembly asli, memanggilnya lewat <code>ctypes</code>, dan <code>assert</code> bahwa hasil dan jumlah instruksi (3n + 4 dan 4n) sama persis. Ini bukti bahwa model visualisasi 1 bukan karangan: ia menghasilkan angka yang sama dengan prosesor Anda.</p>
+<p>Emulator mini hanya melayani instruksi yang dibutuhkan visualisasi 1. <code>PROG</code> berisi dua daftar instruksi (indeks sama dengan angka di visualisasi); <code>run</code> menjalankan satu fungsi sampai <code>ret</code> dan menghitung langkah. Bagian <code>__main__</code> membangun <code>libsumloop.so</code> dari berkas assembly asli, memanggilnya lewat <code>ctypes</code>, dan <code>assert</code> bahwa hasil dan jumlah instruksi (3n + 4 dan 4n) sama persis. Ini bukti bahwa model visualisasi 1 bukan karangan: ia menghasilkan angka yang sama dengan prosesor kamu.</p>
 <h3>8.4 hello.s</h3>
 <pre class="icd-src" data-lang="asm">
 # hello.s: program tanpa libc; dua system call Linux x86-64 (nomor di rax, argumen di rdi, rsi, rdx).
@@ -2586,8 +2586,8 @@ if __name__ == '__main__':
 
 <section class="icd-sec" id="s09">
 <h2>Miskonsepsi dan jebakan</h2>
-<div class="icd-box mis"><b>"Assembly itu satu instruksi per baris C."</b>Satu baris C bisa menjadi nol instruksi (dibuang atau dilipat), satu, atau puluhan. Pada <code>-O2</code> loop <code>sum_to</code> versi C sering menjadi rumus tertutup atau loop yang divektorisasi. Baca assembly dari kompilasi yang sama dengan produk Anda (<code>-O2</code>, bukan <code>-O0</code>).</div>
-<div class="icd-box mis"><b>"Program berjalan mulai dari <code>main</code>."</b>Eksekusi dimulai di <code>_start</code> (titik masuk ELF); kode startup pustaka C menyiapkan stack, argumen, dan pustaka, lalu memanggil <code>main</code>, dan setelah <code>main</code> kembali memanggil <code>exit</code>. Tanpa pustaka C (seperti <code>hello.s</code>) Anda yang menulis <code>_start</code> dan wajib memanggil <code>exit</code>; bila <code>_start</code> hanya <code>ret</code>, program mogok karena tak ada alamat kembali yang sah.</div>
+<div class="icd-box mis"><b>"Assembly itu satu instruksi per baris C."</b>Satu baris C bisa menjadi nol instruksi (dibuang atau dilipat), satu, atau puluhan. Pada <code>-O2</code> loop <code>sum_to</code> versi C sering menjadi rumus tertutup atau loop yang divektorisasi. Baca assembly dari kompilasi yang sama dengan produk kamu (<code>-O2</code>, bukan <code>-O0</code>).</div>
+<div class="icd-box mis"><b>"Program berjalan mulai dari <code>main</code>."</b>Eksekusi dimulai di <code>_start</code> (titik masuk ELF); kode startup pustaka C menyiapkan stack, argumen, dan pustaka, lalu memanggil <code>main</code>, dan setelah <code>main</code> kembali memanggil <code>exit</code>. Tanpa pustaka C (seperti <code>hello.s</code>) kamu yang menulis <code>_start</code> dan wajib memanggil <code>exit</code>; bila <code>_start</code> hanya <code>ret</code>, program mogok karena tak ada alamat kembali yang sah.</div>
 <div class="icd-box mis"><b>"Alamat dalam berkas objek sudah final."</b>Di <code>.o</code> setiap alamat lintas-berkas bernilai 0 atau sementara dan dicatat sebagai relokasi; alamat final baru ada setelah penautan. Itulah sebabnya <code>objdump -d</code> pada <code>.o</code> menampilkan <code>call 0xb</code> yang tampak salah dan harus dibaca bersama <code>-r</code>.</div>
 <div class="icd-box trap"><b>Jebakan: urutan pustaka pada baris perintah.</b>Pustaka statis (<code>.a</code>) dicari dari kiri ke kanan hanya untuk simbol yang sudah tak terdefinisi pada saat itu; menaruh <code>-lm</code> sebelum objek yang memakainya memberi "undefined reference to `sqrt'". Letakkan objek dulu, pustaka sesudahnya.</div>
 <div class="icd-box trap"><b>Jebakan: definisi fungsi di header.</b>Fungsi non-<code>static</code> yang didefinisikan di header dan dimasukkan ke dua berkas <code>.c</code> memicu "multiple definition". Jadikan <code>static inline</code> atau pindahkan definisi ke satu berkas <code>.c</code> (aturan yang sama dengan <code>bits.h</code> di M04a).</div>
@@ -2646,7 +2646,7 @@ if __name__ == '__main__':
 <details class="icd-sol"><summary>"Apa yang terjadi dari <code>gcc prog.c</code> sampai program berjalan?"</summary>
 <p><strong>Kerangka jawaban:</strong> Lima tahap: preprocess (teks C), compile (assembly), assemble (berkas objek relokatabel dengan relokasi), link (menempatkan bagian, meresolusi simbol, menambal relokasi, menghasilkan ELF), load (kernel <code>execve</code> memetakan segmen LOAD ke ruang alamat virtual dengan izin masing-masing, menyiapkan stack, dan melompat ke titik masuk; bila dinamis, <code>ld.so</code> memuat pustaka). Sebut artefak tiap tahap dan opsi <code>-E -S -c</code> untuk berhenti di sana. Poin plus: perbedaan bagian dan segmen.</p></details>
 <details class="icd-sol"><summary>"Apa itu relokasi, dan apa arti 'undefined reference'?"</summary>
-<p><strong>Kerangka jawaban:</strong> Assembler tak tahu alamat final sasaran lintas-berkas, jadi menaruh 0 dan catatan "tambal di offset ini dengan alamat simbol X dengan cara Y". Linker menghitung nilai (S + A − P untuk relatif PC) setelah menentukan letak. Undefined reference: tak ada definisi global untuk simbol X di semua masukan (lupa objek atau pustaka, urutan salah, salah ketik, atau <code>static</code>); multiple definition kebalikannya. Berikan contoh rel32 = target − (alamat call + 5).</p></details>
+<p><strong>Kerangka jawaban:</strong> Assembler tak tahu alamat final sasaran lintas-berkas, jadi menaruh 0 dan catatan "tambal di offset ini dengan alamat simbol X dengan cara Y". Linker menghitung nilai (S + A − P untuk relatif PC) setelah menentukan letak. Undefined reference: tak ada definisi global untuk simbol X di semua input (lupa objek atau pustaka, urutan salah, salah ketik, atau <code>static</code>); multiple definition kebalikannya. Berikan contoh rel32 = target − (alamat call + 5).</p></details>
 <details class="icd-sol"><summary>"Jelaskan konvensi pemanggilan System V AMD64."</summary>
 <p><strong>Kerangka jawaban:</strong> Enam argumen bilangan bulat pertama di rdi, rsi, rdx, rcx, r8, r9; pecahan di xmm0 sampai xmm7; sisanya di stack; hasil di rax (xmm0). Callee wajib memulihkan rbx, rbp, r12 sampai r15; yang lain boleh dirusak. Stack terataut 16 byte pada saat <code>call</code>; ada red zone 128 byte. Windows x64 berbeda (rcx, rdx, r8, r9 dan shadow space). Poin plus: mengapa ABI penting untuk kompatibilitas biner dan untuk DPI-C.</p></details>
 <details class="icd-sol"><summary>"Bagaimana <code>fork</code> bisa cepat, dan apa itu copy-on-write?"</summary>
@@ -2774,7 +2774,7 @@ Disassembly of section .text:
 $ ./prog; echo $?
 kode keluar = 36
 </pre>
-<p>Hitung dengan tangan: ukuran start.o 24 byte, call di 0xa, dasar 0x401000, perataan 16 → <code>add_mul</code> di 0x401020 dan rel32 = 0x11. Cocokkan dengan <code>e8 11 00 00 00</code> pada keluaran, dan dengan visualisasi 2.</p>
+<p>Hitung dengan tangan: ukuran start.o 24 byte, call di 0xa, dasar 0x401000, perataan 16 → <code>add_mul</code> di 0x401020 dan rel32 = 0x11. Cocokkan dengan <code>e8 11 00 00 00</code> pada output, dan dengan visualisasi 2.</p>
 <h3>Langkah 5: pecahkan dengan sengaja</h3>
 <pre class="icd-src" data-lang="sh">
 as -o util_dup.o util_dup.s

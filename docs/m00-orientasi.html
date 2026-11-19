@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1861,41 +1861,41 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M00 · sekitar 4 jam · tanpa prasyarat</p>
 <h1>M00 Orientasi: dari ide sampai silikon</h1>
-<p>Modul ini adalah peta. Anda belum perlu memahami detail apa pun; tujuannya agar setiap modul berikutnya punya tempat yang jelas di kepala Anda. Setelah selesai, Anda tahu apa itu chip, siapa saja yang membuatnya, lewat tahap apa, dan bagaimana memakai materi ini selama berbulan-bulan ke depan.</p>
+<p>Modul ini adalah peta. Kamu belum perlu memahami detail apa pun; tujuannya agar setiap modul berikutnya punya tempat yang jelas di kepala kamu. Setelah selesai, kamu tahu apa itu chip, siapa saja yang membuatnya, lewat tahap apa, dan bagaimana memakai materi ini selama berbulan-bulan ke depan.</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
-<p>Sebuah chip modern berisi miliaran <span data-term="transistor">transistor</span> dan dikerjakan oleh ratusan orang dengan keahlian yang sangat berbeda. Tidak ada satu orang pun yang menguasai semuanya secara mendalam. Yang membedakan engineer yang efektif adalah ia tahu <em>di mana pekerjaannya berada dalam alur</em>: dari siapa ia menerima masukan, kepada siapa ia menyerahkan keluaran, dan kesalahan apa yang akan menjalar ke tahap berikutnya.</p>
+<p>Sebuah chip modern berisi miliaran <span data-term="transistor">transistor</span> dan dikerjakan oleh ratusan orang dengan keahlian yang sangat berbeda. Tidak ada satu orang pun yang menguasai semuanya secara mendalam. Yang membedakan engineer yang efektif adalah ia tahu <em>di mana pekerjaannya berada dalam alur</em>: dari siapa ia menerima input, kepada siapa ia menyerahkan output, dan kesalahan apa yang akan menjalar ke tahap berikutnya.</p>
 <p>Akibat salah di dunia chip berbeda dari perangkat lunak. Perangkat lunak bisa ditambal lewat pembaruan. Chip yang sudah dicetak tidak bisa.</p>
 <ul>
 <li><strong>Uang.</strong> Pada 1994 ditemukan kesalahan pada tabel pembagian floating-point prosesor Intel Pentium (dikenal sebagai bug FDIV). Intel akhirnya mengganti prosesor pelanggan dan mencatat beban sekitar 475 juta dolar AS.</li>
 <li><strong>Waktu.</strong> Memperbaiki chip berarti mengulang fabrikasi (disebut <em>respin</em>), yang memakan waktu berminggu-minggu sampai berbulan-bulan sebelum silikon baru tiba di lab.</li>
 <li><strong>Kesempatan.</strong> Produk yang terlambat satu generasi sering kehilangan pasarnya sama sekali.</li>
 </ul>
-<p>Karena itu industri chip menghabiskan sebagian besar usahanya untuk <em>memeriksa</em>, bukan menulis desain. Anda akan melihat pola ini berulang di hampir setiap modul: verifikasi, analisis timing, pemeriksaan aturan layout, dan test semuanya ada untuk menangkap kesalahan sebelum menjadi silikon.</p>
-<div class="icd-box ok"><b>Yang dibawa pulang</b>Dalam pekerjaan chip, pertanyaan pertama untuk setiap tugas adalah: "ini tahap apa, masukannya dari mana, dan siapa yang memakai hasilnya?"</div>
+<p>Karena itu industri chip menghabiskan sebagian besar usahanya untuk <em>memeriksa</em>, bukan menulis desain. Kamu akan melihat pola ini berulang di hampir setiap modul: verifikasi, analisis timing, pemeriksaan aturan layout, dan test semuanya ada untuk menangkap kesalahan sebelum menjadi silikon.</p>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Dalam pekerjaan chip, pertanyaan pertama untuk setiap tugas adalah: "ini tahap apa, input-nya dari mana, dan siapa yang memakai hasilnya?"</div>
 </section>
 
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> tidak ada. Cukup matematika SMP: perkalian, pembagian, dan pangkat sepuluh.</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menjelaskan dengan kalimat sendiri apa itu <span data-term="ic">integrated circuit</span>, transistor, <span data-term="wafer">wafer</span>, dan <span data-term="die">die</span>.</li>
-<li>Menyebutkan tujuh tingkat abstraksi dari sistem sampai devais, beserta satuan kerjanya.</li>
-<li>Mengurutkan minimal 12 tahap alur dari spesifikasi sampai silikon, dan menyebut masukan, keluaran, serta format file utama setiap tahap.</li>
+<li>Menyebutkan tujuh tingkat abstraksi dari sistem sampai device, beserta satuan kerjanya.</li>
+<li>Mengurutkan minimal 12 tahap alur dari spesifikasi sampai silikon, dan menyebut input, output, serta format file utama setiap tahap.</li>
 <li>Menghitung periode penggandaan dari dua titik data jumlah transistor, dan memperkirakan jumlah die per wafer.</li>
 <li>Menjelaskan mengapa nama node seperti "3 nm" adalah label, bukan ukuran fisik.</li>
 <li>Mencocokkan enam peran utama di tim chip dengan tahap alur yang mereka kerjakan.</li>
-<li>Menjalankan simulasi Verilog pertama Anda dengan tool open-source dan membaca hasilnya.</li>
+<li>Menjalankan simulasi Verilog pertama kamu dengan tool open-source dan membaca hasilnya.</li>
 </ol>
 <h3>Cara memakai materi ini</h3>
 <ul>
-<li><strong>Setiap modul punya 16 bagian yang sama</strong>, urutannya seperti halaman ini. Anda selalu tahu di mana mencari intuisi, rumus, latihan, atau lab.</li>
+<li><strong>Setiap modul punya 16 bagian yang sama</strong>, urutannya seperti halaman ini. Kamu selalu tahu di mana mencari intuisi, rumus, latihan, atau lab.</li>
 <li><strong>Penjelasan berlapis.</strong> Konsep inti punya tiga tingkat: Pemula, Engineer, Pakar. Pada putaran pertama baca tingkat Pemula saja. Kembali ke tingkat berikutnya setelah menyelesaikan beberapa modul lanjutan.</li>
 <li><strong>Tebak dulu.</strong> Setiap visualisasi punya eksperimen terpandu. Menebak sebelum mencoba terasa lambat, tetapi di situlah pemahaman terbentuk.</li>
 <li><strong>Tandai dan catat.</strong> Tombol di akhir setiap bagian menandai bagian selesai, menyimpan bookmark, dan membuka catatan pribadi. Sebuah file dianggap selesai bila kuisnya mencapai 70% dan sedikitnya 80% bagian sudah ditandai.</li>
-<li><strong>Flashcard lima menit sehari.</strong> Buka antrean di <a href="index.html#kartu">halaman utama</a> sebelum mulai belajar. Kartu yang Anda ingat akan muncul makin jarang.</li>
+<li><strong>Flashcard lima menit sehari.</strong> Buka antrean di <a href="index.html#kartu">halaman utama</a> sebelum mulai belajar. Kartu yang kamu ingat akan muncul makin jarang.</li>
 <li><strong>Lab bukan pilihan.</strong> Membaca tentang simulasi tidak sama dengan menjalankannya. Sisihkan sekitar sepertiga waktu belajar untuk lab.</li>
 </ul>
 <div class="icd-box model"><b>Konvensi angka</b>Semua angka memakai titik sebagai pemisah desimal (1.5 berarti satu setengah), sama seperti tool EDA dan bahasa pemrograman. Awalan satuan: k = 10<sup>3</sup>, M = 10<sup>6</sup>, G = 10<sup>9</sup>, m = 10<sup>−3</sup>, µ = 10<sup>−6</sup>, n = 10<sup>−9</sup>, p = 10<sup>−12</sup>. Ini dibahas tuntas di M01.</div>
@@ -1904,7 +1904,7 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
 <section class="icd-sec" id="s03">
 <h2>Intuisi dulu</h2>
 <h3>Analogi: membangun kota di atas sebutir beras</h3>
-<p>Bayangkan Anda diminta membangun sebuah kota lengkap: gedung, jalan, saluran listrik, dan aturan lalu lintas.</p>
+<p>Bayangkan kamu diminta membangun sebuah kota lengkap: gedung, jalan, saluran listrik, dan aturan lalu lintas.</p>
 <ul>
 <li><strong>Wali kota</strong> menentukan kebutuhan: berapa penduduk, berapa anggaran, kapan harus selesai. Ini <em>spesifikasi</em>.</li>
 <li><strong>Perencana kota</strong> membagi wilayah: kawasan industri, perumahan, jalan arteri. Ini <em>arsitektur</em>.</li>
@@ -1919,9 +1919,9 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
 <ul>
 <li><strong>Tidak ada renovasi.</strong> Gedung bisa dibongkar sebagian. Chip dicetak sekali; kesalahan satu kabel berarti mencetak ulang semuanya.</li>
 <li><strong>Skalanya tidak terbayangkan.</strong> Kota terbesar punya jutaan bangunan. Chip besar punya puluhan miliar transistor, dan semuanya harus benar.</li>
-<li><strong>Anda tidak pernah melihatnya.</strong> Detail chip lebih kecil dari panjang gelombang cahaya tampak. Semua pekerjaan dilakukan lewat model di komputer, dan Anda harus percaya pada model itu.</li>
+<li><strong>Kamu tidak pernah melihatnya.</strong> Detail chip lebih kecil dari panjang gelombang cahaya tampak. Semua pekerjaan dilakukan lewat model di komputer, dan kamu harus percaya pada model itu.</li>
 <li><strong>Semua bergerak serentak.</strong> Di kota, orang bergerak sendiri-sendiri. Di chip digital, miliaran saklar berganti keadaan mengikuti satu ketukan bersama (clock) miliaran kali per detik. Terlambat sepersekian nanodetik saja berarti gagal.</li>
-<li><strong>Pemeriksaan harus dirancang sejak awal.</strong> Anda tidak bisa masuk ke dalam chip untuk memeriksa. Jalur pemeriksaan (test) harus ikut dibangun di dalam desain.</li>
+<li><strong>Pemeriksaan harus dirancang sejak awal.</strong> Kamu tidak bisa masuk ke dalam chip untuk memeriksa. Jalur pemeriksaan (test) harus ikut dibangun di dalam desain.</li>
 </ul>
 </section>
 
@@ -1932,17 +1932,17 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
 <p>Chip tidak dibuat satu per satu. Pabrik (<span data-term="fab">fab</span>) memproses piringan silikon tipis yang disebut <span data-term="wafer">wafer</span>, umumnya berdiameter 300 mm, dan mencetak ratusan chip yang sama di atasnya. Satu potongan chip di wafer disebut <span data-term="die">die</span>. Die yang lulus test lalu dikemas dalam <span data-term="package">package</span> agar bisa disolder ke papan rangkaian.</p>
 
 <h3>Tujuh tingkat abstraksi</h3>
-<p>Tidak ada yang bisa memikirkan miliaran transistor sekaligus. Cara industri mengatasinya adalah <span data-term="abstraksi">abstraksi</span>: di setiap tingkat, Anda hanya memikirkan satu jenis benda dan mengabaikan apa yang ada di bawahnya.</p>
+<p>Tidak ada yang bisa memikirkan miliaran transistor sekaligus. Cara industri mengatasinya adalah <span data-term="abstraksi">abstraksi</span>: di setiap tingkat, kamu hanya memikirkan satu jenis benda dan mengabaikan apa yang ada di bawahnya.</p>
 <div class="icd-tablewrap"><table class="icd">
 <thead><tr><th scope="col">Tingkat</th><th scope="col">Benda yang dipikirkan</th><th scope="col">Contoh pertanyaan</th><th scope="col">Dibahas di</th></tr></thead>
 <tbody>
 <tr><th scope="row">Sistem</th><td>Chip, memori, perangkat lunak</td><td>Berapa lama baterai bertahan?</td><td>M14, M15</td></tr>
 <tr><th scope="row">Arsitektur</th><td>Prosesor, cache, bus</td><td>Berapa instruksi selesai per detik?</td><td>M11 sampai M14</td></tr>
 <tr><th scope="row">RTL</th><td>Register dan logika di antaranya</td><td>Apa isi register ini pada siklus berikutnya?</td><td>M16, M17</td></tr>
-<tr><th scope="row">Gerbang</th><td>AND, OR, flip-flop</td><td>Berapa delay dari masukan ke keluaran?</td><td>M08, M09, M21</td></tr>
+<tr><th scope="row">Gerbang</th><td>AND, OR, flip-flop</td><td>Berapa delay dari input ke output?</td><td>M08, M09, M21</td></tr>
 <tr><th scope="row">Transistor</th><td>Saklar dan kapasitansi</td><td>Berapa arus saat menyala?</td><td>M06, M07, M10</td></tr>
 <tr><th scope="row">Layout</th><td>Bentuk geometri tiap lapisan</td><td>Apakah dua kawat ini terlalu dekat?</td><td>M10, M23, M24</td></tr>
-<tr><th scope="row">Devais dan proses</th><td>Atom, doping, lapisan material</td><td>Bagaimana kanal ini terbentuk?</td><td>M05, M30</td></tr>
+<tr><th scope="row">Device dan proses</th><td>Atom, doping, lapisan material</td><td>Bagaimana kanal ini terbentuk?</td><td>M05, M30</td></tr>
 </tbody></table></div>
 <p>Keterampilan inti seorang IC design engineer adalah berpindah naik-turun di tangga ini: menulis di tingkat RTL sambil membayangkan gerbang dan kawat yang akan dihasilkannya.</p>
 
@@ -1977,19 +1977,19 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
 <h3>1. Transistor sebagai saklar</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Transistor adalah keran listrik. Ada tiga kaki: satu kaki pengendali (gate) dan dua kaki yang dilewati arus (source dan drain). Tegangan di gate membuka atau menutup keran. Keran terbuka berarti 1, tertutup berarti 0. Dengan menggabungkan banyak keran, kita bisa menghitung apa saja.</p></div>
-<div data-level="engineer"><p>Chip digital memakai dua jenis transistor yang saling melengkapi, NMOS dan PMOS; gabungannya disebut CMOS. NMOS menghantar saat gate tinggi, PMOS saat gate rendah. Dalam gerbang CMOS, saat keluaran sudah stabil selalu ada satu jaringan yang putus, sehingga hampir tidak ada arus yang mengalir terus-menerus. Daya terutama terpakai saat berpindah keadaan. Inilah alasan CMOS mendominasi sejak 1980-an.</p></div>
+<div data-level="engineer"><p>Chip digital memakai dua jenis transistor yang saling melengkapi, NMOS dan PMOS; gabungannya disebut CMOS. NMOS menghantar saat gate tinggi, PMOS saat gate rendah. Dalam gerbang CMOS, saat output sudah stabil selalu ada satu jaringan yang putus, sehingga hampir tidak ada arus yang mengalir terus-menerus. Daya terutama terpakai saat berpindah keadaan. Inilah alasan CMOS mendominasi sejak 1980-an.</p></div>
 <div data-level="pakar"><p>"Saklar" adalah penyederhanaan yang makin tidak akurat. Transistor nyata tidak pernah benar-benar mati: ada arus subthreshold yang turun secara eksponensial terhadap tegangan gate, dengan kemiringan yang dibatasi fisika sekitar 60 mV per dekade pada suhu ruang untuk MOSFET konvensional. Batas ini mencegah tegangan suplai turun terus, dan menjadi akar berakhirnya Dennard scaling. Perubahan bentuk transistor dari planar ke FinFET lalu gate-all-around pada dasarnya adalah upaya menjaga kendali gate atas kanal agar kemiringan itu tetap dekat batasnya.</p></div>
 </div>
 <h3>2. Abstraksi</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Saat menyetir, Anda memikirkan setir dan pedal, bukan piston. Abstraksi adalah kesepakatan tentang apa yang boleh diabaikan. Engineer RTL memikirkan register, bukan elektron.</p></div>
+<div data-level="pemula"><p>Saat menyetir, kamu memikirkan setir dan pedal, bukan piston. Abstraksi adalah kesepakatan tentang apa yang boleh diabaikan. Engineer RTL memikirkan register, bukan elektron.</p></div>
 <div data-level="engineer"><p>Setiap tingkat abstraksi punya model, bahasa, dan tool sendiri. Peralihan antar tingkat dilakukan tool: sintesis mengubah RTL menjadi gerbang, place-and-route mengubah gerbang menjadi layout. Setiap peralihan harus dibuktikan tidak mengubah fungsi (equivalence checking) dan tidak melanggar timing (STA).</p></div>
-<div data-level="pakar"><p>Abstraksi selalu bocor, dan kebocorannya makin besar di node maju. Delay kawat kini sering melebihi delay gerbang, sehingga sintesis tanpa informasi fisik memberi hasil yang menyesatkan; karena itu muncul physical synthesis. Efek tingkat devais seperti variasi lokal, aging, dan self-heating harus dimodelkan sampai ke tingkat timing (misalnya lewat LVF). Sebagian besar keahlian senior adalah mengetahui kapan sebuah abstraksi masih bisa dipercaya.</p></div>
+<div data-level="pakar"><p>Abstraksi selalu bocor, dan kebocorannya makin besar di node maju. Delay kawat kini sering melebihi delay gerbang, sehingga sintesis tanpa informasi fisik memberi hasil yang menyesatkan; karena itu muncul physical synthesis. Efek tingkat device seperti variasi lokal, aging, dan self-heating harus dimodelkan sampai ke tingkat timing (misalnya lewat LVF). Sebagian besar keahlian senior adalah mengetahui kapan sebuah abstraksi masih bisa dipercaya.</p></div>
 </div>
 <h3>3. Alur desain</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Membuat chip itu seperti lari estafet. Setiap pelari (tahap) menerima tongkat (file) dari pelari sebelumnya, mengerjakan bagiannya, lalu menyerahkannya. Jika satu pelari menjatuhkan tongkat, semua yang di belakangnya harus mengulang.</p></div>
-<div data-level="engineer"><p>Alur digital standar disebut RTL-to-GDSII: dari kode RTL sampai file layout GDSII yang dikirim ke pabrik. Alurnya tidak lurus. Jika timing gagal setelah routing, Anda kembali ke placement, ke sintesis, atau bahkan mengubah RTL. Putaran seperti ini disebut iterasi, dan mengurangi jumlahnya adalah tujuan utama metodologi.</p></div>
+<div data-level="engineer"><p>Alur digital standar disebut RTL-to-GDSII: dari kode RTL sampai file layout GDSII yang dikirim ke pabrik. Alurnya tidak lurus. Jika timing gagal setelah routing, kamu kembali ke placement, ke sintesis, atau bahkan mengubah RTL. Putaran seperti ini disebut iterasi, dan mengurangi jumlahnya adalah tujuan utama metodologi.</p></div>
 <div data-level="pakar"><p>Pada proyek nyata front-end dan back-end berjalan bersamaan. Tim fisik memulai floorplan dengan netlist yang belum final, dan RTL "dibekukan" bertahap. Setelah itu perubahan hanya boleh berupa ECO: perubahan kecil langsung di netlist atau layout. Menjelang tapeout, ECO bahkan dibatasi pada lapisan logam saja dengan memakai sel cadangan, agar mask lapisan bawah tidak perlu dibuat ulang.</p></div>
 </div>
 <h3>4. Hukum Moore dan nama node</h3>
@@ -2012,7 +2012,7 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
   </div>
   <div class="params"><label class="icd-field"><span>Pengali biaya per fase = <b id="flow-kv"></b></span><input type="range" id="flow-k" min="2" max="20" step="1" value="10"></label></div>
   <div class="readout" id="flow-out" aria-live="polite"></div>
-  <div class="model">Isi tahap adalah alur digital standar yang disederhanakan menjadi garis lurus; alur nyata berulang-ulang dan sebagian tahap berjalan bersamaan. Biaya bug adalah model ilustratif pengali<sup>fase</sup> dengan lima fase (desain, implementasi, setelah tapeout, silikon di lab, di tangan pelanggan). Pengalinya Anda tentukan sendiri; ini bukan data industri.</div>
+  <div class="model">Isi tahap adalah alur digital standar yang disederhanakan menjadi garis lurus; alur nyata berulang-ulang dan sebagian tahap berjalan bersamaan. Biaya bug adalah model ilustratif pengali<sup>fase</sup> dengan lima fase (desain, implementasi, setelah tapeout, silikon di lab, di tangan pelanggan). Pengalinya kamu tentukan sendiri; ini bukan data industri.</div>
 </div>
 <div class="icd-guide" data-id="flow-biaya" data-answer="2">
   <p>Dengan pengali 10 per fase, bug yang baru ketahuan saat chip sudah di lab (fase ke-3 setelah desain) kira-kira berapa kali lebih mahal daripada jika tertangkap saat verifikasi RTL?</p>
@@ -2043,7 +2043,7 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
     <label class="icd-field"><span>Gate pitch yang diandaikan = <b id="sc-pv"></b></span><input type="range" id="sc-p" min="20" max="100" step="1" value="48"></label>
   </div>
   <div class="readout" id="sc-out" aria-live="polite"></div>
-  <div class="model">Sumbu atas berskala logaritmik: setiap garis tegak berarti sepuluh kali lebih kecil. Ukuran benda adalah nilai khas yang dibulatkan (tebal rambut manusia, misalnya, bervariasi kira-kira 20 sampai 180 µm). Gate pitch node terdepan berada di kisaran beberapa puluh nanometer; nilai 48 nm adalah andaian yang bisa Anda ubah, bukan angka resmi sebuah pabrik.</div>
+  <div class="model">Sumbu atas berskala logaritmik: setiap garis tegak berarti sepuluh kali lebih kecil. Ukuran benda adalah nilai khas yang dibulatkan (tebal rambut manusia, misalnya, bervariasi kira-kira 20 sampai 180 µm). Gate pitch node terdepan berada di kisaran beberapa puluh nanometer; nilai 48 nm adalah andaian yang bisa kamu ubah, bukan angka resmi sebuah pabrik.</div>
 </div>
 <div class="icd-guide" data-id="sc-rambut" data-answer="2">
   <p>Jika jarak antar gate transistor 48 nm, kira-kira berapa transistor bisa berjajar selebar sehelai rambut (70 µm)?</p>
@@ -2099,8 +2099,8 @@ ready(function(){ mathCheck(); frame(); shell(); ICD.enhance(); sync.init(); emi
 </section>
 
 <section class="icd-sec" id="s08">
-<h2>Kode pertama Anda</h2>
-<p>Anda belum belajar bahasa deskripsi hardware (<span data-term="hdl">HDL</span>); itu tugas M16. Kode di bawah hanya untuk merasakan bentuk pekerjaannya: satu file desain, satu file penguji. Baca penjelasannya, lalu jalankan di bagian Lab.</p>
+<h2>Kode pertama kamu</h2>
+<p>Kamu belum belajar bahasa deskripsi hardware (<span data-term="hdl">HDL</span>); itu tugas M16. Kode di bawah hanya untuk merasakan bentuk pekerjaannya: satu file desain, satu file penguji. Baca penjelasannya, lalu jalankan di bagian Lab.</p>
 <h3>Desain: gerbang AND</h3>
 <pre class="icd-src" data-lang="sv">
 // and2.sv : gerbang AND dua masukan
@@ -2114,7 +2114,7 @@ endmodule
 </pre>
 <ul>
 <li><strong>Baris 2 dan 8:</strong> <code>module</code> sampai <code>endmodule</code> membungkus satu blok hardware bernama <code>and2</code>, seperti satu komponen di papan rangkaian.</li>
-<li><strong>Baris 3 sampai 5:</strong> daftar kaki komponen. Dua masukan dan satu keluaran, masing-masing selebar satu bit.</li>
+<li><strong>Baris 3 sampai 5:</strong> daftar kaki komponen. Dua input dan satu output, masing-masing selebar satu bit.</li>
 <li><strong>Baris 7:</strong> <code>assign</code> menyatakan hubungan yang berlaku terus-menerus: <code>y</code> selalu sama dengan <code>a</code> AND <code>b</code>. Ini bukan perintah yang dijalankan sekali; ini kawat dan gerbang.</li>
 </ul>
 <p>Kode ini <em>synthesizable</em>: tool sintesis bisa mengubahnya menjadi satu gerbang AND dari library.</p>
@@ -2152,22 +2152,22 @@ endmodule
 <li><strong>Baris 2:</strong> menetapkan satuan waktu simulasi: 1 ns, dengan ketelitian 1 ps.</li>
 <li><strong>Baris 8:</strong> memasang desain di dalam testbench dan menyambung kakinya. Nama <code>dut</code> berarti <em>design under test</em>.</li>
 <li><strong>Baris 11 dan 12:</strong> merekam semua sinyal ke file <code>and2.vcd</code> agar bisa dilihat sebagai waveform.</li>
-<li><strong>Baris 13 sampai 15:</strong> mencoba keempat kombinasi masukan (00, 01, 10, 11), dan menunggu 10 ns setiap kali agar keluaran sempat berubah.</li>
-<li><strong>Baris 16 sampai 21:</strong> membandingkan keluaran dengan jawaban yang benar. Testbench yang memutuskan sendiri lulus atau gagal disebut <em>self-checking</em>; Anda tidak perlu memelototi waveform.</li>
+<li><strong>Baris 13 sampai 15:</strong> mencoba keempat kombinasi input (00, 01, 10, 11), dan menunggu 10 ns setiap kali agar output sempat berubah.</li>
+<li><strong>Baris 16 sampai 21:</strong> membandingkan output dengan jawaban yang benar. Testbench yang memutuskan sendiri lulus atau gagal disebut <em>self-checking</em>; kamu tidak perlu memelototi waveform.</li>
 <li><strong>Baris 23 sampai 25:</strong> mencetak kesimpulan lalu mengakhiri simulasi.</li>
 </ul>
 <p>Testbench <em>tidak</em> synthesizable: <code>#10</code>, <code>$display</code>, dan <code>initial</code> hanya bermakna di simulator. Membedakan kode yang menjadi hardware dari kode yang hanya menguji adalah salah satu kebiasaan pertama yang harus terbentuk.</p>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Kedua file ini dijalankan dengan Icarus Verilog 12.0 sebelum modul ini ditulis. Keluaran yang diharapkan ada di bagian Lab.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Kedua file ini dijalankan dengan Icarus Verilog 12.0 sebelum modul ini ditulis. Output yang diharapkan ada di bagian Lab.</div>
 </section>
 
 <section class="icd-sec" id="s09">
 <h2>Miskonsepsi dan jebakan</h2>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Chip 3 nm punya transistor berukuran 3 nm." Tidak. Nama node adalah label generasi. Ukuran fisik terkecil yang bermakna, seperti gate pitch, masih puluhan nanometer.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Menulis HDL sama seperti memprogram." Program dijalankan baris demi baris. HDL mendeskripsikan hardware yang semuanya aktif bersamaan. Orang yang membawa kebiasaan pemrograman ke RTL menghasilkan rangkaian yang lambat, boros, atau salah.</div>
-<div class="icd-box mis"><b>Miskonsepsi</b>"Kalau simulasi lulus, chip pasti bekerja." Simulasi hanya memeriksa skenario yang Anda tulis, pada model yang mengabaikan delay kawat nyata, variasi pabrik, dan cacat produksi. Karena itu ada STA, verifikasi fisik, dan test.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Kalau simulasi lulus, chip pasti bekerja." Simulasi hanya memeriksa skenario yang kamu tulis, pada model yang mengabaikan delay kawat nyata, variasi pabrik, dan cacat produksi. Karena itu ada STA, verifikasi fisik, dan test.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Hukum Moore sudah mati" atau "Hukum Moore berlaku selamanya." Keduanya terlalu sederhana. Kerapatan masih naik, tetapi lebih lambat, lebih mahal, dan tanpa bonus kecepatan serta daya yang dulu datang otomatis.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"IC design berarti menggambar transistor." Itu hanya benar untuk desain analog dan sel dasar. Sebagian besar engineer digital bekerja dengan kode, skrip, dan laporan, dan jarang menyentuh transistor satu per satu.</div>
-<div class="icd-box trap"><b>Jebakan industri</b>Menganggap tahap Anda selesai saat file diserahkan. Penerima sering menemukan masalah yang akarnya ada di tahap Anda: constraint timing yang keliru dari tim RTL baru terasa saat physical design. Engineer yang baik ikut memeriksa apakah keluarannya benar-benar bisa dipakai tahap berikutnya.</div>
+<div class="icd-box trap"><b>Jebakan industri</b>Menganggap tahap kamu selesai saat file diserahkan. Penerima sering menemukan masalah yang akarnya ada di tahap kamu: constraint timing yang keliru dari tim RTL baru terasa saat physical design. Engineer yang baik ikut memeriksa apakah output-nya benar-benar bisa dipakai tahap berikutnya.</div>
 <div class="icd-box trap"><b>Jebakan industri</b>Mengoptimalkan satu sisi PPA tanpa melihat dua lainnya. Blok yang 5% lebih cepat tetapi 30% lebih boros daya jarang merupakan kemenangan.</div>
 </section>
 
@@ -2184,7 +2184,7 @@ endmodule
 <tr><th scope="row">DFT engineer</th><td>Menyisipkan struktur test dan membangkitkan pola test</td><td>M26</td></tr>
 <tr><th scope="row">Analog / mixed-signal designer</th><td>Merancang PLL, ADC, I/O, regulator pada tingkat transistor dan layout</td><td>M07, M27, M28</td></tr>
 </tbody></table></div>
-<p>Ada pula peran lain yang akan Anda temui: STA engineer, CAD/methodology engineer, validation engineer (post-silicon), product/test engineer, dan firmware engineer. Profil lengkap tiap peran ada di <a href="m34-karier-praktik.html">M34</a>.</p>
+<p>Ada pula peran lain yang akan kamu temui: STA engineer, CAD/methodology engineer, validation engineer (post-silicon), product/test engineer, dan firmware engineer. Profil lengkap tiap peran ada di <a href="m34-karier-praktik.html">M34</a>.</p>
 <h3>Model bisnis</h3>
 <ul>
 <li><strong><span data-term="fabless">Fabless</span>:</strong> merancang chip tetapi tidak punya pabrik. Fabrikasi diserahkan ke foundry.</li>
@@ -2193,14 +2193,14 @@ endmodule
 <li><strong>Vendor <span data-term="ip">IP</span>:</strong> menjual blok desain siap pakai, misalnya inti prosesor atau antarmuka USB.</li>
 <li><strong>Vendor <span data-term="eda">EDA</span>:</strong> membuat perangkat lunak untuk merancang chip. Tiga yang terbesar adalah Synopsys, Cadence, dan Siemens EDA. Semua lab di materi ini memakai tool open-source yang setara secara konsep.</li>
 </ul>
-<h3>Format file yang akan sering Anda dengar</h3>
+<h3>Format file yang akan sering kamu dengar</h3>
 <div class="icd-tablewrap"><table class="icd">
 <thead><tr><th scope="col">Format</th><th scope="col">Isi</th><th scope="col">Muncul di tahap</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>.v</code> <code>.sv</code> <code>.vhd</code></th><td>Kode RTL atau netlist gerbang</td><td>Desain RTL, sintesis</td></tr>
 <tr><th scope="row"><code>.vcd</code> <code>.fst</code></th><td>Rekaman waveform hasil simulasi</td><td>Verifikasi</td></tr>
 <tr><th scope="row"><code>.lib</code> (Liberty)</th><td>Delay, daya, dan fungsi setiap sel library</td><td>Sintesis, STA</td></tr>
-<tr><th scope="row"><code>.sdc</code></th><td>Constraint timing: clock, delay masukan dan keluaran, pengecualian</td><td>Sintesis sampai signoff</td></tr>
+<tr><th scope="row"><code>.sdc</code></th><td>Constraint timing: clock, delay input dan output, pengecualian</td><td>Sintesis sampai signoff</td></tr>
 <tr><th scope="row"><code>.lef</code></th><td>Bentuk luar dan letak pin setiap sel; aturan lapisan</td><td>Physical design</td></tr>
 <tr><th scope="row"><code>.def</code></th><td>Posisi setiap sel dan jalur setiap kawat dalam desain</td><td>Physical design</td></tr>
 <tr><th scope="row"><code>.spef</code></th><td>Resistansi dan kapasitansi parasitik kawat</td><td>Ekstraksi, STA</td></tr>
@@ -2221,11 +2221,11 @@ endmodule
 <p><strong>2.1</strong> Sebuah chip pada 2010 berisi 1 miliar transistor. Dengan periode penggandaan 2 tahun, berapa jumlahnya pada 2020? Bagaimana jika periodenya 3 tahun?</p>
 <details class="icd-sol"><summary>Solusi 2.1</summary><p>Rentang 10 tahun. Dengan <i>T</i> = 2: 10/2 = 5 penggandaan, 2⁵ = 32, jadi 32 miliar. Dengan <i>T</i> = 3: 10/3 = 3.33 penggandaan, 2<sup>3.33</sup> ≈ 10.1, jadi sekitar 10 miliar. Selisih satu tahun pada periode penggandaan menghasilkan selisih tiga kali lipat setelah satu dekade.</p></details>
 <p><strong>2.2</strong> Hitung die kotor per wafer 300 mm untuk die 5 mm × 5 mm dan untuk die 20 mm × 20 mm. Berapa perbandingan jumlahnya, dan mengapa bukan 16?</p>
-<details class="icd-sol"><summary>Solusi 2.2</summary><p>Die 25 mm²: 70 686/25 − 942.5/√50 = 2 827.4 − 133.3 ≈ 2 694. Die 400 mm²: 70 686/400 − 942.5/√800 = 176.7 − 33.3 ≈ 143. Perbandingan 2 694 / 143 ≈ 18.8, lebih besar dari perbandingan luas (16), karena die besar kehilangan proporsi lebih banyak di tepi lingkaran wafer. Anda bisa memeriksa hasilnya dengan kalkulator "Die per wafer dan yield" di <a href="index.html#kalkulator">halaman utama</a>.</p></details>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>Die 25 mm²: 70 686/25 − 942.5/√50 = 2 827.4 − 133.3 ≈ 2 694. Die 400 mm²: 70 686/400 − 942.5/√800 = 176.7 − 33.3 ≈ 143. Perbandingan 2 694 / 143 ≈ 18.8, lebih besar dari perbandingan luas (16), karena die besar kehilangan proporsi lebih banyak di tepi lingkaran wafer. Kamu bisa memeriksa hasilnya dengan kalkulator "Die per wafer dan yield" di <a href="index.html#kalkulator">halaman utama</a>.</p></details>
 <h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
-<p><strong>3.1</strong> Tim Anda menemukan bug fungsi pada dua saat berbeda: (a) saat verifikasi RTL, (b) setelah silikon pertama tiba di lab. Untuk masing-masing, tahap alur mana saja yang harus diulang? Pakai peta di bagian 6.</p>
+<p><strong>3.1</strong> Tim kamu menemukan bug fungsi pada dua saat berbeda: (a) saat verifikasi RTL, (b) setelah silikon pertama tiba di lab. Untuk masing-masing, tahap alur mana saja yang harus diulang? Pakai peta di bagian 6.</p>
 <details class="icd-sol"><summary>Solusi 3.1</summary><p>(a) Hanya perbaikan RTL dan menjalankan ulang regression verifikasi. Jika sintesis percobaan sudah berjalan, ia diulang, tetapi itu otomatis. (b) Perbaikan RTL atau ECO di netlist, verifikasi ulang, lalu seluruh rantai implementasi untuk bagian yang berubah: timing, verifikasi fisik, tapeout baru (minimal sebagian mask), fabrikasi, wafer test, packaging, final test, dan bring-up lagi. Selain itu harus dicari mengapa verifikasi tidak menangkapnya, dan rencana verifikasi diperbaiki. Dalam praktik, tim berusaha membatasi perbaikan pada lapisan logam agar mask lapisan bawah dan wafer setengah jadi masih bisa dipakai.</p></details>
-<p><strong>3.2</strong> Dua foundry sama-sama menamai prosesnya "3 nm". Rancang tiga pengukuran yang akan Anda minta untuk membandingkannya secara adil, dan jelaskan mengapa nama saja tidak cukup.</p>
+<p><strong>3.2</strong> Dua foundry sama-sama menamai prosesnya "3 nm". Rancang tiga pengukuran yang akan kamu minta untuk membandingkannya secara adil, dan jelaskan mengapa nama saja tidak cukup.</p>
 <details class="icd-sol"><summary>Solusi 3.2</summary><p>Contoh jawaban yang baik: (1) kerapatan transistor atau kerapatan sel untuk library yang setara, dalam juta transistor per mm²; (2) kinerja dan daya pada rangkaian acuan yang sama, misalnya frekuensi ring oscillator atau inti prosesor yang sama pada tegangan dan suhu yang sama; (3) ukuran fisik kunci: contacted gate pitch, minimum metal pitch, dan tinggi sel. Tambahan yang relevan: yield atau kerapatan defect, serta biaya wafer. Nama tidak cukup karena tidak ada standar yang mengikat nama node ke ukuran fisik tertentu; setiap pabrik bebas memilih labelnya.</p></details>
 </section>
 
@@ -2237,16 +2237,16 @@ endmodule
 
 <section class="icd-sec" id="s13">
 <h2>Pertanyaan interview</h2>
-<p>Pertanyaan pembuka seperti ini muncul di hampir semua interview tingkat awal. Pewawancara menilai apakah Anda punya gambaran utuh, bukan hafalan.</p>
+<p>Pertanyaan pembuka seperti ini muncul di hampir semua interview tingkat awal. Pewawancara menilai apakah kamu punya gambaran utuh, bukan hafalan.</p>
 <details class="icd-sol"><summary>"Jelaskan alur desain ASIC dari RTL sampai GDSII."</summary>
-<p><strong>Kerangka jawaban:</strong> (1) Sebut tahap berurutan: RTL, verifikasi, sintesis, DFT, floorplan, placement, CTS, routing, ekstraksi dan STA, verifikasi fisik, tapeout. (2) Untuk setiap tahap sebut satu masukan dan satu keluaran. (3) Tegaskan bahwa alurnya berulang, dan sebut dua pemeriksaan yang menjaga kebenaran di sepanjang alur: equivalence checking untuk fungsi dan STA untuk timing. (4) Perdalam di tahap yang Anda lamar. Hindari sekadar membaca daftar tanpa menyebut apa yang berpindah tangan.</p></details>
+<p><strong>Kerangka jawaban:</strong> (1) Sebut tahap berurutan: RTL, verifikasi, sintesis, DFT, floorplan, placement, CTS, routing, ekstraksi dan STA, verifikasi fisik, tapeout. (2) Untuk setiap tahap sebut satu input dan satu output. (3) Tegaskan bahwa alurnya berulang, dan sebut dua pemeriksaan yang menjaga kebenaran di sepanjang alur: equivalence checking untuk fungsi dan STA untuk timing. (4) Perdalam di tahap yang kamu lamar. Hindari sekadar membaca daftar tanpa menyebut apa yang berpindah tangan.</p></details>
 <details class="icd-sol"><summary>"Apa beda front-end dan back-end?"</summary>
 <p><strong>Kerangka jawaban:</strong> Front-end mengurus <em>apa</em> yang dilakukan chip: spesifikasi, RTL, verifikasi fungsional, sampai netlist hasil sintesis. Back-end mengurus <em>bagaimana ia diwujudkan secara fisik</em>: floorplan sampai GDSII, termasuk timing dan aturan pabrik. Batasnya kira-kira di netlist. Sebut bahwa batas ini makin kabur karena sintesis kini memakai informasi fisik.</p></details>
 <details class="icd-sol"><summary>"Mengapa verifikasi memakan porsi usaha yang begitu besar?"</summary>
 <p><strong>Kerangka jawaban:</strong> (1) Biaya kesalahan setelah tapeout sangat tinggi dan tidak bisa ditambal. (2) Ruang keadaan desain tumbuh eksponensial terhadap jumlah bit penyimpan, sehingga tidak mungkin dicoba semuanya. (3) Karena itu dipakai gabungan teknik: constrained-random, coverage, assertion, formal, emulasi. Beri satu contoh bug terkenal, misalnya Pentium FDIV.</p></details>
 <details class="icd-sol"><summary>"Apa arti '5 nm' pada sebuah proses?"</summary>
 <p><strong>Kerangka jawaban:</strong> Itu nama generasi, bukan ukuran fisik. Jelaskan singkat sejarahnya (dulu sama dengan panjang gate), lalu sebut ukuran yang benar-benar bermakna: gate pitch, metal pitch, tinggi sel, kerapatan transistor. Pewawancara mencari kandidat yang tidak tertipu label pemasaran.</p></details>
-<details class="icd-sol"><summary>"Ceritakan tawar-menawar PPA yang pernah Anda hadapi."</summary>
+<details class="icd-sol"><summary>"Ceritakan tawar-menawar PPA yang pernah kamu hadapi."</summary>
 <p><strong>Kerangka jawaban:</strong> Untuk pemula, pakai proyek kuliah atau capstone. Struktur: situasi dan target, pilihan yang tersedia, angka sebelum dan sesudah, keputusan, dan apa yang dikorbankan. Contoh: menambah satu tahap pipeline menaikkan frekuensi maksimum tetapi menambah register (area dan daya) serta latency satu siklus.</p></details>
 </section>
 
@@ -2267,7 +2267,7 @@ sudo apt install -y iverilog gtkwave
 iverilog -V | head -1      # harus mencetak nomor versi
 </pre>
 <p>Di macOS dengan Homebrew: <code>brew install icarus-verilog</code>. Penampil waveform untuk macOS dibahas di halaman penyiapan lab.</p>
-<div class="icd-box verify"><b>Catatan pengujian</b>Lab ini diuji dengan Icarus Verilog 12.0 dari paket Ubuntu. Bagian simulasi (langkah 2, 3, dan 5) dijalankan dan keluarannya disalin apa adanya. GTKWave (langkah 4) adalah aplikasi grafis dan belum diuji di lingkungan penulisan; di WSL2 ia membutuhkan Windows 11 atau Windows 10 yang mendukung aplikasi grafis Linux.</div>
+<div class="icd-box verify"><b>Catatan pengujian</b>Lab ini diuji dengan Icarus Verilog 12.0 dari paket Ubuntu. Bagian simulasi (langkah 2, 3, dan 5) dijalankan dan output-nya disalin apa adanya. GTKWave (langkah 4) adalah aplikasi grafis dan belum diuji di lingkungan penulisan; di WSL2 ia membutuhkan Windows 11 atau Windows 10 yang mendukung aplikasi grafis Linux.</div>
 <h3>Langkah 2: tulis kedua file</h3>
 <pre class="icd-src" data-lang="sh">
 mkdir -p ~/icd/m00 &amp;&amp; cd ~/icd/m00
@@ -2279,7 +2279,7 @@ nano tb_and2.sv     # tempel kode testbench
 iverilog -g2012 -o sim and2.sv tb_and2.sv
 vvp sim
 </pre>
-<p><code>iverilog</code> mengompilasi kedua file menjadi berkas <code>sim</code>; opsi <code>-g2012</code> mengaktifkan SystemVerilog. <code>vvp</code> menjalankannya. Keluaran yang benar:</p>
+<p><code>iverilog</code> mengompilasi kedua file menjadi berkas <code>sim</code>; opsi <code>-g2012</code> mengaktifkan SystemVerilog. <code>vvp</code> menjalankannya. Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 VCD info: dumpfile and2.vcd opened for output.
 ok    a=0 b=0 y=0
@@ -2305,20 +2305,20 @@ GAGAL a=1 b=0 y=1
 ok    a=1 b=1 y=1
 GAGAL: 2 kesalahan
 </pre>
-<p>AND dan OR hanya berbeda saat tepat satu masukan bernilai 1, jadi dua dari empat kombinasi gagal. Kembalikan ke <code>&amp;</code> setelah selesai.</p></details>
+<p>AND dan OR hanya berbeda saat tepat satu input bernilai 1, jadi dua dari empat kombinasi gagal. Kembalikan ke <code>&amp;</code> setelah selesai.</p></details>
 <h3>Refleksi</h3>
 <ul>
-<li>Anda baru saja menjalankan dua tahap pertama alur: desain RTL dan verifikasi fungsional, lengkap dengan satu bug yang tertangkap.</li>
+<li>Kamu baru saja menjalankan dua tahap pertama alur: desain RTL dan verifikasi fungsional, lengkap dengan satu bug yang tertangkap.</li>
 <li>Seandainya testbench hanya mencoba kombinasi 00 dan 11, bug OR tadi akan lolos. Kelengkapan pengujian (coverage) adalah topik besar di M18.</li>
 </ul>
-<p><strong>Tanpa pemasangan:</strong> bila Anda belum bisa memasang tool, lanjutkan dulu ke modul berikutnya. Lab simulasi baru menjadi wajib di M08.</p>
+<p><strong>Tanpa pemasangan:</strong> bila kamu belum bisa memasang tool, lanjutkan dulu ke modul berikutnya. Lab simulasi baru menjadi wajib di M08.</p>
 </section>
 
 <section class="icd-sec" id="s15">
 <h2>Ringkasan, cheat sheet, flashcard</h2>
 <ul>
 <li>Chip adalah miliaran transistor (saklar) yang dibuat bersama di atas silikon; dicetak per wafer, dipotong menjadi die, lalu dikemas.</li>
-<li>Kerumitan dijinakkan dengan abstraksi bertingkat: sistem, arsitektur, RTL, gerbang, transistor, layout, devais.</li>
+<li>Kerumitan dijinakkan dengan abstraksi bertingkat: sistem, arsitektur, RTL, gerbang, transistor, layout, device.</li>
 <li>Alur digital berjalan dari spesifikasi sampai silikon, dengan pemeriksaan di setiap perpindahan, dan berulang bila pemeriksaan gagal.</li>
 <li>Kesalahan makin mahal makin lambat ditemukan; karena itu sebagian besar usaha adalah memeriksa.</li>
 <li>Jumlah transistor berlipat dua kira-kira setiap dua tahun selama lima dekade; nama node kini hanya label.</li>
@@ -2326,7 +2326,7 @@ GAGAL: 2 kesalahan
 <h3>Cheat sheet satu layar</h3>
 <div class="cheat">
 <div class="icd-card"><h4>Alur</h4>Spesifikasi → arsitektur → RTL → verifikasi → sintesis → DFT → floorplan → placement → CTS → routing → ekstraksi + STA → DRC/LVS → tapeout → fabrikasi → wafer test → packaging → final test → bring-up</div>
-<div class="icd-card"><h4>Abstraksi</h4>Sistem › arsitektur › RTL › gerbang › transistor › layout › devais</div>
+<div class="icd-card"><h4>Abstraksi</h4>Sistem › arsitektur › RTL › gerbang › transistor › layout › device</div>
 <div class="icd-card"><h4>Rumus</h4>N(t) = N₀·2^((t−t₀)/T)<br>T = (t−t₀) / log₂(N/N₀)<br>DPW ≈ π(d/2)²/S − πd/√(2S)</div>
 <div class="icd-card"><h4>PPA</h4>Performance (Hz) · Power (W) · Area (mm²). Selalu ditawar bertiga.</div>
 <div class="icd-card"><h4>File kunci</h4>.sv RTL · .vcd waveform · .lib sel · .sdc constraint · .lef/.def fisik · .spef parasitik · .gds layout</div>

@@ -452,7 +452,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1163,11 +1163,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1219,7 +1219,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1292,7 +1292,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1332,18 +1332,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1369,11 +1369,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1391,8 +1391,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1544,7 +1544,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1946,13 +1946,13 @@ body{background:var(--bg)}
     <div class="pitch ptop">
       <span class="eyebrow"><i></i>Gratis · open source · Bahasa Indonesia</span>
       <h1>Ayo jadi <em>chip designer</em> Indonesia.</h1>
-      <p class="lead">Ponsel di saku Anda, mobil, satelit, dan pusat data semuanya digerakkan oleh chip. bikinchip mengajak Anda belajar merancangnya dari nol: dari arus listrik dan bilangan biner sampai layout yang siap dikirim ke pabrik.</p>
+      <p class="lead">Ponsel di saku kamu, mobil, satelit, dan pusat data semuanya digerakkan oleh chip. bikinchip mengajak kamu belajar merancangnya dari nol: dari arus listrik dan bilangan biner sampai layout yang siap dikirim ke pabrik.</p>
     </div>
     <div class="pitch pbot">
       <ul class="feat">
         <li><span class="ic">▶</span><span><b>Visualisasi yang bisa dimainkan</b>Geser parameter, tebak dulu, lalu lihat rangkaiannya bereaksi.</span></li>
         <li><span class="ic">{}</span><span><b>Kode yang benar-benar jalan</b>Setiap contoh sudah dijalankan dan diuji, bukan sekadar ilustrasi.</span></li>
-        <li><span class="ic">⚙</span><span><b>Lab dengan tool open-source</b>Verilog, SPICE, sintesis, sampai layout, langsung di laptop Anda.</span></li>
+        <li><span class="ic">⚙</span><span><b>Lab dengan tool open-source</b>Verilog, SPICE, sintesis, sampai layout, langsung di laptop kamu.</span></li>
         <li><span class="ic">✓</span><span><b>Kuis, flashcard, dan rencana belajar</b>Progres tersimpan di akun dan tersinkron ke semua perangkat.</span></li>
       </ul>
       <div class="trust" id="trust"></div>
@@ -1967,7 +1967,7 @@ body{background:var(--bg)}
 
       <div id="v-main" hidden>
         <h2 id="v-title">Mulai belajar</h2>
-        <p class="sub" id="v-sub">Masuk untuk menyimpan progres, catatan, skor kuis, dan flashcard Anda.</p>
+        <p class="sub" id="v-sub">Masuk untuk menyimpan progres, catatan, skor kuis, dan flashcard kamu.</p>
         <div id="g-wrap">
           <button type="button" class="gbtn" id="g-btn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Lanjutkan dengan Google</button>
           <div class="or">atau dengan email</div>
@@ -1995,7 +1995,7 @@ body{background:var(--bg)}
 
       <form class="af" id="v-forgot" hidden novalidate>
         <h2>Lupa kata sandi</h2>
-        <p class="sub">Masukkan email akun Anda. Kami kirim tautan untuk membuat kata sandi baru.</p>
+        <p class="sub">Masukkan email akun kamu. Kami kirim tautan untuk membuat kata sandi baru.</p>
         <label for="fg-email">Email</label><input id="fg-email" type="email" autocomplete="email" required>
         <button class="icd-btn primary go" type="submit">Kirim tautan</button>
         <div class="row2"><button type="button" class="lnk" data-back>← Kembali ke masuk</button></div>
@@ -2004,14 +2004,14 @@ body{background:var(--bg)}
 
       <form class="af" id="v-reset" hidden novalidate>
         <h2>Buat kata sandi baru</h2>
-        <p class="sub">Anda sudah terverifikasi lewat email. Tentukan kata sandi baru.</p>
+        <p class="sub">Kamu sudah terverifikasi lewat email. Tentukan kata sandi baru.</p>
         <label for="rs-pw">Kata sandi baru</label><div class="pw"><input id="rs-pw" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-eye="rs-pw">Lihat</button></div>
         <label for="rs-pw2">Ulangi kata sandi</label><input id="rs-pw2" type="password" autocomplete="new-password" required>
         <button class="icd-btn primary go" type="submit">Simpan dan lanjut belajar</button>
         <div class="msg" id="rs-msg" role="status"></div>
       </form>
 
-      <div id="v-busy" hidden><h2>Sebentar…</h2><p class="sub">Menyiapkan akun dan menyinkronkan progres Anda.</p></div>
+      <div id="v-busy" hidden><h2>Sebentar…</h2><p class="sub">Menyiapkan akun dan menyinkronkan progres kamu.</p></div>
       <p class="fine">Kode MIT · materi CC BY-SA 4.0 · <a href="privasi.html">privasi</a></p>
     </div>
   </section>
@@ -2022,7 +2022,7 @@ body{background:var(--bg)}
   <p class="intro">Merancang chip sering terdengar seperti ilmu yang hanya dikuasai segelintir orang di luar negeri. Padahal alurnya bisa dipelajari langkah demi langkah, dan alat-alat open-source sekarang memungkinkan siapa pun mencobanya dari laptop sendiri.</p>
   <div class="why">
     <div><h3>Dari nol, sungguhan</h3><p>Dimulai dari tegangan, arus, dan bilangan biner. Matematika SMA sudah cukup untuk memulai; sisanya dibangun di dalam kurikulum.</p></div>
-    <div><h3>Dalam bahasa kita</h3><p>Penjelasan dalam Bahasa Indonesia, dengan istilah teknis tetap dalam Bahasa Inggris supaya Anda siap membaca datasheet, buku, dan berdiskusi dengan tim global.</p></div>
+    <div><h3>Dalam bahasa kita</h3><p>Penjelasan dalam Bahasa Indonesia, dengan istilah teknis tetap dalam Bahasa Inggris supaya kamu siap membaca datasheet, buku, dan berdiskusi dengan tim global.</p></div>
     <div><h3>Seperti di industri</h3><p>Setiap modul memuat jebakan yang sering terjadi di industri, praktik tim chip, dan pertanyaan interview beserta kerangka jawabannya.</p></div>
   </div>
 </div></section>
@@ -2035,7 +2035,7 @@ body{background:var(--bg)}
 
 <section class="band"><div class="ax">
   <h2>Setiap modul dirancang supaya benar-benar paham.</h2>
-  <p class="intro">Bukan sekadar membaca. Setiap modul berjalan dalam siklus yang sama, dan progres Anda tercatat di setiap langkah.</p>
+  <p class="intro">Bukan sekadar membaca. Setiap modul berjalan dalam siklus yang sama, dan progres kamu tercatat di setiap langkah.</p>
   <div class="loop"><span>Kenapa ini penting</span><i>→</i><span>Intuisi</span><i>→</i><span>Penjelasan formal</span><i>→</i><span>Visualisasi interaktif</span><i>→</i><span>Contoh soal</span><i>→</i><span>Kode dan lab</span><i>→</i><span>Latihan tiga tingkat</span><i>→</i><span>Kuis</span><i>→</i><span>Flashcard</span></div>
 </div></section>
 
@@ -2053,14 +2053,14 @@ body{background:var(--bg)}
   <h2>Tanya jawab</h2>
   <details><summary>Apakah benar-benar gratis?</summary><p>Ya. Seluruh materi gratis dan open source. Kode situs berlisensi MIT, materi berlisensi CC BY-SA 4.0.</p></details>
   <details><summary>Perlu latar belakang apa?</summary><p>Mulai saja dari M00 (Orientasi). Bagian pertama membangun dasar matematika, rangkaian, representasi data, dan perangkat lunak yang dibutuhkan bagian-bagian berikutnya.</p></details>
-  <details><summary>Kenapa harus masuk?</summary><p>Supaya progres, catatan, skor kuis, dan jadwal flashcard tersimpan di akun Anda dan bisa dilanjutkan dari perangkat mana pun. Masuk dengan Google cukup sekali klik.</p></details>
-  <details><summary>Data apa yang disimpan?</summary><p>Nama, email, dan data belajar Anda (progres, catatan, skor, flashcard). Data tidak dijual atau dibagikan. Lihat <a href="privasi.html">kebijakan privasi</a>.</p></details>
+  <details><summary>Kenapa harus masuk?</summary><p>Supaya progres, catatan, skor kuis, dan jadwal flashcard tersimpan di akun kamu dan bisa dilanjutkan dari perangkat mana pun. Masuk dengan Google cukup sekali klik.</p></details>
+  <details><summary>Data apa yang disimpan?</summary><p>Nama, email, dan data belajar kamu (progres, catatan, skor, flashcard). Data tidak dijual atau dibagikan. Lihat <a href="privasi.html">kebijakan privasi</a>.</p></details>
   <details><summary>Bisa belajar offline?</summary><p>Bisa. Unduh repositori dari GitHub, lalu buka <code>docs/index.html</code>. Versi offline berjalan tanpa internet dan tanpa akun.</p></details>
   <details><summary>Apakah semua modul sudah tersedia?</summary><p id="faq-avail">Modul dirilis bertahap. Yang sudah ada bisa langsung dipelajari, dan yang berikutnya muncul otomatis di beranda.</p></details>
 </div></section>
 
 <div class="ax">
-  <div class="cta"><h2>Chip pertama Anda dimulai dari satu bit.</h2><p>Bergabunglah dan mulai dari modul orientasi hari ini.</p><a href="#akun" id="cta-go">Mulai belajar gratis</a></div>
+  <div class="cta"><h2>Chip pertama kamu dimulai dari satu bit.</h2><p>Bergabunglah dan mulai dari modul orientasi hari ini.</p><a href="#akun" id="cta-go">Mulai belajar gratis</a></div>
   <footer class="foot"><span>© bikinchip dan kontributor · kode MIT · materi CC BY-SA 4.0</span><span><a href="privasi.html">Privasi</a> · <a id="gh" href="#">GitHub</a></span></footer>
 </div>
 
@@ -2080,7 +2080,7 @@ var ERR = [
   [/password should be at least|weak.?password/i, 'Kata sandi terlalu lemah. Pakai minimal 8 karakter, campur huruf dan angka.'],
   [/rate limit|too many|over_email_send_rate_limit/i, 'Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.'],
   [/provider is not enabled|unsupported provider/i, 'Masuk dengan Google belum diaktifkan. Pakai email untuk sementara.'],
-  [/failed to fetch|networkerror/i, 'Tidak bisa terhubung ke server. Periksa koneksi internet Anda.']
+  [/failed to fetch|networkerror/i, 'Tidak bisa terhubung ke server. Periksa koneksi internet kamu.']
 ];
 function nice(e){
   var t = (e && e.message) || String(e); try { var o = JSON.parse(t); t = o.msg || o.error_description || o.message || t; } catch (x) {}
@@ -2139,7 +2139,7 @@ q('#g-btn').addEventListener('click', function(){ S.oauth('google'); });
 q('#f-in').addEventListener('submit', function(e){
   e.preventDefault(); var em = q('#in-email').value.trim(), pw = q('#in-pw').value, f = e.target;
   if (!EM.test(em)) return say('#msg', 'Alamat email belum benar.');
-  if (!pw) return say('#msg', 'Isi kata sandi Anda.');
+  if (!pw) return say('#msg', 'Isi kata sandi kamu.');
   busy(f, true); say('#msg', '');
   S.signIn(em, pw).then(function(){ say('#msg', 'Berhasil masuk. Mengalihkan…', true); })
     .catch(function(err){
@@ -2154,13 +2154,13 @@ q('#f-in').addEventListener('submit', function(e){
 /* daftar */
 q('#f-up').addEventListener('submit', function(e){
   e.preventDefault(); var nm = q('#up-name').value.trim(), em = q('#up-email').value.trim(), pw = q('#up-pw').value, f = e.target;
-  if (!nm) return say('#msg', 'Isi nama Anda.');
+  if (!nm) return say('#msg', 'Isi nama kamu.');
   if (!EM.test(em)) return say('#msg', 'Alamat email belum benar.');
   if (pw.length < 8) return say('#msg', 'Kata sandi minimal 8 karakter.');
   if (!q('#up-ok').checked) return say('#msg', 'Centang persetujuan kebijakan privasi untuk melanjutkan.');
   busy(f, true); say('#msg', '');
   S.signUp(nm, em, pw).then(function(r){
-    if (r === 'konfirmasi'){ busy(f, false); f.reset(); say('#msg', 'Hampir selesai! Kami mengirim tautan konfirmasi ke ' + em + '. Klik tautan itu sekali saja (cek juga folder spam); setelah itu Anda cukup masuk dengan email dan kata sandi.', true); }
+    if (r === 'konfirmasi'){ busy(f, false); f.reset(); say('#msg', 'Hampir selesai! Kami mengirim tautan konfirmasi ke ' + em + '. Klik tautan itu sekali saja (cek juga folder spam); setelah itu kamu cukup masuk dengan email dan kata sandi.', true); }
   }).catch(function(err){ busy(f, false); say('#msg', nice(err)); });
 });
 

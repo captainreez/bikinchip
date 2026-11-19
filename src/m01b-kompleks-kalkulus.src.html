@@ -21,9 +21,9 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
-<p>Setiap kali sebuah gerbang logika berpindah keadaan, keluarannya tidak melompat seketika. Ia mengisi atau mengosongkan kapasitansi lewat resistansi, dan bentuk tegangannya mengikuti sebuah persamaan diferensial. Dari situlah delay berasal, dan delay menentukan seberapa cepat chip boleh berdetak.</p>
+<p>Setiap kali sebuah gerbang logika berpindah keadaan, output-nya tidak melompat seketika. Ia mengisi atau mengosongkan kapasitansi lewat resistansi, dan bentuk tegangannya mengikuti sebuah persamaan diferensial. Dari situlah delay berasal, dan delay menentukan seberapa cepat chip boleh berdetak.</p>
 <ul>
-<li><strong>Timing digital.</strong> Delay gerbang dan kawat, waktu naik sinyal, dan metastability (M09) semuanya adalah solusi persamaan diferensial orde satu yang Anda pelajari di sini.</li>
+<li><strong>Timing digital.</strong> Delay gerbang dan kawat, waktu naik sinyal, dan metastability (M09) semuanya adalah solusi persamaan diferensial orde satu yang kamu pelajari di sini.</li>
 <li><strong>Integritas daya.</strong> Kawat bonding paket bersifat induktif dan pad bersifat kapasitif. Keduanya membentuk sistem orde dua yang bisa <em>berdering</em>: tegangan suplai berayun di atas dan di bawah nilai normalnya setelah lonjakan arus. Jika ayunannya terlalu besar, flip-flop salah menangkap data.</li>
 <li><strong>Desain analog.</strong> Penguat, filter, dan PLL dianalisis dengan fasor dan bilangan kompleks. Phase margin sebuah op-amp (M07c) dan stabilitas loop PLL (M28c) adalah soal letak akar persamaan orde dua.</li>
 <li><strong>Simulator.</strong> SPICE pada dasarnya adalah penyelesai persamaan diferensial numerik. Engineer yang tidak paham cara kerjanya akan bingung saat simulasi gagal konvergen atau hasilnya bergantung pada ukuran langkah waktu.</li>
@@ -34,13 +34,13 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a>: eksponen, logaritma, radian, gelombang sinus, dan desibel.</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menghitung jumlah, selisih, hasil kali, dan hasil bagi <span data-term="kompleks">bilangan kompleks</span> dalam bentuk persegi maupun polar, dan berpindah antara keduanya dengan kuadran yang benar.</li>
 <li>Menurunkan turunan fungsi pangkat, eksponensial, dan sinus, memakai aturan rantai dan aturan hasil kali, serta menafsirkan turunan sebagai laju perubahan dengan satuannya.</li>
 <li>Menghitung integral tentu sebagai luas, dan memakainya untuk mencari muatan, nilai rata-rata, dan nilai RMS; termasuk menurunkan RMS sinus = <i>A</i>/√2.</li>
 <li>Menurunkan rumus Euler <i>e</i><sup><i>j</i>θ</sup> = cos θ + <i>j</i> sin θ dan memakai <span data-term="fasor">fasor</span> untuk mengubah turunan menjadi perkalian dengan <i>j</i>ω.</li>
-<li>Menyelesaikan persamaan diferensial linear orde satu dengan masukan step, dan menghitung waktu menuju persentase tertentu dari nilai akhir.</li>
+<li>Menyelesaikan persamaan diferensial linear orde satu dengan input step, dan menghitung waktu menuju persentase tertentu dari nilai akhir.</li>
 <li>Menulis persamaan karakteristik sistem orde dua, menentukan apakah responsnya kurang teredam, teredam kritis, atau lewat teredam, dan menghitung overshoot-nya.</li>
 <li>Menjelaskan metode Euler dan Runge-Kutta, galatnya, dan syarat kestabilan Euler.</li>
 </ol>
@@ -51,11 +51,11 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>Turunan: spidometer</h3>
 <p>Odometer mobil mencatat jarak total. Spidometer menunjukkan seberapa cepat jarak itu bertambah <em>saat ini</em>. Turunan adalah spidometer bagi besaran apa pun: turunan tegangan terhadap waktu adalah seberapa cepat tegangan naik, dalam volt per detik. <em>Di mana analogi ini berhenti:</em> spidometer hanya mengukur terhadap waktu. Turunan bisa diambil terhadap besaran apa saja, misalnya laju perubahan arus transistor terhadap tegangan gate-nya, yang menjadi dasar gain penguat di M07.</p>
 <h3>Integral: odometer</h3>
-<p>Kebalikannya: jika Anda tahu kecepatan setiap saat, odometer menjumlahkannya menjadi jarak. Integral menjumlahkan sebuah laju menjadi total. Arus adalah laju aliran muatan; integral arus terhadap waktu adalah muatan total yang berpindah. <em>Di mana analogi ini berhenti:</em> odometer tidak pernah berkurang, sedangkan integral bisa negatif. Arus yang berbalik arah mengurangi muatan yang sudah terkumpul.</p>
+<p>Kebalikannya: jika kamu tahu kecepatan setiap saat, odometer menjumlahkannya menjadi jarak. Integral menjumlahkan sebuah laju menjadi total. Arus adalah laju aliran muatan; integral arus terhadap waktu adalah muatan total yang berpindah. <em>Di mana analogi ini berhenti:</em> odometer tidak pernah berkurang, sedangkan integral bisa negatif. Arus yang berbalik arah mengurangi muatan yang sudah terkumpul.</p>
 <h3>Persamaan diferensial orde satu: mengisi ember yang bocor</h3>
 <p>Isi ember dari keran sambil dasarnya bocor. Makin penuh ember, makin deras kebocoran, sehingga laju pengisian bersih makin kecil. Ember tidak pernah benar-benar penuh dalam waktu terbatas; ia mendekati titik seimbang dengan kurva yang melambat. Kapasitor yang diisi lewat resistor berperilaku persis seperti ini, dan kurvanya adalah eksponensial. <em>Di mana analogi ini berhenti:</em> ember nyata akhirnya penuh dalam waktu terbatas karena air bersifat butiran dan gelombang permukaan. Model matematisnya mendekati nilai akhir selamanya; engineer cukup berkata "sudah sampai" setelah sekitar lima konstanta waktu.</p>
 <h3>Orde dua: pegas dan peredam</h3>
-<p>Tekan suspensi mobil lalu lepaskan. Pegas mendorong kembali, massa melewati titik seimbang, lalu berayun. Peredam (shock absorber) menyerap energi ayunan. Peredam lemah: mobil bergoyang lama. Peredam terlalu kuat: mobil kembali sangat lambat. Ada titik pas di tengah. Rangkaian dengan induktor dan kapasitor berperilaku sama: induktansi seperti massa, kapasitansi seperti pegas, resistansi seperti peredam. <em>Di mana analogi ini berhenti:</em> pada mobil, Anda bisa melihat dan merasakan goyangannya. Pada chip, dering terjadi dalam ratusan pikodetik, dan Anda hanya bisa melihatnya lewat simulasi atau osiloskop yang sangat cepat.</p>
+<p>Tekan suspensi mobil lalu lepaskan. Pegas mendorong kembali, massa melewati titik seimbang, lalu berayun. Peredam (shock absorber) menyerap energi ayunan. Peredam lemah: mobil bergoyang lama. Peredam terlalu kuat: mobil kembali sangat lambat. Ada titik pas di tengah. Rangkaian dengan induktor dan kapasitor berperilaku sama: induktansi seperti massa, kapasitansi seperti pegas, resistansi seperti peredam. <em>Di mana analogi ini berhenti:</em> pada mobil, kamu bisa melihat dan merasakan goyangannya. Pada chip, dering terjadi dalam ratusan pikodetik, dan kamu hanya bisa melihatnya lewat simulasi atau osiloskop yang sangat cepat.</p>
 <h3>Bilangan kompleks: panah, bukan titik di garis</h3>
 <p>Bilangan biasa hidup di sebuah garis: maju atau mundur. Bilangan kompleks hidup di bidang: ia punya panjang dan arah, seperti jarum jam. Mengalikan dua bilangan kompleks berarti memanjangkan dan memutar jarum. Inilah yang membuatnya cocok untuk gelombang sinus, yang pada dasarnya adalah jarum yang berputar (M01a). <em>Di mana analogi ini berhenti:</em> nama "imajiner" menyesatkan. Bilangan imajiner tidak lebih khayal daripada bilangan negatif; keduanya adalah alat hitung yang konsisten. Yang terukur di laboratorium selalu bagian real-nya.</p>
 </section>
@@ -137,7 +137,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Kekuatan fasor: turunan menjadi perkalian.</strong> Turunan <i>Ve</i><sup><i>j</i>ω<i>t</i></sup> terhadap waktu adalah <i>j</i>ω<i>Ve</i><sup><i>j</i>ω<i>t</i></sup>. Jadi dalam dunia fasor, d/d<i>t</i> diganti perkalian dengan <i>j</i>ω, dan persamaan diferensial berubah menjadi aljabar.</p>
 <p><strong>Contoh.</strong> Filter RC (diturunkan di <a href="m02b-transien-ac.html">M02b</a>) mengikuti <i>RC</i> d<i>v</i><sub>out</sub>/d<i>t</i> + <i>v</i><sub>out</sub> = <i>v</i><sub>in</sub>. Dengan fasor: <i>j</i>ω<i>RC</i> <i>V</i><sub>out</sub> + <i>V</i><sub>out</sub> = <i>V</i><sub>in</sub>, sehingga</p>
 <div class="icd-eq"><math display="block"><mi>H</mi><mo>=</mo><mfrac><msub><mi>V</mi><mtext>out</mtext></msub><msub><mi>V</mi><mtext>in</mtext></msub></mfrac><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>j</mi><mi>&#x3C9;</mi><mi>R</mi><mi>C</mi></mrow></mfrac></math><span class="alt">H = V_out / V_in = 1 / (1 + jωRC)</span></div>
-<p>Pada ω = 1/(<i>RC</i>), <i>H</i> = 1/(1 + <i>j</i>) = 0.5 − 0.5<i>j</i> = 0.707∠−45°. Besarnya 0.707 adalah titik −3 dB dari M01a, dan sekarang Anda tahu fasenya: −45°. Dengan <i>R</i> = 1 kΩ dan <i>C</i> = 1 nF, frekuensi itu adalah <i>f</i> = 1/(2π<i>RC</i>) = 159.2 kHz.</p>
+<p>Pada ω = 1/(<i>RC</i>), <i>H</i> = 1/(1 + <i>j</i>) = 0.5 − 0.5<i>j</i> = 0.707∠−45°. Besarnya 0.707 adalah titik −3 dB dari M01a, dan sekarang kamu tahu fasenya: −45°. Dengan <i>R</i> = 1 kΩ dan <i>C</i> = 1 nF, frekuensi itu adalah <i>f</i> = 1/(2π<i>RC</i>) = 159.2 kHz.</p>
 
 <h3>4.7 Persamaan diferensial orde satu</h3>
 <p><span data-term="pd">Persamaan diferensial</span> adalah persamaan yang memuat sebuah fungsi dan turunannya. Yang paling sering muncul di chip berbentuk:</p>
@@ -164,7 +164,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Waktu menuju sebuah persentase.</strong> Selesaikan rumus untuk <i>t</i>: <i>t</i> = τ · ln((<i>y</i><sub>0</sub> − <i>y</i><sub><i>f</i></sub>)/(<i>y</i> − <i>y</i><sub><i>f</i></sub>)). <span data-term="risetime">Waktu naik</span> 10% sampai 90% adalah τ(ln 10 − ln(10/9)) = τ ln 9 = 2.197τ.</p>
 
 <h3>4.8 Persamaan diferensial orde dua</h3>
-<p>Bila rangkaian memuat induktor dan kapasitor sekaligus, muncul turunan kedua. Bentuk bakunya, untuk masukan step bernilai 1:</p>
+<p>Bila rangkaian memuat induktor dan kapasitor sekaligus, muncul turunan kedua. Bentuk bakunya, untuk input step bernilai 1:</p>
 <div class="icd-eq"><math display="block"><mfrac><mrow><msup><mi>d</mi><mn>2</mn></msup><mi>y</mi></mrow><mrow><mi>d</mi><msup><mi>t</mi><mn>2</mn></msup></mrow></mfrac><mo>+</mo><mn>2</mn><mi>&#x3B6;</mi><msub><mi>&#x3C9;</mi><mn>0</mn></msub><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>+</mo><msubsup><mi>&#x3C9;</mi><mn>0</mn><mn>2</mn></msubsup><mi>y</mi><mo>=</mo><msubsup><mi>&#x3C9;</mi><mn>0</mn><mn>2</mn></msubsup></math><span class="alt">d²y/dt² + 2ζω0·dy/dt + ω0²·y = ω0²</span></div>
 <p>Dua parameter menentukan segalanya: ω<sub>0</sub> <span data-term="omega0">frekuensi alami</span> (rad/s) dan ζ <span data-term="zeta">rasio redaman</span> (tanpa satuan). Untuk rangkaian RLC seri yang diberi step tegangan dan diukur pada kapasitornya: ω<sub>0</sub> = 1/√(<i>LC</i>) dan ζ = (<i>R</i>/2)√(<i>C</i>/<i>L</i>).</p>
 <p><strong>Persamaan karakteristik.</strong> Seperti orde satu, coba <i>u</i> = <i>Ke</i><sup><i>st</i></sup> pada bagian homogen (ruas kanan nol, setelah menggeser <i>u</i> = <i>y</i> − 1). Setiap turunan menurunkan satu faktor <i>s</i>, dan <i>e</i><sup><i>st</i></sup> bisa dicoret:</p>
@@ -202,7 +202,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>2. Turunan dan integral</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Turunan adalah "seberapa cepat berubah sekarang". Integral adalah "berapa total yang terkumpul". Keduanya saling membalik: turunan dari total yang terkumpul adalah laju pengumpulannya.</p></div>
-<div data-level="engineer"><p>Dua hubungan yang akan Anda pakai setiap hari: arus kapasitor <i>i</i> = <i>C</i> d<i>v</i>/d<i>t</i> dan tegangan induktor <i>v</i> = <i>L</i> d<i>i</i>/d<i>t</i> (M02). Yang kedua menjelaskan <em>ground bounce</em>: arus 1 A yang berubah dalam 1 ns melewati induktansi paket 1 nH menimbulkan tegangan 1 V. Untuk integral, ingat muatan <i>Q</i> = ∫<i>i</i> d<i>t</i> dan energi <i>E</i> = ∫<i>p</i> d<i>t</i>; daya rata-rata adalah energi per periode.</p></div>
+<div data-level="engineer"><p>Dua hubungan yang akan kamu pakai setiap hari: arus kapasitor <i>i</i> = <i>C</i> d<i>v</i>/d<i>t</i> dan tegangan induktor <i>v</i> = <i>L</i> d<i>i</i>/d<i>t</i> (M02). Yang kedua menjelaskan <em>ground bounce</em>: arus 1 A yang berubah dalam 1 ns melewati induktansi paket 1 nH menimbulkan tegangan 1 V. Untuk integral, ingat muatan <i>Q</i> = ∫<i>i</i> d<i>t</i> dan energi <i>E</i> = ∫<i>p</i> d<i>t</i>; daya rata-rata adalah energi per periode.</p></div>
 <div data-level="pakar"><p>Turunan numerik memperbesar noise, karena selisih dua nilai berdekatan yang masing-masing berderau dibagi bilangan kecil. Integral numerik justru meratakan noise. Karena itu pengukuran dan simulator lebih suka merumuskan ulang masalah dalam bentuk integral. Hal serupa terjadi di hardware: rangkaian penurun (differentiator) berbasis op-amp jarang dipakai karena gain-nya naik terhadap frekuensi dan mudah tidak stabil, sedangkan integrator adalah blok dasar filter switched-capacitor (M27d) dan modulator sigma-delta (M28b).</p></div>
 </div>
 <h3>3. Fasor</h3>
@@ -306,7 +306,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 </ol>
 
 <h3>Contoh 2: fasor filter RC</h3>
-<p><strong>Soal.</strong> Filter RC dengan <i>R</i> = 1 kΩ dan <i>C</i> = 1 nF diberi sinyal pada 10 kali frekuensi potongnya. Berapa besar dan fase keluarannya relatif terhadap masukan?</p>
+<p><strong>Soal.</strong> Filter RC dengan <i>R</i> = 1 kΩ dan <i>C</i> = 1 nF diberi sinyal pada 10 kali frekuensi potongnya. Berapa besar dan fase output-nya relatif terhadap input?</p>
 <ol>
 <li>Frekuensi potong ω<sub><i>c</i></sub> = 1/(<i>RC</i>) = 10<sup>6</sup> rad/s, atau <i>f</i><sub><i>c</i></sub> = 159.2 kHz.</li>
 <li>Pada ω = 10ω<sub><i>c</i></sub>: ω<i>RC</i> = 10, jadi <i>H</i> = 1/(1 + 10<i>j</i>).</li>
@@ -483,7 +483,7 @@ if __name__ == "__main__":
 <li><strong>Baris 67 sampai 105:</strong> uji. Bagian 3 menghitung rata-rata sin² dengan 100 000 titik tengah, yaitu integral numerik, dan memastikan hasilnya 0.5. Bagian 4 memastikan galat Euler sekitar 1% dan galat RK4 di bawah sepersejuta pada langkah yang sama, serta bahwa Euler meledak pada <i>h</i> = 2.5τ. Bagian 5 menyelesaikan persamaan orde dua secara numerik lalu mencocokkannya dengan rumus eksak.</li>
 <li><strong>Baris 107 sampai 116:</strong> mencetak hasil contoh soal dan tabel galat terhadap ukuran langkah.</li>
 </ul>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif di Lab, bug sengaja, dan solusi perluasan semuanya dijalankan dengan Python 3 sebelum modul ditulis. Keluaran di bagian Lab disalin apa adanya.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif di Lab, bug sengaja, dan solusi perluasan semuanya dijalankan dengan Python 3 sebelum modul ditulis. Output di bagian Lab disalin apa adanya.</div>
 </section>
 
 <section class="icd-sec" id="s09">
@@ -512,7 +512,7 @@ if __name__ == "__main__":
 <tr><th scope="row">Integral, RMS</th><td>Daya rata-rata, arus RMS untuk elektromigrasi</td><td>Analisis daya (M25), keandalan (M32)</td></tr>
 <tr><th scope="row">Turunan, slew rate</th><td>Batas transisi <code>max_transition</code>, slew pada tabel Liberty</td><td>Sintesis dan STA (M21, M22)</td></tr>
 </tbody></table></div>
-<p>Untuk hitungan dan eksplorasi, engineer memakai Python dengan NumPy dan SciPy (<code>scipy.integrate.solve_ivp</code> adalah versi industri dari <code>rk4</code> di bagian 8), GNU Octave, atau MATLAB. Delay di tabel Liberty yang dipakai sintesis dan STA dihasilkan dengan menjalankan ribuan simulasi transien SPICE pada setiap sel (karakterisasi, M21b); jadi angka di laporan timing Anda pada akhirnya adalah hasil penyelesaian persamaan diferensial.</p>
+<p>Untuk hitungan dan eksplorasi, engineer memakai Python dengan NumPy dan SciPy (<code>scipy.integrate.solve_ivp</code> adalah versi industri dari <code>rk4</code> di bagian 8), GNU Octave, atau MATLAB. Delay di tabel Liberty yang dipakai sintesis dan STA dihasilkan dengan menjalankan ribuan simulasi transien SPICE pada setiap sel (karakterisasi, M21b); jadi angka di laporan timing kamu pada akhirnya adalah hasil penyelesaian persamaan diferensial.</p>
 <p>Dalam alur RTL-to-GDSII, materi modul ini paling terasa di karakterisasi library, signoff timing dan daya, serta seluruh alur analog dan mixed-signal.</p>
 </section>
 
@@ -553,7 +553,7 @@ if __name__ == "__main__":
 <p><strong>Kerangka jawaban:</strong> Bilangan kompleks yang menyimpan amplitudo dan fase sebuah sinyal sinus pada frekuensi yang disepakati. Gunanya: turunan menjadi perkalian dengan <i>j</i>ω, sehingga kapasitor dan induktor menjadi impedansi dan analisis rangkaian AC menjadi aljabar. Sebut batasnya: hanya untuk sistem linear dalam keadaan tunak.</p></details>
 <details class="icd-sol"><summary>"Berapa waktu naik 10% sampai 90% rangkaian RC, dan dari mana angkanya?"</summary>
 <p><strong>Kerangka jawaban:</strong> 2.2<i>RC</i>. Turunkan: waktu menuju pecahan <i>p</i> adalah −τ ln(1 − <i>p</i>); untuk 90% −τ ln 0.1 = 2.303τ, untuk 10% −τ ln 0.9 = 0.105τ; selisihnya τ ln 9 = 2.197τ. Tambahkan hubungan dengan bandwidth: <i>t</i><sub><i>r</i></sub> ≈ 0.35/<i>f</i><sub>−3dB</sub>, karena 2.197/(2π) ≈ 0.35.</p></details>
-<details class="icd-sol"><summary>"Bagaimana Anda tahu sebuah sistem orde dua akan berdering?"</summary>
+<details class="icd-sol"><summary>"Bagaimana kamu tahu sebuah sistem orde dua akan berdering?"</summary>
 <p><strong>Kerangka jawaban:</strong> Tulis persamaan karakteristik, hitung ζ. ζ &lt; 1 berarti akar kompleks dan dering. Untuk RLC seri: ζ = (<i>R</i>/2)√(<i>C</i>/<i>L</i>), jadi resistansi kecil atau induktansi besar membuat dering. Sebut overshoot ζ = 0.7 sekitar 5% sebagai target umum, dan hubungan kasar dengan phase margin pada loop umpan balik.</p></details>
 <details class="icd-sol"><summary>"Mengapa simulasi transien SPICE kadang gagal dengan pesan timestep too small?"</summary>
 <p><strong>Kerangka jawaban:</strong> Simulator memilih langkah waktu secara adaptif dari perkiraan galat. Bila rangkaian punya perubahan sangat cepat atau tak kontinu, atau persamaan tak linear di suatu langkah tidak konvergen, langkah terus diperkecil sampai batas bawah. Penyebab umum: sumber tanpa waktu naik, simpul mengambang, model yang tak kontinu. Perbaikannya di model, bukan di toleransi.</p></details>
@@ -572,7 +572,7 @@ mkdir -p ~/icd/m01b &amp;&amp; cd ~/icd/m01b
 nano ode.py                # tempel kode dari bagian 8, simpan
 python3 ode.py
 </pre>
-<p>Berkas yang sama ada di folder materi: <code>lab/m01b/ode.py</code>. Keluaran yang benar:</p>
+<p>Berkas yang sama ada di folder materi: <code>lab/m01b/ode.py</code>. Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 |3+4j| = 5, sudut = 53.13 derajat
@@ -637,11 +637,11 @@ for z in (0.3, 1.0, 2.0):
     assert close(step2_any(4.0, z, 1.0), rk4(f, [0.0, 0.0], 4.0, 0.01)[0])
 print("step2_any cocok dengan RK4 untuk zeta 0.3, 1, 2")
 </pre>
-<p>Keluaran tambahan yang benar: <code>step2_any cocok dengan RK4 untuk zeta 0.3, 1, 2</code>.</p></details>
+<p>Output tambahan yang benar: <code>step2_any cocok dengan RK4 untuk zeta 0.3, 1, 2</code>.</p></details>
 <h3>Refleksi</h3>
 <ul>
-<li>Anda baru saja menulis inti sebuah simulator transien: model berupa fungsi kemiringan, dan penyelesai yang melangkah maju dalam waktu.</li>
-<li>SPICE melakukan hal yang sama untuk ribuan simpul sekaligus, dengan metode implisit dan langkah adaptif. Anda akan memakainya mulai M02.</li>
+<li>Kamu baru saja menulis inti sebuah simulator transien: model berupa fungsi kemiringan, dan penyelesai yang melangkah maju dalam waktu.</li>
+<li>SPICE melakukan hal yang sama untuk ribuan simpul sekaligus, dengan metode implisit dan langkah adaptif. Kamu akan memakainya mulai M02.</li>
 </ul>
 </section>
 
@@ -705,7 +705,7 @@ ICD.gloss.add([
 { id: 'antiturunan', en: 'antiderivative', idn: 'antiturunan', def: 'Fungsi F yang turunannya f.', mod: 'M01b' },
 { id: 'ftc', en: 'fundamental theorem of calculus', idn: 'teorema dasar kalkulus', def: 'Integral f dari a ke b sama dengan F(b) − F(a), dengan F antiturunan f.', mod: 'M01b' },
 { id: 'ratarata', en: 'average value', idn: 'nilai rata-rata', def: 'Integral sinyal selama selang T dibagi T.', mod: 'M01b' },
-{ id: 'rms', en: 'RMS', idn: 'nilai efektif', def: 'Akar dari rata-rata kuadrat; untuk sinus bernilai amplitudo dibagi √2.', mod: 'M01a, M01b' },
+{ id: 'rms', en: 'RMS', idn: 'nilai efektif', def: 'Root mean square: akar dari rata-rata kuadrat; untuk sinus bernilai amplitudo dibagi √2.', mod: 'M01a, M01b' },
 { id: 'fasor', en: 'phasor', idn: 'fasor', def: 'Bilangan kompleks A∠φ yang mewakili sinyal A·cos(ωt + φ) pada frekuensi yang disepakati.', mod: 'M01b' },
 { id: 'pd', en: 'differential equation', idn: 'persamaan diferensial', def: 'Persamaan yang memuat sebuah fungsi dan turunan-turunannya.', mod: 'M01b' },
 { id: 'tau', en: 'time constant', idn: 'konstanta waktu', def: 'Parameter τ sistem orde satu; waktu untuk menempuh 63.2% perubahan. Untuk RC, τ = RC.', mod: 'M01b, M02' },

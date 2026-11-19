@@ -36,7 +36,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01d-transformasi-sinyal.html">M01d</a> (fungsi transfer, kutub, nol, respons frekuensi), <a href="m02b-transien-ac.html">M02b</a> (impedansi, RC low-pass, RLC, analisis AC), <a href="m01a-matematika-dasar.html">M01a</a> (desibel dan skala logaritmik).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menulis fungsi transfer dalam bentuk standar kutub-nol, lalu menggambar <span data-term="bode">diagram Bode</span> magnitudo dan fase dengan garis lurus, dan menyebut galat terbesarnya.</li>
 <li>Menghitung frekuensi gain satu (unity-gain) dan phase margin dari sebuah fungsi transfer.</li>
@@ -44,7 +44,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li>Memilih jenis dan orde filter (Butterworth, Chebyshev) dari spesifikasi pita lolos dan pita henti, dan menghitung komponen tangga LC dari tabel prototipe.</li>
 <li>Menurunkan <span data-term="z0">impedansi karakteristik</span> dan kecepatan rambat saluran dari <i>L</i>′ dan <i>C</i>′, dan memutuskan kapan sebuah kawat harus diperlakukan sebagai saluran.</li>
 <li>Menghitung <span data-term="gamma">koefisien pantul</span>, menggambar diagram pantulan (bounce diagram), dan memilih terminasi seri atau paralel.</li>
-<li>Menghitung impedansi masukan saluran, <span data-term="vswr">VSWR</span>, dan return loss, termasuk kasus seperempat dan setengah panjang gelombang.</li>
+<li>Menghitung impedansi input saluran, <span data-term="vswr">VSWR</span>, dan return loss, termasuk kasus seperempat dan setengah panjang gelombang.</li>
 <li>Menjelaskan persamaan Maxwell, panjang gelombang di dielektrik, <span data-term="skin">efek kulit</span>, dan kopling kawat tetangga pada tingkat yang cukup untuk memperkirakan besarnya.</li>
 </ol>
 </section>
@@ -58,7 +58,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>Saluran: sungai dan bendungan</h3>
 <p>Sinyal di saluran seperti gelombang air yang dikirim di sungai. Ia merambat dengan kecepatan tetap, dan bila bertemu perubahan lebar sungai atau bendungan di ujung, sebagian gelombang memantul kembali. Sungai yang lebarnya tidak berubah (impedansi sama sepanjang saluran) dan berujung muara yang sama lebar (beban cocok) tidak memantulkan apa pun. <em>Di mana analogi ini berhenti:</em> di saluran listrik, tegangan dan arus selalu terkait lewat Z<sub>0</sub> untuk gelombang yang merambat satu arah, dan pantulan menghasilkan tegangan yang bisa lebih tinggi dari sumbernya (pantulan di ujung terbuka menggandakan tegangan), hal yang tidak punya padanan jelas pada air.</p>
 <h3>Medan dan gelombang: kolam yang kita goyang</h3>
-<p>Muatan yang diam menciptakan medan listrik di sekitarnya. Muatan yang bergerak menciptakan medan magnet. Muatan yang <em>dipercepat</em> mengirim gangguan medan yang merambat keluar dengan kecepatan tertentu: itu gelombang elektromagnetik. Gerakkan jari di kolam dan gelombang keluar dengan kecepatan sendiri, tidak peduli seberapa cepat Anda menggerakkan jari. <em>Di mana analogi ini berhenti:</em> gelombang elektromagnetik tidak butuh medium; di dielektrik ia hanya diperlambat, bukan dibawa.</p>
+<p>Muatan yang diam menciptakan medan listrik di sekitarnya. Muatan yang bergerak menciptakan medan magnet. Muatan yang <em>dipercepat</em> mengirim gangguan medan yang merambat keluar dengan kecepatan tertentu: itu gelombang elektromagnetik. Gerakkan jari di kolam dan gelombang keluar dengan kecepatan sendiri, tidak peduli seberapa cepat kamu menggerakkan jari. <em>Di mana analogi ini berhenti:</em> gelombang elektromagnetik tidak butuh medium; di dielektrik ia hanya diperlambat, bukan dibawa.</p>
 </section>
 
 <section class="icd-sec" id="s04">
@@ -132,7 +132,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Contoh (sama dengan lab).</strong> <i>R</i><sub><i>S</i></sub> = 10 Ω, <i>Z</i><sub>0</sub> = 50 Ω, <i>R</i><sub><i>L</i></sub> = 200 Ω, <i>V</i><sub><i>S</i></sub> = 1 V. Γ<sub><i>S</i></sub> = −0.667, Γ<sub><i>L</i></sub> = +0.6, <i>V</i><sub>1</sub> = 0.833 V. Tegangan beban: 1.333 V pada <i>t</i><sub>d</sub>, 0.800 V pada 3<i>t</i><sub>d</sub>, 1.013 V pada 5<i>t</i><sub>d</sub>, 0.928 V, 0.962 V, …, menuju 0.952 V. Overshoot pertama 40% di atas nilai akhir, dan beban baru tenang setelah banyak pulang-pergi. Penggerak yang terlalu kuat (<i>R</i><sub><i>S</i></sub> kecil) dan beban impedansi tinggi adalah resep ringing.</p>
 <p><strong>Terminasi.</strong> Pantulan hilang bila salah satu ujung dicocokkan. <em>Terminasi seri</em>: tambahkan resistor di sumber sehingga <i>R</i><sub><i>S</i></sub> total = <i>Z</i><sub>0</sub>; Γ<sub><i>S</i></sub> = 0, sehingga pantulan dari beban yang terbuka diserap saat tiba di sumber. Gelombang awal hanya setengah <i>V</i><sub><i>S</i></sub>; di ujung terbuka ia berlipat dua menjadi tegangan penuh, jadi beban melihat satu tepi bersih tanpa ringing dan tanpa arus DC. Kekurangannya: di titik tengah saluran sinyal hanya setengah amplitudo selama 2<i>t</i><sub>d</sub>, sehingga penerima di tengah saluran tidak boleh dipakai. <em>Terminasi paralel</em>: resistor <i>Z</i><sub>0</sub> di beban; Γ<sub><i>L</i></sub> = 0, sinyal bersih di seluruh saluran, tetapi menarik arus DC (daya statis). <em>On-die termination</em> (ODT) pada DDR adalah terminasi paralel yang bisa dihidupkan dan dimatikan dari dalam chip.</p>
 
-<h3>4.9 Impedansi masukan, gelombang berdiri, dan VSWR</h3>
+<h3>4.9 Impedansi input, gelombang berdiri, dan VSWR</h3>
 <p>Untuk sinus pada frekuensi tunak, saluran lossless sepanjang ℓ dengan beban <i>Z</i><sub><i>L</i></sub> tampak dari sumber sebagai:</p>
 <div class="icd-eq"><math display="block"><msub><mi>Z</mi><mtext>in</mtext></msub><mo>=</mo><msub><mi>Z</mi><mn>0</mn></msub><mfrac><mrow><msub><mi>Z</mi><mi>L</mi></msub><mo>+</mo><mi>j</mi><msub><mi>Z</mi><mn>0</mn></msub><mi>tan</mi><mi>&#x3B2;</mi><mi>&#x2113;</mi></mrow><mrow><msub><mi>Z</mi><mn>0</mn></msub><mo>+</mo><mi>j</mi><msub><mi>Z</mi><mi>L</mi></msub><mi>tan</mi><mi>&#x3B2;</mi><mi>&#x2113;</mi></mrow></mfrac><mspace width="2em"/><mi>&#x3B2;</mi><mo>=</mo><mfrac><mrow><mn>2</mn><mi>&#x3C0;</mi></mrow><mi>&#x3BB;</mi></mfrac></math><span class="alt">Z_in = Z0·(Z_L + j·Z0·tan βℓ)/(Z0 + j·Z_L·tan βℓ) ; β = 2π/λ</span></div>
 <p>Kasus penting: ℓ = λ/2 memberi <i>Z</i><sub>in</sub> = <i>Z</i><sub><i>L</i></sub> (saluran "tak terlihat"); ℓ = λ/4 memberi <i>Z</i><sub>in</sub> = <i>Z</i><sub>0</sub>²/<i>Z</i><sub><i>L</i></sub> (transformator seperempat gelombang: 100 Ω dengan saluran 50 Ω tampak 25 Ω, dan hubung singkat tampak terbuka); <i>Z</i><sub><i>L</i></sub> = <i>Z</i><sub>0</sub> memberi <i>Z</i><sub>in</sub> = <i>Z</i><sub>0</sub> untuk semua panjang. Gelombang datang dan pantul membentuk pola gelombang berdiri. Amplitudo tegangan sepanjang saluran berubah antara <i>V</i><sub>max</sub> = |<i>V</i><sup>+</sup>|(1 + |Γ|) dan <i>V</i><sub>min</sub> = |<i>V</i><sup>+</sup>|(1 − |Γ|), dan perbandingannya adalah:</p>
@@ -161,12 +161,12 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>1. Diagram Bode</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Diagram Bode adalah dua grafik: seberapa besar sebuah rangkaian memperkuat atau melemahkan sinyal pada tiap frekuensi, dan seberapa jauh ia menggeser waktunya. Sumbu frekuensinya logaritmik sehingga rentang yang sangat lebar muat dalam satu gambar. Cukup cari frekuensi "tekuk" (kutub dan nol), dan kurva turun atau naik dengan kemiringan tetap di antaranya.</p></div>
-<div data-level="engineer"><p>Dalam praktik, Anda menulis fungsi transfer dari analisis small-signal (M07), mencari kutub dan nol dari konstanta waktu rangkaian, menggambar garis lurus untuk melihat di mana frekuensi gain satu jatuh dan seberapa curam kemiringan di sana, lalu memverifikasi dengan <code>.ac</code> di SPICE. Teknik cepat: <em>konstanta waktu rangkaian terbuka</em> menaksir kutub dominan dengan menjumlahkan produk R·C tiap kapasitor yang dilihat dari resistor lain saat semua kapasitor lain dibuka.</p></div>
+<div data-level="engineer"><p>Dalam praktik, kamu menulis fungsi transfer dari analisis small-signal (M07), mencari kutub dan nol dari konstanta waktu rangkaian, menggambar garis lurus untuk melihat di mana frekuensi gain satu jatuh dan seberapa curam kemiringan di sana, lalu memverifikasi dengan <code>.ac</code> di SPICE. Teknik cepat: <em>konstanta waktu rangkaian terbuka</em> menaksir kutub dominan dengan menjumlahkan produk R·C tiap kapasitor yang dilihat dari resistor lain saat semua kapasitor lain dibuka.</p></div>
 <div data-level="pakar"><p>Bode menunjukkan hubungan antara magnitudo dan fase pada sistem fase-minimum: kemiringan −20 <i>m</i> dB/dekade berarti kira-kira −90<i>m</i>°. Hubungan eksaknya adalah integral Hilbert (relasi Bode gain-phase). Karena itu, phase margin bisa ditaksir dari kemiringan di <i>f</i><sub>u</sub>. Sistem dengan nol RHP atau delay murni bukan fase-minimum: fasenya lebih buruk dari yang diramalkan dari magnitudonya, dan inilah sumber batas bandwidth yang tidak bisa dilampaui dengan kompensasi biasa.</p></div>
 </div>
 <h3>2. Filter</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Filter adalah rangkaian yang memilih frekuensi. Filter lolos-bawah membiarkan sinyal lambat lewat dan menahan sinyal cepat. Makin banyak tahap (orde), makin tajam pemisahannya. Anda memilih tajam atau mulus: filter tajam mengubah bentuk sinyal yang lewat, filter mulus tidak.</p></div>
+<div data-level="pemula"><p>Filter adalah rangkaian yang memilih frekuensi. Filter lolos-bawah membiarkan sinyal lambat lewat dan menahan sinyal cepat. Makin banyak tahap (orde), makin tajam pemisahannya. Kamu memilih tajam atau mulus: filter tajam mengubah bentuk sinyal yang lewat, filter mulus tidak.</p></div>
 <div data-level="engineer"><p>Pilih keluarga sesuai kebutuhan: Butterworth untuk datar tanpa riak (default), Chebyshev bila redaman pita henti harus tinggi dengan orde kecil dan riak diterima, Bessel bila bentuk pulsa penting. Orde minimum dihitung dari rumus di bagian 4.5. Realisasi on-chip: biquad aktif (dua kutub per tahap, cascade untuk orde tinggi), dengan Q tiap tahap dari tabel; orde ganjil menambah satu tahap orde satu. Toleransi komponen yang 1% sampai 20% di chip menggeser frekuensi potong sehingga filter on-chip biasanya perlu tuning.</p></div>
 <div data-level="pakar"><p>Filter digital (FIR, IIR di M01d) lebih fleksibel, tetapi di jalur analog ia perlu ADC lebih dulu dan anti-alias analog tetap dibutuhkan. Prototipe Chebyshev memberi redaman pita henti terbaik untuk riak pita lolos dan orde tertentu di antara filter semua-kutub; elliptic menambah nol transmisi di pita henti untuk transisi lebih curam lagi, dengan biaya delay grup dan sensitivitas komponen. Sensitivitas pada Q tinggi bisa diatasi dengan topologi seperti Tow-Thomas atau Gm-C berbasis integrator, yang lebih tahan variasi proses.</p></div>
 </div>
@@ -220,7 +220,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-guide" data-id="v2-orde" data-answer="1">
   <p>Spesifikasi: redaman minimal 40 dB pada tiga kali f<sub>c</sub>. Butterworth memerlukan orde 5. Berapa orde minimum untuk Chebyshev riak 1 dB?</p>
   <ul><li>3</li><li>4</li><li>5</li><li>6</li></ul>
-  <div class="explain"><p>Pada x = 3, Butterworth n = 4 memberi 38.2 dB (kurang) dan n = 5 memberi 47.7 dB. Chebyshev 1 dB memberi 34.0 dB untuk n = 3 dan 49.4 dB untuk n = 4, jadi cukup orde 4. Pilih Chebyshev 1 dB, atur n dan baca redaman di 3 f<sub>c</sub> pada keluaran. Lalu lihat grafik bawah: delay grup Chebyshev melonjak di dekat f<sub>c</sub>, harga yang dibayar untuk transisi lebih curam.</p></div>
+  <div class="explain"><p>Pada x = 3, Butterworth n = 4 memberi 38.2 dB (kurang) dan n = 5 memberi 47.7 dB. Chebyshev 1 dB memberi 34.0 dB untuk n = 3 dan 49.4 dB untuk n = 4, jadi cukup orde 4. Pilih Chebyshev 1 dB, atur n dan baca redaman di 3 f<sub>c</sub> pada output. Lalu lihat grafik bawah: delay grup Chebyshev melonjak di dekat f<sub>c</sub>, harga yang dibayar untuk transisi lebih curam.</p></div>
 </div>
 
 <div class="icd-viz" id="v3">
@@ -241,7 +241,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 </div>
 
 <div class="icd-viz" id="v4">
-  <header><h3>4. Gelombang berdiri, VSWR, dan impedansi masukan</h3></header>
+  <header><h3>4. Gelombang berdiri, VSWR, dan impedansi input</h3></header>
   <div class="stage"><div id="v4-plot"></div></div>
   <div class="params">
     <label class="icd-field"><span>Beban R<sub>L</sub></span><select class="icd-select" id="v4-rl"><option value="0">0 (hubung singkat)</option><option value="12.5">12.5 Ω</option><option value="25">25 Ω</option><option value="50">50 Ω</option><option value="100" selected>100 Ω</option><option value="200">200 Ω</option><option value="1e9">terbuka</option></select></label>
@@ -290,7 +290,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Pelajaran.</strong> Nilai ini sama dengan lab, tetapi diskalakan 0.1×: frekuensi dikali 10, komponen dibagi 10. Induktor 1.59 µH mudah sebagai komponen diskrit, mustahil sebagai spiral on-chip (area dan Q), alasan filter on-chip dibuat dengan cara lain.</p>
 
 <h3>Contoh 4: pantulan pada jalur papan</h3>
-<p><strong>Soal.</strong> Pin keluaran CMOS (hambatan keluaran 20 Ω) menggerakkan jejak 50 Ω sepanjang 3 cm di FR-4 (ε<sub>r</sub> ≈ 4) ke input CMOS (kapasitif, tampak terbuka). Waktu naik 200 ps. Apakah perlu diperlakukan sebagai saluran, dan apa yang terjadi?</p>
+<p><strong>Soal.</strong> Pin output CMOS (hambatan output 20 Ω) menggerakkan jejak 50 Ω sepanjang 3 cm di FR-4 (ε<sub>r</sub> ≈ 4) ke input CMOS (kapasitif, tampak terbuka). Waktu naik 200 ps. Apakah perlu diperlakukan sebagai saluran, dan apa yang terjadi?</p>
 <ol>
 <li><i>t</i><sub>d</sub> = 3 cm/(15 cm/ns) = 200 ps; <i>t</i><sub>r</sub>/6 = 33 ps. Karena <i>t</i><sub>d</sub> ≫ <i>t</i><sub>r</sub>/6, ya, saluran.</li>
 <li>Γ<sub><i>L</i></sub> ≈ +1, Γ<sub><i>S</i></sub> = (20 − 50)/(20 + 50) = −0.429. <i>V</i><sub>1</sub> = 50/70 = 0.714 <i>V</i><sub><i>S</i></sub>.</li>
@@ -550,7 +550,7 @@ meas ac v_2fc FIND vm(b) AT=2Meg
 
 <section class="icd-sec" id="s09">
 <h2>Miskonsepsi dan jebakan</h2>
-<div class="icd-box mis"><b>Miskonsepsi</b>"Pada frekuensi potong, keluaran filter turun setengah." Besar tegangan turun ke 0.707, yaitu −3 dB; daya yang turun setengah. Setengah tegangan adalah −6 dB.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Pada frekuensi potong, output filter turun setengah." Besar tegangan turun ke 0.707, yaitu −3 dB; daya yang turun setengah. Setengah tegangan adalah −6 dB.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Garis lurus Bode adalah respons sebenarnya." Ia pendekatan yang salah paling besar (3 dB) justru di titik tekuk, dan salah jauh lebih besar untuk kutub kompleks dengan <i>Q</i> tinggi atau kutub yang berdekatan.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Menambah orde filter selalu memperbaiki rangkaian." Orde tinggi menambah komponen, area, delay, noise, dan sensitivitas terhadap toleransi. Orde minimum dari spesifikasi lebih baik.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Kawat harus diperlakukan sebagai saluran hanya bila panjang." Kriterianya perbandingan waktu tempuh dengan waktu naik, bukan panjang absolut: tepi 20 ps pada kawat 1 mm sudah membuatnya relevan, sedangkan tepi 10 ns pada 30 cm tidak.</div>
@@ -612,7 +612,7 @@ meas ac v_2fc FIND vm(b) AT=2Meg
 
 <section class="icd-sec" id="s13">
 <h2>Pertanyaan interview</h2>
-<details class="icd-sol"><summary>"Bagaimana Anda membaca phase margin dari diagram Bode?"</summary>
+<details class="icd-sol"><summary>"Bagaimana kamu membaca phase margin dari diagram Bode?"</summary>
 <p><strong>Kerangka jawaban:</strong> Cari frekuensi gain satu <i>f</i><sub>u</sub>, tempat gain loop memotong 0 dB. Baca fase di sana; PM = 180° + fase. Untuk respons yang baik, target PM 60° sampai 70° (overshoot kecil). Sebutkan hubungan kasar dengan kemiringan: −20 dB/dekade di <i>f</i><sub>u</sub> berarti PM aman, −40 dB/dekade berarti fase dekat −180° dan PM kecil. Tambahkan bahwa nol RHP dan delay murni menurunkan fase tanpa mengubah magnitudo, dan bahwa PM diperiksa di semua sudut proses, suhu, dan tegangan.</p></details>
 <details class="icd-sol"><summary>"Kapan sebuah kawat harus diperlakukan sebagai transmission line?"</summary>
 <p><strong>Kerangka jawaban:</strong> Bila waktu tempuh satu arah sebanding dengan atau lebih besar dari sekitar seperenam waktu naik. Hitung <i>t</i><sub>d</sub> dari panjang dan kecepatan (sekitar 6.7 ps/mm di dielektrik ε<sub>r</sub> ≈ 4). Sebutkan bahwa di chip, kawat tipis resistif berperilaku sebagai RC terdistribusi dan pantulan teredam, sedangkan pada papan, paket, dan kawat tebal berrugi rendah efek saluran nyata.</p></details>
@@ -635,7 +635,7 @@ mkdir -p ~/icd/m02c &amp;&amp; cd ~/icd/m02c
 nano linefilt.py           # tempel kode dari bagian 8.1, atau salin lab/m02c/linefilt.py
 python3 linefilt.py
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 Bode, 1 kutub 1 kHz dan 1 nol 10 kHz:
@@ -679,7 +679,7 @@ v_dc                =  4.999998e-01
 v_fc                =  3.535643e-01
 v_2fc               =  6.205479e-02
 </pre>
-<p>Dibagi 0.5: 0.99999 (DC), 0.7071 (−3.01 dB pada 1 MHz), dan 0.1241 (−18.12 dB pada 2 MHz), sesuai dengan keluaran Python. Selisih kecil di digit keempat berasal dari pembulatan nilai komponen di netlist (3.1831 nF dan 15.915 µH).</p>
+<p>Dibagi 0.5: 0.99999 (DC), 0.7071 (−3.01 dB pada 1 MHz), dan 0.1241 (−18.12 dB pada 2 MHz), sesuai dengan output Python. Selisih kecil di digit keempat berasal dari pembulatan nilai komponen di netlist (3.1831 nF dan 15.915 µH).</p>
 <h3>Langkah 4: jelajahi secara interaktif</h3>
 <pre class="icd-src" data-lang="sh">
 python3 -i linefilt.py
@@ -726,7 +726,7 @@ if __name__ == "__main__":
         k = settle(1.0, rs, 50, 1e6)
         print(f"  Rs = {rs:&gt;3} ohm: " + (f"{k} kedatangan (= {2 * k - 1} td)" if k else "tidak menetap"))
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Beban terbuka (1 Mohm), Z0 = 50 ohm, menetap dalam 5%:
   Rs =   0 ohm: tidak menetap

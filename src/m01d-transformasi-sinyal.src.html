@@ -17,7 +17,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <main>
 <p class="icd-small icd-muted">Bagian 1: Fondasi · M01 bagian d dari 4 · sekitar 15 jam · prasyarat: <a href="m01a-matematika-dasar.html">M01a</a>, <a href="m01b-kompleks-kalkulus.html">M01b</a>, <a href="m01c-linear-probabilitas-diskrit.html">M01c</a></p>
 <h1>M01d Fourier, Laplace, Z, sinyal dan sistem</h1>
-<p>Sampai di sini Anda melihat sinyal sebagai fungsi waktu. Modul ini memberi cara pandang kedua: sinyal sebagai campuran frekuensi. Tiga transformasi (Fourier, Laplace, dan Z) adalah kamus antara kedua cara pandang itu. Dengan kamus ini, persamaan diferensial yang rumit berubah menjadi perkalian dan pembagian biasa.</p>
+<p>Sampai di sini kamu melihat sinyal sebagai fungsi waktu. Modul ini memberi cara pandang kedua: sinyal sebagai campuran frekuensi. Tiga transformasi (Fourier, Laplace, dan Z) adalah kamus antara kedua cara pandang itu. Dengan kamus ini, persamaan diferensial yang rumit berubah menjadi perkalian dan pembagian biasa.</p>
 
 <section class="icd-sec" id="s01">
 <h2>Kenapa ini penting</h2>
@@ -26,7 +26,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li><strong>Setiap ADC adalah mesin sampling.</strong> Menyampel terlalu lambat membuat sinyal frekuensi tinggi menyamar sebagai frekuensi rendah (aliasing), dan penyamaran itu tidak bisa dibatalkan. Teorema sampling menentukan spesifikasi setiap konverter data (M28a).</li>
 <li><strong>Stabilitas adalah soal letak kutub.</strong> Apakah sebuah penguat umpan balik berosilasi, apakah sebuah PLL mengunci, apakah regulator tegangan berdering: semuanya dijawab dengan melihat di mana kutub fungsi transfernya berada (M07c, M28c).</li>
 <li><strong>Banyak blok "analog" kini dikerjakan secara digital.</strong> Equalizer SerDes, filter desimasi di belakang ADC sigma-delta, dan loop filter PLL digital adalah filter FIR dan IIR yang ditulis dalam RTL. Engineer digital yang mengerjakannya harus paham transformasi Z.</li>
-<li><strong>Pengukuran kualitas dilakukan di domain frekuensi.</strong> SNR, distorsi harmonik, dan spur sebuah ADC dibaca dari hasil FFT keluarannya.</li>
+<li><strong>Pengukuran kualitas dilakukan di domain frekuensi.</strong> SNR, distorsi harmonik, dan spur sebuah ADC dibaca dari hasil FFT output-nya.</li>
 </ul>
 <div class="icd-box ok"><b>Yang dibawa pulang</b>Setiap sistem linear bisa dipahami dengan satu pertanyaan: apa yang ia lakukan pada sinus di tiap frekuensi? Jawabannya, sebuah gain dan geseran fase per frekuensi, sudah memuat semua perilakunya.</div>
 </section>
@@ -34,9 +34,9 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01a-matematika-dasar.html">M01a</a> (sinus, desibel, skala log), <a href="m01b-kompleks-kalkulus.html">M01b</a> (bilangan kompleks, rumus Euler, fasor, integral, persamaan diferensial orde satu dan dua), <a href="m01c-linear-probabilitas-diskrit.html">M01c</a> (simpangan baku untuk bagian noise).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
-<li>Menjelaskan arti <span data-term="lti">sistem linear tak berubah waktu</span> dan menghitung keluarannya dengan <span data-term="konvolusi">konvolusi</span> diskret.</li>
+<li>Menjelaskan arti <span data-term="lti">sistem linear tak berubah waktu</span> dan menghitung output-nya dengan <span data-term="konvolusi">konvolusi</span> diskret.</li>
 <li>Menurunkan <span data-term="fs">deret Fourier</span> gelombang kotak dan menyebut frekuensi serta besar tiap <span data-term="harmonik">harmonik</span>-nya.</li>
 <li>Membaca sebuah <span data-term="spektrum">spektrum</span>, dan menghubungkan waktu naik sebuah sinyal dengan <span data-term="bw">bandwidth</span> yang dibutuhkannya.</li>
 <li>Menerapkan teorema sampling: menentukan laju sampling minimum dan menghitung frekuensi <span data-term="alias">alias</span>.</li>
@@ -50,7 +50,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s03">
 <h2>Intuisi dulu</h2>
 <h3>Fourier: resep sebuah bunyi</h3>
-<p>Sebuah akor piano terdengar sebagai satu bunyi, tetapi telinga terlatih bisa menyebut nada-nada penyusunnya. Analisis Fourier melakukan itu untuk sinyal apa pun: ia menjawab "sinus berfrekuensi berapa saja, dan seberapa kuat masing-masing, yang bila dijumlahkan menghasilkan sinyal ini?" Daftar jawabannya adalah spektrum, semacam resep. <em>Di mana analogi ini berhenti:</em> telinga membuang informasi fase, sedangkan resep Fourier yang lengkap memuat amplitudo dan fase tiap komponen. Tanpa fase, Anda tidak bisa menyusun kembali bentuk gelombangnya.</p>
+<p>Sebuah akor piano terdengar sebagai satu bunyi, tetapi telinga terlatih bisa menyebut nada-nada penyusunnya. Analisis Fourier melakukan itu untuk sinyal apa pun: ia menjawab "sinus berfrekuensi berapa saja, dan seberapa kuat masing-masing, yang bila dijumlahkan menghasilkan sinyal ini?" Daftar jawabannya adalah spektrum, semacam resep. <em>Di mana analogi ini berhenti:</em> telinga membuang informasi fase, sedangkan resep Fourier yang lengkap memuat amplitudo dan fase tiap komponen. Tanpa fase, kamu tidak bisa menyusun kembali bentuk gelombangnya.</p>
 <h3>Sistem linear: ruangan dengan gema</h3>
 <p>Tepuk tangan sekali di sebuah ruangan dan dengarkan gemanya. Gema dari satu tepukan itu, yang disebut respons impuls, sudah menceritakan segalanya tentang akustik ruangan. Bunyi apa pun bisa dipandang sebagai rentetan tepukan dengan kekuatan berbeda, dan hasilnya adalah tumpukan gema yang bersesuaian. Menumpuk gema seperti itu disebut konvolusi. <em>Di mana analogi ini berhenti:</em> ini hanya berlaku bila ruangannya linear (tepukan dua kali lebih keras memberi gema dua kali lebih keras) dan tidak berubah seiring waktu. Rangkaian transistor hanya linear untuk sinyal kecil di sekitar titik kerjanya.</p>
 <h3>Sampling: roda yang tampak berputar mundur</h3>
@@ -63,16 +63,16 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h2>Penjelasan formal</h2>
 
 <h3>4.1 Sinyal dan sistem</h3>
-<p>Sebuah <em>sinyal</em> adalah besaran yang berubah terhadap waktu. Sinyal <em>kontinu</em> <i>x</i>(<i>t</i>) terdefinisi di setiap saat; sinyal <em>diskret</em> <i>x</i>[<i>n</i>] hanya terdefinisi pada urutan bilangan bulat <i>n</i>, biasanya hasil sampling setiap <i>T</i> detik sehingga <i>x</i>[<i>n</i>] = <i>x</i>(<i>nT</i>). Sebuah <em>sistem</em> mengubah sinyal masukan menjadi sinyal keluaran.</p>
+<p>Sebuah <em>sinyal</em> adalah besaran yang berubah terhadap waktu. Sinyal <em>kontinu</em> <i>x</i>(<i>t</i>) terdefinisi di setiap saat; sinyal <em>diskret</em> <i>x</i>[<i>n</i>] hanya terdefinisi pada urutan bilangan bulat <i>n</i>, biasanya hasil sampling setiap <i>T</i> detik sehingga <i>x</i>[<i>n</i>] = <i>x</i>(<i>nT</i>). Sebuah <em>sistem</em> mengubah sinyal input menjadi sinyal output.</p>
 <p>Sistem disebut <span data-term="lti">linear tak berubah waktu</span> (LTI) bila memenuhi dua syarat:</p>
 <ul>
-<li><strong>Linear:</strong> masukan <i>a</i><i>x</i><sub>1</sub> + <i>b</i><i>x</i><sub>2</sub> menghasilkan keluaran <i>a</i><i>y</i><sub>1</sub> + <i>b</i><i>y</i><sub>2</sub>. Ini disebut prinsip <span data-term="superposisi">superposisi</span>.</li>
-<li><strong>Tak berubah waktu:</strong> masukan yang digeser waktu menghasilkan keluaran yang sama, digeser sebanyak itu juga.</li>
+<li><strong>Linear:</strong> input <i>a</i><i>x</i><sub>1</sub> + <i>b</i><i>x</i><sub>2</sub> menghasilkan output <i>a</i><i>y</i><sub>1</sub> + <i>b</i><i>y</i><sub>2</sub>. Ini disebut prinsip <span data-term="superposisi">superposisi</span>.</li>
+<li><strong>Tak berubah waktu:</strong> input yang digeser waktu menghasilkan output yang sama, digeser sebanyak itu juga.</li>
 </ul>
 <p>Rangkaian R, L, C adalah LTI. Kedua syarat itu yang membuat semua alat di modul ini bekerja: karena linear, sinyal rumit boleh dipecah menjadi bagian sederhana, diproses satu per satu, lalu dijumlahkan kembali.</p>
 
 <h3>4.2 Respons impuls dan konvolusi</h3>
-<p><span data-term="impuls">Impuls</span> diskret δ[<i>n</i>] bernilai 1 pada <i>n</i> = 0 dan 0 di tempat lain. Keluaran sistem saat diberi impuls disebut <span data-term="himp">respons impuls</span> <i>h</i>[<i>n</i>]. Sinyal apa pun adalah jumlah impuls yang digeser dan diberi bobot: <i>x</i>[<i>n</i>] = Σ <i>x</i>[<i>k</i>] δ[<i>n</i> − <i>k</i>]. Karena sistemnya linear dan tak berubah waktu, tiap impuls itu menghasilkan salinan <i>h</i> yang digeser dan diberi bobot, sehingga:</p>
+<p><span data-term="impuls">Impuls</span> diskret δ[<i>n</i>] bernilai 1 pada <i>n</i> = 0 dan 0 di tempat lain. Output sistem saat diberi impuls disebut <span data-term="himp">respons impuls</span> <i>h</i>[<i>n</i>]. Sinyal apa pun adalah jumlah impuls yang digeser dan diberi bobot: <i>x</i>[<i>n</i>] = Σ <i>x</i>[<i>k</i>] δ[<i>n</i> − <i>k</i>]. Karena sistemnya linear dan tak berubah waktu, tiap impuls itu menghasilkan salinan <i>h</i> yang digeser dan diberi bobot, sehingga:</p>
 <div class="icd-eq"><math display="block"><mi>y</mi><mo>[</mo><mi>n</mi><mo>]</mo><mo>=</mo><munder><mo>&#x2211;</mo><mi>k</mi></munder><mi>h</mi><mo>[</mo><mi>k</mi><mo>]</mo><mspace width="0.2em"/><mi>x</mi><mo>[</mo><mi>n</mi><mo>&#x2212;</mo><mi>k</mi><mo>]</mo></math><span class="alt">y[n] = Σ_k h[k]·x[n − k]</span></div>
 <p>Operasi ini disebut <span data-term="konvolusi">konvolusi</span>, ditulis <i>y</i> = <i>x</i> ∗ <i>h</i>. <strong>Contoh:</strong> <i>x</i> = (1, 2, 3) dan <i>h</i> = (1, 1). Tiap sampel <i>x</i> menghasilkan dirinya sendiri lalu sekali lagi satu langkah kemudian: (1, 1, 0, 0) + (0, 2, 2, 0) + (0, 0, 3, 3) = (1, 3, 5, 3). Untuk sinyal kontinu, jumlah berubah menjadi integral: <i>y</i>(<i>t</i>) = ∫ <i>h</i>(τ) <i>x</i>(<i>t</i> − τ) dτ.</p>
 <p>Kesimpulan penting: <strong>sistem LTI ditentukan sepenuhnya oleh respons impulsnya.</strong></p>
@@ -97,7 +97,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-tablewrap"><table class="icd">
 <thead><tr><th scope="col">Di domain waktu</th><th scope="col">Di domain frekuensi</th><th scope="col">Akibat praktis</th></tr></thead>
 <tbody>
-<tr><td>Konvolusi <i>x</i> ∗ <i>h</i></td><td>Perkalian <i>X</i>(<i>f</i>) · <i>H</i>(<i>f</i>)</td><td>Keluaran filter = spektrum masukan dikali respons frekuensi filter</td></tr>
+<tr><td>Konvolusi <i>x</i> ∗ <i>h</i></td><td>Perkalian <i>X</i>(<i>f</i>) · <i>H</i>(<i>f</i>)</td><td>Output filter = spektrum input dikali respons frekuensi filter</td></tr>
 <tr><td>Geseran waktu <i>t</i><sub>0</sub></td><td>Geseran fase −2π<i>f</i><i>t</i><sub>0</sub>, besar tetap</td><td>Delay murni tidak mengubah spektrum daya</td></tr>
 <tr><td>Pulsa sempit</td><td>Spektrum lebar</td><td>Tepi tajam butuh bandwidth besar</td></tr>
 <tr><td>Turunan d/d<i>t</i></td><td>Perkalian dengan <i>j</i>2π<i>f</i></td><td>Sama dengan aturan fasor di M01b</td></tr>
@@ -135,7 +135,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Contoh: mengisi kapasitor, cara Laplace.</strong> Persamaan τ d<i>v</i>/d<i>t</i> + <i>v</i> = <i>V</i><sub><i>S</i></sub> dengan <i>v</i>(0) = 0. Transformasikan tiap suku: τ<i>sV</i>(<i>s</i>) + <i>V</i>(<i>s</i>) = <i>V</i><sub><i>S</i></sub>/<i>s</i>. Selesaikan dengan aljabar: <i>V</i>(<i>s</i>) = <i>V</i><sub><i>S</i></sub>/(<i>s</i>(1 + <i>s</i>τ)) = <i>V</i><sub><i>S</i></sub> · (1/τ)/(<i>s</i>(<i>s</i> + 1/τ)). Cocokkan dengan baris ketiga tabel (<i>a</i> = 1/τ): <i>v</i>(<i>t</i>) = <i>V</i><sub><i>S</i></sub>(1 − <i>e</i><sup>−<i>t</i>/τ</sup>). Hasil yang sama dengan M01b, tanpa menebak bentuk solusi.</p>
 
 <h3>4.8 Fungsi transfer, kutub, dan nol</h3>
-<p>Untuk sistem LTI dengan keadaan awal nol, perbandingan transformasi keluaran dan masukan adalah <span data-term="tf">fungsi transfer</span>:</p>
+<p>Untuk sistem LTI dengan keadaan awal nol, perbandingan transformasi output dan input adalah <span data-term="tf">fungsi transfer</span>:</p>
 <div class="icd-eq"><math display="block"><mi>H</mi><mo>(</mo><mi>s</mi><mo>)</mo><mo>=</mo><mfrac><mrow><mi>Y</mi><mo>(</mo><mi>s</mi><mo>)</mo></mrow><mrow><mi>X</mi><mo>(</mo><mi>s</mi><mo>)</mo></mrow></mfrac><mo>=</mo><mi>K</mi><mfrac><mrow><mo>(</mo><mi>s</mi><mo>&#x2212;</mo><msub><mi>z</mi><mn>1</mn></msub><mo>)</mo><mo>(</mo><mi>s</mi><mo>&#x2212;</mo><msub><mi>z</mi><mn>2</mn></msub><mo>)</mo><mo>&#x22EF;</mo></mrow><mrow><mo>(</mo><mi>s</mi><mo>&#x2212;</mo><msub><mi>p</mi><mn>1</mn></msub><mo>)</mo><mo>(</mo><mi>s</mi><mo>&#x2212;</mo><msub><mi>p</mi><mn>2</mn></msub><mo>)</mo><mo>&#x22EF;</mo></mrow></mfrac></math><span class="alt">H(s) = Y(s)/X(s) = K·(s − z1)(s − z2)… / ((s − p1)(s − p2)…)</span></div>
 <p>Akar pembilang disebut <span data-term="zero">nol</span> (zero): nilai <i>s</i> yang membuat <i>H</i> = 0. Akar penyebut disebut <span data-term="pole">kutub</span> (pole): nilai <i>s</i> yang membuat <i>H</i> tak berhingga. Penyebut <i>H</i>(<i>s</i>) adalah persamaan karakteristik dari M01b; kutub adalah akar-akarnya. Tiap kutub <i>p</i> menyumbang suku <i>e</i><sup><i>pt</i></sup> pada respons, sehingga:</p>
 <ul>
@@ -156,12 +156,12 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Respons frekuensi</strong> didapat pada lingkaran satuan: <i>z</i> = <i>e</i><sup><i>j</i>Ω</sup>, dengan Ω = 2π<i>f</i>/<i>f</i><sub><i>s</i></sub> dalam radian per sampel. Karena lingkaran berulang setiap 2π, respons frekuensi sistem diskret berulang setiap <i>f</i><sub><i>s</i></sub>: itulah aliasing dilihat dari sisi filter.</p>
 
 <h3>4.10 Filter FIR dan IIR</h3>
-<p><strong><span data-term="fir">FIR</span></strong> (finite impulse response): keluaran hanya bergantung pada sejumlah terbatas masukan terakhir.</p>
+<p><strong><span data-term="fir">FIR</span></strong> (finite impulse response): output hanya bergantung pada sejumlah terbatas input terakhir.</p>
 <p style="text-align:center;font-family:var(--f-mono)"><i>y</i>[<i>n</i>] = <i>b</i><sub>0</sub><i>x</i>[<i>n</i>] + <i>b</i><sub>1</sub><i>x</i>[<i>n</i>−1] + … + <i>b</i><sub><i>M</i>−1</sub><i>x</i>[<i>n</i>−<i>M</i>+1] &nbsp;⇒&nbsp; <i>H</i>(<i>z</i>) = <i>b</i><sub>0</sub> + <i>b</i><sub>1</sub><i>z</i><sup>−1</sup> + … + <i>b</i><sub><i>M</i>−1</sub><i>z</i><sup>−(<i>M</i>−1)</sup></p>
 <p>Koefisien <i>b</i><sub><i>k</i></sub> adalah respons impulsnya, sehingga FIR persis sebuah konvolusi. Tidak ada umpan balik, jadi tidak ada kutub selain di <i>z</i> = 0: FIR selalu stabil. Contoh paling sederhana adalah <span data-term="ma">rata-rata bergerak</span> <i>M</i> titik (semua <i>b</i><sub><i>k</i></sub> = 1/<i>M</i>), dengan respons frekuensi:</p>
 <div class="icd-eq"><math display="block"><mrow><mo>|</mo><mi>H</mi><mo>(</mo><msup><mi>e</mi><mrow><mi>j</mi><mi>&#x3A9;</mi></mrow></msup><mo>)</mo><mo>|</mo></mrow><mo>=</mo><mrow><mo>|</mo><mfrac><mrow><mi>sin</mi><mo>&#x2061;</mo><mo>(</mo><mi>M</mi><mi>&#x3A9;</mi><mo>/</mo><mn>2</mn><mo>)</mo></mrow><mrow><mi>M</mi><mo>&#x2062;</mo><mi>sin</mi><mo>&#x2061;</mo><mo>(</mo><mi>&#x3A9;</mi><mo>/</mo><mn>2</mn><mo>)</mo></mrow></mfrac><mo>|</mo></mrow></math><span class="alt">|H(e^(jΩ))| = | sin(MΩ/2) / (M·sin(Ω/2)) |</span></div>
 <p><em>Penurunan:</em> <i>H</i> = (1/<i>M</i>)(1 + <i>z</i><sup>−1</sup> + … + <i>z</i><sup>−(<i>M</i>−1)</sup>) adalah deret geometri dengan jumlah (1/<i>M</i>)(1 − <i>z</i><sup>−<i>M</i></sup>)/(1 − <i>z</i><sup>−1</sup>). Ganti <i>z</i> = <i>e</i><sup><i>j</i>Ω</sup>, keluarkan faktor fase dari pembilang dan penyebut, dan pakai <i>e</i><sup><i>j</i>θ</sup> − <i>e</i><sup>−<i>j</i>θ</sup> = 2<i>j</i> sin θ. Respons ini nol tepat pada kelipatan <i>f</i><sub><i>s</i></sub>/<i>M</i>: sinus yang periodenya pas <i>M</i> sampel dirata-ratakan menjadi nol.</p>
-<p><strong><span data-term="iir">IIR</span></strong> (infinite impulse response): keluaran juga bergantung pada keluaran sebelumnya (umpan balik). Yang paling sederhana:</p>
+<p><strong><span data-term="iir">IIR</span></strong> (infinite impulse response): output juga bergantung pada output sebelumnya (umpan balik). Yang paling sederhana:</p>
 <p style="text-align:center;font-family:var(--f-mono)"><i>y</i>[<i>n</i>] = α<i>y</i>[<i>n</i>−1] + (1 − α)<i>x</i>[<i>n</i>] &nbsp;⇒&nbsp; <i>H</i>(<i>z</i>) = (1 − α)/(1 − α<i>z</i><sup>−1</sup>)</p>
 <p><em>Penurunan:</em> transformasikan: <i>Y</i> = α<i>z</i><sup>−1</sup><i>Y</i> + (1 − α)<i>X</i>, lalu selesaikan <i>Y</i>/<i>X</i>. Kutubnya di <i>z</i> = α (kalikan pembilang dan penyebut dengan <i>z</i>: penyebut menjadi <i>z</i> − α). Stabil bila |α| &lt; 1. Respons step-nya <i>y</i>[<i>n</i>] = 1 − α<sup><i>n</i>+1</sup>: versi diskret dari pengisian kapasitor. Dengan α = <i>e</i><sup>−<i>T</i>/τ</sup>, filter ini meniru rangkaian RC berkonstanta waktu τ.</p>
 <div class="icd-tablewrap"><table class="icd">
@@ -192,14 +192,14 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>1. Domain frekuensi</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Setiap sinyal bisa dibuat dengan menjumlahkan gelombang sinus berbagai frekuensi. Spektrum adalah daftar "seberapa banyak" tiap frekuensi. Sinyal yang berubah perlahan hanya memuat frekuensi rendah; sinyal dengan tepi tajam memuat frekuensi tinggi.</p></div>
-<div data-level="engineer"><p>Dua aturan kerja. Pertama, bandwidth ditentukan oleh waktu naik, bukan oleh laju pengulangan: <i>t</i><sub><i>r</i></sub> ≈ 0.35/<i>f</i><sub>−3dB</sub>. Kedua, keluaran sistem linear adalah spektrum masukan dikali respons frekuensi, sehingga dalam dB keduanya dijumlahkan. Sinyal kotak dengan duty cycle tepat 50% tidak punya harmonik genap; munculnya harmonik genap di spektrum clock menandakan duty cycle yang meleset.</p></div>
+<div data-level="engineer"><p>Dua aturan kerja. Pertama, bandwidth ditentukan oleh waktu naik, bukan oleh laju pengulangan: <i>t</i><sub><i>r</i></sub> ≈ 0.35/<i>f</i><sub>−3dB</sub>. Kedua, output sistem linear adalah spektrum input dikali respons frekuensi, sehingga dalam dB keduanya dijumlahkan. Sinyal kotak dengan duty cycle tepat 50% tidak punya harmonik genap; munculnya harmonik genap di spektrum clock menandakan duty cycle yang meleset.</p></div>
 <div data-level="pakar"><p>FFT mengandaikan rekaman berulang secara periodik. Bila sinyal tidak tepat memuat bilangan bulat siklus dalam rekaman, sambungan di ujungnya menjadi lompatan dan energinya bocor ke bin-bin tetangga (spectral leakage). Dua obatnya: fungsi window (Hann, Blackman-Harris) yang meredam ujung rekaman dengan mengorbankan resolusi, atau sampling koheren, yaitu memilih frekuensi uji sehingga tepat <i>M</i> siklus muat dalam <i>N</i> sampel dengan <i>M</i> dan <i>N</i> tidak punya faktor bersama. Pengujian ADC memakai cara kedua. Untuk tepi digital, sebagian buku memakai "frekuensi lutut" 0.5/<i>t</i><sub><i>r</i></sub> alih-alih 0.35/<i>t</i><sub><i>r</i></sub>; keduanya taksiran, berbeda definisi waktu naik dan batas energi.</p></div>
 </div>
 <h3>2. Sampling</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Menyampel berarti mencatat nilai sinyal pada selang waktu teratur. Agar tidak tertipu, Anda harus mencatat lebih dari dua kali per siklus frekuensi tertinggi di sinyal itu. Jika kurang, frekuensi tinggi akan tampak seperti frekuensi rendah yang sebenarnya tidak ada.</p></div>
+<div data-level="pemula"><p>Menyampel berarti mencatat nilai sinyal pada selang waktu teratur. Agar tidak tertipu, kamu harus mencatat lebih dari dua kali per siklus frekuensi tertinggi di sinyal itu. Jika kurang, frekuensi tinggi akan tampak seperti frekuensi rendah yang sebenarnya tidak ada.</p></div>
 <div data-level="engineer"><p>Rentang 0 sampai <i>f</i><sub><i>s</i></sub>/2 disebut zona Nyquist pertama. Filter anti-aliasing tidak bisa tajam sempurna, sehingga dalam praktik <i>f</i><sub><i>s</i></sub> dipilih beberapa kali di atas 2<i>B</i> (oversampling) agar filternya boleh landai. Oversampling juga menyebar noise kuantisasi ke rentang yang lebih lebar: setiap penggandaan <i>f</i><sub><i>s</i></sub> menurunkan noise di dalam pita 3 dB, setara setengah bit.</p></div>
-<div data-level="pakar"><p>Aliasing kadang sengaja dipakai. Pada undersampling (sampling bandpass), sinyal sempit di sekitar frekuensi tinggi diturunkan ke baseband oleh proses sampling itu sendiri; syaratnya <i>f</i><sub><i>s</i></sub> melebihi dua kali <em>lebar pita</em>, bukan dua kali frekuensi tertinggi, dan jitter clock sampling dinilai terhadap frekuensi masukan yang tinggi itu. Di rangkaian switched-capacitor, noise termal lebar pita dari saklar ter-alias seluruhnya ke baseband saat disampel, menghasilkan noise total <i>kT</i>/<i>C</i> yang hanya bergantung pada kapasitor, tidak pada resistansi saklar.</p></div>
+<div data-level="pakar"><p>Aliasing kadang sengaja dipakai. Pada undersampling (sampling bandpass), sinyal sempit di sekitar frekuensi tinggi diturunkan ke baseband oleh proses sampling itu sendiri; syaratnya <i>f</i><sub><i>s</i></sub> melebihi dua kali <em>lebar pita</em>, bukan dua kali frekuensi tertinggi, dan jitter clock sampling dinilai terhadap frekuensi input yang tinggi itu. Di rangkaian switched-capacitor, noise termal lebar pita dari saklar ter-alias seluruhnya ke baseband saat disampel, menghasilkan noise total <i>kT</i>/<i>C</i> yang hanya bergantung pada kapasitor, tidak pada resistansi saklar.</p></div>
 </div>
 <h3>3. Kutub, nol, dan kestabilan</h3>
 <div class="icd-layers">
@@ -209,7 +209,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 </div>
 <h3>4. Filter digital</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Filter digital adalah resep hitung yang diulang untuk tiap sampel. Rata-rata bergerak mengambil rata-rata beberapa sampel terakhir sehingga gerigi cepat menjadi halus. FIR hanya memakai masukan; IIR juga memakai keluaran sebelumnya, seperti ingatan yang memudar.</p></div>
+<div data-level="pemula"><p>Filter digital adalah resep hitung yang diulang untuk tiap sampel. Rata-rata bergerak mengambil rata-rata beberapa sampel terakhir sehingga gerigi cepat menjadi halus. FIR hanya memakai input; IIR juga memakai output sebelumnya, seperti ingatan yang memudar.</p></div>
 <div data-level="engineer"><p>Di RTL, FIR adalah rantai register (tiap register satu <i>z</i><sup>−1</sup>), pengali untuk tiap koefisien, dan pohon penjumlah. Jalur kritisnya adalah pohon penjumlah, yang bisa di-pipeline dengan bebas karena tidak ada umpan balik. Pada IIR, loop umpan balik harus selesai dalam satu siklus sehingga tidak bisa di-pipeline begitu saja. Lebar bit harus tumbuh di sepanjang datapath: akumulator rata-rata bergerak <i>M</i> titik butuh ⌈log<sub>2</sub> <i>M</i>⌉ bit tambahan.</p></div>
 <div data-level="pakar"><p>Filter CIC (cascaded integrator-comb) mewujudkan rata-rata bergerak bertingkat tanpa satu pengali pun: integrator pada laju tinggi, penurunan laju, lalu comb pada laju rendah. Integratornya meluap secara sengaja; hasilnya tetap benar karena aritmetika modular (M01c) asalkan lebar bit mencukupi gain total. Inilah filter desimasi baku di belakang modulator sigma-delta, yang fungsi transfer noise-nya (1 − <i>z</i><sup>−1</sup>)<sup><i>L</i></sup> menempatkan nol di DC sehingga noise kuantisasi terdorong ke frekuensi tinggi. Pada SerDes, FFE adalah FIR pendek yang koefisiennya membatalkan ekor respons impuls kanal; DFE memakai keputusan bit sebelumnya sebagai umpan balik sehingga secara struktur adalah IIR tak linear.</p></div>
 </div>
@@ -232,23 +232,23 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-guide" data-id="v1-ganjil" data-answer="1">
   <p>Clock kotak 1 GHz dengan duty cycle tepat 50%. Di frekuensi mana saja energinya berada?</p>
   <ul><li>Hanya di 1 GHz</li><li>Di 1, 3, 5, 7 GHz dan seterusnya (kelipatan ganjil)</li><li>Di 1, 2, 3, 4 GHz dan seterusnya (semua kelipatan)</li><li>Di 2, 4, 6 GHz dan seterusnya (kelipatan genap)</li></ul>
-  <div class="explain"><p>Koefisien gelombang kotak simetris adalah (2/(πk))(1 − cos kπ): nol untuk k genap, 4/(πk) untuk k ganjil. Pilih "Kotak" dan perhatikan batang spektrum hanya muncul di harmonik ganjil. Bandingkan dengan gergaji, yang memuat semua harmonik. Dengan N = 1 Anda hanya mendapat sinus; baru di sekitar N = 5 bentuk kotaknya dikenali, dan itu berarti kanal 5 GHz untuk clock 1 GHz.</p></div>
+  <div class="explain"><p>Koefisien gelombang kotak simetris adalah (2/(πk))(1 − cos kπ): nol untuk k genap, 4/(πk) untuk k ganjil. Pilih "Kotak" dan perhatikan batang spektrum hanya muncul di harmonik ganjil. Bandingkan dengan gergaji, yang memuat semua harmonik. Dengan N = 1 kamu hanya mendapat sinus; baru di sekitar N = 5 bentuk kotaknya dikenali, dan itu berarti kanal 5 GHz untuk clock 1 GHz.</p></div>
 </div>
 
 <div class="icd-viz" id="v2">
   <header><h3>2. Sampling dan aliasing</h3></header>
   <div class="stage"><div id="v2-svg" style="overflow-x:auto"></div></div>
   <div class="params">
-    <label class="icd-field"><span>Frekuensi masukan f = <b id="v2-fv"></b></span><input type="range" id="v2-f" min="1" max="200" step="1" value="70"></label>
+    <label class="icd-field"><span>Frekuensi input f = <b id="v2-fv"></b></span><input type="range" id="v2-f" min="1" max="200" step="1" value="70"></label>
     <label class="icd-field"><span>Laju sampling f<sub>s</sub> = <b id="v2-sv"></b></span><input type="range" id="v2-s" min="20" max="200" step="5" value="100"></label>
   </div>
   <div class="readout" id="v2-out" aria-live="polite"></div>
-  <div class="model">Panel atas: sinus masukan (garis mulus), titik sampelnya, dan sinus berfrekuensi terendah yang melewati titik-titik yang sama (putus-putus). Jendela waktu selalu 12 periode sampling. Panel bawah: sumbu frekuensi 0 sampai 200 MHz dengan zona Nyquist berselang-seling; panah menunjukkan ke mana masukan terlipat. Sampler dianggap ideal: tanpa filter anti-aliasing, tanpa jitter, tanpa kuantisasi.</div>
+  <div class="model">Panel atas: sinus input (garis mulus), titik sampelnya, dan sinus berfrekuensi terendah yang melewati titik-titik yang sama (putus-putus). Jendela waktu selalu 12 periode sampling. Panel bawah: sumbu frekuensi 0 sampai 200 MHz dengan zona Nyquist berselang-seling; panah menunjukkan ke mana input terlipat. Sampler dianggap ideal: tanpa filter anti-aliasing, tanpa jitter, tanpa kuantisasi.</div>
 </div>
 <div class="icd-guide" data-id="v2-alias" data-answer="2">
   <p>Sinus 70 MHz disampel pada 100 MS/s. Sebagai frekuensi berapa ia terlihat?</p>
   <ul><li>70 MHz, karena 70 lebih kecil dari 100</li><li>50 MHz, frekuensi Nyquist</li><li>30 MHz</li><li>170 MHz</li></ul>
-  <div class="explain"><p>Batasnya bukan <i>f</i><sub><i>s</i></sub> melainkan <i>f</i><sub><i>s</i></sub>/2 = 50 MHz. Masukan 70 MHz berada di atasnya dan terlipat ke |70 − 100| = 30 MHz. Geser masukan ke 130 dan 170 MHz: titik sampelnya jatuh di tempat yang persis sama dengan 30 MHz. Setelah disampel, ketiganya tidak bisa dibedakan lagi.</p></div>
+  <div class="explain"><p>Batasnya bukan <i>f</i><sub><i>s</i></sub> melainkan <i>f</i><sub><i>s</i></sub>/2 = 50 MHz. Input 70 MHz berada di atasnya dan terlipat ke |70 − 100| = 30 MHz. Geser input ke 130 dan 170 MHz: titik sampelnya jatuh di tempat yang persis sama dengan 30 MHz. Setelah disampel, ketiganya tidak bisa dibedakan lagi.</p></div>
 </div>
 
 <div class="icd-viz" id="v3">
@@ -272,17 +272,17 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
   <header><h3>4. Filter digital: konvolusi sampel demi sampel</h3></header>
   <div class="stage"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start"><div id="v4-svg" style="overflow-x:auto;max-width:100%"></div><div id="v4-fr"></div></div></div>
   <div class="params">
-    <label class="icd-field">Masukan<select class="icd-select" id="v4-x"><option value="step">Step dengan noise</option><option value="imp">Impuls</option><option value="sin">Sinus lambat + sinus cepat</option></select></label>
+    <label class="icd-field">Input<select class="icd-select" id="v4-x"><option value="step">Step dengan noise</option><option value="imp">Impuls</option><option value="sin">Sinus lambat + sinus cepat</option></select></label>
     <label class="icd-field">Filter<select class="icd-select" id="v4-t"><option value="ma">FIR: rata-rata bergerak</option><option value="iir">IIR: satu kutub</option></select></label>
     <label class="icd-field"><span><span id="v4-pl">Panjang M</span> = <b id="v4-pv"></b></span><input type="range" id="v4-p" min="1" max="12" step="1" value="4"></label>
   </div>
   <div class="readout" id="v4-out" aria-live="polite"></div>
-  <div class="model">FIR: y[n] = rata-rata M masukan terakhir. IIR: y[n] = α·y[n−1] + (1 − α)·x[n] dengan α = (slider)/13, sehingga α berkisar 0.08 sampai 0.92. Keadaan awal nol. Noise adalah bilangan normal berbenih tetap dengan σ = 0.15. Sinus lambat berperiode 32 sampel, sinus cepat berperiode 4 sampel. Panel kanan: |H| terhadap f/f<sub>s</sub> dari 0 sampai 0.5, dihitung dari rumus eksak. Aritmetika ideal tanpa pembulatan.</div>
+  <div class="model">FIR: y[n] = rata-rata M input terakhir. IIR: y[n] = α·y[n−1] + (1 − α)·x[n] dengan α = (slider)/13, sehingga α berkisar 0.08 sampai 0.92. Keadaan awal nol. Noise adalah bilangan normal berbenih tetap dengan σ = 0.15. Sinus lambat berperiode 32 sampel, sinus cepat berperiode 4 sampel. Panel kanan: |H| terhadap f/f<sub>s</sub> dari 0 sampai 0.5, dihitung dari rumus eksak. Aritmetika ideal tanpa pembulatan.</div>
 </div>
 <div class="icd-guide" data-id="v4-noise" data-answer="1">
-  <p>Rata-rata bergerak 4 titik diberi noise acak yang saling bebas antar sampel. Berapa kali simpangan baku noise di keluaran mengecil?</p>
+  <p>Rata-rata bergerak 4 titik diberi noise acak yang saling bebas antar sampel. Berapa kali simpangan baku noise di output mengecil?</p>
   <ul><li>4 kali</li><li>2 kali</li><li>16 kali</li><li>Tidak mengecil; filter hanya menunda sinyal</li></ul>
-  <div class="explain"><p>Rata-rata dari <i>M</i> besaran bebas punya simpangan baku σ/√<i>M</i> (M01c). Untuk <i>M</i> = 4 itu setengahnya. Yang turun 4 kali adalah <em>variansi</em> (daya noise), setara 6 dB. Pilih "Step dengan noise", jalankan sampai habis, lalu bandingkan σ masukan dan keluaran di pembacaan. Harga yang dibayar: tepi step melebar menjadi <i>M</i> sampel.</p></div>
+  <div class="explain"><p>Rata-rata dari <i>M</i> besaran bebas punya simpangan baku σ/√<i>M</i> (M01c). Untuk <i>M</i> = 4 itu setengahnya. Yang turun 4 kali adalah <em>variansi</em> (daya noise), setara 6 dB. Pilih "Step dengan noise", jalankan sampai habis, lalu bandingkan σ input dan output di pembacaan. Harga yang dibayar: tepi step melebar menjadi <i>M</i> sampel.</p></div>
 </div>
 </section>
 
@@ -298,7 +298,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Pelajaran.</strong> Amplitudo harmonik pertama (0.255 V) lebih besar daripada setengah ayunan kotaknya (0.2 V). Itu bukan kesalahan: harmonik-harmonik lain mengurangi puncaknya.</p>
 
 <h3>Contoh 2: bandwidth dari waktu naik</h3>
-<p><strong>Soal.</strong> Sebuah keluaran I/O punya waktu naik 10% sampai 90% sebesar 50 ps. Berapa bandwidth kanal yang dibutuhkan? Jika laju datanya 2 Gb/s, apakah frekuensi dasar pola 0101 cukup sebagai ukuran?</p>
+<p><strong>Soal.</strong> Sebuah output I/O punya waktu naik 10% sampai 90% sebesar 50 ps. Berapa bandwidth kanal yang dibutuhkan? Jika laju datanya 2 Gb/s, apakah frekuensi dasar pola 0101 cukup sebagai ukuran?</p>
 <ol>
 <li><i>f</i><sub>−3dB</sub> ≈ 0.35/<i>t</i><sub><i>r</i></sub> = 0.35/50 ps = 7 GHz.</li>
 <li>Pola 0101 pada 2 Gb/s adalah gelombang kotak 1 GHz.</li>
@@ -333,13 +333,13 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 </ol>
 
 <h3>Contoh 6: meniru RC dengan IIR</h3>
-<p><strong>Soal.</strong> Tiru filter RC dengan τ = 10 µs pada <i>f</i><sub><i>s</i></sub> = 1 MS/s memakai <i>y</i>[<i>n</i>] = α<i>y</i>[<i>n</i>−1] + (1 − α)<i>x</i>[<i>n</i>]. Tentukan α, letak kutub, dan keluaran setelah 10 sampel step.</p>
+<p><strong>Soal.</strong> Tiru filter RC dengan τ = 10 µs pada <i>f</i><sub><i>s</i></sub> = 1 MS/s memakai <i>y</i>[<i>n</i>] = α<i>y</i>[<i>n</i>−1] + (1 − α)<i>x</i>[<i>n</i>]. Tentukan α, letak kutub, dan output setelah 10 sampel step.</p>
 <ol>
 <li><i>T</i> = 1 µs. α = <i>e</i><sup>−<i>T</i>/τ</sup> = <i>e</i><sup>−0.1</sup> = 0.9048.</li>
 <li>Kutub di <i>z</i> = 0.9048, di dalam lingkaran satuan: stabil. Ini pemetaan <i>z</i> = <i>e</i><sup><i>sT</i></sup> dari kutub analog <i>s</i> = −10<sup>5</sup> rad/s.</li>
 <li>Respons step: <i>y</i>[<i>n</i>] = 1 − α<sup><i>n</i>+1</sup>. Sampel ke-10 (<i>n</i> = 9): 1 − <i>e</i><sup>−1</sup> = 0.632.</li>
 </ol>
-<p><strong>Pelajaran.</strong> Sepuluh sampel adalah 10 µs = 1τ, dan keluarannya 63.2%, persis seperti rangkaian RC.</p>
+<p><strong>Pelajaran.</strong> Sepuluh sampel adalah 10 µs = 1τ, dan output-nya 63.2%, persis seperti rangkaian RC.</p>
 </section>
 
 <section class="icd-sec" id="s08">
@@ -484,13 +484,13 @@ if __name__ == "__main__":
 <li><strong>Baris 13 sampai 24, <code>fft</code>:</strong> gagasan bagi dua. DFT sampel bernomor genap dan ganjil dihitung terpisah (masing-masing separuh ukuran), lalu digabung dengan satu perkalian per bin. Fungsi memanggil dirinya sendiri sampai tersisa satu sampel.</li>
 <li><strong>Baris 27 sampai 30, <code>square_partial</code>:</strong> jumlah parsial deret gelombang kotak dari bagian 4.3.</li>
 <li><strong>Baris 33 sampai 36, <code>alias</code>:</strong> rumus bagian 4.5 dalam dua baris: ambil sisa pembagian oleh <i>f</i><sub><i>s</i></sub> (aritmetika modular, M01c), lalu lipat ke bawah <i>f</i><sub><i>s</i></sub>/2.</li>
-<li><strong>Baris 39 sampai 45, <code>convolve</code>:</strong> tiap sampel masukan menebar salinan <code>h</code> berbobot ke keluaran, persis penjelasan "gema" di bagian 4.2.</li>
+<li><strong>Baris 39 sampai 45, <code>convolve</code>:</strong> tiap sampel input menebar salinan <code>h</code> berbobot ke output, persis penjelasan "gema" di bagian 4.2.</li>
 <li><strong>Baris 48 sampai 55, <code>iir</code>:</strong> persamaan selisih umum dengan jalur maju <code>b</code> dan jalur umpan balik <code>a</code>. Dengan <code>a</code> kosong ia menjadi FIR.</li>
 <li><strong>Baris 58 sampai 63, <code>freq_response</code>:</strong> mengevaluasi <i>H</i>(<i>z</i>) pada <i>z</i> = <i>e</i><sup><i>j</i>Ω</sup>; <code>z1</code> adalah <i>z</i><sup>−1</sup>, yaitu satu sampel tunda.</li>
 <li><strong>Baris 76 sampai 115:</strong> uji. Bagian 1 memeriksa bahwa sinus 3 siklus hanya mengisi bin 3 dan cerminannya, dan bahwa FFT sama dengan DFT. Bagian 2 memeriksa koefisien 4/(π<i>k</i>) dan puncak Gibbs 1.179. Bagian 6 memeriksa pemetaan <i>z</i> = <i>e</i><sup><i>sT</i></sup>.</li>
 <li><strong>Baris 117 sampai 132:</strong> mencetak hasil contoh soal.</li>
 </ul>
-<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif, bug sengaja, dan solusi perluasan dijalankan dengan Python 3 sebelum modul ditulis; keluaran di bagian Lab disalin apa adanya.</div>
+<div class="icd-box ok"><b>Sudah dijalankan</b>Skrip ini, langkah interaktif, bug sengaja, dan solusi perluasan dijalankan dengan Python 3 sebelum modul ditulis; output di bagian Lab disalin apa adanya.</div>
 </section>
 
 <section class="icd-sec" id="s09">
@@ -502,7 +502,7 @@ if __name__ == "__main__":
 <div class="icd-box mis"><b>Miskonsepsi</b>"Lebih banyak sampel FFT berarti lebih teliti." Lebih banyak sampel pada laju yang sama berarti resolusi frekuensi lebih halus (<i>f</i><sub><i>s</i></sub>/<i>N</i>), bukan rentang frekuensi lebih lebar. Rentang ditentukan <i>f</i><sub><i>s</i></sub>.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Kutub di setengah kiri berarti tidak ada overshoot." Stabil tidak sama dengan teredam baik. Kutub kompleks di kiri tetapi dekat sumbu imajiner menghasilkan dering panjang.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Syarat stabil diskret adalah kutub di setengah kiri bidang-z." Itu syarat bidang-s. Di bidang-z syaratnya di dalam lingkaran satuan; kutub di <i>z</i> = −0.5 stabil, kutub di <i>z</i> = −1.5 tidak.</div>
-<div class="icd-box trap"><b>Jebakan industri: FFT tanpa sampling koheren</b>Menjalankan FFT pada keluaran ADC dengan frekuensi uji sembarang membuat energi sinyal bocor ke banyak bin dan menenggelamkan noise serta spur yang ingin diukur. SNR yang terbaca bisa belasan dB lebih buruk dari sebenarnya. Pilih frekuensi uji agar bilangan bulat siklus muat tepat dalam rekaman.</div>
+<div class="icd-box trap"><b>Jebakan industri: FFT tanpa sampling koheren</b>Menjalankan FFT pada output ADC dengan frekuensi uji sembarang membuat energi sinyal bocor ke banyak bin dan menenggelamkan noise serta spur yang ingin diukur. SNR yang terbaca bisa belasan dB lebih buruk dari sebenarnya. Pilih frekuensi uji agar bilangan bulat siklus muat tepat dalam rekaman.</div>
 <div class="icd-box trap"><b>Jebakan industri: lebar bit IIR</b>Pada filter IIR dengan kutub sangat dekat ke lingkaran satuan (α mendekati 1), pembulatan koefisien beberapa bit saja bisa memindahkan kutub ke luar lingkaran, dan pembulatan pada umpan balik bisa menimbulkan osilasi kecil yang tidak pernah padam. Simulasi dengan bilangan pecahan ideal tidak akan memperlihatkannya; modelkan dengan lebar bit yang sebenarnya.</div>
 <div class="icd-box trap"><b>Jebakan industri: mencampur ω dan f</b>Sebagian rumus memakai ω (rad/s), sebagian <i>f</i> (Hz). Lupa faktor 2π adalah kesalahan 6.28 kali, kira-kira 16 dB. Kutub di <i>s</i> = −10<sup>6</sup> rad/s berarti frekuensi potong 159 kHz, bukan 1 MHz.</div>
 </section>
@@ -515,7 +515,7 @@ if __name__ == "__main__":
 <tr><th scope="row">Respons frekuensi <i>H</i>(<i>j</i>ω)</th><td>Analisis AC, diagram Bode, gain dan phase margin</td><td>SPICE (<code>.ac</code>); desain penguat (M07c, M27)</td></tr>
 <tr><th scope="row">Kutub dan nol</th><td>Analisis pole-zero, analisis stabilitas loop</td><td>SPICE (<code>.pz</code>), analisis stabilitas pada simulator komersial</td></tr>
 <tr><th scope="row">FFT</th><td>SNR, SFDR, THD konverter data; spektrum jitter</td><td>Penampil waveform, Python (<code>numpy.fft</code>), Octave, MATLAB</td></tr>
-<tr><th scope="row">Deret Fourier</th><td>Analisis harmonik keluaran penguat dan osilator</td><td>SPICE (<code>.four</code>)</td></tr>
+<tr><th scope="row">Deret Fourier</th><td>Analisis harmonik output penguat dan osilator</td><td>SPICE (<code>.four</code>)</td></tr>
 <tr><th scope="row">Sampling dan aliasing</th><td>Spesifikasi ADC, filter anti-aliasing, noise <i>kT</i>/<i>C</i></td><td>M28a, M27d</td></tr>
 <tr><th scope="row">Transformasi Z, FIR, IIR</th><td>Filter desimasi, equalizer, loop filter digital, ditulis dalam RTL</td><td>Model di Python atau MATLAB, lalu SystemVerilog (M17d)</td></tr>
 <tr><th scope="row">Respons impuls dan konvolusi</th><td>Simulasi kanal SerDes: respons pulsa, eye diagram statistik</td><td>Model IBIS-AMI; M28d</td></tr>
@@ -541,12 +541,12 @@ if __name__ == "__main__":
 <p><strong>2.3</strong> Filter <i>y</i>[<i>n</i>] = <i>x</i>[<i>n</i>] − <i>x</i>[<i>n</i>−1]. Tulis <i>H</i>(<i>z</i>), lalu hitung |<i>H</i>| di DC (Ω = 0) dan di Nyquist (Ω = π). Filter jenis apa ini?</p>
 <details class="icd-sol"><summary>Solusi 2.3</summary><p><i>H</i>(<i>z</i>) = 1 − <i>z</i><sup>−1</sup>. Di Ω = 0: <i>z</i><sup>−1</sup> = 1, |<i>H</i>| = 0. Di Ω = π: <i>z</i><sup>−1</sup> = −1, |<i>H</i>| = 2. Filter high-pass: selisih dua sampel berturutan membuang bagian yang tidak berubah. Inilah fungsi transfer noise modulator sigma-delta orde satu.</p></details>
 <h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
-<p><strong>3.1</strong> Spektrum sebuah clock yang seharusnya kotak 50% menunjukkan harmonik kedua yang cukup besar. Apa kesimpulan Anda, dan mengapa?</p>
+<p><strong>3.1</strong> Spektrum sebuah clock yang seharusnya kotak 50% menunjukkan harmonik kedua yang cukup besar. Apa kesimpulan kamu, dan mengapa?</p>
 <details class="icd-sol"><summary>Solusi 3.1</summary><p>Duty cycle-nya bukan 50%. Harmonik genap gelombang kotak hilang justru karena paruh positif dan paruh negatifnya sama lebar (simetri setengah gelombang); pada penurunan di bagian 4.3, faktor (1 − cos <i>k</i>π) berasal dari batas integral <i>T</i>/2. Dengan lebar pulsa <i>d</i>·<i>T</i>, koefisiennya sebanding sin(π<i>kd</i>)/<i>k</i>, yang untuk <i>k</i> = 2 hanya nol bila <i>d</i> = 0.5. Pengukuran harmonik kedua adalah cara peka untuk mendeteksi distorsi duty cycle.</p></details>
 <p><strong>3.2</strong> Buktikan bahwa filter rata-rata bergerak <i>M</i> titik membuang sepenuhnya sinus berfrekuensi <i>f</i><sub><i>s</i></sub>/<i>M</i>, tanpa memakai rumus respons frekuensi.</p>
 <details class="icd-sol"><summary>Solusi 3.2</summary><p>Sinus berfrekuensi <i>f</i><sub><i>s</i></sub>/<i>M</i> punya periode tepat <i>M</i> sampel. Jendela rata-rata selalu memuat tepat satu periode penuh, di mana pun posisinya. Jumlah <i>M</i> sampel berjarak sama sepanjang satu periode sinus adalah nol: dalam bahasa fasor, itu jumlah <i>M</i> panah sama panjang yang tersebar merata mengelilingi lingkaran, dan panah-panah itu saling menghapus. Hal yang sama berlaku untuk kelipatannya, karena jendela memuat bilangan bulat periode.</p></details>
 <p><strong>3.3</strong> Sebuah filter IIR <i>y</i>[<i>n</i>] = α<i>y</i>[<i>n</i>−1] + (1 − α)<i>x</i>[<i>n</i>] dirancang dengan α = 0.9995 dan diimplementasikan dengan koefisien 8 bit pecahan (kelipatan 1/256). Apa yang terjadi, dan bagaimana memperbaikinya tanpa menambah lebar koefisien?</p>
-<details class="icd-sol"><summary>Solusi 3.3</summary><p>Kelipatan 1/256 terdekat dengan 0.9995 adalah 256/256 = 1 (255/256 = 0.9961 lebih jauh). Dengan α = 1 kutub berada tepat di lingkaran satuan dan 1 − α = 0: filter menjadi register yang tidak pernah menerima masukan. Bila dibulatkan ke bawah menjadi 255/256, konstanta waktunya menjadi 256 sampel, bukan 2 000. Perbaikan: tulis ulang sebagai <i>y</i>[<i>n</i>] = <i>y</i>[<i>n</i>−1] + (<i>x</i>[<i>n</i>] − <i>y</i>[<i>n</i>−1]) · 2<sup>−<i>k</i></sup>, sehingga pengalinya adalah geseran bit dan nilai 1 − α = 2<sup>−11</sup> terwakili tepat (α = 0.99951); yang perlu lebar adalah akumulator <i>y</i>, bukan koefisien.</p></details>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>Kelipatan 1/256 terdekat dengan 0.9995 adalah 256/256 = 1 (255/256 = 0.9961 lebih jauh). Dengan α = 1 kutub berada tepat di lingkaran satuan dan 1 − α = 0: filter menjadi register yang tidak pernah menerima input. Bila dibulatkan ke bawah menjadi 255/256, konstanta waktunya menjadi 256 sampel, bukan 2 000. Perbaikan: tulis ulang sebagai <i>y</i>[<i>n</i>] = <i>y</i>[<i>n</i>−1] + (<i>x</i>[<i>n</i>] − <i>y</i>[<i>n</i>−1]) · 2<sup>−<i>k</i></sup>, sehingga pengalinya adalah geseran bit dan nilai 1 − α = 2<sup>−11</sup> terwakili tepat (α = 0.99951); yang perlu lebar adalah akumulator <i>y</i>, bukan koefisien.</p></details>
 </section>
 
 <section class="icd-sec" id="s12">
@@ -561,11 +561,11 @@ if __name__ == "__main__":
 <p><strong>Kerangka jawaban:</strong> Sinyal terbatas pita <i>B</i> bisa dipulihkan sempurna bila <i>f</i><sub><i>s</i></sub> &gt; 2<i>B</i>. Jika tidak, komponen di atas <i>f</i><sub><i>s</i></sub>/2 terlipat ke bawah dan tidak bisa dibedakan dari sinyal asli. Beri contoh angka (70 MHz pada 100 MS/s menjadi 30 MHz) dan sebut obatnya: filter anti-aliasing analog sebelum sampler. Nilai lebih: sebut undersampling sebagai pemakaian sengaja.</p></details>
 <details class="icd-sol"><summary>"Apa beda FIR dan IIR? Kapan memilih yang mana?"</summary>
 <p><strong>Kerangka jawaban:</strong> FIR tanpa umpan balik: selalu stabil, bisa berfase linear, mudah di-pipeline, tetapi butuh banyak tap. IIR dengan umpan balik: hemat hardware untuk ketajaman yang sama, tetapi harus dijaga kestabilannya, fasenya tak linear, loop-nya membatasi kecepatan, dan peka terhadap lebar bit. Pilih FIR bila fase linear atau kecepatan tinggi penting (equalizer, desimasi); IIR bila area dan daya sangat terbatas dan fase tidak kritis.</p></details>
-<details class="icd-sol"><summary>"Bagaimana Anda menentukan apakah sebuah sistem stabil?"</summary>
+<details class="icd-sol"><summary>"Bagaimana kamu menentukan apakah sebuah sistem stabil?"</summary>
 <p><strong>Kerangka jawaban:</strong> Cari kutub fungsi transfernya. Kontinu: semua di setengah bidang kiri. Diskret: semua di dalam lingkaran satuan. Jelaskan alasannya lewat suku <i>e</i><sup><i>pt</i></sup> atau <i>p</i><sup><i>n</i></sup>. Untuk loop umpan balik, sebut cara praktisnya: gain margin dan phase margin dari diagram Bode loop terbuka.</p></details>
 <details class="icd-sol"><summary>"Mengapa sinyal kotak butuh bandwidth jauh di atas frekuensinya?"</summary>
 <p><strong>Kerangka jawaban:</strong> Deret Fourier-nya memuat harmonik ganjil dengan amplitudo 1/<i>k</i>. Tepi yang tajam dibangun oleh harmonik tinggi; membuangnya melandaikan tepi. Aturan praktis: bandwidth ≈ 0.35/<i>t</i><sub><i>r</i></sub>, atau kira-kira sampai harmonik kelima. Kaitkan dengan akibat nyata: eye diagram yang menutup pada kanal yang terlalu sempit.</p></details>
-<details class="icd-sol"><summary>"Anda mengukur SNR ADC dengan FFT. Apa saja yang harus diperhatikan?"</summary>
+<details class="icd-sol"><summary>"Kamu mengukur SNR ADC dengan FFT. Apa saja yang harus diperhatikan?"</summary>
 <p><strong>Kerangka jawaban:</strong> Sampling koheren (bilangan bulat siklus, tidak berbagi faktor dengan panjang rekaman) atau window; jumlah sampel cukup agar lantai noise per bin berada di bawah spur yang dicari; pisahkan bin sinyal, harmonik, dan DC saat menjumlahkan daya noise; kemurnian sumber sinyal dan jitter clock harus lebih baik daripada ADC yang diuji.</p></details>
 <details class="icd-sol"><summary>"Apa hubungan transformasi Laplace dan transformasi Z?"</summary>
 <p><strong>Kerangka jawaban:</strong> Z adalah Laplace untuk sinyal tersampel, dengan <i>z</i> = <i>e</i><sup><i>sT</i></sup>. Sumbu imajiner dipetakan ke lingkaran satuan, setengah bidang kiri ke bagian dalamnya. Pemetaannya tidak satu-satu: garis-garis sejajar berjarak 2π/<i>T</i> di bidang-s jatuh di tempat yang sama, yang merupakan aliasing. Turunan (<i>s</i>) berpadanan dengan selisih (1 − <i>z</i><sup>−1</sup>)/<i>T</i> untuk frekuensi rendah.</p></details>
@@ -580,7 +580,7 @@ mkdir -p ~/icd/m01d &amp;&amp; cd ~/icd/m01d
 nano sig.py                # tempel kode dari bagian 8, atau salin lab/m01d/sig.py
 python3 sig.py
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 kotak, harmonik 1 3 5 7 : [1.2732, 0.4244, 0.2547, 0.1819]
@@ -649,7 +649,7 @@ if __name__ == "__main__":
     for bits in (6, 8, 10, 12):
         print(f"{bits:&gt;2} bit: SNR terukur {snr_db(bits):.2f} dB, teori {6.02 * bits + 1.76:.2f} dB")
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
  6 bit: SNR terukur 38.07 dB, teori 37.88 dB
  8 bit: SNR terukur 50.05 dB, teori 49.92 dB
@@ -662,7 +662,7 @@ if __name__ == "__main__":
 <section class="icd-sec" id="s15">
 <h2>Ringkasan, cheat sheet, flashcard</h2>
 <ul>
-<li>Sistem LTI ditentukan oleh respons impulsnya; keluarannya adalah konvolusi masukan dengan respons impuls.</li>
+<li>Sistem LTI ditentukan oleh respons impulsnya; output-nya adalah konvolusi input dengan respons impuls.</li>
 <li>Sinyal periodik adalah jumlah harmonik; gelombang kotak hanya memuat harmonik ganjil dengan amplitudo 4/(π<i>k</i>).</li>
 <li>Konvolusi di waktu adalah perkalian di frekuensi; tepi tajam berarti bandwidth lebar: <i>t</i><sub><i>r</i></sub> ≈ 0.35/<i>f</i><sub>−3dB</sub>.</li>
 <li>Sampling harus lebih dari dua kali frekuensi tertinggi; jika tidak, terjadi aliasing yang tidak bisa dibatalkan.</li>

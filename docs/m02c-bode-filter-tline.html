@@ -447,7 +447,7 @@ var MODS = [
 ['M30',8,'Fabrikasi',25,'M06 M10','m30a-proses-litografi|Langkah proses dan litografi;m30b-integrasi-yield-ekonomi|Integrasi proses, yield, ekonomi chip'],
 ['M31',8,'Packaging dan integrasi 3D',18,'M02 M30','m31a-packaging-3d-chiplet|Packaging, 3D, chiplet;m31b-cpo-termal-sipi|Co-packaged optics, termal, SI/PI'],
 ['M32',8,'Keandalan, keamanan, safety',30,'M03 M06 M12 M22','m32a-keandalan|Keandalan;m32b-keamanan-hardware|Keamanan hardware;m32c-functional-safety|Functional safety'],
-['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: devais, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
+['M33',9,'Teknologi terkini',20,'M06 M14 M30 M31','m33a-frontier-devais-proses|Frontier: device, proses, packaging;m33b-frontier-arsitektur-eda|Frontier: arsitektur, AI, EDA, open-source'],
 ['M34',9,'Karier dan praktik',12,'M00','m34-karier-praktik|Karier dan praktik']
 ];
 var TRACKS = {
@@ -1158,11 +1158,11 @@ function enhanceGuides(ctx){
       btns.forEach(function(b, k){ b.disabled = true; b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); b.style.fontWeight = k === i ? '600' : ''; });
       res.textContent = '';
       if (!shown){
-        add(res, [el('p', { text: 'Tebakan Anda tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
+        add(res, [el('p', { text: 'Tebakan kamu tersimpan. Sekarang coba sendiri di visualisasi, lalu bandingkan.' }),
           el('button', { type: 'button', class: 'icd-btn primary', text: 'Lihat penjelasan', onclick: function(){ store.update(path, function(o){ o = o || { guess: i, ok: i === ans }; o.shown = true; return o; }); paint(i, true); emit('icd:progress'); } })]);
       } else {
         btns.forEach(function(b, k){ b.classList.toggle('right', k === ans); b.classList.toggle('wrong', k === i && i !== ans); });
-        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan Anda benar. ' : 'Tebakan Anda belum tepat. ' })]),
+        add(res, [el('p', null, [el('b', { text: i === ans ? 'Tebakan kamu benar. ' : 'Tebakan kamu belum tepat. ' })]),
           el('button', { type: 'button', class: 'icd-btn small', text: 'Ulangi tebakan', onclick: function(){ store.set(path, undefined); btns.forEach(function(b){ b.disabled = false; b.className = 'icd-opt'; b.style.fontWeight = ''; b.removeAttribute('aria-pressed'); }); exp.hidden = true; res.textContent = ''; } })]);
         exp.hidden = false;
       }
@@ -1214,7 +1214,7 @@ function quizMount(tgt, cfg){
     btns.forEach(function(b, pos){
       var k = it.opts[pos], o = qq.o[k]; b.disabled = true;
       if (o.ok) b.classList.add('right'); else if (k === chosen) b.classList.add('wrong');
-      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan Anda, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
+      b.appendChild(el('span', { class: 'why', html: (o.ok ? '<b>Benar.</b> ' : (k === chosen ? '<b>Pilihan kamu, belum tepat.</b> ' : '<b>Salah.</b> ')) + (o.w || '') }));
     });
   }
   function finish(){
@@ -1287,7 +1287,7 @@ var cards = {
       tgt.textContent = ''; cur = queue.shift();
       var total = cards.count(opts.file);
       if (!cur){
-        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah Anda membuka modul.' }),
+        add(tgt, [el('p', { text: total ? 'Tidak ada kartu jatuh tempo hari ini. ' + total + ' kartu terdaftar.' : 'Belum ada kartu. Kartu muncul di sini setelah kamu membuka modul.' }),
           total ? el('button', { type: 'button', class: 'icd-btn', text: 'Latih semua kartu (tanpa mengubah jadwal)', onclick: function(){ cram = true; load(); } }) : null]);
         return;
       }
@@ -1327,18 +1327,18 @@ function group(s, n){ var out = ''; for (var i = 0; i < s.length; i++){ if (i &&
 var CALCS = [
 { id: 'basis', title: 'Basis bilangan', inputs: [
     { k: 'v', label: 'Nilai (boleh 0x, 0b, negatif)', type: 'text', def: '0xA5' },
-    { k: 'base', label: 'Basis masukan', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
-    { k: 'w', label: 'Lebar', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
+    { k: 'base', label: 'Basis input', type: 'select', def: '10', opts: [['2', 'biner'], ['8', 'oktal'], ['10', 'desimal'], ['16', 'heksadesimal']] },
+    { k: 'w', label: 'Bit width', type: 'select', def: '8', opts: [['8', '8 bit'], ['16', '16 bit'], ['32', '32 bit'], ['64', '64 bit']] }],
   run: function(v){
     var w = parseInt(v.w, 10), x = toBig(v.v, parseInt(v.base, 10));
     if (x === null) return [['Galat', 'digit tidak sah untuk basis ini']];
     var mod = 1n << BigInt(w), u = ((x % mod) + mod) % mod, sgn = u >= (mod >> 1n) ? u - mod : u;
     var out = [['Biner', group(u.toString(2).padStart(w, '0'), 4)], ['Heksadesimal', '0x' + group(u.toString(16).toUpperCase().padStart(w / 4, '0'), 4)],
-      ['Oktal', '0o' + u.toString(8)], ['Desimal tak bertanda', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
+      ['Oktal', '0o' + u.toString(8)], ['Desimal unsigned', u.toString(10)], ['Desimal two\'s complement', sgn.toString(10)]];
     if (x >= mod || x < -(mod >> 1n)) out.push(['Catatan', 'nilai tidak muat di ' + w + ' bit; bit atas terpotong']);
     return out;
   }, note: 'Nilai dipotong ke lebar yang dipilih, sama seperti register hardware.' },
-{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (keluaran / masukan)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
+{ id: 'db', title: 'Desibel', inputs: [{ k: 'r', label: 'Rasio (output / input)', def: '0.7071' }, { k: 'd', label: 'atau nilai dB', def: '-3' }],
   run: function(v){ var r = parse(v.r), d = parse(v.d);
     return [['Rasio → dB (tegangan, 20·log10)', num(20 * Math.log10(r), 4) + ' dB'], ['Rasio → dB (daya, 10·log10)', num(10 * Math.log10(r), 4) + ' dB'],
       ['dB → rasio tegangan', num(Math.pow(10, d / 20), 4)], ['dB → rasio daya', num(Math.pow(10, d / 10), 4)]]; },
@@ -1364,11 +1364,11 @@ var CALCS = [
   run: function(v){ var m = Math.exp(parse(v.tr) / parse(v.tau)) / (parse(v.T0) * parse(v.fc) * parse(v.fd));
     return [['MTBF', si(m, 's')], ['Dalam tahun', num(m / 31557600, 3) + ' tahun']]; },
   note: 'MTBF = exp(t_r/τ) / (T0·f_clk·f_data). τ dan T0 adalah parameter flip-flop dari karakterisasi; definisi T0 berbeda antar sumber, jadi selalu periksa definisi di datasheet atau library yang dipakai.' },
-{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi masukan (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
+{ id: 'enob', title: 'ENOB dan SNR ADC', inputs: [{ k: 's', label: 'SINAD terukur (dB)', def: '62' }, { k: 'n', label: 'Resolusi nominal N (bit)', def: '12' }, { k: 'fin', label: 'Frekuensi input (Hz)', def: '100M' }, { k: 'j', label: 'Jitter RMS (s)', def: '200f' }],
   run: function(v){ var fin = parse(v.fin), j = parse(v.j);
     return [['ENOB = (SINAD − 1.76)/6.02', num((parse(v.s) - 1.76) / 6.02, 4) + ' bit'], ['SNR ideal N bit = 6.02·N + 1.76', num(6.02 * parse(v.n) + 1.76, 4) + ' dB'],
       ['SNR batas jitter = −20·log10(2π·f_in·σ_j)', num(-20 * Math.log10(2 * Math.PI * fin * j), 4) + ' dB']]; },
-  note: 'Rumus SNR ideal mengandaikan masukan sinus skala penuh dan noise kuantisasi seragam.' },
+  note: 'Rumus SNR ideal mengandaikan input sinus skala penuh dan noise kuantisasi seragam.' },
 { id: 'dpw', title: 'Die per wafer dan yield', inputs: [{ k: 'd', label: 'Diameter wafer (mm)', def: '300' }, { k: 'w', label: 'Lebar die (mm)', def: '10' }, { k: 'h', label: 'Tinggi die (mm)', def: '10' }, { k: 'D0', label: 'Kerapatan defect D0 (per cm²)', def: '0.1' }],
   run: function(v){ var d = parse(v.d), S = parse(v.w) * parse(v.h), D0 = parse(v.D0), g = Math.floor(Math.PI * d * d / 4 / S - Math.PI * d / Math.sqrt(2 * S)), y = Math.exp(-D0 * S / 100);
     return [['Luas die', num(S, 4) + ' mm²'], ['Die kotor per wafer', String(Math.max(0, g))], ['Yield model Poisson exp(−D0·A)', num(y * 100, 3) + ' %'], ['Die baik per wafer', String(Math.max(0, Math.floor(g * y)))]]; },
@@ -1386,8 +1386,8 @@ function calcMount(tgt, id){
       fields[inp.k].setAttribute('aria-invalid', ok ? 'false' : 'true'); errs[inp.k].textContent = ok ? '' : 'Tidak terbaca. Contoh yang benar: 10k, 4.7n, 1e-12.'; if (!ok) bad++;
     });
     out.textContent = ''; last = [];
-    if (bad){ note.textContent = 'Perbaiki ' + bad + ' masukan yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
-    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'masukan tidak sah']]; }
+    if (bad){ note.textContent = 'Perbaiki ' + bad + ' input yang bertanda merah.'; note.style.color = 'var(--danger)'; return; }
+    note.textContent = ''; var rows; try { rows = c.run(vals); } catch (e) { rows = [['Galat', 'input tidak sah']]; }
     last = rows; rows.forEach(function(r){ out.appendChild(el('tr', null, [el('th', { text: r[0], scope: 'row' }), el('td', null, [el('code', { text: r[1] })])])); });
   }
   c.inputs.forEach(function(inp){
@@ -1539,7 +1539,7 @@ var sync = (function(){
     dialog({ title: 'Akun ' + ICD.brand, body: el('div', null, [
       el('p', { text: 'Masuk sebagai ' + ((s.user && (s.user.name || s.user.email)) || 'pengguna') + (s.user && s.user.name && s.user.email ? ' (' + s.user.email + ')' : '') + '.' }),
       el('p', { class: 'icd-small icd-muted', text: st.err ? 'Sinkron terakhir gagal: ' + st.err : st.last ? 'Tersinkron ' + new Date(st.last).toLocaleTimeString('id-ID') + '.' : 'Belum tersinkron di halaman ini.' })]),
-      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Anda keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
+      actions: [{ label: 'Keluar', run: function(){ logout(); toast('Kamu keluar. Progres tetap ada di browser ini.'); } }, { label: 'Sinkronkan sekarang', run: function(){ now(); } }, { label: 'Tutup', primary: true }] });
   }
   return {
     enabled: function(){ return enabled; },
@@ -1870,7 +1870,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <section class="icd-sec" id="s02">
 <h2>Prasyarat dan tujuan belajar</h2>
 <p><strong>Prasyarat:</strong> <a href="m01d-transformasi-sinyal.html">M01d</a> (fungsi transfer, kutub, nol, respons frekuensi), <a href="m02b-transien-ac.html">M02b</a> (impedansi, RC low-pass, RLC, analisis AC), <a href="m01a-matematika-dasar.html">M01a</a> (desibel dan skala logaritmik).</p>
-<p><strong>Setelah modul ini Anda bisa:</strong></p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
 <ol>
 <li>Menulis fungsi transfer dalam bentuk standar kutub-nol, lalu menggambar <span data-term="bode">diagram Bode</span> magnitudo dan fase dengan garis lurus, dan menyebut galat terbesarnya.</li>
 <li>Menghitung frekuensi gain satu (unity-gain) dan phase margin dari sebuah fungsi transfer.</li>
@@ -1878,7 +1878,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <li>Memilih jenis dan orde filter (Butterworth, Chebyshev) dari spesifikasi pita lolos dan pita henti, dan menghitung komponen tangga LC dari tabel prototipe.</li>
 <li>Menurunkan <span data-term="z0">impedansi karakteristik</span> dan kecepatan rambat saluran dari <i>L</i>′ dan <i>C</i>′, dan memutuskan kapan sebuah kawat harus diperlakukan sebagai saluran.</li>
 <li>Menghitung <span data-term="gamma">koefisien pantul</span>, menggambar diagram pantulan (bounce diagram), dan memilih terminasi seri atau paralel.</li>
-<li>Menghitung impedansi masukan saluran, <span data-term="vswr">VSWR</span>, dan return loss, termasuk kasus seperempat dan setengah panjang gelombang.</li>
+<li>Menghitung impedansi input saluran, <span data-term="vswr">VSWR</span>, dan return loss, termasuk kasus seperempat dan setengah panjang gelombang.</li>
 <li>Menjelaskan persamaan Maxwell, panjang gelombang di dielektrik, <span data-term="skin">efek kulit</span>, dan kopling kawat tetangga pada tingkat yang cukup untuk memperkirakan besarnya.</li>
 </ol>
 </section>
@@ -1892,7 +1892,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>Saluran: sungai dan bendungan</h3>
 <p>Sinyal di saluran seperti gelombang air yang dikirim di sungai. Ia merambat dengan kecepatan tetap, dan bila bertemu perubahan lebar sungai atau bendungan di ujung, sebagian gelombang memantul kembali. Sungai yang lebarnya tidak berubah (impedansi sama sepanjang saluran) dan berujung muara yang sama lebar (beban cocok) tidak memantulkan apa pun. <em>Di mana analogi ini berhenti:</em> di saluran listrik, tegangan dan arus selalu terkait lewat Z<sub>0</sub> untuk gelombang yang merambat satu arah, dan pantulan menghasilkan tegangan yang bisa lebih tinggi dari sumbernya (pantulan di ujung terbuka menggandakan tegangan), hal yang tidak punya padanan jelas pada air.</p>
 <h3>Medan dan gelombang: kolam yang kita goyang</h3>
-<p>Muatan yang diam menciptakan medan listrik di sekitarnya. Muatan yang bergerak menciptakan medan magnet. Muatan yang <em>dipercepat</em> mengirim gangguan medan yang merambat keluar dengan kecepatan tertentu: itu gelombang elektromagnetik. Gerakkan jari di kolam dan gelombang keluar dengan kecepatan sendiri, tidak peduli seberapa cepat Anda menggerakkan jari. <em>Di mana analogi ini berhenti:</em> gelombang elektromagnetik tidak butuh medium; di dielektrik ia hanya diperlambat, bukan dibawa.</p>
+<p>Muatan yang diam menciptakan medan listrik di sekitarnya. Muatan yang bergerak menciptakan medan magnet. Muatan yang <em>dipercepat</em> mengirim gangguan medan yang merambat keluar dengan kecepatan tertentu: itu gelombang elektromagnetik. Gerakkan jari di kolam dan gelombang keluar dengan kecepatan sendiri, tidak peduli seberapa cepat kamu menggerakkan jari. <em>Di mana analogi ini berhenti:</em> gelombang elektromagnetik tidak butuh medium; di dielektrik ia hanya diperlambat, bukan dibawa.</p>
 </section>
 
 <section class="icd-sec" id="s04">
@@ -1966,7 +1966,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Contoh (sama dengan lab).</strong> <i>R</i><sub><i>S</i></sub> = 10 Ω, <i>Z</i><sub>0</sub> = 50 Ω, <i>R</i><sub><i>L</i></sub> = 200 Ω, <i>V</i><sub><i>S</i></sub> = 1 V. Γ<sub><i>S</i></sub> = −0.667, Γ<sub><i>L</i></sub> = +0.6, <i>V</i><sub>1</sub> = 0.833 V. Tegangan beban: 1.333 V pada <i>t</i><sub>d</sub>, 0.800 V pada 3<i>t</i><sub>d</sub>, 1.013 V pada 5<i>t</i><sub>d</sub>, 0.928 V, 0.962 V, …, menuju 0.952 V. Overshoot pertama 40% di atas nilai akhir, dan beban baru tenang setelah banyak pulang-pergi. Penggerak yang terlalu kuat (<i>R</i><sub><i>S</i></sub> kecil) dan beban impedansi tinggi adalah resep ringing.</p>
 <p><strong>Terminasi.</strong> Pantulan hilang bila salah satu ujung dicocokkan. <em>Terminasi seri</em>: tambahkan resistor di sumber sehingga <i>R</i><sub><i>S</i></sub> total = <i>Z</i><sub>0</sub>; Γ<sub><i>S</i></sub> = 0, sehingga pantulan dari beban yang terbuka diserap saat tiba di sumber. Gelombang awal hanya setengah <i>V</i><sub><i>S</i></sub>; di ujung terbuka ia berlipat dua menjadi tegangan penuh, jadi beban melihat satu tepi bersih tanpa ringing dan tanpa arus DC. Kekurangannya: di titik tengah saluran sinyal hanya setengah amplitudo selama 2<i>t</i><sub>d</sub>, sehingga penerima di tengah saluran tidak boleh dipakai. <em>Terminasi paralel</em>: resistor <i>Z</i><sub>0</sub> di beban; Γ<sub><i>L</i></sub> = 0, sinyal bersih di seluruh saluran, tetapi menarik arus DC (daya statis). <em>On-die termination</em> (ODT) pada DDR adalah terminasi paralel yang bisa dihidupkan dan dimatikan dari dalam chip.</p>
 
-<h3>4.9 Impedansi masukan, gelombang berdiri, dan VSWR</h3>
+<h3>4.9 Impedansi input, gelombang berdiri, dan VSWR</h3>
 <p>Untuk sinus pada frekuensi tunak, saluran lossless sepanjang ℓ dengan beban <i>Z</i><sub><i>L</i></sub> tampak dari sumber sebagai:</p>
 <div class="icd-eq"><math display="block"><msub><mi>Z</mi><mtext>in</mtext></msub><mo>=</mo><msub><mi>Z</mi><mn>0</mn></msub><mfrac><mrow><msub><mi>Z</mi><mi>L</mi></msub><mo>+</mo><mi>j</mi><msub><mi>Z</mi><mn>0</mn></msub><mi>tan</mi><mi>&#x3B2;</mi><mi>&#x2113;</mi></mrow><mrow><msub><mi>Z</mi><mn>0</mn></msub><mo>+</mo><mi>j</mi><msub><mi>Z</mi><mi>L</mi></msub><mi>tan</mi><mi>&#x3B2;</mi><mi>&#x2113;</mi></mrow></mfrac><mspace width="2em"/><mi>&#x3B2;</mi><mo>=</mo><mfrac><mrow><mn>2</mn><mi>&#x3C0;</mi></mrow><mi>&#x3BB;</mi></mfrac></math><span class="alt">Z_in = Z0·(Z_L + j·Z0·tan βℓ)/(Z0 + j·Z_L·tan βℓ) ; β = 2π/λ</span></div>
 <p>Kasus penting: ℓ = λ/2 memberi <i>Z</i><sub>in</sub> = <i>Z</i><sub><i>L</i></sub> (saluran "tak terlihat"); ℓ = λ/4 memberi <i>Z</i><sub>in</sub> = <i>Z</i><sub>0</sub>²/<i>Z</i><sub><i>L</i></sub> (transformator seperempat gelombang: 100 Ω dengan saluran 50 Ω tampak 25 Ω, dan hubung singkat tampak terbuka); <i>Z</i><sub><i>L</i></sub> = <i>Z</i><sub>0</sub> memberi <i>Z</i><sub>in</sub> = <i>Z</i><sub>0</sub> untuk semua panjang. Gelombang datang dan pantul membentuk pola gelombang berdiri. Amplitudo tegangan sepanjang saluran berubah antara <i>V</i><sub>max</sub> = |<i>V</i><sup>+</sup>|(1 + |Γ|) dan <i>V</i><sub>min</sub> = |<i>V</i><sup>+</sup>|(1 − |Γ|), dan perbandingannya adalah:</p>
@@ -1995,12 +1995,12 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <h3>1. Diagram Bode</h3>
 <div class="icd-layers">
 <div data-level="pemula"><p>Diagram Bode adalah dua grafik: seberapa besar sebuah rangkaian memperkuat atau melemahkan sinyal pada tiap frekuensi, dan seberapa jauh ia menggeser waktunya. Sumbu frekuensinya logaritmik sehingga rentang yang sangat lebar muat dalam satu gambar. Cukup cari frekuensi "tekuk" (kutub dan nol), dan kurva turun atau naik dengan kemiringan tetap di antaranya.</p></div>
-<div data-level="engineer"><p>Dalam praktik, Anda menulis fungsi transfer dari analisis small-signal (M07), mencari kutub dan nol dari konstanta waktu rangkaian, menggambar garis lurus untuk melihat di mana frekuensi gain satu jatuh dan seberapa curam kemiringan di sana, lalu memverifikasi dengan <code>.ac</code> di SPICE. Teknik cepat: <em>konstanta waktu rangkaian terbuka</em> menaksir kutub dominan dengan menjumlahkan produk R·C tiap kapasitor yang dilihat dari resistor lain saat semua kapasitor lain dibuka.</p></div>
+<div data-level="engineer"><p>Dalam praktik, kamu menulis fungsi transfer dari analisis small-signal (M07), mencari kutub dan nol dari konstanta waktu rangkaian, menggambar garis lurus untuk melihat di mana frekuensi gain satu jatuh dan seberapa curam kemiringan di sana, lalu memverifikasi dengan <code>.ac</code> di SPICE. Teknik cepat: <em>konstanta waktu rangkaian terbuka</em> menaksir kutub dominan dengan menjumlahkan produk R·C tiap kapasitor yang dilihat dari resistor lain saat semua kapasitor lain dibuka.</p></div>
 <div data-level="pakar"><p>Bode menunjukkan hubungan antara magnitudo dan fase pada sistem fase-minimum: kemiringan −20 <i>m</i> dB/dekade berarti kira-kira −90<i>m</i>°. Hubungan eksaknya adalah integral Hilbert (relasi Bode gain-phase). Karena itu, phase margin bisa ditaksir dari kemiringan di <i>f</i><sub>u</sub>. Sistem dengan nol RHP atau delay murni bukan fase-minimum: fasenya lebih buruk dari yang diramalkan dari magnitudonya, dan inilah sumber batas bandwidth yang tidak bisa dilampaui dengan kompensasi biasa.</p></div>
 </div>
 <h3>2. Filter</h3>
 <div class="icd-layers">
-<div data-level="pemula"><p>Filter adalah rangkaian yang memilih frekuensi. Filter lolos-bawah membiarkan sinyal lambat lewat dan menahan sinyal cepat. Makin banyak tahap (orde), makin tajam pemisahannya. Anda memilih tajam atau mulus: filter tajam mengubah bentuk sinyal yang lewat, filter mulus tidak.</p></div>
+<div data-level="pemula"><p>Filter adalah rangkaian yang memilih frekuensi. Filter lolos-bawah membiarkan sinyal lambat lewat dan menahan sinyal cepat. Makin banyak tahap (orde), makin tajam pemisahannya. Kamu memilih tajam atau mulus: filter tajam mengubah bentuk sinyal yang lewat, filter mulus tidak.</p></div>
 <div data-level="engineer"><p>Pilih keluarga sesuai kebutuhan: Butterworth untuk datar tanpa riak (default), Chebyshev bila redaman pita henti harus tinggi dengan orde kecil dan riak diterima, Bessel bila bentuk pulsa penting. Orde minimum dihitung dari rumus di bagian 4.5. Realisasi on-chip: biquad aktif (dua kutub per tahap, cascade untuk orde tinggi), dengan Q tiap tahap dari tabel; orde ganjil menambah satu tahap orde satu. Toleransi komponen yang 1% sampai 20% di chip menggeser frekuensi potong sehingga filter on-chip biasanya perlu tuning.</p></div>
 <div data-level="pakar"><p>Filter digital (FIR, IIR di M01d) lebih fleksibel, tetapi di jalur analog ia perlu ADC lebih dulu dan anti-alias analog tetap dibutuhkan. Prototipe Chebyshev memberi redaman pita henti terbaik untuk riak pita lolos dan orde tertentu di antara filter semua-kutub; elliptic menambah nol transmisi di pita henti untuk transisi lebih curam lagi, dengan biaya delay grup dan sensitivitas komponen. Sensitivitas pada Q tinggi bisa diatasi dengan topologi seperti Tow-Thomas atau Gm-C berbasis integrator, yang lebih tahan variasi proses.</p></div>
 </div>
@@ -2054,7 +2054,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <div class="icd-guide" data-id="v2-orde" data-answer="1">
   <p>Spesifikasi: redaman minimal 40 dB pada tiga kali f<sub>c</sub>. Butterworth memerlukan orde 5. Berapa orde minimum untuk Chebyshev riak 1 dB?</p>
   <ul><li>3</li><li>4</li><li>5</li><li>6</li></ul>
-  <div class="explain"><p>Pada x = 3, Butterworth n = 4 memberi 38.2 dB (kurang) dan n = 5 memberi 47.7 dB. Chebyshev 1 dB memberi 34.0 dB untuk n = 3 dan 49.4 dB untuk n = 4, jadi cukup orde 4. Pilih Chebyshev 1 dB, atur n dan baca redaman di 3 f<sub>c</sub> pada keluaran. Lalu lihat grafik bawah: delay grup Chebyshev melonjak di dekat f<sub>c</sub>, harga yang dibayar untuk transisi lebih curam.</p></div>
+  <div class="explain"><p>Pada x = 3, Butterworth n = 4 memberi 38.2 dB (kurang) dan n = 5 memberi 47.7 dB. Chebyshev 1 dB memberi 34.0 dB untuk n = 3 dan 49.4 dB untuk n = 4, jadi cukup orde 4. Pilih Chebyshev 1 dB, atur n dan baca redaman di 3 f<sub>c</sub> pada output. Lalu lihat grafik bawah: delay grup Chebyshev melonjak di dekat f<sub>c</sub>, harga yang dibayar untuk transisi lebih curam.</p></div>
 </div>
 
 <div class="icd-viz" id="v3">
@@ -2075,7 +2075,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 </div>
 
 <div class="icd-viz" id="v4">
-  <header><h3>4. Gelombang berdiri, VSWR, dan impedansi masukan</h3></header>
+  <header><h3>4. Gelombang berdiri, VSWR, dan impedansi input</h3></header>
   <div class="stage"><div id="v4-plot"></div></div>
   <div class="params">
     <label class="icd-field"><span>Beban R<sub>L</sub></span><select class="icd-select" id="v4-rl"><option value="0">0 (hubung singkat)</option><option value="12.5">12.5 Ω</option><option value="25">25 Ω</option><option value="50">50 Ω</option><option value="100" selected>100 Ω</option><option value="200">200 Ω</option><option value="1e9">terbuka</option></select></label>
@@ -2124,7 +2124,7 @@ table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
 <p><strong>Pelajaran.</strong> Nilai ini sama dengan lab, tetapi diskalakan 0.1×: frekuensi dikali 10, komponen dibagi 10. Induktor 1.59 µH mudah sebagai komponen diskrit, mustahil sebagai spiral on-chip (area dan Q), alasan filter on-chip dibuat dengan cara lain.</p>
 
 <h3>Contoh 4: pantulan pada jalur papan</h3>
-<p><strong>Soal.</strong> Pin keluaran CMOS (hambatan keluaran 20 Ω) menggerakkan jejak 50 Ω sepanjang 3 cm di FR-4 (ε<sub>r</sub> ≈ 4) ke input CMOS (kapasitif, tampak terbuka). Waktu naik 200 ps. Apakah perlu diperlakukan sebagai saluran, dan apa yang terjadi?</p>
+<p><strong>Soal.</strong> Pin output CMOS (hambatan output 20 Ω) menggerakkan jejak 50 Ω sepanjang 3 cm di FR-4 (ε<sub>r</sub> ≈ 4) ke input CMOS (kapasitif, tampak terbuka). Waktu naik 200 ps. Apakah perlu diperlakukan sebagai saluran, dan apa yang terjadi?</p>
 <ol>
 <li><i>t</i><sub>d</sub> = 3 cm/(15 cm/ns) = 200 ps; <i>t</i><sub>r</sub>/6 = 33 ps. Karena <i>t</i><sub>d</sub> ≫ <i>t</i><sub>r</sub>/6, ya, saluran.</li>
 <li>Γ<sub><i>L</i></sub> ≈ +1, Γ<sub><i>S</i></sub> = (20 − 50)/(20 + 50) = −0.429. <i>V</i><sub>1</sub> = 50/70 = 0.714 <i>V</i><sub><i>S</i></sub>.</li>
@@ -2384,7 +2384,7 @@ meas ac v_2fc FIND vm(b) AT=2Meg
 
 <section class="icd-sec" id="s09">
 <h2>Miskonsepsi dan jebakan</h2>
-<div class="icd-box mis"><b>Miskonsepsi</b>"Pada frekuensi potong, keluaran filter turun setengah." Besar tegangan turun ke 0.707, yaitu −3 dB; daya yang turun setengah. Setengah tegangan adalah −6 dB.</div>
+<div class="icd-box mis"><b>Miskonsepsi</b>"Pada frekuensi potong, output filter turun setengah." Besar tegangan turun ke 0.707, yaitu −3 dB; daya yang turun setengah. Setengah tegangan adalah −6 dB.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Garis lurus Bode adalah respons sebenarnya." Ia pendekatan yang salah paling besar (3 dB) justru di titik tekuk, dan salah jauh lebih besar untuk kutub kompleks dengan <i>Q</i> tinggi atau kutub yang berdekatan.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Menambah orde filter selalu memperbaiki rangkaian." Orde tinggi menambah komponen, area, delay, noise, dan sensitivitas terhadap toleransi. Orde minimum dari spesifikasi lebih baik.</div>
 <div class="icd-box mis"><b>Miskonsepsi</b>"Kawat harus diperlakukan sebagai saluran hanya bila panjang." Kriterianya perbandingan waktu tempuh dengan waktu naik, bukan panjang absolut: tepi 20 ps pada kawat 1 mm sudah membuatnya relevan, sedangkan tepi 10 ns pada 30 cm tidak.</div>
@@ -2446,7 +2446,7 @@ meas ac v_2fc FIND vm(b) AT=2Meg
 
 <section class="icd-sec" id="s13">
 <h2>Pertanyaan interview</h2>
-<details class="icd-sol"><summary>"Bagaimana Anda membaca phase margin dari diagram Bode?"</summary>
+<details class="icd-sol"><summary>"Bagaimana kamu membaca phase margin dari diagram Bode?"</summary>
 <p><strong>Kerangka jawaban:</strong> Cari frekuensi gain satu <i>f</i><sub>u</sub>, tempat gain loop memotong 0 dB. Baca fase di sana; PM = 180° + fase. Untuk respons yang baik, target PM 60° sampai 70° (overshoot kecil). Sebutkan hubungan kasar dengan kemiringan: −20 dB/dekade di <i>f</i><sub>u</sub> berarti PM aman, −40 dB/dekade berarti fase dekat −180° dan PM kecil. Tambahkan bahwa nol RHP dan delay murni menurunkan fase tanpa mengubah magnitudo, dan bahwa PM diperiksa di semua sudut proses, suhu, dan tegangan.</p></details>
 <details class="icd-sol"><summary>"Kapan sebuah kawat harus diperlakukan sebagai transmission line?"</summary>
 <p><strong>Kerangka jawaban:</strong> Bila waktu tempuh satu arah sebanding dengan atau lebih besar dari sekitar seperenam waktu naik. Hitung <i>t</i><sub>d</sub> dari panjang dan kecepatan (sekitar 6.7 ps/mm di dielektrik ε<sub>r</sub> ≈ 4). Sebutkan bahwa di chip, kawat tipis resistif berperilaku sebagai RC terdistribusi dan pantulan teredam, sedangkan pada papan, paket, dan kawat tebal berrugi rendah efek saluran nyata.</p></details>
@@ -2469,7 +2469,7 @@ mkdir -p ~/icd/m02c &amp;&amp; cd ~/icd/m02c
 nano linefilt.py           # tempel kode dari bagian 8.1, atau salin lab/m02c/linefilt.py
 python3 linefilt.py
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Semua uji lulus.
 Bode, 1 kutub 1 kHz dan 1 nol 10 kHz:
@@ -2513,7 +2513,7 @@ v_dc                =  4.999998e-01
 v_fc                =  3.535643e-01
 v_2fc               =  6.205479e-02
 </pre>
-<p>Dibagi 0.5: 0.99999 (DC), 0.7071 (−3.01 dB pada 1 MHz), dan 0.1241 (−18.12 dB pada 2 MHz), sesuai dengan keluaran Python. Selisih kecil di digit keempat berasal dari pembulatan nilai komponen di netlist (3.1831 nF dan 15.915 µH).</p>
+<p>Dibagi 0.5: 0.99999 (DC), 0.7071 (−3.01 dB pada 1 MHz), dan 0.1241 (−18.12 dB pada 2 MHz), sesuai dengan output Python. Selisih kecil di digit keempat berasal dari pembulatan nilai komponen di netlist (3.1831 nF dan 15.915 µH).</p>
 <h3>Langkah 4: jelajahi secara interaktif</h3>
 <pre class="icd-src" data-lang="sh">
 python3 -i linefilt.py
@@ -2560,7 +2560,7 @@ if __name__ == "__main__":
         k = settle(1.0, rs, 50, 1e6)
         print(f"  Rs = {rs:&gt;3} ohm: " + (f"{k} kedatangan (= {2 * k - 1} td)" if k else "tidak menetap"))
 </pre>
-<p>Keluaran yang benar:</p>
+<p>Output yang benar:</p>
 <pre class="icd-src" data-lang="text" data-ln="off">
 Beban terbuka (1 Mohm), Z0 = 50 ohm, menetap dalam 5%:
   Rs =   0 ohm: tidak menetap
