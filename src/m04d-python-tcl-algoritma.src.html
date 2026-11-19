@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M04d Python, Tcl, struktur data dan algoritma — IC Design dari Nol sampai Silikon</title>
+<!--CORE-->
+<style>
+p code,li code,td code,summary code{overflow-wrap:anywhere}
+.cheat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.cheat .icd-card{margin:0;font-size:.88rem}.cheat h4{margin:0 0 .3em}
+table.icd td.c,table.icd th.c{text-align:center;font-family:var(--f-mono)}
+table.icd td.r,table.icd th.r{text-align:right;font-family:var(--f-mono)}
+table.icd td.hl,table.icd th.hl{outline:2px solid var(--s-hi);outline-offset:-2px;font-weight:700}
+table.icd td.mono{font-family:var(--f-mono);font-size:.82rem;word-break:break-all}
+.rowlab{font:.78rem var(--f-mono);color:var(--ink2);margin-top:6px}
+.dag{margin:6px 0}
+.dag svg{width:100%;height:auto;max-height:320px}
+.dag .nd rect{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.dag .nd text{fill:var(--ink);font:12px var(--f-mono)}
+.dag .nd .arr{font-weight:700}
+.dag .nd.cur rect{fill:var(--s-hi);stroke:var(--s-hi)}
+.dag .nd.cur text{fill:var(--surface-0)}
+.dag .nd.done rect{stroke:var(--s-data);stroke-width:2.5}
+.dag .nd.crit rect{stroke:var(--s-ctrl);stroke-width:4}
+.dag .nd.bad rect{stroke:var(--s-x);stroke-width:4}
+.dag .ed{stroke:var(--ink2);stroke-width:1.3;fill:none;opacity:.7}
+.dag .ed.crit{stroke:var(--s-ctrl);stroke-width:3.5;opacity:1}
+.dag .ed.live{opacity:1}
+.obj{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:6px 0}
+.obj .o{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:.82rem var(--f-mono);background:var(--bg)}
+.obj .o b{display:block;color:var(--ink2);font-weight:600}
+.obj .o.hit{outline:2px solid var(--s-hi);outline-offset:-2px}
+.tclw{display:grid;gap:4px;margin:4px 0;font:.82rem var(--f-mono)}
+.tclw .w{display:grid;grid-template-columns:2em minmax(0,1fr) minmax(0,1fr);gap:8px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--bg)}
+.tclw .w.on{outline:2px solid var(--s-hi);outline-offset:-2px}
+.tclw .w .why{grid-column:2/4;color:var(--ink2);font-size:.76rem}
+</style>
+</head>
+<body data-file="m04d-python-tcl-algoritma">
+<main>
+<p class="icd-small icd-muted">Bagian 1: Fondasi · M04 bagian d dari 4 · sekitar 12 jam · prasyarat: <a href="m04c-linux-git-make.html">M04c</a> (shell, regex, Make, Git), <a href="m04a-c-pointer.html">M04a</a> (model memori dan pointer)</p>
+<h1>M04d Python, Tcl, struktur data dan algoritma</h1>
+<p>Hampir semua kerja sehari-hari di industri chip terjadi di antara alat: Python merapikan log, membuat stimulus, dan menganalisis hasil regresi; Tcl adalah bahasa perintah di hampir semua alat EDA komersial dan di OpenROAD; dan di dalam alat itu sendiri bekerja algoritma graf dan pengurutan yang sama dengan yang kamu pelajari di sini. Modul ini membuat kamu fasih di tiga hal itu dengan cara yang bisa dibuktikan: setiap kode dijalankan sungguhan (Python 3.12, Tcl 8.6.14), setiap angka kompleksitas dihitung dengan menjalankan algoritmanya, dan model mainan di visualisasi dicocokkan dengan program nyata: jumlah perbandingan sorting dengan <code>sort_counts.py</code>, waktu tiba (arrival time) pada graf gerbang dengan <code>sta_dag.py</code>, status aliasing dengan operator <code>is</code>, dan hasil substitusi Tcl dengan <code>tclsh</code>. Targetnya bukan menghafal sintaks, melainkan memahami <em>model mentalnya</em>: nama sebagai referensi, biaya operasi sebagai fungsi ukuran data, dan "semuanya string" di Tcl.</p>
+
+<section class="icd-sec" id="s01">
+<h2>Kenapa ini penting</h2>
+<ul>
+<li><strong>Python adalah lem alat EDA.</strong> Parser laporan timing dan log simulasi, generator testbench acak, framework verifikasi (cocotb, pyuvm), skrip regresi, dan analisis data hasil uji silikon semuanya ditulis dalam Python. Insinyur yang fasih mengubah log 500 MB menjadi tabel ringkasan dalam 30 baris, dan dalam waktu yang wajar karena paham biaya tiap operasi.</li>
+<li><strong>Tcl adalah bahasa perintah alat EDA.</strong> Constraint timing (SDC), skrip sintesis dan place-and-route, dan antarmuka OpenROAD, Vivado, dan alat komersial lain memakai Tcl. Jebakannya khas: semuanya string, dan kutip <code>{}</code> lawan <code>""</code> mengubah arti baris. Salah satu tanda kutip bisa membuat constraint diam-diam tidak berlaku.</li>
+<li><strong>Chip berisi miliaran elemen, jadi kompleksitas menentukan layak tidaknya sebuah alat.</strong> Algoritma <i>O</i>(<i>n</i>²) pada 10⁹ gerbang butuh 10¹⁸ langkah (puluhan tahun); <i>O</i>(<i>n</i> log <i>n</i>) butuh sekitar 3 × 10¹⁰ (hitungan detik sampai menit). Pilihan struktur data (list, dict, heap) dan algoritma (BFS, Dijkstra, topological sort) adalah selisih antara alat yang selesai semalam dan yang tidak pernah selesai.</li>
+<li><strong>Netlist adalah graf, dan banyak masalah EDA adalah masalah graf.</strong> Levelization, static timing analysis (jalur terpanjang pada DAG), routing labirin (BFS dan A*), partisi, pengelompokan (union-find), dan deteksi loop kombinasional semuanya adalah algoritma graf yang bisa kamu tulis sendiri dalam puluhan baris.</li>
+<li><strong>Wawancara.</strong> "Apa beda <code>list</code> dan <code>tuple</code>?", "mengapa <code>d[k]</code> rata-rata <i>O</i>(1)?", "apa kompleksitas quicksort dan kapan buruk?", "bagaimana STA menghitung jalur kritis?", dan "apa yang dicetak <code>puts "$x"</code> lawan <code>puts {$x}</code>?" ditanyakan di banyak wawancara verifikasi, CAD, dan desain digital.</li>
+</ul>
+<div class="icd-box ok"><b>Yang dibawa pulang</b>Di Python, nama adalah label pada objek: <code>b = a</code> tidak menyalin, salinan dangkal berbagi objek di dalamnya, dan salinan dalam memisahkan semuanya. Biaya operasi mengikuti struktur data: <code>x in list</code> linear, <code>x in set</code> atau <code>dict</code> rata-rata konstan. Algoritma dibandingkan lewat pertumbuhan terhadap ukuran data (Big-O), dan jumlah langkah bisa dihitung, bukan ditebak. Graf menyelesaikan banyak masalah chip: arrival(<i>v</i>) = max arrival(fanin) + tunda(<i>v</i>) pada DAG adalah inti STA. Di Tcl semuanya string; baris dipecah menjadi kata, lalu <code>$</code>, <code>[ ]</code>, dan <code>\</code> diganti <em>sekali</em>; <code>{}</code> mencegah substitusi.</div>
+</section>
+
+<section class="icd-sec" id="s02">
+<h2>Prasyarat dan tujuan belajar</h2>
+<p><strong>Prasyarat:</strong> <a href="m04c-linux-git-make.html">M04c</a> (shell, regex, Make, Git) dan <a href="m04a-c-pointer.html">M04a</a> (model memori, pointer, alokasi). Kamu butuh Python 3.10 atau lebih baru dan <code>tclsh</code> 8.6 (Ubuntu: <code>sudo apt install python3 tcl</code>; di WSL2 sama); lihat langkah 0 lab.</p>
+<p><strong>Setelah modul ini kamu bisa:</strong></p>
+<ol>
+<li>Menjelaskan model data Python: objek dengan identitas, tipe, dan nilai; nama sebagai <span data-term="referensi">referensi</span>; beda <code>is</code> dan <code>==</code>; dan meramalkan akibat <span data-term="mutable">mutable</span> lawan immutable, aliasing, <span data-term="shallow-copy">salinan dangkal</span> lawan salinan dalam.</li>
+<li>Memakai struktur data bawaan dengan sadar biaya: list, tuple, dict, set, <code>deque</code>, <code>heapq</code>, <code>bisect</code>, dan menjelaskan mengapa <span data-term="hash-table">tabel hash</span> memberi pencarian rata-rata konstan.</li>
+<li>Menulis kode Python idiomatik: comprehension, <span data-term="generator">generator</span>, context manager, dataclass, <code>argparse</code>, <code>re</code>, <code>csv</code>, dan pengujian dengan <code>unittest</code>.</li>
+<li>Menganalisis kompleksitas waktu dengan <span data-term="big-o">Big-O</span> (termasuk biaya <span data-term="amortized">amortized</span>), menyelesaikan rekurensi pembagi-dan-gabung, dan menjelaskan batas bawah Ω(<i>n</i> log <i>n</i>) pengurutan berbasis perbandingan.</li>
+<li>Menulis dan membandingkan insertion, merge, dan quick sort, serta meramalkan kasus terburuk quicksort dengan pivot elemen terakhir.</li>
+<li>Menyajikan netlist sebagai <span data-term="graph">graf</span> dan menulis BFS, DFS, <span data-term="topological-order">topological sort</span>, Dijkstra, dan <span data-term="union-find">union-find</span>; menghitung <span data-term="arrival-time">arrival time</span> dan <span data-term="slack">slack</span> pada <span data-term="dag">DAG</span> gerbang dan menemukan <span data-term="critical-path">jalur kritis</span>.</li>
+<li>Menjelaskan <span data-term="memoization">memoization</span> dan dynamic programming lewat Fibonacci dan LCS (dasar alat diff), dan routing labirin Lee dan A*.</li>
+<li>Membaca dan menulis Tcl: dua belas aturan sintaks, kutip kurung kurawal lawan kutip ganda, <code>expr {...}</code>, list dan dict, <code>proc</code>, <code>foreach</code>, <code>regexp</code>, dan pola skrip EDA.</li>
+</ol>
+</section>
+
+<section class="icd-sec" id="s03">
+<h2>Intuisi dulu</h2>
+<h3>Python: nama adalah stiker, objek adalah kotak</h3>
+<p>Bayangkan gudang berisi kotak (objek). Variabel bukan kotak; ia stiker bernama yang ditempel pada kotak. <code>b = a</code> menempelkan stiker kedua pada kotak yang sama: mengubah isi kotak terlihat lewat kedua stiker. Menyalin berarti membeli kotak baru dan memindahkan isinya. <em>Di mana analogi ini berhenti:</em> kotak yang isinya kotak lain (list di dalam list) hanya menyimpan stiker-ke-kotak; menyalin kotak luar (salinan dangkal) menyalin stiker itu, bukan kotak dalamnya, sehingga dua kotak luar menunjuk kotak dalam yang sama.</p>
+<h3>Big-O: mencari nama di buku telepon</h3>
+<p>Mencari nama dengan membaca halaman demi halaman butuh waktu sebanding jumlah halaman (linear). Membuka di tengah lalu menyempit butuh jumlah langkah sebanding logaritma (pencarian biner, syaratnya terurut). Memakai indeks huruf yang langsung membawa ke halaman yang tepat nyaris konstan (tabel hash). <em>Di mana analogi ini berhenti:</em> "nyaris konstan" bergantung pada indeks yang tersebar merata; bila banyak nama jatuh ke satu huruf, kamu kembali membaca daftar panjang. Big-O juga mengabaikan konstanta: algoritma <i>O</i>(<i>n</i>) dengan konstanta 1000 bisa kalah dari <i>O</i>(<i>n</i> log <i>n</i>) pada <i>n</i> kecil.</p>
+<h3>Graf: peta kota dan aturan arus air</h3>
+<p>Netlist seperti peta: persimpangan (gerbang) dihubungkan jalan searah (kabel). Pertanyaan khas: siapa saja yang terpengaruh bila persimpangan ini macet (kerucut fanout, BFS), urutan mana yang aman untuk dihitung (urutan topologis), dan jalur terlama dari masuk ke keluar (jalur kritis). <em>Di mana analogi ini berhenti:</em> peta jalan boleh punya putaran; sirkuit kombinasional tidak boleh (loop kombinasional adalah bug), dan itu yang membuat urutan topologis dan DP sederhana bisa dipakai.</p>
+<h3>Tcl: juru tulis yang membuka amplop sekali</h3>
+<p>Tcl memperlakukan setiap baris sebagai amplop berisi kata. Juru tulis (parser) memecah baris menjadi kata, mengganti <code>$var</code> dan <code>[perintah]</code> <em>satu kali</em>, lalu menyerahkan daftar kata hasilnya ke perintah. Kurung kurawal adalah amplop segel: isinya diserahkan apa adanya. <em>Di mana analogi ini berhenti:</em> perintah seperti <code>if</code>, <code>while</code>, dan <code>expr</code> menerima isi segel sebagai skrip atau ekspresi lalu membukanya sendiri; di situlah substitusi kedua terjadi, dan karena itu <code>expr {$a + $b}</code> lebih aman dan lebih cepat daripada <code>expr $a + $b</code>.</p>
+</section>
+
+<section class="icd-sec" id="s04">
+<h2>Penjelasan formal</h2>
+
+<h3>4.1 Python: model data dan eksekusi</h3>
+<p>Setiap nilai di Python adalah <em>objek</em> dengan tiga hal: identitas (alamat di memori, <code>id(x)</code>), tipe, dan nilai. Variabel adalah <em>nama</em> di sebuah ruang nama (namespace) yang menunjuk ke objek; penugasan <code>b = a</code> menyalin <em>referensi</em>, bukan objek. Operator <code>is</code> membandingkan identitas, sedangkan <code>==</code> membandingkan nilai (memanggil <code>__eq__</code>). Objek bertipe <span data-term="mutable">mutable</span> (list, dict, set) boleh diubah di tempat; immutable (int, str, tuple, frozenset) tidak, sehingga "mengubah" string selalu membuat string baru.</p>
+<ul>
+<li><strong>Aliasing dan salinan.</strong> <code>b = a</code> membuat alias. <code>a[:]</code>, <code>list(a)</code>, dan <code>a.copy()</code> membuat <span data-term="shallow-copy">salinan dangkal</span>: objek luar baru, elemen sama. <code>copy.deepcopy(a)</code> menyalin rekursif. Visualisasi 1 memperlihatkan ketiganya.</li>
+<li><strong>Jebakan.</strong> Argumen bawaan mutable (<code>def f(x, acc=[])</code>) dibuat <em>sekali</em> saat <code>def</code> dijalankan sehingga dibagi antar panggilan; pakai <code>None</code> sebagai nilai awal. <code>p += [2]</code> mengubah list di tempat (alias ikut berubah), sedangkan <code>r = r + [2]</code> membuat list baru.</li>
+<li><strong>Iterasi.</strong> Objek iterabel menghasilkan iterator lewat <code>iter()</code>; <code>for</code> memanggil <code>next()</code> sampai <code>StopIteration</code>. <span data-term="generator">Generator</span> (<code>yield</code>) menghasilkan nilai satu per satu dengan memori konstan: <code>sum(len(l) for l in f)</code> memproses berkas 10 GB tanpa memuatnya. Comprehension (<code>[x*x for x in xs if x &gt; 0]</code>) lebih ringkas dan umumnya lebih cepat daripada loop <code>append</code>.</li>
+<li><strong>Struktur program.</strong> Modul adalah berkas <code>.py</code>; <code>if __name__ == "__main__":</code> menjalankan blok hanya bila berkas dijalankan langsung, bukan saat diimpor. <code>with open(f) as h:</code> (context manager) menjamin berkas ditutup walau terjadi galat. <code>@dataclass</code> membuat kelas data ringkas; <code>argparse</code> membuat antarmuka baris perintah; <code>venv</code> memisahkan dependensi per proyek.</li>
+<li><strong>Angka.</strong> <code>int</code> berukuran tak terbatas (berguna untuk hash dan bilangan besar), <code>float</code> adalah IEEE 754 biner 64-bit (M03a): <code>0.1 + 0.2 != 0.3</code>, bandingkan dengan <code>math.isclose</code>.</li>
+</ul>
+
+<h3>4.2 Struktur data bawaan dan biayanya</h3>
+<p><strong>list</strong> adalah array dinamis: elemen berurutan, akses indeks <i>O</i>(1), <code>append</code> <span data-term="amortized">amortized</span> <i>O</i>(1) (kapasitas bertumbuh geometris sehingga penyalinan jarang), tetapi <code>insert(0, x)</code>, <code>x in list</code>, dan <code>remove</code> adalah <i>O</i>(<i>n</i>). <strong>tuple</strong> adalah list immutable (bisa jadi kunci dict). <strong>dict</strong> dan <strong>set</strong> adalah <span data-term="hash-table">tabel hash</span>: kunci diubah menjadi indeks lewat <code>hash(k)</code>; pencarian, penyisipan, dan penghapusan rata-rata <i>O</i>(1), kasus terburuk <i>O</i>(<i>n</i>) bila banyak kunci bertabrakan. Kunci harus <em>hashable</em> (immutable dan konsisten dengan <code>==</code>); sejak Python 3.7 dict mempertahankan urutan penyisipan. <strong>deque</strong> (<code>collections</code>) punya <code>appendleft</code> dan <code>popleft</code> <i>O</i>(1), cocok untuk antrean BFS. <strong>heapq</strong> mengelola <span data-term="heap-ds">heap biner</span> di atas list: <code>heappush</code> dan <code>heappop</code> <i>O</i>(log <i>n</i>), elemen terkecil di depan; dasar antrean prioritas. <strong>bisect</strong> mencari di list terurut dalam <i>O</i>(log <i>n</i>).</p>
+<div class="icd-tablewrap"><table class="icd"><thead><tr><th scope="col">operasi</th><th scope="col">list</th><th scope="col">dict / set</th><th scope="col">deque</th><th scope="col">heapq</th></tr></thead><tbody>
+<tr><td>akses indeks <code>x[i]</code></td><td class="c">O(1)</td><td class="c">—</td><td class="c">O(n) di tengah</td><td class="c">—</td></tr>
+<tr><td>tambah di ujung</td><td class="c">O(1) amortized</td><td class="c">O(1) rata-rata</td><td class="c">O(1)</td><td class="c">O(log n)</td></tr>
+<tr><td>sisip atau hapus di depan</td><td class="c">O(n)</td><td class="c">—</td><td class="c">O(1)</td><td class="c">O(log n) hapus min</td></tr>
+<tr><td>cari <code>x in c</code></td><td class="c">O(n)</td><td class="c">O(1) rata-rata</td><td class="c">O(n)</td><td class="c">O(n)</td></tr>
+<tr><td>urut</td><td class="c">O(n log n)</td><td class="c">—</td><td class="c">—</td><td class="c">O(n log n) berulang pop</td></tr>
+</tbody></table></div>
+
+<h3>4.3 Kompleksitas: Big-O, amortized, dan rekurensi</h3>
+<p>Untuk fungsi <i>f</i>, <i>g</i> dari bilangan asli ke bilangan non-negatif, <i>f</i>(<i>n</i>) = <i>O</i>(<i>g</i>(<i>n</i>)) bila ada konstanta <i>c</i> &gt; 0 dan <i>n</i><sub>0</sub> sehingga <i>f</i>(<i>n</i>) ≤ <i>c</i> · <i>g</i>(<i>n</i>) untuk semua <i>n</i> ≥ <i>n</i><sub>0</sub>. Ω adalah batas bawah analog, dan Θ berarti <i>O</i> dan Ω sekaligus. Big-O menyembunyikan konstanta dan suku yang lebih kecil; untuk perbandingan nyata, <em>hitung</em> operasi (seperti di visualisasi 2) atau ukur waktu.</p>
+<div class="icd-eq"><math display="block"><mi>f</mi><mo>(</mo><mi>n</mi><mo>)</mo><mo>=</mo><mi>O</mi><mo>(</mo><mi>g</mi><mo>(</mo><mi>n</mi><mo>)</mo><mo>)</mo><mo>&#x21D4;</mo><mo>&#x2203;</mo><mi>c</mi><mo>&gt;</mo><mn>0</mn><mo>,</mo><mo>&#x2203;</mo><msub><mi>n</mi><mn>0</mn></msub><mo>:</mo><mo>&#x2200;</mo><mi>n</mi><mo>&#x2265;</mo><msub><mi>n</mi><mn>0</mn></msub><mo>,</mo><mi>f</mi><mo>(</mo><mi>n</mi><mo>)</mo><mo>&#x2264;</mo><mi>c</mi><mi>g</mi><mo>(</mo><mi>n</mi><mo>)</mo></math><span class="alt">f(n) = O(g(n)) jika ada c &gt; 0 dan n0 sehingga untuk semua n &gt;= n0, f(n) &lt;= c g(n)</span></div>
+<p><strong>Amortized.</strong> Biaya rata-rata per operasi pada <em>urutan terburuk</em> operasi, bukan rata-rata acak. <code>append</code> pada list: bila kapasitas digandakan saat penuh, <i>n</i> operasi menyalin total kurang dari 2<i>n</i> elemen, jadi tiap <code>append</code> amortized <i>O</i>(1) walau sesekali satu operasi mahal.</p>
+<p><strong>Rekurensi pembagi-dan-gabung.</strong> Merge sort membagi dua, mengurutkan masing-masing, lalu menggabung dengan paling banyak <i>n</i> − 1 perbandingan: <i>T</i>(<i>n</i>) = 2<i>T</i>(<i>n</i>/2) + <i>n</i>. Pohon rekursi punya log<sub>2</sub> <i>n</i> tingkat dan tiap tingkat menyumbang sekitar <i>n</i> kerja, jadi <i>T</i>(<i>n</i>) = Θ(<i>n</i> log <i>n</i>). Untuk <i>T</i>(<i>n</i>) = 2<i>T</i>(<i>n</i>/2) + <i>n</i>² tingkat teratas mendominasi dan hasilnya Θ(<i>n</i>²).</p>
+<div class="icd-eq"><math display="block"><mi>T</mi><mo>(</mo><mi>n</mi><mo>)</mo><mo>=</mo><mn>2</mn><mi>T</mi><mo>(</mo><mfrac><mi>n</mi><mn>2</mn></mfrac><mo>)</mo><mo>+</mo><mi>n</mi><mo>&#x21D2;</mo><mi>T</mi><mo>(</mo><mi>n</mi><mo>)</mo><mo>=</mo><mi>&#x0398;</mi><mo>(</mo><mi>n</mi><mi>log</mi><mi>n</mi><mo>)</mo></math><span class="alt">T(n) = 2 T(n/2) + n menghasilkan T(n) = Theta(n log n)</span></div>
+
+<h3>4.4 Pengurutan</h3>
+<ul>
+<li><strong>Insertion sort</strong>: menyisipkan elemen ke bagian kiri yang sudah terurut. Terburuk (terbalik) <i>n</i>(<i>n</i> − 1)/2 perbandingan, terbaik (sudah terurut) <i>n</i> − 1, dan efisien untuk data hampir terurut atau kecil.</li>
+<li><strong>Merge sort</strong>: Θ(<i>n</i> log <i>n</i>) pada semua kasus, <em>stabil</em> (elemen sama menjaga urutan), butuh memori tambahan <i>O</i>(<i>n</i>). <code>sorted()</code> dan <code>list.sort()</code> Python memakai Timsort: gabungan merge sort dan insertion sort yang memanfaatkan <em>run</em> terurut sehingga data hampir terurut hampir linear, dan stabil.</li>
+<li><strong>Quick sort</strong>: pilih pivot, partisi, urut dua sisi. Rata-rata Θ(<i>n</i> log <i>n</i>), tetapi bila pivot selalu ekstrem (pivot terakhir pada data yang sudah terurut) partisi tak seimbang dan kasusnya Θ(<i>n</i>²). Perbaikan: pivot acak atau median-dari-tiga.</li>
+<li><strong>Batas bawah.</strong> Pohon keputusan untuk mengurutkan <i>n</i> elemen punya <i>n</i>! daun, jadi tingginya (jumlah perbandingan terburuk) paling sedikit ⌈log<sub>2</sub> <i>n</i>!⌉ = Ω(<i>n</i> log <i>n</i>). Contoh: 8 elemen butuh ≥ 16 perbandingan, 10 elemen butuh ≥ 22. Merge sort mencapai batas ini secara asimtotik.</li>
+</ul>
+
+<h3>4.5 Graf, algoritma graf, dan kaitannya dengan EDA</h3>
+<p><span data-term="graph">Graf</span> <i>G</i> = (<i>V</i>, <i>E</i>) berisi simpul dan sisi. Representasi <em>daftar adjacency</em> (dict simpul → daftar tetangga) memakai ruang <i>O</i>(<i>V</i> + <i>E</i>) dan cocok untuk graf jarang seperti netlist; matriks adjacency memakai <i>O</i>(<i>V</i>²). Netlist digital adalah graf berarah: simpul = gerbang atau port, sisi = kabel dari driver ke penerima.</p>
+<ul>
+<li><strong>BFS</strong> (antrean) menjelajah per lapisan dan memberi jarak terpendek pada graf tak berbobot dalam <i>O</i>(<i>V</i> + <i>E</i>). Dipakai untuk kerucut fanout dan <em>routing labirin Lee</em> pada grid.</li>
+<li><strong>DFS</strong> (tumpukan atau rekursi) menjelajah sedalam mungkin; dasar deteksi siklus dan komponen terhubung.</li>
+<li><strong><span data-term="topological-order">Urutan topologis</span></strong> (algoritma Kahn): ulang ambil simpul berderajat-masuk 0, hapus sisi keluarnya. Ada urutan topologis bila dan hanya bila graf tak bersiklus (DAG); simpul yang tersisa menandai <em>loop kombinasional</em>. Levelization netlist adalah urutan ini.</li>
+<li><strong>Jalur terpanjang pada DAG</strong> dihitung dengan DP sepanjang urutan topologis: arrival(<i>v</i>) = max<sub><i>u</i>∈fanin(<i>v</i>)</sub> arrival(<i>u</i>) + <i>d</i>(<i>v</i>), dalam waktu <i>O</i>(<i>V</i> + <i>E</i>). Itulah inti <em>static timing analysis</em>: <span data-term="slack">slack</span> pada output = waktu diminta (required) − arrival, dan <span data-term="critical-path">jalur kritis</span> adalah jalur dengan slack terkecil.</li>
+<li><strong><span data-term="dijkstra">Dijkstra</span></strong> mencari jalur terpendek dari satu sumber pada graf berbobot <em>non-negatif</em> dengan antrean prioritas (heap): <i>O</i>((<i>V</i> + <i>E</i>) log <i>V</i>). <strong>A*</strong> menambahkan heuristik <i>h</i>(<i>v</i>) yang tak melebihi jarak sebenarnya (jarak Manhattan di grid) sehingga menjelajah jauh lebih sedikit sel dan tetap optimal.</li>
+<li><strong><span data-term="union-find">Union-find</span></strong> (himpunan lepas) memelihara partisi dengan <code>find</code> dan <code>union</code> hampir konstan (dengan penyatuan menurut ukuran dan kompresi jalur); dasar algoritma Kruskal untuk pohon rentang minimum dan pengelompokan net.</li>
+</ul>
+<div class="icd-eq"><math display="block"><mi>arr</mi><mo>(</mo><mi>v</mi><mo>)</mo><mo>=</mo><munder><mo>max</mo><mrow><mi>u</mi><mo>&#x2208;</mo><mi>fanin</mi><mo>(</mo><mi>v</mi><mo>)</mo></mrow></munder><mi>arr</mi><mo>(</mo><mi>u</mi><mo>)</mo><mo>+</mo><mi>d</mi><mo>(</mo><mi>v</mi><mo>)</mo><mspace width="1.5em"/><mi>slack</mi><mo>=</mo><mi>T</mi><mo>&#x2212;</mo><mi>arr</mi><mo>(</mo><mi>out</mi><mo>)</mo></math><span class="alt">arr(v) = max di atas u anggota fanin(v) dari arr(u), ditambah d(v); slack = T dikurangi arr(out)</span></div>
+
+<h3>4.6 Rekursi, memoization, dan dynamic programming</h3>
+<p>Rekursi menyelesaikan masalah lewat masalah yang lebih kecil. <code>fib(n) = fib(n−1) + fib(n−2)</code> secara naif menghitung ulang submasalah yang sama dan butuh jumlah panggilan eksponensial (242.785 panggilan untuk <i>n</i> = 25). <span data-term="memoization">Memoization</span> menyimpan hasil submasalah (<code>functools.lru_cache</code>), sehingga tiap nilai dihitung sekali: 26 panggilan. Bila submasalah tumpang tindih dan solusi optimal tersusun dari solusi optimal submasalah, itu <em>dynamic programming</em>. Contoh: panjang <em>longest common subsequence</em> (LCS) dua urutan dengan tabel (|a|+1) × (|b|+1) dalam waktu <i>O</i>(|a| · |b|); alat <code>diff</code> berbasis gagasan ini. Batas rekursi Python (sekitar 1000 bingkai) berarti rekursi dalam sebaiknya diubah menjadi iterasi dengan tumpukan eksplisit (seperti <code>quick</code> di lab).</p>
+
+<h3>4.7 Tcl: dua belas aturan dan pola skrip EDA</h3>
+<p>Sintaks inti Tcl hanya dua belas aturan (disebut <em>dodecalogue</em>). Rangkumannya yang dipakai sehari-hari:</p>
+<ol>
+<li>Skrip adalah deretan perintah dipisah baris baru atau <code>;</code>. Kata pertama adalah nama perintah, sisanya argumen.</li>
+<li>Kata dipisah spasi. Setiap argumen adalah <em>string</em>; Tcl tidak punya tipe tersendiri untuk angka atau list (hanya cara menafsirkan string).</li>
+<li>Kata diawali <code>"</code> dipanggang sampai <code>"</code> berikutnya: spasi menjadi bagian kata, dan substitusi berlaku. Kata diawali <code>{</code> berakhir di <code>}</code> yang seimbang: <em>tidak ada</em> substitusi.</li>
+<li><code>[perintah]</code> diganti dengan hasil perintah itu (substitusi perintah). <code>$nama</code> diganti nilai variabel. <code>\x</code> adalah escape (<code>\n</code>, <code>\$</code>, dan <code>\</code>+spasi).</li>
+<li>Substitusi terjadi <em>sekali</em> pada tiap kata, dari kiri ke kanan, dan hasilnya tidak dipindai ulang; hasil substitusi tidak dipecah lagi menjadi beberapa kata (nilai <code>ani budi</code> tetap satu kata, tidak seperti di shell).</li>
+<li><code>{*}$lst</code> (expansion) menyebar list menjadi kata-kata terpisah.</li>
+</ol>
+<p>Karena itu <code>expr {$x + 1}</code> menerima teks <code>$x + 1</code> dan <code>expr</code> sendiri yang mengganti <code>$x</code> (lebih cepat karena bisa dikompilasi, dan aman dari injeksi); <code>if {$x &gt; 3} { ... }</code> pun selalu pakai kurung kurawal. Perintah yang kamu butuhkan: <code>set</code>, <code>incr</code>, <code>expr</code>, <code>if</code>/<code>elseif</code>/<code>else</code>, <code>for</code>, <code>foreach</code>, <code>while</code>, <code>proc</code>, <code>return</code>, <code>list</code>, <code>lindex</code>, <code>llength</code>, <code>lappend</code>, <code>lsort</code>, <code>lrange</code>, <code>join</code>, <code>split</code>, <code>dict</code> (<code>create</code>, <code>set</code>, <code>get</code>, <code>lappend</code>, <code>keys</code>), <code>string</code>, <code>format</code>, <code>regexp</code>, <code>open</code>/<code>gets</code>/<code>close</code>, <code>uplevel</code>, <code>upvar</code>.</p>
+<p><strong>Tcl di alat EDA.</strong> Alat memakai Tcl sebagai bahasa perintah: berkas constraint SDC (<code>create_clock -period 2.0 [get_ports clk]</code>) adalah skrip Tcl dengan perintah tambahan; <code>get_cells</code>, <code>get_ports</code>, dan <code>get_nets</code> mengembalikan <em>koleksi</em> (objek yang dikelola alat, bukan list string biasa, sehingga perlu <code>foreach_in_collection</code> di alat komersial), sementara OpenROAD memakai list Tcl. Pola umum: loop atas objek desain, filter lewat atribut, cetak laporan; pola yang sama dengan <code>logreport.py</code>, dan di lab kamu mengerjakan keduanya sampai output identik.</p>
+<p><strong>Jebakan khas Tcl.</strong> (1) Memakai <code>expr $a + $b</code> tanpa kurung kurawal: kata hasil bisa mengandung spasi atau karakter khusus yang ditafsir ulang. (2) Menulis list sebagai string dengan <code>"a b {c d}"</code> lalu salah menghitung elemen; bangun list dengan <code>list</code> atau <code>lappend</code>. (3) Mengira <code>"</code> dan <code>{</code> sama: hanya yang pertama melakukan substitusi. (4) Variabel lokal di <code>proc</code> tidak terlihat dari luar dan sebaliknya; gunakan <code>global</code>, <code>upvar</code>, atau argumen.</p>
+
+<h3>4.8 Menguji kode algoritma</h3>
+<p>Algoritma mudah salah di kasus tepi (list kosong, elemen kembar, graf bersiklus). Pola uji yang kuat: bandingkan dengan <em>acuan yang jelas benar</em> pada input acak (sorting versus <code>sorted</code>, Dijkstra versus Floyd–Warshall pada graf kecil), dan periksa <em>properti</em> (urutan topologis menaruh setiap fanin sebelum gerbangnya; fungsi tidak mengubah input). <code>test_algos.py</code> di lab melakukan keduanya dengan <code>unittest</code>.</p>
+</section>
+
+<section class="icd-sec" id="s05">
+<h2>Penjelasan berlapis</h2>
+<h3>1. Python dan model data</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Python adalah bahasa pemrograman yang mudah dibaca. Variabel menunjuk ke data; bila dua variabel menunjuk ke list yang sama, mengubah satu mengubah yang lain. Gunakan <code>list</code> untuk urutan dan <code>dict</code> untuk pasangan kunci-nilai, dan jalankan skrip dengan <code>python3 nama.py</code>.</p></div>
+<div data-level="engineer"><p>Ingat aturan: penugasan menyalin referensi, bukan objek. Pakai <code>copy.deepcopy</code> untuk struktur bersarang, <code>None</code> sebagai nilai awal argumen mutable, generator untuk data besar, dan <code>with</code> untuk berkas. Pilih <code>dict</code>/<code>set</code> untuk pencarian, <code>deque</code> untuk antrean, dan <code>heapq</code> untuk antrean prioritas.</p></div>
+<div data-level="pakar"><p>CPython menghitung referensi tiap objek dan membersihkan siklus dengan pengumpul sampah generasional; <code>id</code> adalah alamat objek. Dict memakai open addressing dengan urutan probe yang dipengaruhi bit hash dan menyimpan entri dalam array padat terurut penyisipan; <code>hash</code> string diacak per proses (PYTHONHASHSEED) untuk mencegah serangan tabrakan. Timsort mendeteksi run dan memakai galloping; GIL membatasi paralelisme thread untuk kode Python murni sehingga beban CPU memakai <code>multiprocessing</code>.</p></div>
+</div>
+<h3>2. Kompleksitas, struktur data, dan algoritma graf</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Cara membandingkan algoritma: seberapa banyak langkah bila datanya 10 kali lebih banyak? Pencarian linear jadi 10 kali lebih lama, pencarian biner hanya sedikit lebih lama, dan algoritma kuadratik jadi 100 kali lebih lama. Graf adalah titik-titik yang dihubungkan garis; BFS menjelajah per lapis, dan Dijkstra mencari jalan terpendek.</p></div>
+<div data-level="engineer"><p>Hitung dulu, ukur kemudian: perkirakan kompleksitas, uji dengan data nyata. Pilih representasi graf adjacency list, tulis BFS dengan <code>deque</code> dan Dijkstra dengan <code>heapq</code> (lewati entri usang), dan pakai urutan topologis untuk menghitung arrival time. Waspadai konstanta dan memori: <i>O</i>(<i>n</i> log <i>n</i>) dengan konstanta besar bisa kalah pada <i>n</i> kecil.</p></div>
+<div data-level="pakar"><p>Analisis amortized (metode potensial) menjelaskan list dinamis dan union-find (<i>O</i>(α(<i>n</i>)) per operasi). Dijkstra dengan Fibonacci heap mencapai <i>O</i>(<i>E</i> + <i>V</i> log <i>V</i>) tetapi konstantanya jarang menguntungkan. STA nyata memakai propagasi arrival dan required time dua arah, banyak corner, dan model tunda bergantung slew; algoritmanya tetap relaksasi pada DAG. Pada skala miliaran simpul, lokalitas cache dan paralelisme (levelization menghasilkan antrean independen per level) lebih menentukan daripada Big-O.</p></div>
+</div>
+<h3>3. Tcl</h3>
+<div class="icd-layers">
+<div data-level="pemula"><p>Tcl adalah bahasa skrip yang dipakai alat desain chip. Semuanya berupa teks. <code>set x 5</code> menyimpan nilai, <code>$x</code> memakainya, <code>[...]</code> menjalankan perintah dan memakai hasilnya, dan <code>{...}</code> menjaga teks apa adanya.</p></div>
+<div data-level="engineer"><p>Selalu tulis <code>expr {...}</code> dan <code>if {...}</code> dengan kurung kurawal; bangun list dengan <code>list</code>/<code>lappend</code>; gunakan <code>dict</code> untuk data berstruktur dan <code>regexp -all -inline</code> untuk parsing. Pahami perbedaan <code>"</code> dan <code>{</code>, dan pakai <code>{*}</code> saat meneruskan list sebagai argumen.</p></div>
+<div data-level="pakar"><p>Tcl 8 mengompilasi skrip ke bytecode dan menyimpan "dual-ported object" (nilai string dengan representasi internal int, list, atau dict yang di-cache); karena itu list besar dalam <code>foreach</code> tetap efisien selama tidak ditafsir ulang sebagai string. Substitusi ganda (<code>eval</code>, <code>uplevel</code>) adalah sumber bug dan injeksi: bangun perintah dengan <code>list</code> agar kutip aman. Command <code>trace</code>, namespace, dan TclOO mendasari alat besar.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s06">
+<h2>Visualisasi interaktif</h2>
+
+<div class="icd-viz" id="v1">
+  <header><h3>1. Nama, objek, dan salinan: siapa berbagi apa?</h3></header>
+  <div class="stage">
+    <div class="rowlab">pernyataan (✓ = sudah dijalankan, ▶ = berikutnya)</div>
+    <div class="icd-tablewrap"><table class="icd" id="v1-prog"></table></div>
+    <div class="rowlab">nama → objek (sel bersorot = baru berubah)</div>
+    <div class="icd-tablewrap"><table class="icd" id="v1-names"></table></div>
+    <div class="rowlab">objek di memori (L = label objek; isi list adalah angka atau referensi ke label lain)</div>
+    <div class="obj" id="v1-objs"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Cara membuat b</span><select class="icd-select" id="v1-form">
+      <option value="alias">b = a (alias)</option>
+      <option value="shallow" selected>b = a[:] (salinan dangkal)</option>
+      <option value="deep">b = copy.deepcopy(a)</option></select></label>
+  </div>
+  <div class="readout" id="v1-out" aria-live="polite"></div>
+  <div class="model">Model: <code>a = [[1, 2], [3]]</code> membuat tiga objek: dua list di dalam dan satu list luar yang menyimpan referensi ke keduanya. Salinan dangkal membuat list luar baru dengan referensi yang sama; salinan dalam menyalin semuanya; alias tidak membuat objek apa pun. Setelah itu <code>b[0].append(9)</code> mengubah list di dalam, dan <code>b.append([4])</code> mengubah list luar. Hasilnya dicocokkan dengan <code>alias_demo.py</code> (operator <code>is</code>).</div>
+</div>
+<div class="icd-guide" data-id="v1-shallow" data-answer="0">
+  <p>Pilih salinan dangkal (<code>b = a[:]</code>) dan jalankan sampai selesai. Apa yang berubah pada <code>a</code>?</p>
+  <ul><li>List di dalamnya ikut menjadi [1, 2, 9], tetapi a tidak mendapat elemen [4]</li><li>Tidak ada yang berubah, karena b adalah salinan</li><li>a ikut mendapat elemen [4] tetapi list di dalamnya tetap [1, 2]</li><li>a dan b menjadi objek yang sama</li></ul>
+  <div class="explain"><p>Salinan dangkal membuat list luar baru, jadi <code>b.append([4])</code> tidak terlihat di a (b is a: False). Tetapi elemen luar b dan a menunjuk <em>objek dalam yang sama</em> (b[0] is a[0]: True), sehingga <code>b[0].append(9)</code> mengubah [1, 2] menjadi [1, 2, 9] pada kedua nama. Itulah mengapa struktur bersarang butuh salinan dalam: a = [[1, 2, 9], [3]] dan b = [[1, 2, 9], [3], [4]].</p></div>
+</div>
+
+<div class="icd-viz" id="v2">
+  <header><h3>2. Berapa perbandingan yang dibutuhkan tiga algoritma pengurutan?</h3></header>
+  <div class="stage">
+    <div class="icd-tablewrap"><table class="icd" id="v2-tab"></table></div>
+    <div id="v2-plot" style="margin-top:8px"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Urutan data awal</span><select class="icd-select" id="v2-kind">
+      <option value="random" selected>acak (pembangkit Park–Miller, seed 12345)</option>
+      <option value="sorted">sudah terurut naik</option>
+      <option value="reverse">terurut terbalik</option></select></label>
+  </div>
+  <div class="readout" id="v2-out" aria-live="polite"></div>
+  <div class="model">Tiap Maju menggandakan n (4, 8, ..., 1024). Satu perbandingan = satu pemeriksaan <code>a[j] &gt; key</code> (insertion), <code>l[i] &lt;= r[j]</code> (merge, top-down), atau <code>a[j] &lt; pivot</code> (quick, pivot elemen terakhir, partisi Lomuto, tumpukan eksplisit). Kunci = bilangan 0–999 sehingga ada kembar. Identik dengan <code>sort_counts.py</code>. Sumbu: log<sub>2</sub> <i>n</i> lawan log<sub>10</sub> jumlah perbandingan; garis lurus dengan kemiringan 1 berarti linear, 2 berarti kuadratik.</div>
+</div>
+<div class="icd-guide" data-id="v2-sorted" data-answer="0">
+  <p>Pilih data <em>sudah terurut naik</em> dan maju sampai n = 1024. Algoritma mana yang kini paling banyak perbandingan, dan siapa yang justru hanya butuh sekitar n?</p>
+  <ul><li>Quick sort (339.797) paling banyak; insertion hanya 1.023</li><li>Merge sort paling banyak; quick hanya 1.023</li><li>Insertion sort paling banyak (sekitar 523.000)</li><li>Ketiganya sama karena datanya sudah urut</li></ul>
+  <div class="explain"><p>Pada data terurut, pivot terakhir selalu elemen terbesar sehingga partisi hanya mengecilkan masalah satu elemen: perbandingan Θ(<i>n</i>²) (339.797; untuk 1024 kunci yang semuanya berbeda hasilnya tepat 1024 × 1023 / 2 = 523.776, dan lebih kecil di sini karena kunci kembar membuat satu partisi menyingkirkan beberapa elemen sekaligus). Insertion sort justru terbaik di sini: tiap elemen hanya dibandingkan sekali dengan tetangganya, total <i>n</i> − 1 = 1.023. Merge sort tetap 5.120 karena tidak peduli urutan awal. Pelajarannya: kasus terburuk quicksort ada pada input yang tampak "mudah".</p></div>
+</div>
+
+<div class="icd-viz" id="v3">
+  <header><h3>3. Static timing analysis mini: arrival time pada DAG gerbang</h3></header>
+  <div class="stage">
+    <div class="rowlab">graf gerbang (garis ungu tebal = jalur kritis, terisi = sedang diproses, tepi hijau = selesai; angka = arrival time)</div>
+    <div class="dag" id="v3-dag"></div>
+    <div class="icd-tablewrap"><table class="icd" id="v3-tab"></table></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Periode clock <i>T</i> = <b id="v3-tv"></b></span><input type="range" id="v3-t" min="6" max="14" step="1" value="9"></label>
+    <label class="icd-field"><span>Gerbang diperlambat (+3)</span><select class="icd-select" id="v3-slow"><option value="none" selected>tidak ada</option><option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option><option value="G6">G6</option></select></label>
+  </div>
+  <div class="readout" id="v3-out" aria-live="polite"></div>
+  <div class="model">Graf sama dengan <code>sta_dag.py</code>: input A, B, C (arrival 0); G1 (tunda 2) ← A, B; G2 (3) ← B, C; G3 (2) ← G1, G2; G4 (1) ← G2; G5 (4) ← G3, G4; G6 (2) ← G4, C; output G5 dan G6. Tiap Maju memproses satu simpul dalam urutan topologis Kahn (derajat-masuk 0, nama terkecil lebih dulu): arrival = max(arrival fanin) + tunda. Bila dua fanin sama besar, jalur kritis memilih nama terbesar (aturan seri di kode). Slack = <i>T</i> − arrival output; negatif berarti melanggar timing.</div>
+</div>
+<div class="icd-guide" data-id="v3-slow" data-answer="0">
+  <p>Biarkan <i>T</i> = 9, pilih G2 diperlambat (+3), dan jalankan sampai selesai. Apa slack terburuk dan jalur kritisnya?</p>
+  <ul><li>Slack −3 pada G5; jalur kritis C → G2 → G3 → G5</li><li>Slack 0 pada G5; jalur kritis tidak berubah dan masih aman</li><li>Slack −3 pada G6; jalur kritis C → G2 → G4 → G6</li><li>Slack −1 pada G5; jalur kritis A → G1 → G3 → G5</li></ul>
+  <div class="explain"><p>G2 yang lambat menaikkan arrival G2 dari 3 menjadi 6, lalu G3 = 8, G4 = 7, dan G5 = max(8, 7) + 4 = 12. Slack G5 = 9 − 12 = −3 (melanggar). G6 = max(7, 0) + 2 = 9 sehingga slack 0. Jalur kritis adalah rantai penentu max di tiap simpul: C → G2 → G3 → G5 (pada G2 kedua fanin B dan C tiba di 0, aturan seri memilih C). Naikkan <i>T</i> ke 12 dan slack G5 kembali 0, persis hasil <code>sta_dag.py</code>.</p></div>
+</div>
+
+<div class="icd-viz" id="v4">
+  <header><h3>4. Tcl: baris dipecah menjadi kata, lalu diganti sekali</h3></header>
+  <div class="stage">
+    <div class="rowlab" id="v4-line"></div>
+    <div class="tclw" id="v4-words"></div>
+  </div>
+  <div class="params">
+    <label class="icd-field"><span>Baris perintah (variabel: x = 5, name = "ani budi", lst = {a b c})</span><select class="icd-select" id="v4-ex"></select></label>
+  </div>
+  <div class="readout" id="v4-out" aria-live="polite"></div>
+  <div class="model">Mesin mini: pemecah kata (spasi, <code>"..."</code>, <code>{...}</code>, <code>{*}</code>, <code>[...]</code> bersarang), substitusi satu kali untuk <code>$var</code>, <code>[cmd]</code>, dan <code>\</code> (kata <code>{}</code> tidak disentuh), dan perintah <code>expr</code>, <code>string length</code>, <code>llength</code>, <code>lindex</code>. Perintah <code>cmd</code> mencetak jumlah kata argumen dan isinya dalam &lt; &gt;. Sepuluh baris pada menu dicocokkan dengan output <code>tclsh tcl_subst.tcl</code> yang sebenarnya.</div>
+</div>
+<div class="icd-guide" data-id="v4-brace" data-answer="0">
+  <p>Pilih <code>cmd {$x + 1}</code> lalu <code>cmd "$x + 1"</code>. Apa yang diterima <code>cmd</code> pada keduanya?</p>
+  <ul><li>{}: satu kata "$x + 1" apa adanya; "": satu kata "5 + 1"</li><li>Keduanya satu kata "5 + 1"</li><li>{}: "6"; "": "5 + 1"</li><li>{}: tiga kata; "": satu kata "6"</li></ul>
+  <div class="explain"><p>Kata dalam kurung kurawal tidak mengalami substitusi, sehingga <code>cmd</code> menerima teks <code>$x + 1</code>. Kata dalam kutip ganda mengganti <code>$x</code> tetapi <em>tidak</em> menghitung: hasilnya teks <code>5 + 1</code>. Menghitung hanya dilakukan <code>expr</code>. Karena itu <code>expr {$x + 1}</code> bekerja: kurung kurawal menyerahkan <code>$x + 1</code> ke <code>expr</code>, dan <code>expr</code> mengganti <code>$x</code> dan menghitung sendiri.</p></div>
+</div>
+</section>
+
+<section class="icd-sec" id="s07">
+<h2>Contoh soal langkah demi langkah</h2>
+
+<h3>Contoh 1. Siapa yang berubah? Menelusuri <code>b = a[:]</code></h3>
+<p>Mulai dari <code>a = [[1, 2], [3]]</code>. Penugasan <code>b = a[:]</code> membuat list luar baru (label L4) yang berisi referensi yang sama ke L1 = [1, 2] dan L2 = [3]. Lalu <code>b[0].append(9)</code> mengikuti referensi b[0] ke L1 dan mengubah L1 menjadi [1, 2, 9]; karena a[0] juga menunjuk L1, a terlihat berubah. Berikutnya <code>b.append([4])</code> hanya mengubah list luar milik b. <strong>Hasil:</strong> <code>a = [[1, 2, 9], [3]]</code>, <code>b = [[1, 2, 9], [3], [4]]</code>, <code>b is a</code> False, <code>b[0] is a[0]</code> True. Ini persis baris <code>shallow</code> pada <code>alias_demo.py</code>. Dengan <code>deepcopy</code> L1 dan L2 ikut disalin sehingga a tetap [[1, 2], [3]].</p>
+
+<h3>Contoh 2. Memperkirakan waktu dari kompleksitas</h3>
+<p>Insertion sort pada 1.024 data acak melakukan 262.358 perbandingan (<code>sort_counts.py</code>). Berapa pada 4.096 data? Data 4 kali lebih banyak dan algoritmanya Θ(<i>n</i>²), jadi perbandingan naik sekitar 4² = 16 kali: ≈ 4,2 juta. Untuk merge sort Θ(<i>n</i> log <i>n</i>): 8.938 × 4 × (12/10) ≈ 42.900 (log₂ 4096 = 12 dan log₂ 1024 = 10). Dari data tabel kita juga bisa menguji tebakan: n = 512 → 1.024 insertion naik dari 66.216 menjadi 262.358, rasio 3,96 ≈ 4. Rasio mendekati 4 setiap n berlipat dua adalah tanda kuadratik; merge sort naik sedikit di atas 2 kali (8.938 / 3.962 = 2,26).</p>
+
+<h3>Contoh 3. Dijkstra dengan heap, langkah demi langkah</h3>
+<p>Graf: S→A (4), S→B (1), B→A (2), B→C (6), A→C (3). Tumpukan berisi pasangan (jarak, simpul).</p>
+<div class="icd-tablewrap"><table class="icd">
+<thead><tr><th scope="col">Langkah</th><th scope="col">Ambil</th><th scope="col">Pembaruan</th><th scope="col">dist (S, A, B, C)</th></tr></thead>
+<tbody>
+<tr><td class="c">0</td><td>—</td><td>tumpukan (0, S)</td><td class="c">0, ∞, ∞, ∞</td></tr>
+<tr><td class="c">1</td><td>(0, S)</td><td>dorong (4, A) dan (1, B)</td><td class="c">0, 4, 1, ∞</td></tr>
+<tr><td class="c">2</td><td>(1, B)</td><td>A: 1 + 2 = 3 &lt; 4, dorong (3, A); C: 1 + 6 = 7, dorong (7, C)</td><td class="c">0, 3, 1, 7</td></tr>
+<tr><td class="c">3</td><td>(3, A)</td><td>C: 3 + 3 = 6 &lt; 7, dorong (6, C)</td><td class="c">0, 3, 1, 6</td></tr>
+<tr><td class="c">4</td><td>(4, A)</td><td>usang (4 &gt; 3): dilewati</td><td class="c">0, 3, 1, 6</td></tr>
+<tr><td class="c">5</td><td>(6, C)</td><td>C tak punya tetangga</td><td class="c">0, 3, 1, 6</td></tr>
+<tr><td class="c">6</td><td>(7, C)</td><td>usang (7 &gt; 6): dilewati</td><td class="c">0, 3, 1, 6</td></tr>
+</tbody></table></div>
+<p>Hasil sama dengan <code>graph_algos.py</code>: <code>{'A': 3, 'B': 1, 'C': 6, 'S': 0}</code>. Entri usang tidak dihapus dari heap; cukup dilewati saat diambil (strategi "lazy deletion"), sehingga heap bisa berisi hingga <i>E</i> entri dan total waktu <i>O</i>((<i>V</i> + <i>E</i>) log <i>V</i>).</p>
+
+<h3>Contoh 4. Kruskal dan union-find</h3>
+<p>Sisi terurut menurut bobot: (1, a–c), (2, b–d), (3, b–c), (4, a–b), (5, c–d). a–c: a dan c beda himpunan, gabungkan (total 1). b–d: gabungkan (total 3). b–c: b ada di {b, d}, c di {a, c}: gabungkan menjadi {a, b, c, d} (total 6). a–b: sama himpunan, tolak (akan membentuk siklus). c–d: tolak. Pohon rentang minimum: a–c, b–d, b–c dengan total 6, sama dengan output <code>kruskal: ([('a', 'c', 1), ('b', 'd', 2), ('b', 'c', 3)], 6)</code>. <code>find</code> dengan <em>path halving</em> dan <em>union by size</em> membuat tiap operasi hampir konstan (<i>O</i>(α(<i>n</i>))).</p>
+
+<h3>Contoh 5. Mengapa memoization mengubah eksponensial menjadi linear</h3>
+<p>Jumlah panggilan <code>fib_naif</code> memenuhi <i>C</i>(<i>n</i>) = <i>C</i>(<i>n</i>−1) + <i>C</i>(<i>n</i>−2) + 1 dengan <i>C</i>(0) = <i>C</i>(1) = 1. Hitung: 1, 1, 3, 5, 9, 15, 25, 41, 67, 109, 177 untuk <i>n</i> = 0..10, sehingga <i>C</i>(10) = 177 (cocok dengan output <code>dp_demo.py</code>); bentuk tertutupnya 2<i>F</i>(<i>n</i>+1) − 1 dengan <i>F</i>(11) = 89. Pertumbuhannya sekitar 1,618<sup><i>n</i></sup> (rasio emas). Dengan <code>lru_cache</code> setiap nilai 0..25 dihitung tepat sekali: 26 panggilan yang menghitung, bukan 242.785.</p>
+
+<h3>Contoh 6. Mengurai baris Tcl dengan tangan</h3>
+<p>Dengan <code>x = 5</code> dan <code>name = ani budi</code>: baris <code>cmd "$x + 1"</code> memecah menjadi dua kata, <code>cmd</code> dan <code>"$x + 1"</code>. Kata kedua berkutip: substitusi berjalan sekali sehingga menjadi teks <code>5 + 1</code> (satu kata, karena spasi di dalam kutip ikut ke kata). Tidak ada perhitungan. Baris <code>cmd {$x + 1}</code> membiarkan teks asli. Baris <code>cmd [expr {$x + 1}]</code> menjalankan <code>expr</code> pada <code>$x + 1</code> dan memasukkan hasil 6. Baris <code>cmd $x$x</code> menghasilkan satu kata <code>55</code> karena dua substitusi bertetangga membentuk satu kata. Semua cocok dengan output <code>tclsh tcl_subst.tcl</code>.</p>
+</section>
+
+<section class="icd-sec" id="s08">
+<h2>Kode</h2>
+<p>Dua belas berkas yang dijalankan sungguhan (Python 3.12 dan Tcl 8.6.14): <code>alias_demo.py</code>, <code>sort_counts.py</code>, <code>sta_dag.py</code>, <code>dp_demo.py</code>, laporan contoh <code>sample_timing.rpt</code> dengan pengolahnya <code>logreport.py</code> (Python) dan <code>report.tcl</code> (Tcl) yang menghasilkan ringkasan identik, <code>tcl_subst.tcl</code>, <code>netlist_graph.py</code>, <code>maze_route.py</code>, <code>graph_algos.py</code>, dan <code>test_algos.py</code>. Semuanya ada di folder <code>lab/m04d</code>; yang tampil di sini identik dengan berkas itu.</p>
+<h3>8.1 alias_demo.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""alias_demo.py: nama menunjuk ke objek; salinan dangkal berbagi objek di dalamnya."""
+import copy
+
+def run(form):
+    a = [[1, 2], [3]]
+    if form == "alias":
+        b = a
+    elif form == "shallow":
+        b = a[:]                 # sama dengan list(a) dan a.copy()
+    elif form == "deep":
+        b = copy.deepcopy(a)
+    else:
+        raise ValueError(form)
+    b[0].append(9)               # mengubah isi list di dalam
+    b.append([4])                # mengubah list luar
+    return a, b, b is a, b[0] is a[0]
+
+FORMS = ["alias", "shallow", "deep"]
+if __name__ == "__main__":
+    for f in FORMS:
+        a, b, same_outer, same_inner = run(f)
+        print(f"{f:8s} a={a} b={b} b_is_a={same_outer} b0_is_a0={same_inner}")
+
+    # jebakan klasik: argumen bawaan yang bisa diubah dibuat SEKALI saat def dijalankan
+    def tambah(x, acc=[]):
+        acc.append(x)
+        return acc
+    print("bawaan:", tambah(1), tambah(2))
+    def tambah_aman(x, acc=None):
+        acc = [] if acc is None else acc
+        acc.append(x)
+        return acc
+    print("aman  :", tambah_aman(1), tambah_aman(2))
+    # += pada list mengubah objek di tempat, + membuat objek baru
+    p = [1]; q = p; p += [2]
+    r = [1]; s = r; r = r + [2]
+    print("+= :", q, "| + :", s)
+</pre>
+<h3>8.2 sort_counts.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""sort_counts.py: hitung perbandingan elemen insertion, merge, dan quick sort pada n kunci."""
+def lcg(n, seed=12345):
+    x, out = seed, []
+    for _ in range(n):
+        x = x * 48271 % 2147483647      # Park-Miller; muat di float64 sehingga identik dengan JavaScript
+        out.append(x % 1000)
+    return out
+
+def insertion(a):
+    a, cmp = a[:], 0
+    for i in range(1, len(a)):
+        key, j = a[i], i - 1
+        while j &gt;= 0:
+            cmp += 1
+            if a[j] &gt; key:
+                a[j + 1] = a[j]; j -= 1
+            else:
+                break
+        a[j + 1] = key
+    return a, cmp
+
+def merge_sort(a):
+    cmp = 0
+    def ms(x):
+        nonlocal cmp
+        if len(x) &lt;= 1:
+            return x
+        m = len(x) // 2
+        l, r = ms(x[:m]), ms(x[m:])
+        out, i, j = [], 0, 0
+        while i &lt; len(l) and j &lt; len(r):
+            cmp += 1
+            if l[i] &lt;= r[j]:
+                out.append(l[i]); i += 1
+            else:
+                out.append(r[j]); j += 1
+        return out + l[i:] + r[j:]
+    return ms(a[:]), cmp
+
+def quick(a):
+    a, cmp, st = a[:], 0, [(0, len(a) - 1)]
+    while st:
+        lo, hi = st.pop()
+        if lo &gt;= hi:
+            continue
+        piv, i = a[hi], lo
+        for j in range(lo, hi):
+            cmp += 1
+            if a[j] &lt; piv:
+                a[i], a[j] = a[j], a[i]; i += 1
+        a[i], a[hi] = a[hi], a[i]
+        st.append((lo, i - 1)); st.append((i + 1, hi))
+    return a, cmp
+
+def data(kind, n):
+    d = lcg(n)
+    return sorted(d) if kind == "sorted" else (sorted(d, reverse=True) if kind == "reverse" else d)
+
+if __name__ == "__main__":
+    for kind in ("random", "sorted", "reverse"):
+        print(kind)
+        for n in (4, 8, 16, 32, 64, 128, 256, 512, 1024):
+            d = data(kind, n)
+            r = [f(d) for f in (insertion, merge_sort, quick)]
+            assert all(x[0] == sorted(d) for x in r)
+            print(f"  n={n:5d} insertion={r[0][1]:8d} merge={r[1][1]:6d} quick={r[2][1]:8d}")
+</pre>
+<h3>8.3 sta_dag.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""sta_dag.py: waktu tiba terlama (arrival time) pada DAG gerbang, urutan topologis Kahn."""
+from collections import defaultdict
+import heapq
+
+GATES = {            # nama: (tunda, [fanin])
+    "G1": (2, ["A", "B"]), "G2": (3, ["B", "C"]), "G3": (2, ["G1", "G2"]),
+    "G4": (1, ["G2"]),     "G5": (4, ["G3", "G4"]), "G6": (2, ["G4", "C"]),
+}
+INPUTS = ["A", "B", "C"]
+OUTPUTS = ["G5", "G6"]
+
+def analyze(gates, period, slow=None, extra=0):
+    delay = {g: d + (extra if g == slow else 0) for g, (d, _) in gates.items()}
+    fan = defaultdict(list); indeg = {g: len(f) for g, (_, f) in gates.items()}
+    for g, (_, fi) in gates.items():
+        for s in fi: fan[s].append(g)
+    indeg.update({i: 0 for i in INPUTS})
+    ready = [n for n in indeg if indeg[n] == 0]; heapq.heapify(ready)   # urutan deterministik
+    arr, via, order = {i: 0 for i in INPUTS}, {}, []
+    while ready:
+        n = heapq.heappop(ready); order.append(n)
+        if n in gates:
+            fi = gates[n][1]
+            best = max(fi, key=lambda s: (arr[s], s))                  # seri: pilih nama terbesar
+            arr[n] = arr[best] + delay[n]; via[n] = best
+        for m in fan[n]:
+            indeg[m] -= 1
+            if indeg[m] == 0: heapq.heappush(ready, m)
+    slack = {o: period - arr[o] for o in OUTPUTS}
+    worst = min(OUTPUTS, key=lambda o: (slack[o], o))
+    path, n = [worst], worst
+    while n in via: n = via[n]; path.append(n)
+    return order, arr, slack, path[::-1]
+
+if __name__ == "__main__":
+    for period, slow in ((9, None), (9, "G2"), (12, "G2")):
+        order, arr, slack, path = analyze(GATES, period, slow, 3)
+        print(f"T={period} lambat={slow}: order={' '.join(order)}")
+        print("  arrival:", " ".join(f"{k}={arr[k]}" for k in sorted(arr)))
+        print("  slack  :", " ".join(f"{k}={v}" for k, v in slack.items()), "| jalur kritis:", "-&gt;".join(path))
+</pre>
+<h3>8.4 dp_demo.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""dp_demo.py: rekursi eksponensial menjadi linear lewat memoization; LCS (dasar alat diff) dengan tabel DP."""
+from functools import lru_cache
+
+calls = 0
+def fib_naif(n):
+    global calls
+    calls += 1
+    return n if n &lt; 2 else fib_naif(n - 1) + fib_naif(n - 2)
+
+memo_calls = 0
+@lru_cache(maxsize=None)
+def fib_memo(n):
+    global memo_calls
+    memo_calls += 1
+    return n if n &lt; 2 else fib_memo(n - 1) + fib_memo(n - 2)
+
+def lcs(a, b):
+    """panjang subsequence persekutuan terpanjang; tabel (len(a)+1) x (len(b)+1), waktu O(len(a) * len(b))."""
+    t = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+    for i, x in enumerate(a, 1):
+        for j, y in enumerate(b, 1):
+            t[i][j] = t[i - 1][j - 1] + 1 if x == y else max(t[i - 1][j], t[i][j - 1])
+    return t[-1][-1]
+
+if __name__ == "__main__":
+    for n in (10, 20, 25):
+        calls = 0
+        print(f"fib({n}) = {fib_naif(n)} dengan {calls} panggilan")
+    fib_memo.cache_clear(); memo_calls = 0
+    print(f"fib(25) memo = {fib_memo(25)} dengan {memo_calls} panggilan")
+    print("lcs('ABCBDAB', 'BDCABA') =", lcs("ABCBDAB", "BDCABA"))
+</pre>
+<h3>8.5 sample_timing.rpt</h3>
+<pre class="icd-src" data-lang="text">
+# laporan timing contoh (format key=value, satu path per baris)
+path=1 start=u_cpu/a_reg end=u_alu/q_reg group=clk slack=-0.12 cells=14
+path=2 start=u_cpu/b_reg end=u_alu/r_reg group=clk slack=0.05 cells=9
+path=3 start=u_mem/addr_reg end=u_mem/dout_reg group=clk slack=0.31 cells=6
+path=4 start=in_data end=u_cpu/a_reg group=io slack=-0.31 cells=3
+path=5 start=u_alu/q_reg end=out_flag group=io slack=1.20 cells=2
+path=6 start=u_cpu/c_reg end=u_alu/s_reg group=clk slack=0.00 cells=11
+</pre>
+<h3>8.6 logreport.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""logreport.py: baca laporan timing, kelompokkan per group, tulis CSV. Memakai regex, dataclass, defaultdict."""
+import csv, re, sys
+from collections import defaultdict
+from dataclasses import dataclass
+
+PAT = re.compile(r"path=(?P&lt;id&gt;\d+) start=(?P&lt;start&gt;\S+) end=(?P&lt;end&gt;\S+) group=(?P&lt;group&gt;\w+) slack=(?P&lt;slack&gt;-?\d+\.\d+) cells=(?P&lt;cells&gt;\d+)")
+
+@dataclass(frozen=True)
+class Path:
+    id: int; start: str; end: str; group: str; slack: float; cells: int
+
+def parse(lines):
+    for n, line in enumerate(lines, 1):
+        if not line.strip() or line.startswith("#"):
+            continue
+        m = PAT.fullmatch(line.strip())
+        if not m:
+            raise ValueError(f"baris {n} tidak dikenal: {line!r}")
+        d = m.groupdict()
+        yield Path(int(d["id"]), d["start"], d["end"], d["group"], float(d["slack"]), int(d["cells"]))
+
+def summary(paths):
+    by = defaultdict(list)
+    for p in paths:
+        by[p.group].append(p)
+    return {g: (min(x.slack for x in ps), sum(1 for x in ps if x.slack &lt; 0), len(ps)) for g, ps in sorted(by.items())}
+
+if __name__ == "__main__":
+    with open(sys.argv[1] if len(sys.argv) &gt; 1 else "sample_timing.rpt") as f:
+        paths = list(parse(f))
+    print("group  WNS    jumlah_violasi  jumlah_path")
+    for g, (wns, nv, n) in summary(paths).items():
+        print(f"{g:5s} {wns:6.2f} {nv:8d} {n:14d}")
+    worst = sorted(paths, key=lambda p: p.slack)[:3]
+    print("3 terburuk:", ", ".join(f"{p.id}({p.slack:+.2f})" for p in worst))
+    w = csv.writer(sys.stdout, lineterminator="\n")
+    w.writerow(["id", "start", "end", "slack"])
+    for p in worst:
+        w.writerow([p.id, p.start, p.end, f"{p.slack:.2f}"])
+</pre>
+<h3>8.7 report.tcl</h3>
+<pre class="icd-src" data-lang="tcl">
+#!/usr/bin/env tclsh
+# report.tcl: gaya skrip EDA dalam Tcl: proc, list, dict, foreach, regexp, lsort. Ringkasannya sama dengan logreport.py.
+proc parse_rpt {fname} {
+    set paths {}
+    set fh [open $fname r]
+    while {[gets $fh line] &gt;= 0} {
+        if {[string trim $line] eq "" || [string index $line 0] eq "#"} continue
+        set d [dict create]
+        foreach {all k v} [regexp -all -inline {(\w+)=(\S+)} $line] { dict set d $k $v }
+        lappend paths $d
+    }
+    close $fh
+    return $paths
+}
+proc by_slack {a b} {
+    set x [dict get $a slack]; set y [dict get $b slack]
+    expr {$x &lt; $y ? -1 : ($x &gt; $y ? 1 : 0)}
+}
+proc summary {paths} {
+    set by [dict create]
+    foreach p $paths { dict lappend by [dict get $p group] [dict get $p slack] }
+    foreach g [lsort [dict keys $by]] {
+        set sl [dict get $by $g]
+        set wns [lindex [lsort -real $sl] 0]
+        set nv 0
+        foreach s $sl { if {$s &lt; 0} { incr nv } }
+        puts [format "%-5s %6.2f %8d %14d" $g $wns $nv [llength $sl]]
+    }
+}
+set rpt [lindex $argv 0]
+if {$rpt eq ""} { set rpt sample_timing.rpt }
+set paths [parse_rpt $rpt]
+puts "group  WNS    jumlah_violasi  jumlah_path"
+summary $paths
+set out {}
+foreach p [lrange [lsort -command by_slack $paths] 0 2] {
+    lappend out [format "%s(%+.2f)" [dict get $p path] [dict get $p slack]]
+}
+puts "3 terburuk: [join $out {, }]"
+</pre>
+<h3>8.8 tcl_subst.tcl</h3>
+<pre class="icd-src" data-lang="tcl">
+#!/usr/bin/env tclsh
+# tcl_subst.tcl: Tcl memecah baris menjadi kata, lalu mengganti ($ [ ] \) SEKALI; kata pertama adalah perintah.
+set x 5
+set name "ani budi"
+set lst {a b c}
+proc cmd args { puts "[llength $args] kata: [join [lmap w $args {format &lt;%s&gt; $w}] { }]" }
+set contoh {
+    {cmd $x $name}
+    {cmd "$x + 1"}
+    {cmd {$x + 1}}
+    {cmd [expr {$x + 1}]}
+    {cmd a\ b {c d}}
+    {cmd $x$x}
+    {cmd "[string length $name]x"}
+    {cmd {*}$lst}
+    {cmd $lst}
+    {cmd [string length $name] [llength $lst] [lindex $lst 1]}
+}
+foreach line $contoh {
+    puts "% $line"
+    uplevel #0 $line
+}
+</pre>
+<h3>8.9 netlist_graph.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""netlist_graph.py: netlist kecil sebagai graf berarah: levelization, kerucut fanout (BFS), deteksi loop kombinasional."""
+import re
+from collections import deque, defaultdict
+
+NETLIST = """
+n1 = AND(a, b)
+n2 = OR(n1, c)
+n3 = NOT(n2)
+y  = XOR(n3, n1)
+z  = AND(n2, d)
+"""
+LOOP = NETLIST + "p = AND(q, a)\nq = OR(p, b)\n"
+
+def parse(text):
+    g = {}
+    for line in text.strip().splitlines():
+        m = re.fullmatch(r"\s*(\w+)\s*=\s*(\w+)\(([^)]*)\)\s*", line)
+        if not m:
+            raise ValueError(line)
+        g[m.group(1)] = (m.group(2), [s.strip() for s in m.group(3).split(",")])
+    return g
+
+def levelize(g):
+    """level(input)=0; level(gerbang)=1+max(level fanin). Mengembalikan (level, node tersisa jika ada siklus)."""
+    fan, indeg = defaultdict(list), {}
+    for n, (_, fi) in g.items():
+        indeg[n] = len(fi)
+        for s in fi:
+            fan[s].append(n)
+    ins = {s for _, fi in g.values() for s in fi if s not in g}
+    level = {i: 0 for i in ins}
+    for n in g:                                  # fanin yang berupa input primer tidak menambah derajat
+        indeg[n] = sum(1 for s in g[n][1] if s in g)
+    q = deque(sorted(n for n in g if indeg[n] == 0))
+    done = 0
+    while q:
+        n = q.popleft(); done += 1
+        level[n] = 1 + max(level[s] for s in g[n][1])
+        for m in sorted(fan[n]):
+            if m in g:
+                indeg[m] -= 1
+                if indeg[m] == 0:
+                    q.append(m)
+    return level, sorted(n for n in g if n not in level)
+
+def fanout_cone(g, start):
+    fan = defaultdict(list)
+    for n, (_, fi) in g.items():
+        for s in fi:
+            fan[s].append(n)
+    seen, q = {start}, deque([start])
+    while q:
+        n = q.popleft()
+        for m in sorted(fan[n]):
+            if m not in seen:
+                seen.add(m); q.append(m)
+    return sorted(seen - {start})
+
+if __name__ == "__main__":
+    g = parse(NETLIST)
+    level, stuck = levelize(g)
+    print("level:", " ".join(f"{n}={level[n]}" for n in sorted(level, key=lambda k: (level[k], k))))
+    print("kerucut fanout dari n1:", fanout_cone(g, "n1"), "| dari c:", fanout_cone(g, "c"))
+    level, stuck = levelize(parse(LOOP))
+    print("loop kombinasional pada:", stuck)
+</pre>
+<h3>8.10 maze_route.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""maze_route.py: routing labirin (algoritma Lee = BFS) vs A* pada grid dengan halangan."""
+import heapq
+from collections import deque
+
+GRID = [
+    "S.........",
+    "..........",
+    "....####..",
+    "....#.....",
+    "....#..#..",
+    "....#..#..",
+    "..###..#..",
+    "..........",
+    "..........",
+    ".........T",
+]
+def find(ch):
+    for r, row in enumerate(GRID):
+        if ch in row:
+            return r, row.index(ch)
+
+def nbrs(r, c):
+    for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        rr, cc = r + dr, c + dc
+        if 0 &lt;= rr &lt; len(GRID) and 0 &lt;= cc &lt; len(GRID[0]) and GRID[rr][cc] != "#":
+            yield rr, cc
+
+def lee(s, t):
+    dist, q, popped = {s: 0}, deque([s]), 0
+    while q:
+        u = q.popleft(); popped += 1
+        if u == t:
+            return dist[u], popped
+        for v in nbrs(*u):
+            if v not in dist:
+                dist[v] = dist[u] + 1; q.append(v)
+    return None, popped
+
+def astar(s, t):
+    h = lambda u: abs(u[0] - t[0]) + abs(u[1] - t[1])
+    best, pq, popped = {s: 0}, [(h(s), 0, s)], 0   # (f, -g, sel): seri f dimenangkan g terbesar
+    while pq:
+        f, ng, u = heapq.heappop(pq); g = -ng
+        if g &gt; best[u]:
+            continue
+        popped += 1
+        if u == t:
+            return g, popped
+        for v in nbrs(*u):
+            if g + 1 &lt; best.get(v, 1 &lt;&lt; 30):
+                best[v] = g + 1; heapq.heappush(pq, (g + 1 + h(v), -(g + 1), v))
+    return None, popped
+
+if __name__ == "__main__":
+    s, t = find("S"), find("T")
+    print("Lee   : panjang %s, sel diperluas %d" % lee(s, t))
+    print("A*    : panjang %s, sel diperluas %d" % astar(s, t))
+</pre>
+<h3>8.11 graph_algos.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""graph_algos.py: Dijkstra (heap) dan union-find (Kruskal, pohon rentang minimum)."""
+import heapq
+
+def dijkstra(adj, src):
+    dist, pq = {src: 0}, [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d &gt; dist.get(u, float("inf")):
+            continue                              # entri usang
+        for v, w in adj.get(u, ()):
+            nd = d + w
+            if nd &lt; dist.get(v, float("inf")):
+                dist[v] = nd; heapq.heappush(pq, (nd, v))
+    return dist
+
+class UnionFind:
+    def __init__(self, items):
+        self.p = {x: x for x in items}; self.sz = {x: 1 for x in items}
+    def find(self, x):
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]          # path halving
+            x = self.p[x]
+        return x
+    def union(self, a, b):
+        a, b = self.find(a), self.find(b)
+        if a == b:
+            return False
+        if self.sz[a] &lt; self.sz[b]:
+            a, b = b, a
+        self.p[b] = a; self.sz[a] += self.sz[b]
+        return True
+
+def kruskal(nodes, edges):
+    uf, mst, total = UnionFind(nodes), [], 0
+    for w, a, b in sorted(edges):
+        if uf.union(a, b):
+            mst.append((a, b, w)); total += w
+    return mst, total
+
+if __name__ == "__main__":
+    adj = {"S": [("A", 4), ("B", 1)], "B": [("A", 2), ("C", 6)], "A": [("C", 3)], "C": []}
+    print("dijkstra dari S:", dict(sorted(dijkstra(adj, "S").items())))
+    edges = [(4, "a", "b"), (1, "a", "c"), (3, "b", "c"), (2, "b", "d"), (5, "c", "d")]
+    print("kruskal:", kruskal("abcd", edges))
+</pre>
+<h3>8.12 test_algos.py</h3>
+<pre class="icd-src" data-lang="python">
+#!/usr/bin/env python3
+"""test_algos.py: uji berbasis properti dengan unittest: hasil harus sama dengan acuan yang jelas benar."""
+import unittest, itertools, random
+from sort_counts import insertion, merge_sort, quick, lcg
+from graph_algos import dijkstra, kruskal, UnionFind
+from sta_dag import GATES, INPUTS, analyze
+
+class Sorting(unittest.TestCase):
+    def test_sama_dengan_sorted(self):
+        rnd = random.Random(1)
+        for _ in range(200):
+            a = [rnd.randrange(50) for _ in range(rnd.randrange(0, 40))]
+            for f in (insertion, merge_sort, quick):
+                self.assertEqual(f(a)[0], sorted(a), f.__name__)
+    def test_stabil_tak_diubah(self):
+        a = lcg(30); b = a[:]
+        merge_sort(a); self.assertEqual(a, b)          # fungsi tidak boleh mengubah masukan
+
+class Graph(unittest.TestCase):
+    def test_dijkstra_vs_floyd_warshall(self):
+        rnd = random.Random(7)
+        for _ in range(50):
+            n = 6; INF = float("inf")
+            d = [[0 if i == j else INF for j in range(n)] for i in range(n)]
+            adj = {i: [] for i in range(n)}
+            for _ in range(10):
+                a, b, w = rnd.randrange(n), rnd.randrange(n), rnd.randrange(1, 9)
+                if a != b:
+                    d[a][b] = min(d[a][b], w); adj[a].append((b, w))
+            for k, i, j in itertools.product(range(n), repeat=3):
+                d[i][j] = min(d[i][j], d[i][k] + d[k][j])
+            got = dijkstra(adj, 0)
+            for j in range(n):
+                self.assertEqual(got.get(j, INF), d[0][j])
+    def test_kruskal_total(self):
+        edges = [(4, "a", "b"), (1, "a", "c"), (3, "b", "c"), (2, "b", "d"), (5, "c", "d")]
+        mst, total = kruskal("abcd", edges)
+        self.assertEqual((len(mst), total), (3, 6))
+    def test_union_find(self):
+        uf = UnionFind(range(5)); uf.union(0, 1); uf.union(3, 4)
+        self.assertEqual(uf.find(0), uf.find(1)); self.assertNotEqual(uf.find(1), uf.find(3))
+
+class Timing(unittest.TestCase):
+    def test_urutan_topologis_sah(self):
+        order, arr, slack, path = analyze(GATES, 9)
+        pos = {n: i for i, n in enumerate(order)}
+        for g, (_, fi) in GATES.items():
+            for s in fi:
+                self.assertLess(pos[s], pos[g])
+    def test_arrival_adalah_jalur_terpanjang(self):
+        _, arr, _, path = analyze(GATES, 9)
+        self.assertEqual(arr["G5"], 9)
+        self.assertEqual(path, ["C", "G2", "G3", "G5"])
+
+if __name__ == "__main__":
+    unittest.main(verbosity=1)
+</pre>
+</section>
+
+<section class="icd-sec" id="s09">
+<h2>Miskonsepsi dan jebakan</h2>
+<div class="icd-box mis"><b>"<code>b = a</code> menyalin list."</b>Penugasan hanya membuat nama kedua untuk objek yang sama (<code>b is a</code> True). Salinan dangkal (<code>a[:]</code>, <code>list(a)</code>, <code>a.copy()</code>) menyalin hanya lapisan luar; untuk struktur bersarang pakai <code>copy.deepcopy</code> (visualisasi 1).</div>
+<div class="icd-box trap"><b>Jebakan: argumen bawaan yang mutable.</b><code>def f(x, acc=[])</code> membuat list sekali saat fungsi didefinisikan dan memakainya terus: pemanggilan kedua melihat sisa pemanggilan pertama (<code>bawaan: [1, 2] [1, 2]</code>). Pakai <code>acc=None</code> lalu <code>if acc is None: acc = []</code> (<code>aman: [1] [2]</code>).</div>
+<div class="icd-box trap"><b>Jebakan: <code>+=</code> pada list mengubah di tempat.</b><code>x += [2]</code> memanggil <code>extend</code> pada objek yang sama (alias ikut berubah), sedangkan <code>x = x + [2]</code> membuat list baru (hasil <code>+= : [1, 2] | + : [1]</code> untuk alias).</div>
+<div class="icd-box mis"><b>"Big-O memberi waktu sebenarnya."</b>Big-O hanya laju pertumbuhan untuk <i>n</i> besar; konstanta dan cache menentukan pemenang pada <i>n</i> kecil. Pada n = 4 insertion sort (4 perbandingan) setara dengan merge sort pada data acak, dan Python memakai Timsort yang beralih ke insertion sort untuk potongan kecil.</div>
+<div class="icd-box mis"><b>"Quicksort selalu <i>O</i>(<i>n</i> log <i>n</i>)."</b>Rata-rata ya, tetapi dengan pivot elemen terakhir data terurut membuat 339.797 perbandingan pada n = 1024 (kuadratik). Pilih pivot acak atau median-dari-tiga, atau pakai introsort (beralih ke heap sort bila terlalu dalam).</div>
+<div class="icd-box trap"><b>Jebakan: rekursi tanpa memoization.</b><code>fib(25)</code> memakai 242.785 panggilan; 26 dengan cache. Batas rekursi Python (sekitar 1000) juga menghentikan rekursi dalam seperti DFS pada graf besar; pakai tumpukan eksplisit.</div>
+<div class="icd-box trap"><b>Jebakan: Dijkstra dengan bobot negatif.</b>Asumsinya simpul yang diambil sudah final; bobot negatif melanggarnya. Pakai Bellman-Ford; graf timing yang berupa DAG cukup diproses urutan topologis.</div>
+<div class="icd-box mis"><b>"Di Tcl, tanda kutip membuat kata menjadi string, kurung kurawal membuatnya list."</b>Semua nilai Tcl adalah string. Kutip mengizinkan substitusi, kurung kurawal mencegahnya; keduanya hanya mengelompokkan kata. Daftar dibuat dengan <code>list</code>, bukan dengan menulis string yang kebetulan berspasi.</div>
+<div class="icd-box trap"><b>Jebakan: <code>expr $x + 1</code> tanpa kurung kurawal.</b>Substitusi terjadi dua kali (oleh Tcl lalu <code>expr</code>), lebih lambat dan bisa disusupi kode bila <code>$x</code> berasal dari input tak tepercaya. Tulis <code>expr {$x + 1}</code>.</div>
+<div class="icd-box trap"><b>Jebakan: DAG yang ternyata bersiklus.</b>Loop kombinasional (<code>p = AND(q, a)</code>, <code>q = OR(p, b)</code>) membuat urutan topologis tak selesai: simpul tersisa (['p', 'q']) menandai siklus. Alat STA memutus atau melaporkannya.</div>
+</section>
+
+<section class="icd-sec" id="s10">
+<h2>Praktik industri</h2>
+<ul>
+<li><strong>Python sebagai lem alur kerja.</strong> Parser log dan laporan, skrip regresi, pembangkit konfigurasi, dan analisis hasil memakai Python; pustaka seperti <code>pandas</code> dan <code>matplotlib</code> umum untuk analisis. Pada tim chip, skrip tunggal berbeda dengan paket: gunakan modul, tipe anotasi, dan uji otomatis.</li>
+<li><strong>Tcl sebagai bahasa perintah alat.</strong> Synopsys, Cadence, Siemens EDA, dan OpenROAD menyediakan antarmuka Tcl; berkas SDC, skrip sintesis, dan skrip implementasi adalah Tcl. Python juga makin tersedia pada alat baru (OpenROAD memiliki antarmuka Python), tetapi basis kode Tcl yang ada akan hidup lama.</li>
+<li><strong>Graf di mana-mana.</strong> Netlist = graf berarah; STA = jalur terpanjang pada DAG; routing = jalur terpendek (maze/A*); partisi dan penempatan = optimasi graf; ketergantungan build = DAG (M04c). Memahami BFS, DFS, topologis, Dijkstra, dan union-find langsung terpakai.</li>
+<li><strong>Static timing analysis.</strong> Arrival time = maksimum atas fanin ditambah tunda gerbang, slack = required − arrival; alat nyata memakai model tunda tabel, derating, dan banyak sudut (corner), tetapi struktur algoritmanya seperti <code>sta_dag.py</code>: urutan topologis lalu perambatan.</li>
+<li><strong>Struktur data yang mendominasi.</strong> Hash table (dict/set) untuk pencarian nama net dan sel, heap untuk antrean prioritas (event-driven simulation, Dijkstra), union-find untuk konektivitas (apakah dua pin satu net), dan pohon (pohon intervalnya) untuk pencarian spasial pada layout.</li>
+<li><strong>Kinerja.</strong> Bagian panas yang butuh kecepatan ditulis dalam C++ (alat EDA) atau memakai NumPy; Python murni cukup untuk orkestrasi. Ukur dengan <code>cProfile</code> atau <code>time.perf_counter</code> sebelum mengoptimasi.</li>
+<li><strong>Pengujian.</strong> Bandingkan implementasi cepat dengan acuan lambat yang jelas benar pada input acak (property-based testing, <code>hypothesis</code>), dan simpan kasus tepi (kosong, kembar, siklus) sebagai uji tetap; ini yang dilakukan <code>test_algos.py</code>.</li>
+<li><strong>Status per November 2026.</strong> Lab diuji dengan Python 3.12 dan Tcl 8.6.14 (Ubuntu 24.04). Tcl 9.0 telah dirilis tetapi sebagian besar alat EDA komersial masih mengikuti Tcl 8.6; perilaku yang dibahas di modul ini sama pada keduanya.</li>
+</ul>
+</section>
+
+<section class="icd-sec" id="s11">
+<h2>Latihan</h2>
+<h3><span class="icd-lvl">Tingkat 1</span> Refleks</h3>
+<p><strong>1.1</strong> Setelah <code>a = [1, 2]; b = a; b.append(3); c = a[:]; c.append(4)</code>, berapa isi a, b, dan c?</p>
+<details class="icd-sol"><summary>Solusi 1.1</summary><p>a = [1, 2, 3], b = [1, 2, 3], c = [1, 2, 3, 4]. b adalah nama lain untuk objek yang sama dengan a sehingga <code>append</code> terlihat di keduanya. c dibuat setelah itu dan merupakan salinan dangkal; <code>c.append(4)</code> hanya mengubah c.</p></details>
+<p><strong>1.2</strong> Dengan <code>set n 3</code> di Tcl, apa yang dicetak <code>puts "$n+1"</code> dan <code>puts [expr {$n+1}]</code>?</p>
+<details class="icd-sol"><summary>Solusi 1.2</summary><p>Yang pertama mencetak <code>3+1</code>: kutip mengganti <code>$n</code> tetapi tidak menghitung. Yang kedua mencetak <code>4</code>: <code>[ ]</code> menjalankan <code>expr</code>, dan <code>expr</code> menghitung teks <code>$n+1</code> (diverifikasi dengan <code>tclsh</code>).</p></details>
+<p><strong>1.3</strong> Sebuah program mencari 1.000 nama net di daftar berisi 1.000.000 nama. Bandingkan jumlah pemeriksaan kasar bila daftar berupa <code>list</code> dan bila berupa <code>set</code>.</p>
+<details class="icd-sol"><summary>Solusi 1.3</summary><p>Pada <code>list</code>, <code>x in daftar</code> memeriksa elemen satu per satu: sampai 10<sup>6</sup> pemeriksaan per pencarian, rata-rata sekitar setengahnya bila ada, jadi total sampai 10<sup>9</sup>. Pada <code>set</code> (tabel hash) satu pencarian membutuhkan <i>O</i>(1) rata-rata: sekitar 10<sup>3</sup> operasi hash. Ongkos membangun set (<i>O</i>(<i>n</i>) sekali) terbayar setelah beberapa pencarian.</p></details>
+<h3><span class="icd-lvl">Tingkat 2</span> Menerapkan</h3>
+<p><strong>2.1</strong> Pada DAG <code>sta_dag.py</code> dengan <i>T</i> = 9, gerbang G4 diperlambat 3 satuan. Berapa arrival G4, G5, G6, slack output, dan jalur kritisnya?</p>
+<details class="icd-sol"><summary>Solusi 2.1</summary><p>G4 = arrival(G2) + (1 + 3) = 3 + 4 = 7. G5 = max(G3 = 5, G4 = 7) + 4 = 11, slack G5 = 9 − 11 = −2. G6 = max(G4 = 7, C = 0) + 2 = 9, slack 0. Jalur kritis output terburuk (G5): C → G2 → G4 → G5; pada G2 kedua fanin B dan C tiba di 0 dan aturan seri memilih nama terbesar (C). Hasil ini sama dengan memanggil <code>analyze(GATES, 9, "G4", 3)</code>.</p></details>
+<p><strong>2.2</strong> Hitung dengan tangan jumlah perbandingan insertion sort pada [3, 1, 2], lalu jumlahnya untuk <i>n</i> elemen yang sudah terurut.</p>
+<details class="icd-sol"><summary>Solusi 2.2</summary><p>i = 1: key = 1, bandingkan 3 &gt; 1 (ya, geser; satu perbandingan) lalu indeks keluar batas. i = 2: key = 2, bandingkan 3 &gt; 2 (ya), lalu 1 &gt; 2 (tidak, berhenti): dua perbandingan. Total 3 (dikonfirmasi <code>insertion([3, 1, 2])</code> = ([1, 2, 3], 3)). Untuk data terurut tiap elemen dibandingkan sekali dengan tetangganya: <i>n</i> − 1 perbandingan (1.023 untuk <i>n</i> = 1024).</p></details>
+<p><strong>2.3</strong> Untuk netlist <code>NETLIST</code> pada <code>netlist_graph.py</code>, tentukan level semua simpul dan kerucut fanout dari <code>c</code>.</p>
+<details class="icd-sol"><summary>Solusi 2.3</summary><p>Level: a, b, c, d = 0; n1 = AND(a, b) = 1; n2 = OR(n1, c) = 2; n3 = NOT(n2) = 3; z = AND(n2, d) = 3; y = XOR(n3, n1) = 1 + max(3, 1) = 4. Kerucut fanout dari c: n2 (langsung), lalu n3 dan z (dari n2), lalu y (dari n3): <code>['n2', 'n3', 'y', 'z']</code>, sama dengan output program.</p></details>
+<h3><span class="icd-lvl">Tingkat 3</span> Menganalisis</h3>
+<p><strong>3.1</strong> Buktikan bahwa merge sort top-down pada <i>n</i> = 2<sup><i>k</i></sup> kunci berbeda melakukan paling sedikit (<i>n</i>/2) log₂ <i>n</i> dan paling banyak <i>n</i> log₂ <i>n</i> − <i>n</i> + 1 perbandingan, dan cocokkan dengan <i>n</i> = 1024.</p>
+<details class="icd-sol"><summary>Solusi 3.1</summary><p>Menggabungkan dua list terurut berukuran <i>m</i> membutuhkan antara <i>m</i> perbandingan (semua elemen kiri lebih dulu habis) dan 2<i>m</i> − 1 (bergantian sampai satu elemen terakhir). Pada tingkat dengan blok hasil berukuran 2<i>m</i> ada <i>n</i>/(2<i>m</i>) penggabungan: batas bawah <i>n</i>/2 per tingkat, batas atas <i>n</i> − <i>n</i>/(2<i>m</i>) per tingkat. Ada <i>k</i> = log₂ <i>n</i> tingkat (<i>m</i> = 1, 2, 4, ..., <i>n</i>/2). Batas bawah: <i>k</i> · <i>n</i>/2 = (<i>n</i>/2) log₂ <i>n</i>. Batas atas: Σ (<i>n</i> − <i>n</i>/(2<i>m</i>)) = <i>kn</i> − <i>n</i>(1/2 + 1/4 + ... + 1/<i>n</i>) = <i>kn</i> − <i>n</i>(1 − 1/<i>n</i>) = <i>n</i> log₂ <i>n</i> − <i>n</i> + 1. Untuk <i>n</i> = 1024: 5.120 ≤ <i>C</i> ≤ 9.217. Terukur: 5.120 pada data terurut (batas bawah), 8.938 pada data acak, dan 5.332 pada data terbalik (ada kunci kembar). Semuanya di dalam rentang.</p></details>
+<p><strong>3.2</strong> Buktikan bahwa quicksort dengan pivot elemen terakhir pada <i>n</i> kunci berbeda yang sudah terurut melakukan tepat <i>n</i>(<i>n</i> − 1)/2 perbandingan, dan jelaskan mengapa angka terukur 339.797 (untuk 1024 kunci dengan kembar) lebih kecil.</p>
+<details class="icd-sol"><summary>Solusi 3.2</summary><p>Pivot terakhir adalah elemen terbesar. Partisi atas <i>m</i> elemen membandingkan <i>m</i> − 1 elemen dengan pivot, semuanya lebih kecil, sehingga bagian kiri berukuran <i>m</i> − 1 dan bagian kanan kosong. Maka <i>T</i>(<i>m</i>) = <i>T</i>(<i>m</i> − 1) + (<i>m</i> − 1) dengan <i>T</i>(1) = 0, dan <i>T</i>(<i>n</i>) = Σ<sub><i>m</i>=2</sub><sup><i>n</i></sup> (<i>m</i> − 1) = <i>n</i>(<i>n</i> − 1)/2 = 523.776 untuk <i>n</i> = 1024 (juga terukur pada <code>list(range(1024))</code>). Pada kunci 0–999 hanya 657 nilai berbeda: elemen yang sama dengan pivot tidak lebih kecil darinya, sehingga satu partisi bisa menyisihkan beberapa elemen sekaligus dan rantai pembagian lebih pendek; tetap kuadratik, tetapi dengan konstanta lebih kecil.</p></details>
+<p><strong>3.3</strong> Buktikan bahwa algoritma Kahn meninggalkan simpul yang belum diproses jika dan hanya jika graf punya siklus.</p>
+<details class="icd-sol"><summary>Solusi 3.3</summary><p>(⇒) Misalkan setelah algoritma berhenti masih ada simpul. Tiap simpul sisa punya derajat-masuk ≥ 1 yang berasal dari simpul sisa (jika tidak, simpul itu sudah masuk antrean dan diproses). Mulai dari satu simpul sisa dan telusuri satu pendahulu sisa secara berulang. Jumlah simpul hingga, jadi penelusuran akhirnya mengunjungi simpul yang sama dua kali, dan itulah siklus. (⇐) Bila ada siklus, simpul pertama di siklus yang akan masuk antrean membutuhkan pendahulunya di siklus sudah diproses lebih dulu, kontradiksi; maka tak satu pun simpul siklus pernah mencapai derajat-masuk 0 dan semuanya tersisa. Itu sebabnya <code>levelize</code> mengembalikan <code>['p', 'q']</code> untuk <code>LOOP</code>. Waktunya <i>O</i>(<i>V</i> + <i>E</i>).</p></details>
+</section>
+
+<section class="icd-sec" id="s12">
+<h2>Kuis</h2>
+<p>Empat belas soal. Setiap pilihan punya penjelasan. Batas lulus 70%.</p>
+<div id="kuis"></div>
+</section>
+
+<section class="icd-sec" id="s13">
+<h2>Pertanyaan interview</h2>
+<details class="icd-sol"><summary>"Apa beda <code>b = a</code>, <code>a[:]</code>, dan <code>copy.deepcopy(a)</code>?"</summary>
+<p><strong>Kerangka jawaban:</strong> Penugasan membuat nama kedua untuk objek yang sama. Salinan dangkal membuat objek luar baru tetapi elemennya dipakai bersama; mengubah elemen mutable di dalam terlihat di kedua. Salinan dalam menyalin rekursif. Beri contoh list bersarang dan sebut ongkos: salinan dalam <i>O</i>(ukuran total) dan menangani siklus lewat tabel memo.</p></details>
+<details class="icd-sol"><summary>"Mengapa argumen bawaan <code>[]</code> berbahaya?"</summary>
+<p><strong>Kerangka jawaban:</strong> Nilai bawaan dievaluasi sekali saat <code>def</code> dijalankan, bukan tiap pemanggilan; list yang sama dipakai terus dan mengumpulkan sisa pemanggilan sebelumnya. Perbaikan: <code>None</code> sebagai penanda lalu buat list baru di dalam fungsi.</p></details>
+<details class="icd-sol"><summary>"Urutkan 1 juta bilangan: algoritma apa dan mengapa? Kapan quicksort buruk?"</summary>
+<p><strong>Kerangka jawaban:</strong> Pakai <code>sorted</code> (Timsort, stabil, <i>O</i>(<i>n</i> log <i>n</i>), memanfaatkan runs yang sudah terurut). Quicksort rata-rata cepat dan hemat memori tetapi kasus terburuk <i>O</i>(<i>n</i>²) bila pivot buruk (pivot terakhir pada data terurut: 339.797 perbandingan pada 1024 data). Mitigasi: pivot acak atau median-dari-tiga, atau introsort. Merge sort stabil dan prediktabel tetapi butuh memori tambahan <i>O</i>(<i>n</i>).</p></details>
+<details class="icd-sol"><summary>"Jelaskan static timing analysis sebagai masalah graf."</summary>
+<p><strong>Kerangka jawaban:</strong> Netlist menjadi DAG dengan tunda pada simpul atau sisi. Arrival time = maksimum atas fanin ditambah tunda, dihitung dalam urutan topologis (<i>O</i>(<i>V</i> + <i>E</i>)). Required time diperoleh dari periode clock secara mundur; slack = required − arrival; slack negatif melanggar. Jalur kritis = rantai yang menentukan maksimum. Catat: loop kombinasional menggagalkan urutan topologis, jadi harus diputus; alat nyata menambah derating, banyak corner, dan clock pessimism.</p></details>
+<details class="icd-sol"><summary>"Kapan BFS, Dijkstra, dan A* dipakai?"</summary>
+<p><strong>Kerangka jawaban:</strong> BFS untuk jarak pada graf tak berbobot (algoritma Lee pada routing labirin). Dijkstra untuk bobot non-negatif, <i>O</i>((<i>V</i> + <i>E</i>) log <i>V</i>) dengan heap. A* menambah heuristik admissible (jarak Manhattan pada grid) sehingga memperluas lebih sedikit sel dengan hasil optimal yang sama (19 lawan 87 sel pada contoh <code>maze_route.py</code>, panjang jalur sama-sama 18). Bobot negatif: Bellman-Ford.</p></details>
+<details class="icd-sol"><summary>"Apa yang dilakukan Tcl pada baris <code>puts $x$y</code> dan mengapa <code>expr {...}</code> memakai kurung kurawal?"</summary>
+<p><strong>Kerangka jawaban:</strong> Tcl memecah baris menjadi kata, lalu mengganti <code>$</code>, <code>[ ]</code>, dan <code>\</code> sekali per kata; <code>$x$y</code> menjadi satu kata gabungan. Kurung kurawal mencegah substitusi oleh Tcl sehingga <code>expr</code> menerima teks mentah, mengganti sendiri, dan bisa mengompilasi ekspresi ke bytecode (lebih cepat) serta aman dari injeksi lewat nilai variabel.</p></details>
+</section>
+
+<section class="icd-sec" id="s14">
+<h2>Lab: algoritma, graf, dan Tcl</h2>
+<p><strong>Tujuan:</strong> menjalankan semua contoh, membandingkan output dengan visualisasi, dan membuktikan bahwa Python dan Tcl menghasilkan ringkasan laporan yang sama. Platform: Linux, macOS, atau WSL2 dengan Python 3.9+ dan <code>tclsh</code> 8.6. Salin folder <code>lab/m04d</code> ke <code>~/icd/m04d</code>.</p>
+<h3>Langkah 0: siapkan</h3>
+<pre class="icd-src" data-lang="sh">
+sudo apt update &amp;&amp; sudo apt install -y python3 tcl
+mkdir -p ~/icd/m04d &amp;&amp; cd ~/icd/m04d      # salin seluruh isi folder lab/m04d
+python3 --version; echo 'puts [info patchlevel]' | tclsh
+</pre>
+<h3>Langkah 1: alias dan salinan</h3>
+<pre class="icd-src" data-lang="sh">
+python3 alias_demo.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+alias    a=[[1, 2, 9], [3], [4]] b=[[1, 2, 9], [3], [4]] b_is_a=True b0_is_a0=True
+shallow  a=[[1, 2, 9], [3]] b=[[1, 2, 9], [3], [4]] b_is_a=False b0_is_a0=True
+deep     a=[[1, 2], [3]] b=[[1, 2, 9], [3], [4]] b_is_a=False b0_is_a0=False
+bawaan: [1, 2] [1, 2]
+aman  : [1] [2]
++= : [1, 2] | + : [1]
+</pre>
+<p>Cocokkan tiga baris pertama dengan visualisasi 1 (pilih alias, salinan dangkal, salinan dalam). Ubah <code>b[0].append(9)</code> menjadi <code>b[1] = [7]</code> dan prediksi dulu: apa yang berubah pada a untuk ketiga cara?</p>
+<h3>Langkah 2: biaya pengurutan</h3>
+<pre class="icd-src" data-lang="sh">
+python3 sort_counts.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+random
+  n=    4 insertion=       4 merge=     4 quick=       4
+  n=    8 insertion=      20 merge=    14 quick=      16
+  n=   16 insertion=      74 merge=    44 quick=      46
+  n=   32 insertion=     263 merge=   117 quick=     129
+  n=   64 insertion=    1007 merge=   303 quick=     328
+  n=  128 insertion=    4203 merge=   737 quick=     876
+  n=  256 insertion=   16765 merge=  1723 quick=    1984
+  n=  512 insertion=   66216 merge=  3962 quick=    4856
+  n= 1024 insertion=  262358 merge=  8938 quick=   11766
+sorted
+  n=    4 insertion=       3 merge=     4 quick=       6
+  n=    8 insertion=       7 merge=    12 quick=      28
+  n=   16 insertion=      15 merge=    32 quick=     120
+  n=   32 insertion=      31 merge=    80 quick=     496
+  n=   64 insertion=      63 merge=   192 quick=    1930
+  n=  128 insertion=     127 merge=   448 quick=    7465
+  n=  256 insertion=     255 merge=  1024 quick=   28652
+  n=  512 insertion=     511 merge=  2304 quick=  102311
+  n= 1024 insertion=    1023 merge=  5120 quick=  339797
+reverse
+  n=    4 insertion=       6 merge=     4 quick=       6
+  n=    8 insertion=      28 merge=    12 quick=      28
+  n=   16 insertion=     120 merge=    32 quick=     120
+  n=   32 insertion=     496 merge=    80 quick=     496
+  n=   64 insertion=    2016 merge=   192 quick=    1969
+  n=  128 insertion=    8128 merge=   451 quick=    7715
+  n=  256 insertion=   32640 merge=  1038 quick=   30205
+  n=  512 insertion=  130803 merge=  2369 quick=  114836
+  n= 1024 insertion=  523656 merge=  5332 quick=  409586
+</pre>
+<p>Hitung rasio perbandingan saat <i>n</i> berlipat dua untuk tiap kolom. Insertion acak ≈ 4, merge ≈ 2,2, quick pada data terurut ≈ 3,3 (kuadratik karena pivot terakhir). Bandingkan dengan visualisasi 2.</p>
+<h3>Langkah 3: timing statis dan graf</h3>
+<pre class="icd-src" data-lang="sh">
+python3 sta_dag.py
+python3 netlist_graph.py
+python3 maze_route.py
+python3 graph_algos.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+T=9 lambat=None: order=A B C G1 G2 G3 G4 G5 G6
+  arrival: A=0 B=0 C=0 G1=2 G2=3 G3=5 G4=4 G5=9 G6=6
+  slack  : G5=0 G6=3 | jalur kritis: C-&gt;G2-&gt;G3-&gt;G5
+T=9 lambat=G2: order=A B C G1 G2 G3 G4 G5 G6
+  arrival: A=0 B=0 C=0 G1=2 G2=6 G3=8 G4=7 G5=12 G6=9
+  slack  : G5=-3 G6=0 | jalur kritis: C-&gt;G2-&gt;G3-&gt;G5
+T=12 lambat=G2: order=A B C G1 G2 G3 G4 G5 G6
+  arrival: A=0 B=0 C=0 G1=2 G2=6 G3=8 G4=7 G5=12 G6=9
+  slack  : G5=0 G6=3 | jalur kritis: C-&gt;G2-&gt;G3-&gt;G5
+level: a=0 b=0 c=0 d=0 n1=1 n2=2 n3=3 z=3 y=4
+kerucut fanout dari n1: ['n2', 'n3', 'y', 'z'] | dari c: ['n2', 'n3', 'y', 'z']
+loop kombinasional pada: ['p', 'q']
+Lee   : panjang 18, sel diperluas 87
+A*    : panjang 18, sel diperluas 19
+dijkstra dari S: {'A': 3, 'B': 1, 'C': 6, 'S': 0}
+kruskal: ([('a', 'c', 1), ('b', 'd', 2), ('b', 'c', 3)], 6)
+</pre>
+<p>Coba sendiri: ubah periode ke 12 dan pilih G5 yang lambat; tambahkan gerbang G7 dengan fanin G5 dan G6 ke <code>GATES</code> dan <code>OUTPUTS</code>; lihat jalur kritis berubah. Visualisasi 3 memakai graf dan aturan seri yang sama.</p>
+<h3>Langkah 4: memoization dan DP</h3>
+<pre class="icd-src" data-lang="sh">
+python3 dp_demo.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+fib(10) = 55 dengan 177 panggilan
+fib(20) = 6765 dengan 21891 panggilan
+fib(25) = 75025 dengan 242785 panggilan
+fib(25) memo = 75025 dengan 26 panggilan
+lcs('ABCBDAB', 'BDCABA') = 4
+</pre>
+<h3>Langkah 5: laporan timing dengan Python dan Tcl</h3>
+<pre class="icd-src" data-lang="sh">
+python3 logreport.py sample_timing.rpt
+tclsh report.tcl sample_timing.rpt
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+group  WNS    jumlah_violasi  jumlah_path
+clk    -0.12        1              4
+io     -0.31        1              2
+3 terburuk: 4(-0.31), 1(-0.12), 6(+0.00)
+id,start,end,slack
+4,in_data,u_cpu/a_reg,-0.31
+1,u_cpu/a_reg,u_alu/q_reg,-0.12
+6,u_cpu/c_reg,u_alu/s_reg,0.00
+
+group  WNS    jumlah_violasi  jumlah_path
+clk    -0.12        1              4
+io     -0.31        1              2
+3 terburuk: 4(-0.31), 1(-0.12), 6(+0.00)
+</pre>
+<p>Tiga baris ringkasan identik. Python juga menulis daftar CSV untuk baris terburuk; Tcl tidak (hanya ringkasan). Bandingkan panjang dan keterbacaan kedua program dan catat di mana Tcl lebih ringkas (perintah <code>lsort</code> dan <code>dict</code>) dan di mana Python lebih ringkas (komprehensi dan <code>f""</code>).</p>
+<h3>Langkah 6: substitusi Tcl</h3>
+<pre class="icd-src" data-lang="sh">
+tclsh tcl_subst.tcl
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+% cmd $x $name
+2 kata: &lt;5&gt; &lt;ani budi&gt;
+% cmd "$x + 1"
+1 kata: &lt;5 + 1&gt;
+% cmd {$x + 1}
+1 kata: &lt;$x + 1&gt;
+% cmd [expr {$x + 1}]
+1 kata: &lt;6&gt;
+% cmd a\ b {c d}
+2 kata: &lt;a b&gt; &lt;c d&gt;
+% cmd $x$x
+1 kata: &lt;55&gt;
+% cmd "[string length $name]x"
+1 kata: &lt;8x&gt;
+% cmd {*}$lst
+3 kata: &lt;a&gt; &lt;b&gt; &lt;c&gt;
+% cmd $lst
+1 kata: &lt;a b c&gt;
+% cmd [string length $name] [llength $lst] [lindex $lst 1]
+3 kata: &lt;8&gt; &lt;3&gt; &lt;b&gt;
+</pre>
+<p>Bandingkan dengan visualisasi 4 (sepuluh baris yang sama). Tambahkan baris sendiri, misalnya <code>cmd "${x}x"</code> dan <code>cmd {a {b c}} d</code>, prediksi jumlah kata dulu, lalu jalankan.</p>
+<h3>Langkah 7: uji</h3>
+<pre class="icd-src" data-lang="sh">
+python3 test_algos.py
+</pre>
+<pre class="icd-src" data-lang="text" data-ln="off">
+Ran 7 tests
+OK
+</pre>
+<p>Rusak sengaja satu algoritma (misalnya ganti <code>&lt;=</code> menjadi <code>&lt;</code> pada merge sort) dan lihat uji mana yang gagal, lalu kembalikan.</p>
+<h3>Langkah 8: tantangan mandiri</h3>
+<p>Tulis skrip Python <code>cp_sta.py</code> yang membaca DAG dari berkas teks (satu gerbang per baris: <code>nama tunda fanin1,fanin2</code>), menghitung arrival, slack, dan jalur kritis untuk periode yang diberikan, dan mendeteksi siklus dengan pesan jelas. Uji dengan graf sebelas gerbang buatanmu dan bandingkan dengan perhitungan tangan. Bonus: tulis versi Tcl yang membaca berkas yang sama dan mencetak hasil yang sama.</p>
+</section>
+
+<section class="icd-sec" id="s15">
+<h2>Ringkasan, cheat sheet, flashcard</h2>
+<ul>
+<li>Python: nama menunjuk objek; penugasan menyalin referensi; mutable lawan immutable; salinan dangkal berbagi isi bersarang, <code>deepcopy</code> tidak; jangan pakai argumen bawaan mutable; <code>+=</code> pada list mengubah di tempat.</li>
+<li>Kompleksitas: Big-O = laju pertumbuhan. Rasio saat <i>n</i> berlipat dua: ≈ 2 linear, ≈ 4 kuadratik, sedikit di atas 2 untuk <i>n</i> log <i>n</i>. Insertion 262.358, merge 8.938, quick 11.766 perbandingan pada 1024 data acak; data terurut: 1.023, 5.120, 339.797.</li>
+<li>Struktur data: list/array, dict/set (tabel hash, <i>O</i>(1) rata-rata), heap (<code>heapq</code>, <i>O</i>(log <i>n</i>)), deque, union-find (hampir konstan teramortisasi).</li>
+<li>Graf: BFS (tak berbobot, Lee), DFS, urutan topologis Kahn (<i>O</i>(<i>V</i> + <i>E</i>), mendeteksi siklus), Dijkstra (bobot non-negatif; <i>O</i>((<i>V</i> + <i>E</i>) log <i>V</i>)), A* (heuristik admissible), Kruskal (pohon rentang minimum). DP dan memoization mengubah eksponensial menjadi polinomial (<code>fib(25)</code>: 242.785 menjadi 26 panggilan).</li>
+<li>STA: arrival = max(fanin) + tunda dalam urutan topologis; slack = <i>T</i> − arrival; jalur kritis = rantai penentu maksimum.</li>
+<li>Tcl: semua string; pecah kata, lalu substitusi sekali (<code>$</code>, <code>[ ]</code>, <code>\</code>); <code>{ }</code> mencegah substitusi, <code>" "</code> mengizinkan; <code>expr {...}</code> selalu berkurung; <code>{*}</code> menyebar list; <code>list</code>, <code>dict</code>, <code>foreach</code>, <code>proc</code>.</li>
+</ul>
+<h3>Cheat sheet satu layar</h3>
+<div class="cheat">
+<div class="icd-card"><h4>Salin di Python</h4>b = a (alias)<br>a[:] · list(a) (dangkal)<br>copy.deepcopy(a)<br>def f(x, acc=None)<br>x += y (di tempat)</div>
+<div class="icd-card"><h4>Kompleksitas</h4>2× n → 2× (linear)<br>2× n → 4× (kuadratik)<br>n log n: sedikit &gt; 2×<br>pencarian biner: log n<br>dict/set: O(1) rata-rata</div>
+<div class="icd-card"><h4>Pengurutan</h4>insertion: n−1 … n²/2<br>merge: ½n log n … n log n<br>quick: n log n rata-rata, n² buruk<br>sorted() = Timsort stabil</div>
+<div class="icd-card"><h4>Graf</h4>BFS: deque<br>Dijkstra: heapq, lewati usang<br>Kahn: derajat-masuk 0<br>union-find: find + union<br>A*: f = g + h</div>
+<div class="icd-card"><h4>STA</h4>arrival = max(fanin) + d<br>slack = T − arrival<br>slack &lt; 0 melanggar<br>jalur kritis = rantai argmax<br>siklus: urutan tak selesai</div>
+<div class="icd-card"><h4>Tcl</h4>set x 5 · $x · [cmd]<br>"..." substitusi · {...} tidak<br>expr {$x + 1}<br>{*}$lst · list · lappend<br>dict get · foreach · proc</div>
+</div>
+<h3>Flashcard</h3>
+<div id="kartu"></div>
+</section>
+
+<section class="icd-sec" id="s16">
+<h2>Rujukan</h2>
+<ul>
+<li>Python Software Foundation, <i>The Python Tutorial</i> dan <i>Data Model</i> (dokumentasi resmi): bagian struktur data, objek dan nilai, serta modul <code>copy</code>, <code>heapq</code>, <code>collections</code>, dan <code>functools</code>.</li>
+<li>Ramalho, <i>Fluent Python</i>: bab model data, referensi dan mutabilitas, dan fungsi sebagai objek.</li>
+<li>Cormen, Leiserson, Rivest, Stein, <i>Introduction to Algorithms</i>: bab pengurutan (insertion, merge, quick), graf dasar, jalur terpendek (Dijkstra), pohon rentang minimum, dan struktur data untuk himpunan terpisah.</li>
+<li>Sedgewick &amp; Wayne, <i>Algorithms</i>: pengurutan, graf berarah dan urutan topologis, pohon rentang minimum, dan analisis kinerja.</li>
+<li>Skiena, <i>The Algorithm Design Manual</i>: katalog masalah graf dan panduan memilih algoritma.</li>
+<li>Welch &amp; Jones, <i>Practical Programming in Tcl and Tk</i>, dan halaman manual Tcl (<code>Tcl(n)</code> memuat dua belas aturan sintaks, serta <code>expr</code>, <code>list</code>, <code>dict</code>).</li>
+<li>Ousterhout &amp; Jones, <i>Tcl and the Tk Toolkit</i>: filosofi bahasa perintah dan model substitusi.</li>
+<li>Bhasker &amp; Chadha, <i>Static Timing Analysis for Nanometer Designs</i>: arrival time, required time, slack, dan jalur kritis pada alat EDA nyata.</li>
+<li>Lee, C. Y., "An Algorithm for Path Connections and Its Applications" (<i>IRE Transactions on Electronic Computers</i>, 1961): algoritma routing labirin; Hart, Nilsson, Raphael (1968) untuk A*.</li>
+</ul>
+<p class="icd-small icd-muted">Lanjut ke bagian berikutnya setelah M04: <a href="m05a-pita-energi-pembawa.html">M05a</a>. Modul sebelumnya: <a href="m04c-linux-git-make.html">M04c</a>.</p>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+var ICD = window.ICD, q = ICD.q, qa = ICD.qa;
+var MINUS = '−';
+
+ICD.gloss.add([
+{ id: 'referensi', en: 'reference', idn: 'referensi (rujukan objek)', def: 'Nilai yang menunjuk ke sebuah objek di memori. Di Python, nama dan elemen list adalah referensi; penugasan menyalin referensi, bukan objeknya, sehingga dua nama bisa menunjuk objek yang sama.', mod: 'M04d' },
+{ id: 'mutable', en: 'mutable', idn: 'dapat diubah (mutable)', def: 'Objek yang isinya bisa diubah di tempat tanpa mengganti identitasnya (list, dict, set di Python). Lawannya immutable: int, str, tuple. Argumen bawaan mutable adalah jebakan klasik.', mod: 'M04d' },
+{ id: 'shallow-copy', en: 'shallow copy', idn: 'salinan dangkal', def: 'Salinan yang hanya menyalin objek lapisan luar; elemen di dalamnya dipakai bersama. b = a[:] pada list bersarang membuat b[0] is a[0] bernilai True; untuk memisahkan semuanya gunakan copy.deepcopy.', mod: 'M04d' },
+{ id: 'hash-table', en: 'hash table', idn: 'tabel hash', def: 'Struktur data yang menyimpan pasangan kunci-nilai dengan menghitung posisi dari hash kunci; pencarian, penyisipan, dan penghapusan O(1) rata-rata. Dasar dict dan set di Python dan array asosiatif di Tcl.', mod: 'M04d' },
+{ id: 'generator', en: 'generator', idn: 'generator', def: 'Fungsi Python dengan yield yang menghasilkan nilai satu per satu secara malas, tanpa membangun seluruh daftar di memori; cocok untuk memproses log besar baris demi baris.', mod: 'M04d' },
+{ id: 'big-o', en: 'Big-O notation', idn: 'notasi Big-O', def: 'Cara menyatakan laju pertumbuhan biaya (waktu atau memori) algoritma terhadap ukuran masukan n untuk n besar, mengabaikan konstanta: O(n) linear, O(n log n), O(n²) kuadratik. Bukan waktu sebenarnya.', mod: 'M04d' },
+{ id: 'amortized', en: 'amortized cost', idn: 'biaya teramortisasi', def: 'Biaya rata-rata per operasi atas rangkaian operasi terburuk. Contoh: append pada list dinamis O(1) teramortisasi walau sesekali menyalin seluruh array; union-find mendekati konstan teramortisasi.', mod: 'M04d' },
+{ id: 'memoization', en: 'memoization', idn: 'memoisasi', def: 'Menyimpan hasil pemanggilan fungsi untuk argumen yang sama agar tidak dihitung ulang (functools.lru_cache). Mengubah fib rekursif dari eksponensial menjadi linear: 242.785 panggilan menjadi 26 untuk n = 25.', mod: 'M04d' },
+{ id: 'heap-ds', en: 'heap (priority queue)', idn: 'heap (antrean prioritas)', def: 'Struktur data pohon biner lengkap yang selalu bisa memberi elemen terkecil dalam O(1) dan menyisip atau mengambilnya dalam O(log n); modul heapq di Python. Dasar Dijkstra dan simulasi berbasis kejadian.', mod: 'M04d' },
+{ id: 'union-find', en: 'union-find (disjoint set)', idn: 'union-find (himpunan terpisah)', def: 'Struktur data untuk melacak himpunan yang saling lepas dengan operasi find dan union. Dengan kompresi jalur dan union berdasarkan ukuran, tiap operasi O(α(n)), hampir konstan; dipakai Kruskal dan konektivitas net.', mod: 'M04d' },
+{ id: 'graph', en: 'graph', idn: 'graf', def: 'Struktur yang terdiri dari simpul dan sisi yang menghubungkannya.', mod: 'M01c, M04d' },
+{ id: 'dag', en: 'directed acyclic graph', idn: 'graf berarah tanpa siklus', def: 'Graf ketergantungan tanpa lingkaran. Make membangunnya dari aturan; Git memakainya untuk riwayat commit. Jalur terpanjang menentukan batas waktu paralel T∞.', mod: 'M04c, M04d, M06' },
+{ id: 'topological-order', en: 'topological order', idn: 'urutan topologis', def: 'Susunan simpul DAG sehingga setiap sisi mengarah dari yang lebih awal ke yang lebih akhir.', mod: 'M01c, M04d' },
+{ id: 'dijkstra', en: "Dijkstra's algorithm", idn: 'algoritma Dijkstra', def: 'Jalur terpendek dari satu sumber pada graf berbobot non-negatif: ambil simpul dengan jarak sementara terkecil dari heap, relaksasi tetangganya. O((V + E) log V) dengan heap; salah untuk bobot negatif.', mod: 'M04d' },
+{ id: 'arrival-time', en: 'arrival time', idn: 'waktu tiba', def: 'Waktu terlama sebuah sinyal sampai di sebuah simpul dalam analisis timing statis: maksimum atas arrival fanin ditambah tunda gerbang, dihitung dalam urutan topologis.', mod: 'M04d' },
+{ id: 'slack', en: 'slack', idn: 'slack (kelonggaran waktu)', def: 'Required time dikurangi arrival time pada sebuah simpul. Slack negatif berarti timing dilanggar; jalur dengan slack terkecil adalah jalur kritis.', mod: 'M04d' },
+{ id: 'critical-path', en: 'critical path', idn: 'path kritis', def: 'Path dengan delay terlama; menentukan periode clock minimum.', mod: 'M01c, M04d, M22' }
+]);
+
+/* ---------- pembantu ---------- */
+function nf(x){ var s = String(Math.round(x)), r = '', i; for (i = 0; i < s.length; i++){ if (i && (s.length - i) % 3 === 0) r += '.'; r += s[i]; } return r; }
+function dc(x, d){ return x.toFixed(d).replace('.', ','); }
+function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function sg(x){ return x < 0 ? MINUS + (-x) : String(x); }
+
+/* ---------- 1. alias, salinan dangkal, salinan dalam ---------- */
+var V1STMT = { alias: 'b = a', shallow: 'b = a[:]', deep: 'b = copy.deepcopy(a)' };
+function v1Sim(form, k){
+  var objs = {}, nid = 1, names = {}, chObj = {}, chName = {}, lastRef = null;
+  function mk(items){ var id = 'L' + nid++; objs[id] = items; chObj[id] = 1; return id; }
+  function step(i){
+    chObj = {}; chName = {};
+    var a, b, l1, l2, o, n;
+    if (i === 1){
+      l1 = mk([1, 2]); l2 = mk([3]); a = mk([{ r: l1 }, { r: l2 }]); names.a = a; chName.a = 1;
+    } else if (i === 2){
+      a = names.a;
+      if (form === 'alias') names.b = a;
+      else if (form === 'shallow') names.b = mk(objs[a].map(function(x){ return { r: x.r }; }));
+      else { l1 = mk(objs[objs[a][0].r].slice()); l2 = mk(objs[objs[a][1].r].slice()); names.b = mk([{ r: l1 }, { r: l2 }]); }
+      chName.b = 1;
+    } else if (i === 3){
+      objs[objs[names.b][0].r].push(9); chObj[objs[names.b][0].r] = 1;
+    } else if (i === 4){
+      n = mk([4]); objs[names.b].push({ r: n }); chObj[names.b] = 1;
+    }
+  }
+  for (var i = 1; i <= k; i++) step(i);
+  return { objs: objs, names: names, chObj: chObj, chName: chName };
+}
+function v1Str(S, id){
+  return '[' + S.objs[id].map(function(x){ return typeof x === 'number' ? String(x) : v1Str(S, x.r); }).join(', ') + ']';
+}
+function v1Draw(st){
+  var form = q('#v1-form').value, k = Math.min(st.k, 4), S = v1Sim(form, k), i;
+  var prog = ['a = [[1, 2], [3]]', V1STMT[form], 'b[0].append(9)', 'b.append([4])'];
+  var h = '<thead><tr><th scope="col">#</th><th scope="col">pernyataan</th></tr></thead><tbody>';
+  for (i = 0; i < 4; i++) h += '<tr><td class="c' + (i === k - 1 ? ' hl' : '') + '">' + (i < k ? '✓' : (i === k ? '▶' : '')) + '</td><td class="mono' + (i === k - 1 ? ' hl' : '') + '">' + esc(prog[i]) + '</td></tr>';
+  q('#v1-prog').innerHTML = h + '</tbody>';
+  h = '<thead><tr><th scope="col">nama</th><th scope="col">menunjuk ke</th><th scope="col">nilai</th></tr></thead><tbody>';
+  ['a', 'b'].forEach(function(nm){
+    var id = S.names[nm], c = S.chName[nm] || (id && S.chObj[id]) ? ' hl' : '';
+    h += '<tr><td class="c">' + nm + '</td><td class="c' + c + '">' + (id || '—') + '</td><td class="mono' + c + '">' + (id ? esc(v1Str(S, id)) : '(belum ada)') + '</td></tr>';
+  });
+  q('#v1-names').innerHTML = h + '</tbody>';
+  var box = q('#v1-objs'); box.textContent = '';
+  Object.keys(S.objs).forEach(function(id){
+    var d = document.createElement('div'); d.className = 'o' + (S.chObj[id] ? ' hit' : '');
+    var b = document.createElement('b'); b.textContent = id; d.appendChild(b);
+    d.appendChild(document.createTextNode('[' + S.objs[id].map(function(x){ return typeof x === 'number' ? x : '→' + x.r; }).join(', ') + ']'));
+    box.appendChild(d);
+  });
+  if (!k) box.textContent = '(belum ada objek)';
+  var a = S.names.a, b = S.names.b, t = V1STMT[form] + ' · diproses ' + k + ' dari 4 ' + (k < 4 ? '(sementara)' : '(selesai)') + ' · a=' + (a ? v1Str(S, a) : '—') + ' · b=' + (b ? v1Str(S, b) : '—');
+  if (b) t += ' · b is a: ' + (a === b ? 'True' : 'False') + ' · b[0] is a[0]: ' + (S.objs[a][0].r === S.objs[b][0].r ? 'True' : 'False');
+  q('#v1-out').textContent = t;
+}
+
+/* ---------- 2. perbandingan pengurutan ---------- */
+function lcg(n){ var x = 12345, out = [], i; for (i = 0; i < n; i++){ x = x * 48271 % 2147483647; out.push(x % 1000); } return out; }
+function sInsertion(a){ a = a.slice(); var c = 0, i, j, key; for (i = 1; i < a.length; i++){ key = a[i]; j = i - 1; while (j >= 0){ c++; if (a[j] > key){ a[j + 1] = a[j]; j--; } else break; } a[j + 1] = key; } return c; }
+function sMerge(a){ var c = 0; function ms(x){ if (x.length <= 1) return x; var m = x.length >> 1, l = ms(x.slice(0, m)), r = ms(x.slice(m)), out = [], i = 0, j = 0; while (i < l.length && j < r.length){ c++; if (l[i] <= r[j]) out.push(l[i++]); else out.push(r[j++]); } return out.concat(l.slice(i), r.slice(j)); } ms(a.slice()); return c; }
+function sQuick(a){ a = a.slice(); var c = 0, st = [[0, a.length - 1]], lo, hi, piv, i, j, t, p; while (st.length){ p = st.pop(); lo = p[0]; hi = p[1]; if (lo >= hi) continue; piv = a[hi]; i = lo; for (j = lo; j < hi; j++){ c++; if (a[j] < piv){ t = a[i]; a[i] = a[j]; a[j] = t; i++; } } t = a[i]; a[i] = a[hi]; a[hi] = t; st.push([lo, i - 1]); st.push([i + 1, hi]); } return c; }
+var V2KIND = { random: 'acak', sorted: 'terurut naik', reverse: 'terurut terbalik' }, v2memo = {};
+function v2Data(kind, n){ var d = lcg(n).slice(); if (kind === 'sorted') d.sort(function(x, y){ return x - y; }); else if (kind === 'reverse') d.sort(function(x, y){ return y - x; }); return d; }
+function v2Row(kind, e){ var key = kind + e; if (!v2memo[key]){ var d = v2Data(kind, 1 << e); v2memo[key] = { n: 1 << e, ins: sInsertion(d), mrg: sMerge(d), qck: sQuick(d) }; } return v2memo[key]; }
+var v2plot = null;
+function v2Draw(st){
+  var kind = q('#v2-kind').value, k = Math.min(Math.max(st.k, 1), 9), i, rows = [];
+  for (i = 2; i < 2 + k; i++) rows.push(v2Row(kind, i));
+  var h = '<thead><tr><th scope="col">n</th><th scope="col">insertion</th><th scope="col">merge</th><th scope="col">quick</th><th scope="col">insertion ÷ merge</th></tr></thead><tbody>';
+  rows.forEach(function(r, j){ var last = j === rows.length - 1; h += '<tr><td class="r' + (last ? ' hl' : '') + '">' + nf(r.n) + '</td><td class="r">' + nf(r.ins) + '</td><td class="r">' + nf(r.mrg) + '</td><td class="r">' + nf(r.qck) + '</td><td class="r">' + dc(r.ins / r.mrg, 1) + '</td></tr>'; });
+  q('#v2-tab').innerHTML = h + '</tbody>';
+  var L = rows[rows.length - 1], P = rows.length > 1 ? rows[rows.length - 2] : null;
+  function sl(a, b){ return dc(Math.log(a / b) / Math.LN2, 2); }
+  q('#v2-out').textContent = V2KIND[kind] + ' · n = ' + nf(L.n) + ' · insertion ' + nf(L.ins) + ' · merge ' + nf(L.mrg) + ' · quick ' + nf(L.qck) + (P ? ' · kemiringan terakhir: insertion ' + sl(L.ins, P.ins) + ', merge ' + sl(L.mrg, P.mrg) + ', quick ' + sl(L.qck, P.qck) : ' · n pertama');
+  function pts(f){ return rows.map(function(r){ return [Math.log(r.n) / Math.LN2, Math.log(f(r)) / Math.LN10]; }); }
+  var ymax = Math.log(Math.max(L.ins, L.mrg, L.qck, 10)) / Math.LN10;
+  var o = { height: 200, x: { label: 'log2 n', unit: '', min: 2, max: 10, plain: true }, y: { label: 'log10(perbandingan)', unit: '', min: 0, max: Math.ceil(ymax * 2) / 2 + 0.5, plain: true },
+    series: [{ label: 'insertion', kind: 'data', dash: [], unit: '', pts: pts(function(r){ return r.ins; }) }, { label: 'merge', kind: 'ctrl', dash: [], unit: '', pts: pts(function(r){ return r.mrg; }) }, { label: 'quick', kind: 'hi', dash: [5, 4], unit: '', pts: pts(function(r){ return r.qck; }) }],
+    marks: [{ x: Math.log(L.n) / Math.LN2, label: 'n', kind: 'hi' }] };
+  if (!v2plot) v2plot = ICD.plot('#v2-plot', o); else v2plot.set(o);
+}
+
+/* ---------- 3. STA pada DAG ---------- */
+var GATES = { G1: [2, ['A', 'B']], G2: [3, ['B', 'C']], G3: [2, ['G1', 'G2']], G4: [1, ['G2']], G5: [4, ['G3', 'G4']], G6: [2, ['G4', 'C']] };
+var INPUTS = ['A', 'B', 'C'], OUTPUTS = ['G5', 'G6'];
+function staAnalyze(T, slow){
+  var delay = {}, fan = {}, indeg = {}, g, i, arr = { A: 0, B: 0, C: 0 }, via = {}, order = [], ready = [];
+  for (g in GATES){ delay[g] = GATES[g][0] + (g === slow ? 3 : 0); indeg[g] = GATES[g][1].length; }
+  INPUTS.forEach(function(x){ indeg[x] = 0; });
+  for (g in GATES) GATES[g][1].forEach(function(s){ (fan[s] = fan[s] || []).push(g); });
+  Object.keys(indeg).forEach(function(n){ if (!indeg[n]) ready.push(n); });
+  while (ready.length){
+    ready.sort(); var n = ready.shift(); order.push(n);
+    if (GATES[n]){
+      var best = null; GATES[n][1].forEach(function(s){ if (best === null || arr[s] > arr[best] || (arr[s] === arr[best] && s > best)) best = s; });
+      arr[n] = arr[best] + delay[n]; via[n] = best;
+    }
+    (fan[n] || []).forEach(function(m){ if (--indeg[m] === 0) ready.push(m); });
+  }
+  var slack = {}, worst = null;
+  OUTPUTS.forEach(function(o){ slack[o] = T - arr[o]; if (worst === null || slack[o] < slack[worst]) worst = o; });
+  var path = [worst], n2 = worst; while (via[n2]){ n2 = via[n2]; path.push(n2); }
+  return { order: order, arr: arr, slack: slack, worst: worst, path: path.reverse(), delay: delay, via: via };
+}
+var POS = { A: [8, 14], B: [8, 98], C: [8, 182], G1: [168, 40], G2: [168, 150], G3: [328, 24], G4: [328, 140], G5: [488, 24], G6: [488, 164] };
+var NW = 92, NH = 46;
+function v3Dag(R, k){
+  var done = {}, i, cur = R.order[k - 1], full = k === R.order.length, crit = {}, svg = '<svg viewBox="0 0 600 236" role="img" aria-label="graf gerbang untuk analisis timing statis">', e = '', nd = '';
+  for (i = 0; i < k; i++) done[R.order[i]] = 1;
+  for (i = 0; i + 1 < R.path.length; i++) crit[R.path[i] + '>' + R.path[i + 1]] = 1;
+  Object.keys(GATES).forEach(function(g){ GATES[g][1].forEach(function(s){
+    var a = POS[s], b = POS[g], cls = 'ed' + (done[s] && done[g] ? ' live' : '') + (full && crit[s + '>' + g] ? ' crit' : '');
+    e += '<path class="' + cls + '" d="M' + (a[0] + NW) + ' ' + (a[1] + NH / 2) + ' L' + b[0] + ' ' + (b[1] + NH / 2) + '"/>';
+  }); });
+  Object.keys(POS).forEach(function(n){
+    var p = POS[n], cls = 'nd' + (done[n] ? ' done' : '') + (n === cur ? ' cur' : '');
+    if (full){ if (R.path.indexOf(n) >= 0) cls += ' crit'; if (OUTPUTS.indexOf(n) >= 0 && R.slack[n] < 0) cls += ' bad'; }
+    nd += '<g class="' + cls + '"><rect x="' + p[0] + '" y="' + p[1] + '" width="' + NW + '" height="' + NH + '" rx="6"/><text x="' + (p[0] + 8) + '" y="' + (p[1] + 18) + '">' + n + (GATES[n] ? ' d=' + R.delay[n] : '') + '</text><text class="arr" x="' + (p[0] + 8) + '" y="' + (p[1] + 37) + '">' + (done[n] ? 't = ' + R.arr[n] : 't = ?') + '</text></g>';
+  });
+  q('#v3-dag').innerHTML = svg + e + nd + '</svg>';
+}
+function v3Draw(st){
+  var T = +q('#v3-t').value, slow = q('#v3-slow').value; if (slow === 'none') slow = null;
+  q('#v3-tv').textContent = String(T);
+  var R = staAnalyze(T, slow), k = Math.min(st.k, R.order.length), i, done = {};
+  for (i = 0; i < k; i++) done[R.order[i]] = 1;
+  v3Dag(R, k);
+  var h = '<thead><tr><th scope="col">simpul</th><th scope="col">tunda</th><th scope="col">fanin</th><th scope="col">arrival</th><th scope="col">via</th><th scope="col">slack</th></tr></thead><tbody>';
+  R.order.forEach(function(n, j){
+    var cur = j === k - 1, is = !!GATES[n], d = done[n];
+    h += '<tr><td class="c' + (cur ? ' hl' : '') + '">' + n + '</td><td class="c">' + (is ? R.delay[n] : '—') + '</td><td class="c">' + (is ? GATES[n][1].join(', ') : 'masukan') + '</td><td class="c' + (cur ? ' hl' : '') + '">' + (d ? R.arr[n] : '—') + '</td><td class="c">' + (d && is ? R.via[n] : '—') + '</td><td class="c">' + (d && OUTPUTS.indexOf(n) >= 0 ? sg(R.slack[n]) : '—') + '</td></tr>';
+  });
+  q('#v3-tab').innerHTML = h + '</tbody>';
+  var t = 'T = ' + T + ' · lambat: ' + (slow || 'tidak ada') + ' · diproses ' + k + ' dari ' + R.order.length;
+  if (k === R.order.length){
+    t += ' (selesai) · slack G5 = ' + sg(R.slack.G5) + ', G6 = ' + sg(R.slack.G6) + ' · jalur kritis: ' + R.path.join(' → ') + ' · ' + (R.slack[R.worst] < 0 ? 'MELANGGAR di ' + R.worst + ' (' + sg(R.slack[R.worst]) + ')' : 'memenuhi timing');
+  } else t += ' (sementara)' + (k ? ' · terakhir: ' + R.order[k - 1] + ' dengan arrival ' + R.arr[R.order[k - 1]] : '');
+  q('#v3-out').textContent = t;
+}
+
+/* ---------- 4. substitusi Tcl ---------- */
+var TCLVARS = { x: '5', name: 'ani budi', lst: 'a b c' };
+var TCLEX = ['cmd $x $name', 'cmd "$x + 1"', 'cmd {$x + 1}', 'cmd [expr {$x + 1}]', 'cmd a\\ b {c d}', 'cmd $x$x', 'cmd "[string length $name]x"', 'cmd {*}$lst', 'cmd $lst', 'cmd [string length $name] [llength $lst] [lindex $lst 1]'];
+function tclBracket(s, i){ var d = 0, j; for (j = i; j < s.length; j++){ var c = s[j]; if (c === '\\') j++; else if (c === '{'){ var b = 1; j++; while (j < s.length && b){ if (s[j] === '{') b++; else if (s[j] === '}') b--; j++; } j--; } else if (c === '[') d++; else if (c === ']'){ d--; if (!d) return j; } } return s.length; }
+function tclSubst(s){
+  var out = '', i = 0, c, m, j;
+  while (i < s.length){
+    c = s[i];
+    if (c === '\\'){ out += s[i + 1] === undefined ? '' : s[i + 1]; i += 2; }
+    else if (c === '$'){
+      m = /^\$(?:\{([^}]*)\}|(\w+))/.exec(s.slice(i));
+      if (m){ out += TCLVARS[m[1] || m[2]] || ''; i += m[0].length; } else { out += c; i++; }
+    } else if (c === '['){ j = tclBracket(s, i); out += tclEval(s.slice(i + 1, j)); i = j + 1; }
+    else { out += c; i++; }
+  }
+  return out;
+}
+function tclSplitList(s){ var w = [], i = 0, cur; s = s.trim(); while (i < s.length){ while (s[i] === ' ') i++; if (i >= s.length) break; if (s[i] === '{'){ var d = 1, st = ++i; while (i < s.length && d){ if (s[i] === '{') d++; else if (s[i] === '}') d--; i++; } w.push(s.slice(st, i - 1)); } else { st = i; while (i < s.length && s[i] !== ' ') i++; w.push(s.slice(st, i)); } } return w; }
+function tclParse(line){
+  var words = [], i = 0, n = line.length, c, w, st, d, j;
+  while (i < n){
+    while (i < n && /\s/.test(line[i])) i++;
+    if (i >= n) break;
+    w = { raw: '', kind: 'bare', expand: false };
+    if (line.substr(i, 3) === '{*}' && i + 3 < n && !/\s/.test(line[i + 3])){ w.expand = true; i += 3; }
+    st = i; c = line[i];
+    if (c === '"'){
+      w.kind = 'quote'; j = i + 1;
+      while (j < n && line[j] !== '"'){ if (line[j] === '\\') j++; else if (line[j] === '[') j = tclBracket(line, j); j++; }
+      w.body = line.slice(i + 1, j); i = j + 1; w.val = tclSubst(w.body); w.subst = w.body !== w.val;
+    } else if (c === '{'){
+      w.kind = 'brace'; d = 1; j = i + 1; while (j < n && d){ if (line[j] === '{') d++; else if (line[j] === '}') d--; j++; }
+      w.body = line.slice(i + 1, j - 1); i = j; w.val = w.body;
+    } else {
+      j = i;
+      while (j < n && !/\s/.test(line[j])){ if (line[j] === '\\') j++; else if (line[j] === '[') j = tclBracket(line, j); j++; }
+      w.body = line.slice(i, j); i = j; w.val = tclSubst(w.body); w.subst = /[$\[\\]/.test(w.body);
+    }
+    w.raw = line.slice(st - (w.expand ? 3 : 0), i);
+    words.push(w);
+  }
+  return words;
+}
+function tclArgs(ws){ var a = []; ws.forEach(function(w){ if (w.expand) tclSplitList(w.val).forEach(function(x){ a.push(x); }); else a.push(w.val); }); return a; }
+function tclEval(text){
+  var ws = tclParse(text), a = tclArgs(ws), c = a[0], r;
+  if (c === 'expr'){ r = /^\s*(-?\d+)\s*([-+*])\s*(-?\d+)\s*$/.exec(tclSubst(a.slice(1).join(' '))); if (!r) return 'galat'; return String(r[2] === '+' ? +r[1] + +r[3] : (r[2] === '-' ? r[1] - r[3] : r[1] * r[3])); }
+  if (c === 'string' && a[1] === 'length') return String(a[2].length);
+  if (c === 'llength') return String(tclSplitList(a[1]).length);
+  if (c === 'lindex') return tclSplitList(a[1])[+a[2]] || '';
+  return 'galat';
+}
+function tclWhy(w){
+  if (w.expand) return 'expansi {*}: list dipecah menjadi ' + tclSplitList(w.val).length + ' kata';
+  if (w.kind === 'brace') return 'dalam { }: teks apa adanya, tanpa substitusi';
+  if (w.kind === 'quote') return w.subst ? 'dalam " ": substitusi sekali; spasi tetap di dalam satu kata (tanpa perhitungan)' : 'dalam " ": tidak ada yang diganti';
+  if (/\\/.test(w.body) && !/[$\[]/.test(w.body)) return 'backslash-spasi menjaga spasi di dalam satu kata';
+  if (/\[/.test(w.body)) return '[ ] dijalankan lebih dulu dan diganti hasilnya (substitusi sekali)';
+  if (w.subst) return 'substitusi sekali; hasilnya tidak dipecah lagi menjadi beberapa kata';
+  return 'kata biasa';
+}
+function tclRun(i){
+  var line = TCLEX[i], ws = tclParse(line), args = tclArgs(ws.slice(1));
+  return { line: line, ws: ws, out: args.length + ' kata: ' + args.map(function(x){ return '<' + x + '>'; }).join(' ') };
+}
+function v4Draw(st){
+  var i = +q('#v4-ex').value, R = tclRun(i), k = Math.min(st.k, R.ws.length), j;
+  q('#v4-line').textContent = 'baris: ' + R.line + '   (x = 5, name = ani budi, lst = a b c)';
+  var box = q('#v4-words'); box.textContent = '';
+  for (j = 0; j < k; j++){
+    var w = R.ws[j], row = document.createElement('div'); row.className = 'w' + (j === k - 1 ? ' on' : '');
+    var a = document.createElement('span'); a.textContent = String(j); var b = document.createElement('span'); b.textContent = w.raw; var c = document.createElement('span'); c.textContent = j === 0 ? 'nama perintah' : '→ ' + (w.expand ? tclSplitList(w.val).map(function(x){ return '<' + x + '>'; }).join(' ') : '<' + w.val + '>');
+    var y = document.createElement('span'); y.className = 'why'; y.textContent = j === 0 ? 'kata pertama adalah perintah' : tclWhy(w);
+    row.appendChild(a); row.appendChild(b); row.appendChild(c); row.appendChild(y); box.appendChild(row);
+  }
+  if (!k) box.textContent = '(belum ada kata; tekan Maju)';
+  q('#v4-out').textContent = R.line + ' · ' + (k < R.ws.length ? 'kata ' + k + ' dari ' + R.ws.length : 'selesai · ' + R.out);
+}
+
+/* ---------- kuis ---------- */
+function quizSetup(){
+ICD.quiz.mount('#kuis', { id: 'm04d', title: 'Kuis M04d', questions: [
+{ q: 'Setelah <code>a = [[1, 2], [3]]; b = a[:]; b[0].append(9)</code>, apa isi <code>a</code>?', o: [
+  { t: '[[1, 2, 9], [3]]', ok: true, w: 'Salinan dangkal membuat list luar baru, tetapi b[0] dan a[0] menunjuk objek dalam yang sama, sehingga append terlihat di a.' },
+  { t: '[[1, 2], [3]]', w: 'Itu hasil bila b = copy.deepcopy(a); dengan a[:] elemen dalam dipakai bersama.' },
+  { t: '[[1, 2, 9], [3], [9]]', w: 'append(9) hanya menambah 9 ke satu list dalam, bukan menambah list baru.' },
+  { t: 'Galat karena b adalah salinan', w: 'Salinan dangkal valid; tidak ada galat, hanya berbagi elemen dalam.' }] },
+{ q: 'Fungsi <code>def f(x, acc=[]): acc.append(x); return acc</code> dipanggil <code>f(1)</code> lalu <code>f(2)</code>. Apa hasil panggilan kedua?', o: [
+  { t: '[1, 2]', ok: true, w: 'Nilai bawaan [] dibuat sekali saat def dijalankan dan dipakai ulang; panggilan kedua melihat sisa panggilan pertama.' },
+  { t: '[2]', w: 'Itu hasil yang diharapkan banyak orang, tetapi baru benar bila acc=None dan list dibuat di dalam fungsi.' },
+  { t: '[1]', w: 'List bawaan menyimpan 1 dari panggilan pertama, tetapi panggilan kedua menambah 2 ke objek yang sama.' },
+  { t: 'Galat: argumen bawaan tak boleh mutable', w: 'Python mengizinkannya; justru itulah sebab jebakannya diam-diam.' }] },
+{ q: 'Insertion sort mengurutkan 1.024 data acak dengan 262.358 perbandingan. Perkiraan untuk 4.096 data acak?', o: [
+  { t: 'sekitar 4,2 juta (16 kali)', ok: true, w: 'Θ(n²): data 4 kali lebih banyak berarti sekitar 4² = 16 kali; rasio terukur saat n berlipat dua adalah 3,96.' },
+  { t: 'sekitar 1 juta (4 kali)', w: 'Itu pertumbuhan linear; insertion sort kuadratik sehingga dua kali lipat n menaikkan biaya sekitar 4 kali per langkah penggandaan.' },
+  { t: 'sekitar 1,05 juta (rasio 4 per penggandaan, sekali saja)', w: 'Data naik dua kali penggandaan (1024 → 2048 → 4096), jadi rasio 4 berlaku dua kali: 16 kali.' },
+  { t: 'sekitar 12.000 (n log n)', w: 'Itu skala merge sort; insertion sort tidak n log n.' }] },
+{ q: 'Pada 1.024 kunci yang sudah terurut naik, algoritma mana yang hanya butuh 1.023 perbandingan?', o: [
+  { t: 'Insertion sort', ok: true, w: 'Tiap elemen dibandingkan sekali dengan tetangganya: n − 1 = 1.023; ini kasus terbaiknya.' },
+  { t: 'Merge sort', w: 'Merge sort melakukan 5.120 perbandingan, tidak peduli urutan awal (setengah n kali log₂ n).' },
+  { t: 'Quicksort dengan pivot terakhir', w: 'Justru kasus terburuk: 339.797 perbandingan (523.776 bila kunci berbeda semua).' },
+  { t: 'Ketiganya sama', w: 'Angka terukur jauh berbeda: 1.023, 5.120, dan 339.797.' }] },
+{ q: 'Pada Dijkstra dengan heap, entri (4, A) diambil setelah dist[A] sudah menjadi 3. Apa yang dilakukan algoritma?', o: [
+  { t: 'Melewatinya, karena entri itu usang', ok: true, w: 'd = 4 lebih besar dari dist[A] = 3; strategi lazy deletion membiarkan entri usang tinggal dan menolaknya saat diambil.' },
+  { t: 'Memperbarui dist[A] menjadi 4', w: 'Itu akan memperburuk jarak; jarak hanya diperbarui bila lebih kecil.' },
+  { t: 'Menghentikan algoritma karena ada konflik', w: 'Entri usang normal dan tidak menghentikan apa pun.' },
+  { t: 'Menghapus A dari graf', w: 'Graf tidak diubah; hanya entri heap yang diabaikan.' }] },
+{ q: 'Algoritma Kruskal pada sisi (1, a–c), (2, b–d), (3, b–c), (4, a–b), (5, c–d) menghasilkan total bobot...', o: [
+  { t: '6', ok: true, w: 'Terima a–c (1), b–d (2), b–c (3); a–b dan c–d membentuk siklus (union-find menolak). 1 + 2 + 3 = 6.' },
+  { t: '15', w: 'Itu jumlah semua sisi; pohon rentang hanya memakai V − 1 = 3 sisi.' },
+  { t: '10', w: 'Itu bila memilih sisi terberat; Kruskal memilih yang teringan lebih dulu.' },
+  { t: '7', w: 'Itu akan menyertakan a–b (4) menggantikan b–c (3), tetapi b–c lebih ringan dan lolos.' }] },
+{ q: 'Berapa panggilan <code>fib(25)</code> dengan <code>lru_cache</code>, dibanding 242.785 tanpa cache?', o: [
+  { t: '26', ok: true, w: 'Tiap nilai 0..25 dihitung tepat sekali; sisanya dijawab dari cache (waktu linear).' },
+  { t: '25', w: 'Ada 26 nilai berbeda (0 sampai 25), jadi 26 panggilan yang menghitung.' },
+  { t: '300', w: 'Memoisasi menghilangkan semua pekerjaan berulang; jumlahnya linear terhadap n, bukan kuadratik.' },
+  { t: '121.393', w: 'Itu sekitar setengah jumlah tanpa cache; memoisasi jauh lebih drastis.' }] },
+{ q: 'Pada DAG gerbang berperiode <i>T</i> = 9, G2 diperlambat 3 satuan. Slack G5 dan jalur kritisnya?', o: [
+  { t: 'Slack −3; C → G2 → G3 → G5', ok: true, w: 'Arrival G2 = 6, G3 = 8, G4 = 7, G5 = max(8, 7) + 4 = 12; slack = 9 − 12 = −3; pada G2 kedua fanin sama (0) dan aturan seri memilih C.' },
+  { t: 'Slack 0; jalur tidak berubah', w: 'Slack 0 adalah kondisi tanpa gerbang lambat; dengan G2 +3 arrival G5 menjadi 12.' },
+  { t: 'Slack −3; C → G2 → G4 → G5', w: 'G3 (arrival 8) lebih lambat dari G4 (7), sehingga G5 memilih G3 sebagai fanin penentu.' },
+  { t: 'Slack −1; B → G2 → G3 → G5', w: 'Selisihnya tiga, bukan satu: arrival G5 naik dari 9 ke 12.' }] },
+{ q: 'Dengan <code>x = 5</code>, apa yang diterima <code>cmd</code> pada <code>cmd "$x + 1"</code>?', o: [
+  { t: 'Satu kata: 5 + 1', ok: true, w: 'Kutip ganda mengganti $x tetapi tidak menghitung; spasi tetap di dalam satu kata.' },
+  { t: 'Satu kata: 6', w: 'Perhitungan hanya dilakukan expr, bukan substitusi biasa.' },
+  { t: 'Tiga kata: 5, +, 1', w: 'Spasi di dalam kutip tidak memecah kata.' },
+  { t: 'Satu kata: $x + 1', w: 'Itu hasil bila memakai kurung kurawal {$x + 1}; kutip ganda mengizinkan substitusi.' }] },
+{ q: 'Mengapa <code>expr {$x + 1}</code> lebih baik daripada <code>expr $x + 1</code>?', o: [
+  { t: 'Kurung kurawal membuat expr menerima teks mentah, mengganti sendiri; lebih cepat dan aman dari injeksi', ok: true, w: 'Tanpa kurung terjadi dua kali substitusi (Tcl lalu expr); nilai x yang berisi karakter khusus bisa ditafsir sebagai kode, dan ekspresi tak dapat dikompilasi.' },
+  { t: 'Agar hasilnya berupa bilangan bulat', w: 'Tipe hasil tidak bergantung pada kurung kurawal.' },
+  { t: 'Karena expr menolak argumen tanpa kurung kurawal', w: 'expr menerima keduanya; yang berbeda adalah kecepatan dan keamanan.' },
+  { t: 'Agar spasi dihapus', w: 'Kurung kurawal tidak menghapus spasi; ia hanya mencegah substitusi oleh Tcl.' }] },
+{ q: 'Dengan <code>lst = {a b c}</code>, jumlah kata yang diterima <code>cmd $lst</code> dan <code>cmd {*}$lst</code>?', o: [
+  { t: '1 kata dan 3 kata', ok: true, w: 'Substitusi tidak memecah hasil; {*} (expansi) menyebar list menjadi kata-kata terpisah.' },
+  { t: '3 kata dan 3 kata', w: 'Tanpa {*} nilai "a b c" tetap satu kata.' },
+  { t: '1 kata dan 1 kata', w: 'Dengan {*} list dipecah, jadi jumlahnya tiga.' },
+  { t: '3 kata dan 1 kata', w: 'Urutannya terbalik: yang tanpa {*} satu kata, yang dengan {*} tiga kata.' }] },
+{ q: 'Pada netlist dengan <code>p = AND(q, a)</code> dan <code>q = OR(p, b)</code>, algoritma Kahn meninggalkan simpul <code>p</code> dan <code>q</code>. Artinya?', o: [
+  { t: 'Ada siklus kombinasional (graf bukan DAG)', ok: true, w: 'p dan q saling bergantung sehingga derajat-masuk keduanya tak pernah mencapai 0; sisa simpul menandai siklus.' },
+  { t: 'p dan q adalah input primer', w: 'Input primer tak punya pendahulu dan diproses lebih dulu.' },
+  { t: 'Netlist terlalu besar', w: 'Ukuran tidak menyebabkan simpul tersisa; hanya siklus yang melakukannya.' },
+  { t: 'Kedua gerbang tidak punya fanout', w: 'Fanout tidak memengaruhi apakah Kahn selesai; siklus fanin yang memengaruhinya.' }] },
+{ q: 'Pada grid contoh, algoritma Lee dan A* sama-sama menemukan jalur sepanjang 18, tetapi sel yang diperluas 87 lawan 19. Mengapa?', o: [
+  { t: 'A* memakai heuristik jarak Manhattan yang admissible untuk mengarahkan pencarian', ok: true, w: 'Heuristik tidak pernah melebih-lebihkan jarak sebenarnya, sehingga hasil tetap optimal sambil menghindari sel yang menjauh dari tujuan.' },
+  { t: 'A* melewati halangan', w: 'Keduanya menghindari halangan; panjang jalur sama-sama 18.' },
+  { t: 'Lee tidak optimal', w: 'Lee (BFS) menjamin jalur terpendek pada grid tak berbobot; hanya lebih boros.' },
+  { t: 'A* menebak jalur tanpa memeriksa', w: 'A* memeriksa sel dalam urutan f = g + h dan tetap menjamin optimal bila heuristiknya admissible.' }] },
+{ q: 'Struktur data mana yang paling cocok untuk memeriksa apakah dua pin sudah terhubung pada satu net sambil terus menggabungkan net?', o: [
+  { t: 'Union-find (himpunan terpisah)', ok: true, w: 'find memeriksa himpunan yang sama dan union menggabungkan; dengan kompresi jalur dan union berdasarkan ukuran, tiap operasi hampir konstan.' },
+  { t: 'Heap', w: 'Heap memberi elemen terkecil, bukan konektivitas.' },
+  { t: 'List yang diurutkan', w: 'Menggabungkan dan mencari di list butuh waktu linear per operasi.' },
+  { t: 'Deque', w: 'Deque cocok untuk antrean BFS, bukan untuk konektivitas dinamis.' }] }
+]});
+}
+
+/* ---------- flashcard ---------- */
+ICD.cards.register('m04d-python-tcl-algoritma', [
+{ id: 'ref', f: 'Penugasan di Python?', b: 'Menyalin referensi, bukan objek. b = a membuat dua nama untuk satu objek (b is a: True); mengubah lewat satu nama terlihat di yang lain.' },
+{ id: 'copy', f: 'Dangkal lawan dalam?', b: 'a[:] menyalin lapisan luar saja (b[0] is a[0]: True); copy.deepcopy menyalin rekursif. Struktur bersarang butuh deepcopy.' },
+{ id: 'default', f: 'Argumen bawaan mutable?', b: 'def f(x, acc=[]) memakai satu list untuk semua panggilan. Perbaikan: acc=None lalu acc = [] di dalam fungsi.' },
+{ id: 'iadd', f: '+= pada list?', b: 'x += [2] mengubah list di tempat (alias ikut berubah); x = x + [2] membuat list baru.' },
+{ id: 'bigo', f: 'Membaca rasio saat n berlipat dua?', b: '≈ 2 linear, sedikit di atas 2 untuk n log n, ≈ 4 kuadratik. Contoh insertion acak 3,96; merge 2,26.' },
+{ id: 'ins', f: 'Insertion sort?', b: 'n − 1 perbandingan bila terurut, sekitar n²/2 bila terbalik; 262.358 pada 1.024 data acak. Bagus untuk data kecil dan hampir terurut.' },
+{ id: 'merge', f: 'Merge sort?', b: 'Antara (n/2) log₂ n dan n log₂ n − n + 1 perbandingan (5.120 sampai 9.217 untuk n = 1024); stabil, butuh memori O(n).' },
+{ id: 'quick', f: 'Quicksort pivot terakhir?', b: 'Rata-rata n log n (11.766 pada acak), tetapi n(n−1)/2 pada data terurut berkunci unik (339.797 dengan kembar pada n = 1024). Pakai pivot acak atau introsort.' },
+{ id: 'hash', f: 'dict dan set?', b: 'Tabel hash: pencarian, sisip, hapus O(1) rata-rata; kunci harus hashable (immutable).' },
+{ id: 'heap', f: 'Heap dan heapq?', b: 'Elemen terkecil dalam O(1), sisip dan ambil O(log n). Dasar antrean prioritas, Dijkstra, dan simulasi berbasis kejadian.' },
+{ id: 'dijk', f: 'Dijkstra?', b: 'Bobot non-negatif; ambil simpul jarak terkecil dari heap, relaksasi tetangga, lewati entri usang. O((V + E) log V). Bobot negatif: Bellman-Ford.' },
+{ id: 'uf', f: 'Union-find?', b: 'find dengan path halving dan union berdasarkan ukuran: O(α(n)) per operasi. Dipakai Kruskal dan konektivitas net.' },
+{ id: 'kahn', f: 'Urutan topologis (Kahn)?', b: 'Ambil simpul berderajat-masuk 0, kurangi derajat tetangga; O(V + E). Simpul tersisa berarti ada siklus (loop kombinasional).' },
+{ id: 'sta', f: 'Arrival dan slack?', b: 'arrival = max(arrival fanin) + tunda; slack = T − arrival. Negatif melanggar. Jalur kritis = rantai argmax. G2 +3 pada T = 9: slack G5 = −3.' },
+{ id: 'dp', f: 'Memoisasi?', b: 'Menyimpan hasil per argumen: fib(25) turun dari 242.785 panggilan ke 26. DP mengisi tabel; LCS O(m·n).' },
+{ id: 'lee', f: 'Lee lawan A*?', b: 'Lee = BFS (jalur terpendek, tak berbobot); A* menambah heuristik admissible: jalur sama (18) dengan 19 lawan 87 sel diperluas.' },
+{ id: 'tclsub', f: 'Aturan substitusi Tcl?', b: 'Pecah menjadi kata, lalu ganti $, [ ], \\ sekali per kata. " " mengizinkan substitusi, { } mencegahnya; hasil tak dipecah lagi. {*} menyebar list.' },
+{ id: 'tclexpr', f: 'Mengapa expr {…}?', b: 'Kurung kurawal menyerahkan teks mentah ke expr: lebih cepat (bytecode) dan aman dari injeksi; tanpa kurung terjadi dua kali substitusi.' }
+]);
+ICD.cards.mount('#kartu', { file: 'm04d-python-tcl-algoritma' });
+
+/* ---------- pasang ---------- */
+ICD.ready(function(){
+  var v1ctl, v2ctl, v3ctl, v4ctl;
+  q('#v4-ex').innerHTML = TCLEX.map(function(l, i){ return '<option value="' + i + '">' + esc(l) + '</option>'; }).join('');
+  v1ctl = ICD.sim.mount('#v1', { fps: 1, max: 6, unit: 'pernyataan', label: 'Kontrol alias dan salinan',
+    init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= 4 ? null : { k: s.k + 1 }; }, draw: v1Draw });
+  q('#v1-form').addEventListener('change', function(){ v1ctl.reset(); });
+  v2ctl = ICD.sim.mount('#v2', { fps: 1, max: 10, unit: 'ukuran n', label: 'Kontrol perbandingan pengurutan',
+    init: function(){ return { k: 1 }; }, step: function(s){ return s.k >= 9 ? null : { k: s.k + 1 }; }, draw: v2Draw });
+  q('#v2-kind').addEventListener('change', function(){ v2ctl.reset(); });
+  v3ctl = ICD.sim.mount('#v3', { fps: 1, max: 10, unit: 'simpul', label: 'Kontrol STA mini',
+    init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= 9 ? null : { k: s.k + 1 }; }, draw: v3Draw });
+  ['#v3-t', '#v3-slow'].forEach(function(id){ q(id).addEventListener('input', function(){ v3ctl.reset(); }); q(id).addEventListener('change', function(){ v3ctl.reset(); }); });
+  v4ctl = ICD.sim.mount('#v4', { fps: 1, max: 12, unit: 'kata', label: 'Kontrol substitusi Tcl',
+    init: function(){ return { k: 0 }; }, step: function(s){ return s.k >= tclParse(TCLEX[+q('#v4-ex').value]).length ? null : { k: s.k + 1 }; }, draw: v4Draw });
+  q('#v4-ex').addEventListener('change', function(){ v4ctl.reset(); });
+  quizSetup();
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# laporan timing contoh (format key=value, satu path per baris)
+path=1 start=u_cpu/a_reg end=u_alu/q_reg group=clk slack=-0.12 cells=14
+path=2 start=u_cpu/b_reg end=u_alu/r_reg group=clk slack=0.05 cells=9
+path=3 start=u_mem/addr_reg end=u_mem/dout_reg group=clk slack=0.31 cells=6
+path=4 start=in_data end=u_cpu/a_reg group=io slack=-0.31 cells=3
+path=5 start=u_alu/q_reg end=out_flag group=io slack=1.20 cells=2
+path=6 start=u_cpu/c_reg end=u_alu/s_reg group=clk slack=0.00 cells=11
