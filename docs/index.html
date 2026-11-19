@@ -25,13 +25,61 @@
 (function(){"use strict";var i=window.ICD,f=i.el,o=i.reg,c=i.progress,u=i.store,h=["","Matematika, rangkaian listrik, representasi data, dan alat kerja (C, Linux, Git, Python).","Semikonduktor, transistor dari BJT sampai FinFET dan GAA, dan penguat analog dasar.","Logika kombinasional dan sekuensial, CMOS VLSI, sampai layout standard cell.","RISC-V, pipeline, cache, multicore, GPU/NPU, dan protokol SoC.","SystemVerilog, teknik RTL, verifikasi (UVM), formal, dan FPGA.","Sintesis, STA, floorplan sampai routing, signoff, tapeout, low-power, dan DFT.","Desain analog, ADC/DAC, PLL, SerDes, dan memori (SRAM, DRAM, Flash).","Fabrikasi, packaging 3D, keandalan, keamanan hardware, dan functional safety.","Teknologi terkini dan cara membangun karier di chip design."],m={belum:"Belum mulai",berjalan:"Berjalan",selesai:"Selesai",soon:"Segera"},k={belum:"st-todo",berjalan:"st-doing",selesai:"st-done",soon:"st-soon"};function v(e){var t=e*100;return(t>0&&t<1?t.toFixed(1):String(Math.round(t)))+"%"}function S(e){return(Math.round(e*10)/10).toLocaleString("id-ID")+" jam"}function p(e){return e.toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}function D(e,t){var a=t===!1?"soon":e;return f("span",{class:"icd-badge "+k[a],text:m[a]})}function w(e){return i.avail.has(e.id)?c.fileStatus(e.id):"soon"}function b(){var e=u.get("progress",{});return Object.keys(e).some(function(t){return o.file(t)&&(e[t].sections&&Object.keys(e[t].sections).some(function(a){return e[t].sections[a]})||e[t].visited)})}function d(){var e=u.get("plan",null),t=e&&e.track&&o.tracks[e.track]?o.tracks[e.track].files:null;return o.files.filter(function(a){return!t||t[a.id]})}function L(){var e=u.get("meta.lastFile",null),t=e&&o.file(e);if(!t){var a=u.get("progress",{}),n=0;Object.keys(a).forEach(function(r){o.file(r)&&a[r].visited>n&&(n=a[r].visited,t=o.file(r))})}if(t&&i.avail.has(t.id)&&c.fileStatus(t.id)!=="selesai"){var s=u.get("progress."+t.id+".last",null);return{f:t,href:t.id+".html"+(s?"#"+s:""),resume:!0,section:s}}var l=d().filter(function(r){return i.avail.has(r.id)&&c.fileStatus(r.id)!=="selesai"})[0];return l?{f:l,href:l.id+".html",resume:c.fileStatus(l.id)!=="belum"}:null}function T(e){if(!e)return null;var t=e.hours||10,a=e.start?new Date(e.start+"T00:00:00"):new Date(e.at||Date.now()),n=Math.max(0,Math.floor((Date.now()-a.getTime())/(7*864e5))),s=0,l=[];return d().forEach(function(r){var A=s,g=s+r.hours;s=g,g>n*t+.01&&A<(n+1)*t-.01&&l.push(r)}),{n:n+1,items:l,start:new Date(a.getTime()+n*7*864e5),weeks:Math.ceil(s/t)}}function C(e,t){var a=(i.index||[]).filter(function(n){return n.t==="section"&&n.href===e+".html#"+t})[0];return a?a.title:""}function F(e){var t=f("ul",{class:"statrow"});return e.forEach(function(a){t.appendChild(f("li",null,[f("b",{text:String(a[0])}),a[1]]))}),t}i.pg={DESC:h,LABEL:m,pct:v,hrs:S,fmtDate:p,badge:D,lessonStatus:w,hasProgress:b,planFiles:d,nextTarget:L,weekOf:T,sectionTitle:C,statRow:F}})();
 </script>
 <style>
-.flow{list-style:none;margin:0;padding:var(--sp-4) var(--sp-5);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-1);box-shadow:var(--shadow-1);counter-reset:f}
-.flow li{position:relative;display:flex;gap:var(--sp-3);align-items:center;padding:var(--sp-2) 0 var(--sp-2) 0;counter-increment:f}
-.flow li+li::before{content:"";position:absolute;left:15px;top:-14px;height:24px;border-left:2px dashed var(--line-strong)}
-.flow li::after{content:counter(f);order:-1;flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--surface-3);color:var(--accent);font-family:var(--f-mono);font-size:var(--fs-14);font-weight:600}
-.flow b{display:block}.flow span{color:var(--text-2);font-size:var(--fs-14)}
-.oss{display:grid;gap:var(--sp-4);grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
-.oss .icd-card{margin:0}
+body[data-file=index] .icd-wrap{max-width:none;padding:0 0 64px}
+/* ---------- hero fab ---------- */
+.fh{position:relative;isolation:isolate;overflow:hidden;color:#F2FAFD;background:radial-gradient(120% 90% at 75% 40%,#0E4559 0%,#06222E 55%,#041820 100%);min-height:min(calc(100svh - var(--top)),880px);display:flex;align-items:center}
+.fh canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-2}
+.fh-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(4,24,32,.9) 0%,rgba(4,24,32,.55) 48%,rgba(4,24,32,0) 75%)}
+.fh-in{width:100%;max-width:1080px;margin:0 auto;padding:var(--sp-7) var(--sp-4);display:grid;gap:var(--sp-5)}
+.fh-eye{font-family:var(--f-mono);font-size:var(--fs-14);letter-spacing:.08em;text-transform:uppercase;color:#9FDDF0;margin:0}
+.fh h1{font-size:clamp(2.3rem,7vw,4.2rem);line-height:1.04;letter-spacing:-.025em;margin:0;max-width:14ch;text-wrap:balance;color:#fff}
+.fh h1 em{font-style:normal;color:#9FDDF0}
+.fh .lead{font-size:var(--fs-18);max-width:44ch;margin:0;color:#C6E2EC}
+.fh .cta{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+.fh .icd-btn{min-height:48px;padding:6px 22px;font-weight:600}
+.fh .icd-btn.primary{background:#9FDDF0;border-color:#9FDDF0;color:#06222E}
+.fh .icd-btn.primary:hover{background:#C4EDF8}
+.fh .icd-btn.ghost{background:transparent;border-color:rgba(255,255,255,.45);color:#fff}
+.fh .icd-btn.ghost:hover{background:rgba(255,255,255,.12)}
+.fh .statrow{border-top:1px solid rgba(255,255,255,.2);max-width:30rem;padding-top:var(--sp-3)}
+.fh .statrow li{color:#B8D8E4}.fh .statrow b{color:#fff}
+.fh .resume{color:var(--text);max-width:30rem}
+.fh-hint{position:absolute;left:50%;bottom:var(--sp-4);transform:translateX(-50%);color:#B8D8E4;font-size:var(--fs-14);text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:4px}
+.fh-hint i{width:2px;height:28px;background:linear-gradient(#9FDDF0,transparent);animation:hint 1.8s ease-in-out infinite}
+@keyframes hint{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+@media(max-width:799px){.fh{align-items:flex-start}.fh-shade{background:linear-gradient(180deg,rgba(4,24,32,.92) 0%,rgba(4,24,32,.6) 55%,rgba(4,24,32,0) 85%)}.fh-in{padding-top:var(--sp-6)}}
+/* ---------- scrollytelling ---------- */
+.story{max-width:1080px;margin:0 auto;padding:var(--sp-7) var(--sp-4) var(--sp-5)}
+.story>h2{font-size:clamp(1.6rem,4vw,2.2rem);margin:0 0 var(--sp-2)}.story>.sub{color:var(--text-2);margin:0 0 var(--sp-5);max-width:56ch}
+.story-grid{display:grid;gap:var(--sp-5);grid-template-columns:1fr}
+.stage{position:sticky;top:calc(var(--top) + 8px);z-index:1;align-self:start;background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3);box-shadow:var(--shadow-1)}
+.stage svg{display:block;width:100%;height:auto;max-height:42vh}
+.stage .cap{margin:var(--sp-2) 0 0;font-family:var(--f-mono);font-size:var(--fs-14);color:var(--text-2);text-align:center;min-height:1.4em}
+.dots{display:flex;justify-content:center;gap:6px;list-style:none;margin:var(--sp-2) 0 0;padding:0}
+.dots button{width:24px;height:24px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
+.dots button::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--line-strong);transition:transform .2s,background .2s}
+.dots button[aria-current=true]::before{background:var(--accent);transform:scale(1.35)}
+.steps{list-style:none;margin:0;padding:0}
+.step{min-height:62vh;display:flex;flex-direction:column;justify-content:center;padding:var(--sp-4) 0 var(--sp-4) var(--sp-4);border-left:3px solid var(--line);transition:border-color .3s}
+.step.on{border-left-color:var(--accent)}
+.step .n{font-family:var(--f-mono);color:var(--accent);font-size:var(--fs-14)}
+.step h3{font-size:var(--fs-22);margin:var(--sp-1) 0 var(--sp-2)}
+.step p{color:var(--text-2);margin:0 0 var(--sp-3);max-width:46ch}
+.step a{font-weight:600}
+@media(min-width:900px){.story-grid{grid-template-columns:1.05fr .95fr;gap:var(--sp-7)}.stage{top:calc(var(--top) + 48px);padding:var(--sp-4)}.stage svg{max-height:58vh}.step{min-height:78vh}}
+[data-s]{opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s}
+[data-s].on{opacity:1;transform:none}
+.uvray{stroke:#E8B04A;stroke-width:2;stroke-dasharray:5 5;animation:uv 1s linear infinite}
+@keyframes uv{to{stroke-dashoffset:-20}}
+.slab{font:600 11px var(--f-mono);fill:var(--text-2)}
+/* ---------- bagian lain ---------- */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.rv.in{opacity:1;transform:none}
+.cta-band{margin-top:var(--sp-7);padding:var(--sp-6) var(--sp-5);border-radius:var(--r-lg);background:var(--surface-2);border:1px solid var(--line);display:grid;gap:var(--sp-4);justify-items:start}
+.cta-band h2{margin:0;font-size:clamp(1.5rem,4vw,2rem)}
+.cta-band p{margin:0;color:var(--text-2);max-width:56ch}
+.cta-band .row{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+.cta-band .icd-btn.primary{min-height:48px;padding:6px 22px;font-weight:600}
+@media(prefers-reduced-motion:reduce){.fh-hint i{animation:none}.uvray{animation:none}.rv{opacity:1;transform:none}}
 </style>
 <meta name="theme-color" content="#0B5C7A">
 <link rel="canonical" href="https://captainreez.github.io/bikinchip/">
@@ -55,57 +103,76 @@
 </head>
 <body data-file="index">
 <main class="wide">
-<div class="pg">
-  <div id="resume" aria-live="polite"></div>
-
-  <div class="pg-hero">
-    <div style="display:grid;gap:var(--sp-5)">
-      <h1>Ayo jadi <em>chip designer</em> Indonesia.</h1>
-      <p class="lead">Kurikulum IC design gratis dari nol sampai tapeout, dalam Bahasa Indonesia. Belajar dengan visualisasi yang bisa kamu mainkan, kuis, dan lab open-source.</p>
-      <div class="cta">
-        <a class="icd-btn primary" href="m00-orientasi.html" id="cta-start">Mulai dari M00</a>
-        <a class="icd-btn ghost" href="kurikulum.html">Lihat kurikulum</a>
-      </div>
-      <ul class="statrow" id="stats"></ul>
+<section class="fh pg-hero" id="top" aria-labelledby="h-hero">
+  <canvas id="fab" aria-hidden="true"></canvas><div class="fh-shade" aria-hidden="true"></div>
+  <div class="fh-in">
+    <p class="fh-eye">Open source · Gratis · Bahasa Indonesia</p>
+    <h1 id="h-hero">Ayo jadi <em>chip designer</em> Indonesia.</h1>
+    <p class="lead">Dari tegangan dan bilangan biner sampai tapeout. Belajar lewat visualisasi interaktif, kuis, dan lab open-source.</p>
+    <div class="cta">
+      <a class="icd-btn primary" href="m00-orientasi.html" id="cta-start">Mulai dari M00</a>
+      <a class="icd-btn ghost" href="kurikulum.html">Lihat kurikulum</a>
     </div>
-    <ol class="flow" aria-label="Alur dari ide sampai silikon">
-      <li><div><b>Spesifikasi dan arsitektur</b><span>Part 4: apa yang chip kerjakan</span></div></li>
-      <li><div><b>RTL dan verifikasi</b><span>Part 5: SystemVerilog, UVM, formal</span></div></li>
-      <li><div><b>Sintesis dan timing</b><span>Part 6: dari RTL ke gerbang, STA</span></div></li>
-      <li><div><b>Physical design</b><span>Part 6: floorplan, placement, routing</span></div></li>
-      <li><div><b>Signoff dan tapeout</b><span>Part 6 dan 8: DRC, LVS, fabrikasi</span></div></li>
+    <div id="resume" aria-live="polite"></div>
+    <ul class="statrow" id="stats"></ul>
+  </div>
+  <a class="fh-hint" href="#proses" aria-label="Gulir ke bawah"><span>Gulir</span><i></i></a>
+</section>
+
+<section class="story" id="proses" aria-labelledby="h-proses">
+  <h2 id="h-proses">Dari pasir ke chip</h2>
+  <p class="sub">Gulir untuk melihat satu chip terbentuk. Tiap tahap punya Part-nya di kurikulum.</p>
+  <div class="story-grid">
+    <div class="stage">
+      <svg id="stage-svg" viewBox="0 0 480 300" role="img" aria-label="Ilustrasi proses pembuatan chip">
+        <g data-s="0-3"><rect x="20" y="200" width="440" height="80" rx="4" fill="#3B6B80"/><text class="slab" x="30" y="268" fill="#fff" style="fill:#fff">Wafer silikon (p-type)</text></g>
+        <g data-s="1-1"><rect x="20" y="190" width="440" height="10" fill="#9FDDF0"/><text class="slab" x="30" y="184">SiO₂</text>
+          <rect x="20" y="168" width="130" height="22" fill="#E8B04A"/><rect x="190" y="168" width="100" height="22" fill="#E8B04A"/><rect x="330" y="168" width="130" height="22" fill="#E8B04A"/>
+          <g><line class="uvray" x1="170" y1="40" x2="170" y2="166"/><line class="uvray" x1="310" y1="40" x2="310" y2="166"/><line class="uvray" x1="240" y1="40" x2="240" y2="166"/></g>
+          <rect x="130" y="30" width="200" height="8" fill="var(--text-3)"/><text class="slab" x="340" y="38">mask</text><text class="slab" x="30" y="160">photoresist</text></g>
+        <g data-s="2-3"><rect x="150" y="200" width="60" height="16" fill="#5CC1E0"/><rect x="270" y="200" width="60" height="16" fill="#5CC1E0"/>
+          <rect x="210" y="188" width="60" height="6" fill="#9FDDF0"/><rect x="214" y="174" width="52" height="14" rx="2" fill="#B794F6"/>
+          <text class="slab" x="214" y="168">gate</text><text class="slab" x="152" y="232" style="fill:#06222E">source</text><text class="slab" x="278" y="232" style="fill:#06222E">drain</text></g>
+        <g data-s="3-3"><rect x="170" y="150" width="8" height="50" fill="#9AA5AB"/><rect x="302" y="150" width="8" height="50" fill="#9AA5AB"/><rect x="237" y="150" width="8" height="24" fill="#9AA5AB"/>
+          <rect x="150" y="138" width="180" height="12" rx="2" fill="#F6AD55"/><rect x="200" y="110" width="8" height="28" fill="#9AA5AB"/><rect x="120" y="98" width="260" height="12" rx="2" fill="#E8884A"/>
+          <text class="slab" x="340" y="148">metal 1</text><text class="slab" x="390" y="108">metal 2</text></g>
+        <g data-s="4-4"><circle cx="240" cy="150" r="118" fill="#3B6B80"/><g id="wafer-dies"></g><text class="slab" x="240" y="288" text-anchor="middle">satu wafer, ratusan die; yang cacat dibuang</text></g>
+        <g data-s="5-5"><g fill="#9AA5AB"><rect x="150" y="60" width="8" height="26"/><rect x="190" y="60" width="8" height="26"/><rect x="230" y="60" width="8" height="26"/><rect x="270" y="60" width="8" height="26"/><rect x="310" y="60" width="8" height="26"/>
+          <rect x="150" y="214" width="8" height="26"/><rect x="190" y="214" width="8" height="26"/><rect x="230" y="214" width="8" height="26"/><rect x="270" y="214" width="8" height="26"/><rect x="310" y="214" width="8" height="26"/></g>
+          <rect x="130" y="86" width="208" height="128" rx="10" fill="#26343B"/><rect x="190" y="120" width="88" height="60" rx="4" fill="#5CC1E0"/><text class="slab" x="234" y="156" text-anchor="middle" style="fill:#06222E">die</text><text class="slab" x="234" y="270" text-anchor="middle">tapeout, potong, kemas, kirim</text></g>
+      </svg>
+      <p class="cap" id="stage-cap">Wafer silikon</p>
+      <ul class="dots" id="dots" aria-label="Tahap"></ul>
+    </div>
+    <ol class="steps" id="steps">
+      <li class="step" data-i="0"><span class="n">01</span><h3>Mulai dari pasir</h3><p>Silikon murni ditarik menjadi ingot, diiris jadi wafer. Kamu belajar kenapa silikon, apa itu doping, dan bagaimana semikonduktor bekerja.</p><a href="kurikulum.html?part=2">Part 2 · Semikonduktor →</a></li>
+      <li class="step" data-i="1"><span class="n">02</span><h3>Litografi: menggambar dengan cahaya</h3><p>Cahaya UV menembus mask dan memindahkan pola ke photoresist. Chip modern mengulang langkah ini puluhan kali.</p><a href="kurikulum.html?part=8">Part 8 · Fabrikasi →</a></li>
+      <li class="step" data-i="2"><span class="n">03</span><h3>Transistor terbentuk</h3><p>Gate, source, dan drain berdiri di atas wafer. Miliaran saklar kecil inilah yang menjadi logika dan memori.</p><a href="kurikulum.html?part=3">Part 3 · Digital dan CMOS →</a></li>
+      <li class="step" data-i="3"><span class="n">04</span><h3>Kabel antar-transistor</h3><p>Lapisan metal dan via menghubungkan semuanya. Di sinilah placement dan routing menentukan timing dan power.</p><a href="kurikulum.html?part=6">Part 6 · Physical design →</a></li>
+      <li class="step" data-i="4"><span class="n">05</span><h3>Wafer jadi ribuan die</h3><p>Satu wafer memuat banyak die. Sebagian cacat, dan persentase die yang lolos disebut yield.</p><a href="kurikulum.html?part=8">Part 8 · Yield dan keandalan →</a></li>
+      <li class="step" data-i="5"><span class="n">06</span><h3>Tapeout dan packaging</h3><p>Setelah signoff, desain dikirim ke fab. Die dipotong, dikemas, dan siap dipasang di board.</p><a href="kurikulum.html?part=6">Part 6 · Signoff dan tapeout →</a></li>
     </ol>
   </div>
+</section>
 
-  <section id="part" aria-labelledby="h-part">
+<div class="pg">
+  <section id="part" aria-labelledby="h-part" class="rv">
     <h2 id="h-part">Sembilan Part, satu jalur</h2>
-    <p class="sub">Mulai dari fondasi, naik sampai tapeout. Pilih sebuah Part untuk melihat modul dan prasyaratnya.</p>
+    <p class="sub">Mulai dari fondasi, naik sampai tapeout. Pilih Part untuk melihat modul dan prasyaratnya.</p>
     <div class="part-grid" id="parts"></div>
   </section>
 
-  <section id="cara" aria-labelledby="h-cara">
-    <h2 id="h-cara">Cara belajar</h2>
-    <ul class="how">
-      <li><h3>Penjelasan berlapis</h3><p>Tiap konsep dijelaskan di tiga tingkat: pemula, engineer, dan pakar. Pilih yang pas, ganti kapan saja.</p></li>
-      <li><h3>Tebak dulu</h3><p>Visualisasi interaktif meminta prediksimu sebelum menunjukkan hasilnya, supaya intuisimu benar-benar terlatih.</p></li>
-      <li><h3>Flashcard yang ingat kamu</h3><p>Kartu dengan jadwal SM-2 mengulang istilah tepat sebelum kamu lupa.</p></li>
-      <li><h3>Lab dengan tool nyata</h3><p>Setiap modul punya lab: Icarus Verilog, Yosys, OpenROAD, ngspice, dan tool open-source lain.</p></li>
-    </ul>
-  </section>
-
-  <section id="jalur" aria-labelledby="h-jalur">
+  <section id="jalur" aria-labelledby="h-jalur" class="rv">
     <h2 id="h-jalur">Punya tujuan karier?</h2>
     <p class="sub">Enam Track menyorot modul yang paling relevan untuk satu spesialisasi.</p>
     <div class="chips" id="tracks"></div>
   </section>
 
-  <section id="open" aria-labelledby="h-open">
-    <h2 id="h-open">Open source dan gratis</h2>
-    <div class="oss">
-      <div class="icd-card"><h3 style="margin-top:0">Pakai bebas</h3><p>Materi berlisensi CC BY-SA 4.0 dan kode MIT. Boleh dipakai untuk kelas, kampus, dan belajar mandiri, asal menyebut sumber.</p></div>
-      <div class="icd-card"><h3 style="margin-top:0">Ikut memperbaiki</h3><p>Menemukan salah ketik atau konsep yang kurang pas? Koreksi dan kontribusi diterima lewat GitHub.</p><p><a href="tentang.html#kontribusi">Cara berkontribusi</a></p></div>
-      <div class="icd-card" id="acct-card" hidden><h3 style="margin-top:0">Belajar di mana saja</h3><p>Masuk dengan Google atau email agar progres, catatan, dan flashcard tersimpan di semua device.</p><p><button type="button" class="icd-btn" id="acct-btn">Masuk</button></p></div>
-    </div>
+  <section class="cta-band rv" aria-labelledby="h-cta">
+    <h2 id="h-cta">Siap membuat chip pertamamu?</h2>
+    <p>Materi CC BY-SA 4.0 dan kode MIT. Pakai di kelas atau belajar mandiri, dan ikut memperbaikinya lewat GitHub.</p>
+    <div class="row"><a class="icd-btn primary" href="m00-orientasi.html">Mulai dari M00</a><a class="icd-btn ghost" href="tentang.html">Tentang bikinchip</a></div>
+    <div class="icd-card" id="acct-card" style="margin:0;max-width:30rem" hidden><h3 style="margin-top:0">Belajar di mana saja</h3><p>Masuk dengan Google atau email agar progres, catatan, dan flashcard tersimpan di semua device.</p><p><button type="button" class="icd-btn" id="acct-btn">Masuk</button></p></div>
   </section>
 </div>
 </main>
@@ -142,7 +209,85 @@ function renderParts(){
       el('span', { class: 'meta' }, [el('span', { text: mods.length + ' modul' }), el('span', { text: G.hrs(h) })])]));
   });
 }
+
+/* ---------- hero: wafer fab (canvas) ---------- */
+var REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fab(){
+  var cv = q('#fab'), hero = q('.fh'), ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return;
+  var W, H, dpr, R, cx, cy, d, dies = [], px = -1e4, py = -1e4, run = false, vis = true, raf = 0;
+  function hash(a, b){ var h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+  function layout(){
+    var r = hero.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    var wide = W >= 800; R = wide ? Math.min(H * 0.8, W * 0.4) : W * 0.8; cx = wide ? W * 0.74 : W * 0.62; cy = wide ? H * 0.52 : H * 0.88; d = R / (wide ? 11 : 8);
+    dies = []; var n = Math.ceil(R / d);
+    for (var gx = -n; gx <= n; gx++) for (var gy = -n; gy <= n; gy++){
+      var x = gx * d, y = gy * d * 0.8, hw = d * 0.4, hh = d * 0.32;
+      if (Math.hypot(Math.abs(x) + hw, Math.abs(y) + hh) > R * 0.94) continue;
+      dies.push({ x: x, y: y, w: hw * 2, h: hh * 2, bad: hash(gx, gy) < 0.13 });
+    }
+    draw(performance.now());
+  }
+  function draw(t){
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    var sy = window.pageYOffset || 0, ang = -0.3 + sy * 0.0009 + (REDUCE ? 0 : t * 0.000025), ca = Math.cos(ang), sa = Math.sin(ang), sc = 1 + Math.min(sy, 600) * 0.0003;
+    var bx = REDUCE ? -1e4 : ((t * 0.09) % (W + 500)) - 250;
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc);
+    var g = ctx.createRadialGradient(-R * 0.3, -R * 0.3, R * 0.1, 0, 0, R); g.addColorStop(0, '#2C6C84'); g.addColorStop(1, '#0C3547');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(159,221,240,.35)'; ctx.stroke();
+    ctx.rotate(ang);
+    for (var i = 0; i < dies.length; i++){
+      var D = dies[i], sx = cx + (D.x * ca - D.y * sa) * sc, syy = cy + (D.x * sa + D.y * ca) * sc;
+      var hb = Math.exp(-Math.pow((sx - bx) / (d * 2.2), 2)), hp = Math.exp(-(Math.pow(sx - px, 2) + Math.pow(syy - py, 2)) / (d * d * 6)), k = Math.min(1, hb * 0.9 + hp);
+      if (D.bad){ ctx.fillStyle = 'rgba(8,22,30,' + (0.55 + k * 0.2) + ')'; ctx.strokeStyle = 'rgba(232,176,74,' + (0.25 + k * 0.5) + ')'; }
+      else { ctx.fillStyle = 'rgba(92,193,224,' + (0.12 + k * 0.6) + ')'; ctx.strokeStyle = 'rgba(159,221,240,' + (0.3 + k * 0.6) + ')'; }
+      ctx.lineWidth = 1; ctx.fillRect(D.x - D.w / 2, D.y - D.h / 2, D.w, D.h); ctx.strokeRect(D.x - D.w / 2 + 0.5, D.y - D.h / 2 + 0.5, D.w - 1, D.h - 1);
+      if (!D.bad){ ctx.fillStyle = 'rgba(255,255,255,' + (0.1 + k * 0.5) + ')'; ctx.fillRect(D.x - D.w * 0.25, D.y - D.h * 0.2, D.w * 0.5, D.h * 0.4); }
+    }
+    ctx.restore();
+  }
+  function loop(t){ raf = 0; if (!run || !vis || document.hidden) return; draw(t); raf = requestAnimationFrame(loop); }
+  function start(){ if (REDUCE || raf) return; run = true; raf = requestAnimationFrame(loop); }
+  hero.addEventListener('pointermove', function(e){ var r = hero.getBoundingClientRect(); px = e.clientX - r.left; py = e.clientY - r.top; if (REDUCE) draw(0); });
+  hero.addEventListener('pointerleave', function(){ px = py = -1e4; if (REDUCE) draw(0); });
+  if (window.ResizeObserver) new ResizeObserver(layout).observe(hero); else window.addEventListener('resize', layout);
+  if (REDUCE) window.addEventListener('scroll', function(){ draw(0); }, { passive: true });
+  if (window.IntersectionObserver) new IntersectionObserver(function(es){ vis = es[0].isIntersecting; if (vis) start(); }, { threshold: 0 }).observe(hero);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) start(); });
+  layout(); start();
+}
+
+/* ---------- scrollytelling: dari pasir ke chip ---------- */
+var CAPS = ['Wafer silikon', 'Litografi: pola dari cahaya', 'Transistor: gate, source, drain', 'Interkoneksi: metal dan via', 'Wafer, die, dan yield', 'Tapeout dan packaging'];
+function story(){
+  var svg = q('#stage-svg'), steps = ICD.qa('.step'), cap = q('#stage-cap'), dots = q('#dots'), cur = -1;
+  var g = q('#wafer-dies'), NS = 'http://www.w3.org/2000/svg';
+  for (var gx = -6; gx <= 6; gx++) for (var gy = -6; gy <= 6; gy++){
+    var x = 240 + gx * 18, y = 150 + gy * 14.4; if (Math.hypot(Math.abs(gx) * 18 + 8, Math.abs(gy) * 14.4 + 6) > 104) continue;
+    var r = document.createElementNS(NS, 'rect'), bad = ((gx * 7 + gy * 13 + gx * gy) % 9 + 9) % 9 === 0;
+    r.setAttribute('x', x - 7); r.setAttribute('y', y - 5.5); r.setAttribute('width', 14); r.setAttribute('height', 11); r.setAttribute('fill', bad ? '#E8B04A' : '#5CC1E0'); r.setAttribute('opacity', bad ? '.55' : '.85'); g.appendChild(r);
+  }
+  CAPS.forEach(function(c, i){ var b = el('button', { type: 'button', 'aria-label': 'Tahap ' + (i + 1) + ': ' + c, onclick: function(){ steps[i].scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'center' }); } }); dots.appendChild(el('li', null, [b])); });
+  function set(i){
+    if (i === cur) return; cur = i;
+    ICD.qa('[data-s]', svg).forEach(function(n){ var a = n.getAttribute('data-s').split('-'); n.classList.toggle('on', i >= +a[0] && i <= +a[1]); });
+    steps.forEach(function(s, k){ s.classList.toggle('on', k === i); });
+    ICD.qa('button', dots).forEach(function(b, k){ if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    cap.textContent = CAPS[i]; svg.setAttribute('aria-label', 'Ilustrasi tahap ' + (i + 1) + ': ' + CAPS[i]);
+  }
+  set(0);
+  if (!window.IntersectionObserver){ steps.forEach(function(s){ s.classList.add('on'); }); set(3); return; }
+  var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) set(+e.target.getAttribute('data-i')); }); }, { rootMargin: '-45% 0px -45% 0px' });
+  steps.forEach(function(s){ io.observe(s); });
+}
+function reveal(){
+  var items = ICD.qa('.rv'); if (!window.IntersectionObserver) { items.forEach(function(n){ n.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: 0.08 });
+  items.forEach(function(n){ io.observe(n); });
+}
 ICD.ready(function(){
+  fab(); story(); reveal();
   renderStats(); renderParts(); renderResume();
   var tr = q('#tracks'); Object.keys(reg.tracks).forEach(function(k){ tr.appendChild(el('a', { href: 'kurikulum.html?track=' + k, text: reg.tracks[k].title })); });
   if (ICD.sync.enabled() && !ICD.sync.user()){ q('#acct-card').hidden = false; q('#acct-btn').addEventListener('click', function(){ ICD.sync.login(); }); }
